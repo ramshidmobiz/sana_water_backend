@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="page-header-breadcrumb d-md-flex d-block align-items-center justify-content-between ">
+    <h4 class="fw-medium mb-0">Mark Customer Visit Days for {{customer_data.customer_name}}</h4>
+      <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="javascript:void(0);" class="text-white-50">Dashboards</a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">Admin Dashboard</li>
+      </ol>
+  </div>
+<div class="main-content app-content">
+    <form enctype="multipart/form-data" role="form" method="post"
+              class="row g-3">
+            {% csrf_token %}
+    <div class="container-fluid">
+             <!-- Start:: row-1 -->
+             <div class="row">
+                <div class="col-xl-12">
+                    <div class="card custom-card">
+                        <div class="card-header" style="background-color: antiquewhite;">
+                            <div class="card-title mx-auto">
+                            Customer Details</div>
+                        </div>
+                        <div class="card-body row g-3" style="background-color: antiquewhite;">
+            <!--row 1-->
+                    <div class="col-md-4">
+                        <div class="form-group required">
+                            <label class='control-label'>Customer Name</label>
+                            <input type="text" class="form-control" disabled value="{{customer_data.customer_name}}">
+                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group required">
+                            <label class='control-label'>Building Name</label>
+                            <input type="text" class="form-control" disabled value="{{customer_data.building_name}}">
+                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group required">
+                            <label class='control-label'>Door House Number</label>
+                            <input type="text" class="form-control" disabled value="{{customer_data.door_house_no}}">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group required">
+                            <label class='control-label'>Floor Number</label>
+                            <input type="text" class="form-control" disabled value="{{customer_data.floor_no}}">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group required">
+                            <label class='control-label'>Route</label>
+                            <input type="text" class="form-control" disabled value="{{customer_data.routes.route_name}}">
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="form-group required">
+                            <label class='control-label'>Location</label>
+                            <input type="text" class="form-control" disabled value="{{customer_data.location.location_name}}">
+                        </div>
+                    </div>
+
+
+                    <div class="col-md-4">
+                        <div class="form-group required">
+                            <label class='control-label'>Mobile Number</label>
+                            <input type="text" class="form-control" disabled value="{{customer_data.mobile_no}}">
+                        </div>
+                    </div>
+                        </div>
+                        <div class="card-header">
+                            <div class="card-title mx-auto">
+                            Days</div>
+                        </div>
+                        <div class="card-body row g-3">
+            <!--row 1-->
+                    <div class="col-md-2">
+                        <div class="form-group required">
+                            <label class='control-label'>Monday</label>
+                            {{ form.monday }}
+                            <span style="color: red;">{{ form.monday.errors }}</span>
+                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group required">
+                            <label class='control-label'>Tuesday</label>
+                            {{ form.tuesday }}
+                            <span style="color: red;">{{ form.tuesday.errors }}</span>
+                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group required">
+                            <label class='control-label'>Wednesday</label>
+                            {{ form.wednesday }}
+                            <span style="color: red;">{{ form.wednesday.errors }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group required">
+                            <label class='control-label'>Thursday</label>
+                            {{ form.thursday }}
+                            <span style="color: red;">{{ form.thursday.errors }}</span> 
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group required">
+                            <label class='control-label'>Friday</label>
+                            {{ form.friday }}
+                            <span style="color: red;">{{ form.friday.errors }} </span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-2">
+                        <div class="form-group required">
+                            <label class='control-label'>Saturday</label>
+                            {{ form.saturday }}
+                            <span style="color: red;">{{ form.saturday.errors }}</span>
+                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                        </div>
+                    </div>
+
+
+                    <div class="col-md-2">
+                        <div class="form-group required">
+                            <label class='control-label'>Sunday</label>
+                            {{ form.sunday }}
+                            <span style="color: red;">{{ form.sunday.errors }}</span>
+                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                        </div>
+                    </div>
+                        </div>
+                        <div class="card-header">
+                            <div class="card-title mx-auto">
+                            Weeks</div>
+                        </div>
+                        <div class="card-body row g-3">
+        
+                            <!--row 1-->
+                                    <div class="col-md-3">
+                                        <div class="form-group required">
+                                            <label class='control-label'>Week 1</label>
+                                            {{ form.week1 }}
+                                            <span style="color: red;">{{ form.week1.errors }}</span>
+                                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group required">
+                                            <label class='control-label'>Week 2</label>
+                                            {{ form.week2 }}
+                                            <span style="color: red;">{{ form.week2.errors }}</span>
+                                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group required">
+                                            <label class='control-label'>Week 3</label>
+                                            {{ form.week3 }}
+                                            <span style="color: red;">{{ form.week3.errors }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group required">
+                                            <label class='control-label'>Week 4</label>
+                                            {{ form.week4 }}
+                                            <span style="color: red;">{{ form.week4.errors }}</span> 
+                                        </div>
+                                    </div>
+                                    
+                            <div class="col-12 text-end mt-5">
+                                <input type="submit" class="btn btn-primary me-2 mb-2" value="Submit">
+                                    <button class="btn btn-success   me-md-2  mb-2" type="button" onClick="javascript:history.go(-1);">
+                                        <i class="bi bi-backspace-fill pe-1"></i>Back</button>
+                                <a class="btn btn-success me-md-2  mb-2"
+                                   href="{% url 'users' %}"><i class="bi bi-backspace-fill pe-1"></i> Back to Dashboard </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    </div>
+    </form>
+</div>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

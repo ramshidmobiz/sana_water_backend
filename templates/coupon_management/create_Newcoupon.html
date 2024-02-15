@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-header-breadcrumb d-md-flex d-block align-items-center justify-content-between ">
+    <h4 class="fw-medium mb-0">Create Coupon</h4>
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="javascript:void(0);" class="text-white-50">Coupon Management</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Coupon</li>
+    </ol>
+</div>
+<div class="main-content app-content">
+    <div class="container-fluid">
+        <!-- Start:: row-1 -->
+        <div class="row">
+            <div class="col-xl-12">
+                <div class="card custom-card">
+                    <div class="card-header">
+                        <div class="card-title mx-auto">
+                            Create Coupon
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <form enctype="multipart/form-data" role="form" id="create-coupon-form" method="post" class="row g-3 needs-validation">
+                            {% csrf_token %}
+                            <!--row 1-->
+                            <div class="col-md-6">
+                                <div class="form-group required">
+                                    <label class='control-label'>Book No</label>
+                                    {{ form.book_num }}
+                                    <span style="color: red;">{{ form.book_num.errors }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group required">
+                                    <label class='control-label'>Coupon Type</label>
+                                    {{ form.coupon_type }}
+                                    <span style="color: red;">{{ form.coupon_type.errors }}</span>
+                                </div>
+                            </div>
+                            <!-- Generate Coupons Button -->
+                            <div class="col-12 text-end mt-5">
+                                <button id="generate-btn" class="btn btn-primary me-2 mb-2">Generate Coupon</button>
+                            </div>
+                        </form>
+                        
+                        <div id="error-message" style="color: red;"></div>
+                        
+                        <div class="row" id="leaflet-serial-numbers" style="display: none;">
+                            <div class="col-xl-12">
+                                <div class="card custom-card">
+                                    <h4>Generated Leaflets for Coupon: <span id="coupon-book-num"></span></h4>
+                                    <ul id="leaflet-list"></ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row my-3 me-1" id="back-button" style="display: none;">
+                            <div class="col-12 text-end">
+                                <a href="{% url 'new_coupon' %}">
+                                    {% comment %} <button class="btn btn-success me-md-2 " type="button"><i class="bi bi-backspace-fill pe-1"></i>Save </button> {% endcomment %}
+                                    <button class="btn btn-success me-md-2 " type="button"><i class="bi bi-save-fill pe-1"></i>Save</button>
+
+                                </a>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById("generate-btn").addEventListener("click", function(event) {
+        event.preventDefault();  // Prevent form submission
+
+        // Serialize form data
+        var formData = new FormData(document.getElementById("create-coupon-form"));
+
+        // Send AJAX request to create and generate coupons
+        fetch('/coupon/create_Newcoupon/', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById("coupon-book-num").textContent = data.book_num;
+                var leafletList = document.getElementById("leaflet-list");
+                leafletList.innerHTML = "";  // Clear existing leaflets
+                data.leaflets.forEach(function(leaflet) {
+                    var listItem = document.createElement("li");
+                    var couponBookNum = data.book_num.replace(/\s+/g, ''); // Remove white spaces from book_num
+                    listItem.textContent = couponBookNum + " " + leaflet.leaflet_number.padStart(2, '0');
+                    leafletList.appendChild(listItem);
+                });
+                document.getElementById("leaflet-serial-numbers").style.display = "block";  // Show leaflet section
+                document.getElementById("back-button").style.display = "block"; // Show back button
+            } else {
+                document.getElementById("error-message").textContent = data.message;
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    });
+</script>
+
+
+{% endblock %}
+

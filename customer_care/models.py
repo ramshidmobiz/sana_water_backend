@@ -1,0 +1,128 @@
+from django.db import models
+import uuid
+from accounts.models import *
+from product.models import *
+from client_management.models import *
+
+
+
+class RequestTypeMaster(models.Model):
+    TYPE_CHOICES = [
+        ('1', 'Filled Bottles'),
+        ('2', 'Empty Bottles'),
+        ('3', 'Coupons'),
+        ('4', 'Dispenser'),
+        ('5', 'Custody Pull Out'),
+        ('6', 'other'),
+        
+    ]
+    request_id   = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    request_type = models.CharField(max_length=50, choices=TYPE_CHOICES ,null=True ,blank= True)
+    request_name = models.CharField(max_length=50,unique=True)
+    created_by = models.CharField(max_length=20,  blank=True)
+    created_date = models.DateTimeField(auto_now_add=True,blank=True, null=True)
+    modified_by = models.CharField(max_length=20, null=True, blank=True)
+    modified_date = models.DateTimeField(blank=True, null=True)
+    class Meta:
+        ordering = ('request_name',)
+
+    def __str__(self):
+        return str(self.request_name)
+    
+class DiffBottlesModel(models.Model):
+    diffbottles_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    request_type = models.ForeignKey(RequestTypeMaster,on_delete=models.SET_NULL, null=True, blank=True)
+    quantity_required = models.IntegerField(null=True, blank=True)
+    delivery_date = models.DateTimeField(blank=True, null=True)
+    assign_this_to  = models.CharField(max_length=50)
+    mode = models.CharField(max_length=10, choices=[('custody', 'Custody'), ('paid', 'Paid')])
+    amount = models.CharField(max_length=50,null=True, blank=True)
+    discount_net_total = models.CharField(max_length=50,null=True, blank=True)
+    created_by = models.CharField(max_length=20,  blank=True)
+    created_date = models.DateTimeField(auto_now_add=True,blank=True, null=True)
+    modified_by = models.CharField(max_length=20, null=True, blank=True)
+    modified_date = models.DateTimeField(blank=True, null=True)
+    customer = models.ForeignKey('accounts.Customers', on_delete=models.SET_NULL, null=True, blank=True,related_name='customer_bottles')
+
+    class Meta:
+        ordering = ('request_type',)
+
+    def __str__(self):
+        return str(self.request_type)
+class OtherRequirementModel(models.Model):
+    requirement_id   = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    request_type = models.ForeignKey(RequestTypeMaster,on_delete=models.SET_NULL, null=True, blank=True)
+    requirement = models.TextField(max_length=50)
+    created_by = models.CharField(max_length=20,  blank=True)
+    created_date = models.DateTimeField(auto_now_add=True,blank=True, null=True)
+    modified_by = models.CharField(max_length=20, null=True, blank=True)
+    modified_date = models.DateTimeField(blank=True, null=True)
+    customer = models.ForeignKey('accounts.Customers', on_delete=models.SET_NULL, null=True, blank=True,related_name='customer_otherrequirement')
+
+    class Meta:
+        ordering = ('request_type',)
+
+    def __str__(self):
+        return str(self.request_type)
+    
+class CouponPurchaseModel(models.Model):
+    COUPON_TYPE_CHOICES = [
+        ('manual', 'Manual'),
+        ('digital', 'Digital'),
+    ]
+
+    CATEGORY_CHOICES = [
+        ('cash', 'Cash Coupon'),
+        ('credit', 'Credit Coupon'),
+    ]
+
+    PAYMENT_STATUS_CHOICES = [
+        ('unpaid', 'Unpaid'),
+        ('paid', 'Paid'),
+    ]
+    couponpurchase_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    request_type = models.ForeignKey(RequestTypeMaster,on_delete=models.SET_NULL, null=True, blank=True)
+    coupon_type = models.CharField(max_length=10, choices=COUPON_TYPE_CHOICES)
+    category = models.CharField(max_length=10, choices=CATEGORY_CHOICES)    
+    number_of_books = models.IntegerField(null=True)
+    payment_status = models.CharField(max_length=10,choices=PAYMENT_STATUS_CHOICES,default='unpaid',)
+    amount = models.CharField(max_length=50,null=True, blank=True)
+    free_coupon = models.IntegerField(default=0)
+    discount = models.CharField(max_length=50,null=True, blank=True)
+    delivery_date = models.DateField(blank=True,null=True)
+    created_by = models.CharField(max_length=20,  blank=True)
+    created_date = models.DateTimeField(auto_now_add=True,blank=True, null=True)
+    modified_by = models.CharField(max_length=20, null=True, blank=True)
+    modified_date = models.DateTimeField(blank=True, null=True)
+    customer = models.ForeignKey('accounts.Customers', on_delete=models.SET_NULL, null=True, blank=True,related_name='customer_couponpurchase')
+
+    class Meta:
+        ordering = ('request_type',)
+
+    def __str__(self):
+        return str(self.request_type)
+    
+class CustodyPullOutModel(models.Model): 
+    custodypullout_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    request_type = models.ForeignKey(RequestTypeMaster,on_delete=models.SET_NULL, null=True, blank=True)
+    customer_custody_item = models.ForeignKey('client_management.Customer_Custody_Items', on_delete=models.SET_NULL, null=True, blank=True,related_name='customer_custody_item')
+    item_name = models.ForeignKey('product.Product', on_delete=models.SET_NULL, null=True, blank=True,related_name='customer_product')
+    qty_to_be_taken_out = models.IntegerField(default=0)
+    scheduled_date = models.DateField(blank=True, null=True)
+    created_by = models.CharField(max_length=20,  blank=True)
+    created_date = models.DateTimeField(auto_now_add=True,blank=True, null=True)
+    modified_by = models.CharField(max_length=20, null=True, blank=True)
+    modified_date = models.DateTimeField(blank=True, null=True)
+    customer = models.ForeignKey('accounts.Customers', on_delete=models.SET_NULL, null=True, blank=True,related_name='customer_custodypullout')
+
+    class Meta:
+        ordering = ('item_name',)
+
+    def __str__(self):
+        return str(self.item_name)
+
+    
+    
+
+
+

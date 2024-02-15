@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block title %} Custody Items {% endblock %}
+{% block content %}
+{% load static %}
+
+<!-- Page Header -->
+<div class="page-header-breadcrumb d-md-flex d-block align-items-center justify-content-between ">
+    <h4 class="fw-medium mb-0">Custody Items</h4>
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="" class="text-white-30">Client Management</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Custody Items</li>
+    </ol>
+</div>
+<div class="main-content app-content">
+    <div class="container-fluid">
+
+        <div class="row">
+            <div class="col-xl-12">
+                <div class="card custom-card">
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" id="id_customer" value="{{customerid}}" name="id_customer" >
+
+                            <table  class="table table-bordered text-nowrap" style="width:100%">
+                                <thead>
+                                    <tr>
+                                    <th scope="col">Sl.No</th>
+                                    <th scope="col">Products</th>
+                                    <th scope="col">Rate</th>
+                                    <th scope="col">Count</th>                                        
+                                </tr>
+                                </thead>
+                                <tbody id ="item_rate_list">
+
+                                    {% for data in price_list %}
+                                    <tr>
+                                        <td>{{forloop.counter}} &nbsp;<input type="checkbox" id="{{data.product_id}}" value="{{data.product_id}}+{{forloop.counter}}" name="price_checkbox">
+                                            <input type="hidden" id="id_custody_item" value="{{data.custody_item_id}}" name="id_custody_item" >
+                                        </td>
+                                        <td style="text-align:center;">
+                                            {{data.product_name}}
+                                        </td>
+                                        <td style="text-align:center;">
+                                            <input class="form-control" type="text" id="rate" name="rate" value="{{data.product_rate}}" readonly >
+                                        </td>
+                                         <td style="text-align:center;">
+                                            <input class="form-control" type="text" id="count" name="count" value="{{data.product_count}}" readonly>
+                                        </td>
+                                    </tr>
+                                    {%endfor%}
+
+                                </tbody>
+                            </table>
+                            <div class="col-12 text-end mt-5">
+                                <input type="submit" class="btn btn-primary me-2 mb-2" value="Submit">
+                                <button class="btn btn-success   me-md-2  mb-2" type="button" onClick="javascript:history.go(-1);">
+                                    <i class="bi bi-backspace-fill pe-1"></i>Back</button>
+                                
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+<script>
+function get_custody_items()
+{
+    if($('#item_rate_list').length){
+        $('#item_rate_list').empty();
+    }
+    var customer = document.getElementById("id_customer").selectedOptions[0].value
+    $.ajax({
+        type: "get",
+        url: "{% url 'get_custody_items' %}",
+        data: {'customer':customer},
+        datatype:"json",
+        success: function (data)
+             {
+                var j = 1;
+                $.each(data.price_list, function(i, data){
+                var row = ''
+                     $("#item_rate_list").append('<tr>'+
+                        '<td>'+j+' &nbsp;<input type="checkbox" id="'+ data.product_id +'" value="'+ data.product_id +'+'+j+'" name="price_checkbox"><input type="hidden" id="id_custody_item" value="'+ data.custody_item_id +'" name="id_custody_item" ></td>'+'<td style="text-align:center;">'+ data.product_name +'</td>'+
+                        '<td style="text-align:center;"><input class="form-control" type="text" id="rate" name="rate" value="'+data.product_rate
+ +'" readonly ></td>'+'<td style="text-align:center;"><input class="form-control" type="text" id="count" name="count" value="'+ data.product_count +'" readonly></td>'+
+                    '</tr>');
+                j++;
+                })  ;
+             }
+         });
+
+}
+</script>
+
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script>
+    $(document).ready(function () {
+        // Event delegation for checkboxes
+        $('#item_rate_list').on('change', 'input[type="checkbox"]', function () {
+            // Toggle the readonly attribute of the corresponding input field based on the checkbox's checked status    
+            console.log("Checkbox change event");
+
+            var row = $(this).closest('tr');
+            var index = row.index();
+            var inputField = row.find('input[type="text"]');
+
+            inputField.prop('readonly', !$(this).prop('checked'));
+        });
+    });
+</script>
+{% endblock %}
