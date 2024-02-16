@@ -184,14 +184,14 @@ class Customer_Details(View):
     template_name = 'accounts/customer_details.html'
 
     def get(self, request, pk, *args, **kwargs):
-        user_det = Customers.objects.get(customer_id=pk)
+        user_det = Customers.objects.get(pk=pk)
         context = {'user_det': user_det}
         return render(request, self.template_name, context) 
     
 
 def edit_customer(request,pk):
     branch = request.user.branch_id
-    cust_Data = Customers.objects.get(customer_id = pk)
+    cust_Data = Customers.objects.get(pk = pk)
     form = CustomerEditForm(branch,instance = cust_Data)
     template_name = 'accounts/edit_customer.html'
     context = {"form":form}
@@ -216,7 +216,7 @@ def edit_customer(request,pk):
 
 # def visit_days_assign(request,customer_id):
 #     template_name = 'accounts/assign_dayof_visit.html'
-#     customer_data=Customers.objects.get(customer_id = customer_id)
+#     customer_data=Customers.objects.get(pk = customer_id)
 #     day_visits = Staff_Day_of_Visit.objects.get(customer_id__customer_id = customer_id)
 #     form = Day_OfVisit_Form(instance=day_visits)
 #     context = {'day_visits' : day_visits,"form":form,"customer_data":customer_data}
@@ -240,7 +240,7 @@ def visit_days_assign(request, customer_id):
     template_name = 'accounts/assign_dayof_visit.html'
     
     try:
-        customer_data = Customers.objects.get(customer_id=customer_id)
+        customer_data = Customers.objects.get(pk=customer_id)
     except Customers.DoesNotExist:
         messages.error(request, 'Customer does not exist.')
         return redirect('customers')

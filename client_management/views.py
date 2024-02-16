@@ -25,7 +25,7 @@ def customer_custody_item(request,customer_id):
         print(request.user.user_type,"<---user_type")
         customer_exists = Customers.objects.filter(customer_id=customer_id).exists()
         if customer_exists:
-            customer_data = Customers.objects.get(customer_id=customer_id)
+            customer_data = Customers.objects.get(pk=customer_id)
             if request.user.user_type == 'Admin':
                 branch = BranchMaster.objects.all().values_list('branch_id', flat=True)
                 print(branch,"<--branch")
@@ -75,7 +75,7 @@ def customer_custody_item(request,customer_id):
         count = request.POST.getlist('count')
         id_custody_items = request.POST.getlist('id_custody_item')
         if customer_id is not None and product_ids is not None:
-            customer_instance = Customers.objects.get(customer_id=customer_id)
+            customer_instance = Customers.objects.get(pk=customer_id)
             for i, item_id in enumerate(product_ids):
                 product_id, index = item_id.split('+')
                 index = int(index) - 1
@@ -108,7 +108,7 @@ def get_custody_items(request):
         if customer is not None:
             customer_exists = Customers.objects.filter(customer_id=customer).exists()
             if customer_exists:
-                customer_data = Customers.objects.get(customer_id=customer)
+                customer_data = Customers.objects.get(pk=customer)
                 branch_id=request.user.branch_id.branch_id
                 branch = BranchMaster.objects.get(branch_id=branch_id)
                 products = Product.objects.filter(branch_id=branch)
@@ -282,7 +282,7 @@ class Add_CategoryListView(View):
     template_name = 'client_management/add_category_list.html'
 
     def get(self, request, pk, *args, **kwargs):
-        user_det = Customers.objects.get(customer_id=pk)
+        user_det = Customers.objects.get(pk=pk)
         print(user_det)
         custody_items = Customer_Custody_Items.objects.filter(customer=user_det)
         form = CustomerCustodyForm()
@@ -294,7 +294,7 @@ class Add_CategoryListView(View):
         return render(request, self.template_name, context)
 
     def post(self, request, pk, *args, **kwargs):
-        user_det = Customers.objects.get(customer_id=pk)
+        user_det = Customers.objects.get(pk=pk)
         category = request.POST.get('category')
         product_id = request.POST.get('product_name')
         print('product_name',product_id)
@@ -356,7 +356,7 @@ class PulloutListView(View):
     # def get(self, request):
         # form = CustodyItemFilterForm(request.GET)
     def get(self, request, pk):
-        customer = Customers.objects.get(customer_id=pk)
+        customer = Customers.objects.get(pk=pk)
         print('customer',customer)
         custody_items = Customer_Custody_Items.objects.filter(customer=customer)
         # custody_pullout_list = Customer_Custody_Items.objects.all()

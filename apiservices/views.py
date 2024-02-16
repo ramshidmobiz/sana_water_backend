@@ -787,7 +787,7 @@ class UserSignUpView(APIView):
     serializer_class=CustomUserSerializers
     def get(self, request,id=None):
         if id :
-            queryset=Customers.objects.get(customer_id=id)
+            queryset=Customers.objects.get(pk=id)
             serializer=CustomersSerializers(queryset)
             return Response(serializer.data)
         queryset = CustomUser.objects.all()
@@ -824,7 +824,7 @@ class Customer_API(APIView):
     def get(self,request,id=None):
         try:
             if id :
-                queryset=Customers.objects.get(customer_id=id)
+                queryset=Customers.objects.get(pk=id)
                 serializer=CustomersSerializers(queryset)
                 return Response(serializer.data)
             queryset= Customers.objects.all()
@@ -862,7 +862,7 @@ class Customer_API(APIView):
 
     def put(self, request, id):
         try:
-            product = Customers.objects.get(customer_id=id)
+            product = Customers.objects.get(pk=id)
             serializer = CustomersSerializers(product, data=request.data)
             if serializer.is_valid():
                 serializer.save(modified_by=request.user.id,modified_date = datetime.now())
@@ -1227,7 +1227,7 @@ class Create_Customer(APIView):
     def get(self,request,id=None):
         try:
             if id :
-                queryset = Customers.objects.get(customer_id=id)
+                queryset = Customers.objects.get(pk=id)
                 serializer = Create_Customers_Serializers(queryset)
                 return Response(serializer.data)
             queryset = Customers.objects.all()
@@ -1239,7 +1239,7 @@ class Create_Customer(APIView):
 
     def put(self, request, id):
         try:
-            customers = Customers.objects.get(customer_id=id)
+            customers = Customers.objects.get(pk=id)
             serializer = Create_Customers_Serializers(customers, data=request.data)
             if serializer.is_valid():
                 serializer.save(modified_by=request.user.id,branch_id=request.user.branch_id,modified_date = datetime.now())
@@ -1261,7 +1261,7 @@ class Get_Items_API(APIView):
             #customer = request.data['id']
             customer_exists = Customers.objects.filter(customer_id=id).exists()
             if customer_exists:
-                customer_data = Customers.objects.get(customer_id=id)
+                customer_data = Customers.objects.get(pk=id)
                 print(customer_data.branch_id)
                 branch_id = customer_data.branch_id.branch_id
                 branch = BranchMaster.objects.get(branch_id=branch_id)
@@ -1318,7 +1318,7 @@ class Add_Customer_Custody_Item_API(APIView):
             customer_exists = Customers.objects.filter(customer_id=id).exists()
             print("customer_exists")
             if customer_exists:
-                customer_exists = Customers.objects.get(customer_id=id)
+                customer_exists = Customers.objects.get(pk=id)
                 custody_list = Customer_Custody_Items.objects.filter(customer=customer_exists.customer_id)
                 if custody_list:
                     serializer = CustodyItemSerializers(custody_list, many=True)
@@ -1373,7 +1373,7 @@ class Add_No_Coupons(APIView):
         try:
             customer_exists = Customers.objects.filter(customer_id=id).exists()
             if customer_exists:
-                customer_exists = Customers.objects.get(customer_id=id)
+                customer_exists = Customers.objects.get(pk=id)
                 custody_list = Customer_Inhand_Coupons.objects.filter(customer=customer_exists.customer_id)
                 if custody_list:
                     serializer = GetCustomerInhandCouponsSerializers(custody_list, many=True)
@@ -1475,7 +1475,7 @@ class CustomerDetails(APIView):
     def get(self,request,id=None):
         try:
             if id :
-                queryset = Customers.objects.get(customer_id=id)
+                queryset = Customers.objects.get(pk=id)
                 serializer = CustomersSerializers(queryset)
                 return Response(serializer.data)
             queryset = Customers.objects.all()
@@ -1487,7 +1487,7 @@ class CustomerDetails(APIView):
 
     def put(self, request, id):
         try:
-            customers = Customers.objects.get(customer_id=id)
+            customers = Customers.objects.get(pk=id)
             serializer = CustomersSerializers(customers, data=request.data)
             if serializer.is_valid():
                 serializer.save(modified_by=request.user.id,modified_date = datetime.now())

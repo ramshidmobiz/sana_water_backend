@@ -126,7 +126,7 @@ class CustomerDetailsView(View):
 
     def get(self, request, pk, *args, **kwargs):
         # Retrieve user details
-        user_det = Customers.objects.get(customer_id=pk)
+        user_det = Customers.objects.get(pk=pk)
         sales_type = user_det.sales_type
         
         # Retrieve visit schedule data from user details
@@ -204,7 +204,7 @@ class CustomerDetailsView(View):
     def post(self, request, pk, *args, **kwargs):
         print("dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd")
         # Retrieve user details
-        user_det = Customers.objects.get(customer_id=pk)
+        user_det = Customers.objects.get(pk=pk)
 
         # Process product form submission
         product_form = ProductForm(request.POST)
