@@ -1,7 +1,11 @@
-from django.urls import path
-from .views import *
+from django.urls import path,re_path
 from django.conf import settings
 from django.conf.urls.static import static
+
+from .views import *
+from accounts import views
+
+# app_name = 'accounts'
 
 urlpatterns = [
     path('login',user_login, name='login'),
@@ -16,6 +20,7 @@ urlpatterns = [
     path('edit_customer/<str:pk>',edit_customer, name='edit_customer'),
 
     path('visit_days_assign/<str:customer_id>', visit_days_assign, name="visit_days_assign"),
-
+    
+    re_path(r'import-customer/$', views.upload_customer, name='upload_customer'),
 
 ]

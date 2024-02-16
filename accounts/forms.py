@@ -185,3 +185,7 @@ class Day_OfVisit_Form(forms.ModelForm):
         }
     def __init__(self, *args, **kwargs):
         super(Day_OfVisit_Form,self).__init__(*args, **kwargs)
+        
+
+class CustomerFileForm(forms.Form):
+    file = forms.FileField(widget=forms.FileInput(attrs={'class': 'form-control file-upload-info file-upload-default', 'id' : 'input-file-now'}))

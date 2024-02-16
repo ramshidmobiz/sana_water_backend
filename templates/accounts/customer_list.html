@@ -29,7 +29,10 @@
                                 <div class="card-title">
                                     Customers
                                 </div>
-
+                                <div class="ms-auto">
+                                    <a href="{% url 'upload_customer' %}">
+                                    <button type="button" class="btn btn-success btn-wave text-end d-flex me-4 my-auto"><i class="bi bi-plus-circle me-1"></i>Import Customer</button>
+                                </a>
                                 <div class="ms-auto">
                                     <a href="{% url 'customer_create' %}">
                                     <button type="button" class="btn btn-success btn-wave text-end d-flex me-4 my-auto"><i class="bi bi-plus-circle me-1"></i>Create</button>

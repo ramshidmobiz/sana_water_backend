@@ -1,0 +1,45 @@
+[
+    
+    {
+        "model": "master.EmirateMaster",
+        "fields": {
+            "name": "Ajman"
+        }
+    },
+    {
+        "model": "master.EmirateMaster",
+        "fields": {
+            "name": "Abudhabi"
+        }
+    },
+    {
+        "model": "master.EmirateMaster",
+        "fields": {
+            "name": "Fujeriah"
+        }
+    },
+    {
+        "model": "master.EmirateMaster",
+        "fields": {
+            "name": "Sharjah"
+        }
+    },
+    {
+        "model": "master.EmirateMaster",
+        "fields": {
+            "name": "Dubai"
+        }
+    },
+    {
+        "model": "master.EmirateMaster",
+        "fields": {
+            "name": "RAK"
+        }
+    },
+    {
+        "model": "master.EmirateMaster",
+        "fields": {
+            "name": "UAQ"
+        }
+    }
+]

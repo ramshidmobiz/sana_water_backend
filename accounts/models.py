@@ -59,9 +59,10 @@ class CustomUser(AbstractUser):
     
 # Create your models here.
 class Customers(models.Model):
-    customer_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_by = models.CharField(max_length=250, null=True, blank=True)
     created_date = models.DateTimeField(auto_now_add=True, editable=False)
+    customer_id = models.CharField(max_length=250, null=True, blank=True)
     customer_name = models.CharField(max_length=250, null=True, blank=True)
     building_name = models.CharField(max_length=250, null=True, blank=True)
     door_house_no =  models.CharField(max_length=250, null=True, blank=True)
