@@ -3,6 +3,7 @@ import string
 import random
 import openpyxl
 import datetime
+from collections import defaultdict
 
 from django.views import View
 from django.urls import reverse
@@ -16,6 +17,7 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect,HttpResponse
 from django.contrib.auth import authenticate, login, logout
+
 from .forms import *
 from .models import *
 from master.functions import generate_form_errors
@@ -122,7 +124,7 @@ class User_Details(View):
     template_name = 'accounts/user_details.html'
 
     def get(self, request, pk, *args, **kwargs):
-        user_det = CustomUser.objects.get(id=pk)
+        user_det = CustomUser.objects.get(pk=pk)
         context = {'user_det': user_det}
         return render(request, self.template_name, context)  
     
@@ -160,6 +162,7 @@ def create_customer(request):
             form = CustomercreateForm(branch,data = request.POST)
             context = {"form":form}
             if form.is_valid():
+                
                 data = form.save(commit=False)
                 data.created_by = str(request.user)
                 data.created_date = datetime.now()
@@ -167,7 +170,9 @@ def create_customer(request):
                 branch_id=request.user.branch_id.branch_id
                 branch = BranchMaster.objects.get(branch_id=branch_id)  # Adjust the criteria based on your model
                 data.branch_id = branch
+                data.customer_id = generate_customer_id()
                 data.save()
+                
                 Staff_Day_of_Visit.objects.create(customer = data)
                 messages.success(request, 'Customer Created successfully!')
                 return redirect('customers')
@@ -191,7 +196,7 @@ class Customer_Details(View):
 
 def edit_customer(request,pk):
     branch = request.user.branch_id
-    cust_Data = Customers.objects.get(pk = pk)
+    cust_Data = Customers.objects.get(pk=pk)
     form = CustomerEditForm(branch,instance = cust_Data)
     template_name = 'accounts/edit_customer.html'
     context = {"form":form}
@@ -276,10 +281,17 @@ def visit_days_assign(request, customer_id):
 
 # @login_required
 # @role_required(['superadmin'])
-def generate_customer_id(length=6):
-    """Generate a random customer ID."""
-    characters = string.ascii_uppercase + string.digits
-    return ''.join(random.choice(characters) for _ in range(length))
+def generate_auto_id(model):
+    auto_id = 1
+    try:
+        latest_auto_id = model.objects.all().order_by("-created_date")[:1].first()
+        if latest_auto_id:
+            # Extract the numeric part of the auto ID
+            auto_id_str = latest_auto_id.auto_id.split('-')[-1]
+            auto_id = int(auto_id_str) + 1
+    except:
+        pass
+    return f"SW-{auto_id}"
 
 def upload_customer(request):
     if request.method == 'POST':
@@ -287,142 +299,144 @@ def upload_customer(request):
         
         if form.is_valid():
             input_excel = request.FILES['file']
-            try:
-                book = openpyxl.load_workbook(input_excel)
-                sheet = book.active  # Assuming the first sheet is the one you want to read
-                dict_list = []
+            # try:
+            book = openpyxl.load_workbook(input_excel)
+            sheet = book.active  # Assuming the first sheet is the one you want to read
+            dict_list = []
 
-                for row in sheet.iter_rows(min_row=2, values_only=True):  # Start from the second row (assuming headers are in the first row)
-                    data = {
-                        'customer_name': row[0],
-                        'building_name': row[1],
-                        'door_house_no': row[2],
-                        'floor_no': row[3],
-                        'mobile_no': row[4],
-                        'whats_app': row[5],
-                        'email_id': row[6],
-                        'customer_type': row[7],
-                        'sales_type': row[8],
-                        'no_of_bottles_required': row[9],
-                        'emirates': row[10],
-                        'branch': row[11],
-                        'location': row[12],
-                        'route': row[13],
-                        'price': row[14],
-                    }
-                    dict_list.append(data)
-
-                    with transaction.atomic():
-                        for item in dict_list:
-                            name = item['customer_name']
-                            building_name = item['building_name']
-                            door_house_no = item['door_house_no']
-                            floor_no = item['floor_no']
-                            mobile_no = item['mobile_no']
-                            whats_app = item['whats_app']
-                            email_id = item['email_id']
-                            customer_type = item['customer_type']
-                            sales_type = item['sales_type']
-                            no_of_bottles_required = item['no_of_bottles_required']
-                            emirate = item['emirates']
-                            branch = item['branch']
-                            location = item['location']
-                            route = item['route']
-                            price = item['price']
-                            
-                            if not Customers.objects.filter(customer_name=name,door_house_no=door_house_no).exists():
-                            
-                                # Fetch or create BranchMaster
-                                branch_instance = BranchMaster.objects.filter(name=branch).first() or \
-                                                    BranchMaster.objects.create(
-                                                        created_by=request.user.username,
-                                                        created_date=datetime.now(),
-                                                        name=branch,
-                                                    )
-                                
-                                # Fetch or create EmirateMaster
-                                emirate_instance = EmirateMaster.objects.filter(name=emirate).first() or \
-                                                    EmirateMaster.objects.create(
-                                                        created_by=request.user.username,
-                                                        created_date=datetime.now(),
-                                                        name=emirate,
-                                                    )
-                                
-                                # Fetch or create RouteMaster
-                                route_instance = RouteMaster.objects.filter(route_name=route).first() or \
-                                                    RouteMaster.objects.create(
-                                                        created_by=request.user.username,
-                                                        created_date=datetime.now(),
-                                                        route_name=route,
-                                                        branch_id=branch_instance,
-                                                    )
-                                
-                                # Fetch or create LocationMaster
-                                location_instance = LocationMaster.objects.filter(location_name=location).first() or \
-                                                    LocationMaster.objects.create(
-                                                        created_by=request.user.username,
-                                                        created_date=datetime.now(),
-                                                        location_name=location,
-                                                        emirate=emirate_instance,
-                                                        branch_id=branch_instance,
-                                                    )
-                                
-                                # Create User
-                                user_data = CustomUser.objects.create_user(
-                                    username=name,
-                                    password="test123",
-                                    is_active=True,
-                                )
-                                
-                                # Add user to 'customer' group
-                                group = Group.objects.get_or_create(name="customer")[0]
-                                user_data.groups.add(group)
-                                
-                                # Generate customer ID
-                                customer_id = generate_customer_id()
-                                
-                                # Create Customer
-                                customer = Customers.objects.create(
-                                    customer_id=customer_id,
-                                    customer_name=name,
-                                    building_name=building_name,
-                                    door_house_no=door_house_no,
-                                    floor_no=floor_no,
-                                    routes=route_instance,
-                                    location=location_instance,
-                                    emirate=emirate_instance,
-                                    mobile_no=mobile_no,
-                                    whats_app=whats_app,
-                                    email_id=email_id,
-                                    customer_type=customer_type,
-                                    sales_type=sales_type,
-                                    no_of_bottles_required=no_of_bottles_required,
-                                    rate=price,
-                                    branch_id=branch_instance,
-                                )
-                                customer.save()
-
-                                response_data = {
-                                    "status" : "true",
-                                    "title" : "Successfully Uploaded",
-                                    "message" : "Customer Successfully Added.",
-                                    "redirect" : "true",
-                                    "redirect_url" : reverse('customers')
-                                }    
-                            
-            except IntegrityError as e:
-                response_data = {
-                    "status": "false",
-                    "title": "Failed",
-                    "message": str(e),
+            for row in sheet.iter_rows(min_row=2, values_only=True):  # Start from the second row (assuming headers are in the first row)
+                data = {
+                    'customer_name': row[0],
+                    'building_name': row[1],
+                    'door_house_no': row[2],
+                    'floor_no': row[3],
+                    'mobile_no': row[4],
+                    'whats_app': row[5],
+                    'email_id': row[6],
+                    'customer_type': row[7],
+                    'sales_type': row[8],
+                    'no_of_bottles_required': row[9],
+                    'emirates': row[10],
+                    'location': row[11],
+                    'route': row[12],
+                    'price': row[13],
+                    'branch': row[14],
+                    'delivery_day': row[14],
                 }
+                dict_list.append(data)
 
-            except Exception as e:
-                response_data = {
-                    "status": "false",
-                    "title": "Failed",
-                    "message": str(e),
-                }               
+                    # with transaction.atomic():
+                for item in dict_list:
+                    name = item['customer_name']
+                    building_name = item['building_name']
+                    door_house_no = item['door_house_no']
+                    floor_no = item['floor_no']
+                    mobile_no = item['mobile_no']
+                    whats_app = item['whats_app']
+                    email_id = item['email_id']
+                    customer_type = item['customer_type']
+                    sales_type = item['sales_type']
+                    no_of_bottles_required = item['no_of_bottles_required']
+                    emirate = item['emirates']
+                    branch = item['branch']
+                    location = item['location']
+                    route = item['route']
+                    price = item['price']
+                    visit_schedule = item['delivery_day']
+                    
+                    if not Customers.objects.filter(customer_name=name,door_house_no=door_house_no).exists():
+                    
+                        # Fetch or create BranchMaster
+                        branch_instance = BranchMaster.objects.filter(name=branch).first() or \
+                                            BranchMaster.objects.create(
+                                                created_by=request.user.username,
+                                                created_date=datetime.now(),
+                                                name=branch,
+                                            )
+                        
+                        # Fetch or create EmirateMaster
+                        emirate_instance = EmirateMaster.objects.filter(name=emirate).first() or \
+                                            EmirateMaster.objects.create(
+                                                created_by=request.user.username,
+                                                created_date=datetime.now(),
+                                                name=emirate,
+                                            )
+                        
+                        # Fetch or create RouteMaster
+                        route_instance = RouteMaster.objects.filter(route_name=route).first() or \
+                                            RouteMaster.objects.create(
+                                                created_by=request.user.username,
+                                                created_date=datetime.now(),
+                                                route_name=route,
+                                                branch_id=branch_instance,
+                                            )
+                        
+                        # Fetch or create LocationMaster
+                        location_instance = LocationMaster.objects.filter(location_name=location).first() or \
+                                            LocationMaster.objects.create(
+                                                created_by=request.user.username,
+                                                created_date=datetime.now(),
+                                                location_name=location,
+                                                emirate=emirate_instance,
+                                                branch_id=branch_instance,
+                                            )
+                        # Generate customer ID
+                        customer_id = generate_auto_id(Customers)
+                        
+                        # Create User
+                        if not (user_intances:=CustomUser.objects.filter(username=customer_id)).exists():
+                            user_data = CustomUser.objects.create_user(
+                                username=customer_id,
+                                password=customer_id,
+                                is_active=True,
+                            )
+                            # Add user to 'customer' group
+                            group = Group.objects.get_or_create(name="customer")[0]
+                            user_data.groups.add(group)
+                            
+                            # Create Customer
+                            customer = Customers.objects.create(
+                                auto_id=customer_id,
+                                customer_name=name,
+                                building_name=building_name,
+                                door_house_no=door_house_no,
+                                floor_no=floor_no,
+                                routes=route_instance,
+                                location=location_instance,
+                                emirate=emirate_instance,
+                                mobile_no=mobile_no,
+                                whats_app=whats_app,
+                                email_id=email_id,
+                                customer_type=customer_type,
+                                sales_type=sales_type,
+                                no_of_bottles_required=no_of_bottles_required,
+                                rate=price,
+                                branch_id=branch_instance,
+                                visit_schedule=visit_schedule,
+                            )
+                            customer.save()
+
+                        response_data = {
+                            "status" : "true",
+                            "title" : "Successfully Uploaded",
+                            "message" : "Customer Successfully Added.",
+                            "redirect" : "true",
+                            "redirect_url" : reverse('customers')
+                        }    
+                                    
+            # except IntegrityError as e:
+            #     response_data = {
+            #         "status": "false",
+            #         "title": "Failed",
+            #         "message": str(e),
+            #     }
+
+            # except Exception as e:
+            #     response_data = {
+            #         "status": "false",
+            #         "title": "Failed",
+            #         "message": str(e),
+            #     }               
         else:
             form = CustomerFileForm()
             message =generate_form_errors(form , formset=False)

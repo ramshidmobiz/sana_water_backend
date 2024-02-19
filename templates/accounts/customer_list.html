@@ -45,6 +45,7 @@
                                     <thead>
                                         <tr>
                                         <th scope="col">Sl.No</th>
+                                        <th scope="col">Customer ID</th>
                                         <th scope="col">Customer Name</th>
                                         <th scope="col">Route</th>
                                         <th scope="col">Location</th>
@@ -59,6 +60,7 @@
                                         {% for data in user_li %}
                                         <tr>
                                             <td style="text-align:center;">{{forloop.counter}}</td>
+                                            <td style="text-align:center;">{{data.auto_id}}</td>
                                             <td style="text-align:center;">{{data.customer_name}}</td>
                                             <td style="text-align:center;">{{data.routes.route_name}}</td>
                                             <td style="text-align:center;">{{data.location.location_name}}</td>
@@ -68,16 +70,16 @@
                                             <td style="text-align:center;">{{data.visit_schedule}}</td>
                                             <td>
                                                 <div class="g-2">
-                                                    <a href="{% url 'customer_details' data.customer_id %}" aria-label="anchor" class="btn  btn-warning-light btn-sm" data-bs-toggle="tooltip" data-bs-original-title="View">
+                                                    <a href="{% url 'customer_details' data.pk %}" aria-label="anchor" class="btn  btn-warning-light btn-sm" data-bs-toggle="tooltip" data-bs-original-title="View">
                                                         <span class="bi bi-eye fs-14"></span>
                                                     </a>
-                                                    <a href="{% url 'edit_customer' data.customer_id %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Edit">
+                                                    <a href="{% url 'edit_customer' data.pk %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Edit">
                                                         <span class="ri-pencil-line fs-14"></span>
                                                     </a>
-                                                    <a href="{% url 'visit_days_assign' data.customer_id %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Assign Visit Days">
+                                                    <a href="{% url 'visit_days_assign' data.pk %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Assign Visit Days">
                                                         <span class="ri-arrow-right-s-line fs-14"></span>
                                                     </a>
-                                                    <a href="{% url 'customer_custody_item' data.customer_id %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Custody Item">
+                                                    <a href="{% url 'customer_custody_item' data.pk %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Custody Item">
                                                         <span class="bi bi-cart fs-14"></span>
                                                     </a>
                                                     <a href="" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Coupons">
