@@ -321,7 +321,9 @@ def upload_customer(request):
                     'route': row[12],
                     'price': row[13],
                     'branch': row[14],
-                    'delivery_day': row[14],
+                    'delivery_day': row[15],
+                    'customer_id': row[16],
+                    'password': row[17],
                 }
                 dict_list.append(data)
 
@@ -343,6 +345,8 @@ def upload_customer(request):
                     route = item['route']
                     price = item['price']
                     visit_schedule = item['delivery_day']
+                    customer_id = item['customer_id']
+                    password = item['password']
                     
                     if not Customers.objects.filter(customer_name=name,door_house_no=door_house_no).exists():
                     
@@ -380,14 +384,11 @@ def upload_customer(request):
                                                 emirate=emirate_instance,
                                                 branch_id=branch_instance,
                                             )
-                        # Generate customer ID
-                        customer_id = generate_auto_id(Customers)
-                        
                         # Create User
                         if not (user_intances:=CustomUser.objects.filter(username=customer_id)).exists():
                             user_data = CustomUser.objects.create_user(
                                 username=customer_id,
-                                password=customer_id,
+                                password=password,
                                 is_active=True,
                             )
                             # Add user to 'customer' group
