@@ -93,7 +93,7 @@ class Products_List(View):
     @method_decorator(login_required)
     def get(self, request, *args, **kwargs):
         product_li = Product.objects.filter()
-        print(request.user.branch_id.pk)
+        # print(request.user.branch_id.pk)
         # print("product_li",product_li)
         # if  product_li:
         #     p_name=product_li.product_name.product_name
