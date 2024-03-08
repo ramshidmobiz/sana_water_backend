@@ -69,6 +69,14 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group required">
+                                        <label class='control-label'>User Type</label>
+                                        {{ form.user_type }}
+                                        {{ form.user_type.errors }}
+                                        <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group required">
                                         <label class='control-label'>Mobile no</label>
                                         {{ form.phone }}
                                         {{ form.phone.errors }}
