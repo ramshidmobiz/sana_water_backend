@@ -7,10 +7,10 @@ from master.models import *
 class User_Create_Form(forms.ModelForm):
     password2 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
 
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-    #     excluded_user_types = ['Branch User', 'Customer']
-    #     self.fields['user_type'].choices = [(value, label) for value, label in self.fields['user_type'].choices if value not in excluded_user_types]
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        excluded_user_types = ['Branch User', 'Customer']
+        self.fields['user_type'].choices = [(value, label) for value, label in self.fields['user_type'].choices if value not in excluded_user_types]
 
     def clean(self):
         cleaned_data = super().clean()
@@ -58,19 +58,18 @@ class User_Create_Form(forms.ModelForm):
 
 
 class User_Edit_Form(forms.ModelForm):
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-    #     self.fields['visa_issued_by'].queryset = EmirateMaster.objects.filter()
-    #     self.fields['designation_id'].queryset = DesignationMaster.objects.filter()
-    #     self.fields['branch_id'].queryset = BranchMaster.objects.filter()
-    #     self.fields['licence_issued_by'].queryset = EmirateMaster.objects.filter()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['visa_issued_by'].queryset = EmirateMaster.objects.filter()
+        self.fields['designation_id'].queryset = DesignationMaster.objects.filter()
+        self.fields['branch_id'].queryset = BranchMaster.objects.filter()
+        self.fields['licence_issued_by'].queryset = EmirateMaster.objects.filter()
     class Meta:
         model = CustomUser
-        fields = ['first_name','username', 'user_type' ,'branch_id', 'staff_id', 'designation_id','blood_group','permanent_address',"present_address", 'phone','email','labour_card_no','labour_card_expiry','driving_licence_no','driving_licence_expiry','licence_issued_by','visa_issued_by','visa_no','visa_expiry','emirates_id_no','emirates_expiry','health_card_no','health_card_expiry','base_salary','wps_percentage','wps_ref_no','insurance_no','insurance_expiry','insurance_company']
+        fields = ['first_name','username' ,'branch_id', 'staff_id', 'designation_id','blood_group','permanent_address',"present_address", 'phone','email','labour_card_no','labour_card_expiry','driving_licence_no','driving_licence_expiry','licence_issued_by','visa_issued_by','visa_no','visa_expiry','emirates_id_no','emirates_expiry','health_card_no','health_card_expiry','base_salary','wps_percentage','wps_ref_no','insurance_no','insurance_expiry','insurance_company']
         widgets = {
             'first_name':forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
             'username': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'user_type': forms.Select(attrs={'class': 'form-control', 'required': 'true',}),
             'visa_issued_by': forms.Select(attrs={'class': 'form-control', 'required': False}),
             'licence_issued_by': forms.Select(attrs={'class': 'form-control', 'required': False}),
             'branch_id': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
@@ -186,7 +185,3 @@ class Day_OfVisit_Form(forms.ModelForm):
         }
     def __init__(self, *args, **kwargs):
         super(Day_OfVisit_Form,self).__init__(*args, **kwargs)
-        
-
-class CustomerFileForm(forms.Form):
-    file = forms.FileField(widget=forms.FileInput(attrs={'class': 'form-control file-upload-info file-upload-default', 'id' : 'input-file-now'}))

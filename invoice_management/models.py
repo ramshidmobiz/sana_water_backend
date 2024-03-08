@@ -33,6 +33,33 @@ class Invoice(models.Model):
     def __str__(self):
         return f'{self.id}'
     
+    def invoice_items (self):
+        items = InvoiceItems.objects.filter(invoice=self)
+        return items
+    
+    def sub_total(self):
+        total = 0
+        
+        items = InvoiceItems.objects.filter(invoice=self)
+        for item in items:
+            total += item.total_including_vat
+        return total
+    
+    def total_qty(self):
+        total = 0
+        items = InvoiceItems.objects.filter(invoice=self)
+        for item in items:
+            total += item.qty
+        return total
+    
+    def items_total_discount_amount(self):
+        total = 0
+        # Calculate the sub-total for SalesItems
+        items =  InvoiceItems.objects.filter(invoice=self)
+        for item in items:
+            total += item.total_including_vat
+        total = total - self.discount
+        return total
     
 class InvoiceItems(models.Model):
     rate = models.DecimalField(max_digits=10, decimal_places=2)

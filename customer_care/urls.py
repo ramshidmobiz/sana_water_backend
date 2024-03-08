@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import *
+from . views import *
 
 urlpatterns = [
 path('requesttype_list', RequestType_List.as_view(), name='requesttype_list'),

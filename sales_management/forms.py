@@ -62,47 +62,6 @@ class ProductForm(forms.ModelForm):
         # Set default value for coupon_method
         self.fields['coupon_method'].initial = 'manual'
 
-class CustomerCustodyForm(forms.ModelForm):
-    category = forms.ModelChoiceField(
-        queryset=CategoryMaster.objects.all(),
-        label='Category',
-        widget=forms.Select(attrs={'class': 'form-control'})
-    )
-    product_name = forms.ModelChoiceField(
-        queryset=Product.objects.none(), 
-        label='Product',
-        widget=forms.Select(attrs={'class': 'form-control'})
-    )
-    drate = forms.IntegerField(
-        label='Rate',
-        widget=forms.NumberInput(attrs={'class': 'form-control'})
-    )
-    quantity = forms.IntegerField(
-        label='Quantity',
-        widget=forms.NumberInput(attrs={'class': 'form-control'})
-    )
-    serial_number = forms.IntegerField(
-        label='Serial Number', 
-        widget=forms.NumberInput(attrs={'class': 'form-control'})
-    )
-
-    class Meta:
-        model = Product
-        fields = ['category', 'product_name', 'drate', 'quantity', 'serial_number']
-
-    def _init_(self, *args, **kwargs):
-        super()._init_(*args, **kwargs)
-        if 'category' in self.data:
-            try:
-                category_id = int(self.data.get('category'))
-                self.fields['product_name'].queryset = Product.objects.filter(category_id=category_id).order_by('product_name')
-            except (ValueError, TypeError):
-                pass
-        elif self.instance.category_id is not None:
-            self.fields['product_name'].queryset = self.instance.category_id.product_set.order_by('product_name')
-        else:
-            self.fields['product_name'].queryset = Product.objects.none()
-        
 
 
 from django import forms

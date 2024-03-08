@@ -7,18 +7,17 @@ from master.models import CategoryMaster
 from . models import *
 
 class InvoiceForm(forms.ModelForm):
-    customer_id = forms.CharField(widget=forms.TextInput(attrs={'type': 'hidden','name': 'customer_id','id':'customer_id_hfield'}))
     
     class Meta:
         model = Invoice
-        fields = ['net_taxable','vat','amout_total','discount','amout_recieved','customer_id']
+        fields = ['net_taxable','vat','amout_total','discount','amout_recieved']
         
         widgets = {
-            'net_taxable': TextInput(attrs={'class': 'required form-control text-right'}), 
-            'vat': TextInput(attrs={'class': 'required form-control text-right'}), 
-            'amout_total': TextInput(attrs={'class': 'required form-control text-right'}), 
-            'discount': TextInput(attrs={'class': 'required form-control text-right'}), 
-            'amout_recieved': TextInput(attrs={'class': 'required form-control text-right'}), 
+            'net_taxable': TextInput(attrs={'class': 'required form-control text-right', 'style':'text-align: right;'}), 
+            'vat': TextInput(attrs={'class': 'required form-control text-right', 'style':'text-align: right;'}), 
+            'amout_total': TextInput(attrs={'class': 'required form-control text-right', 'style':'text-align: right;'}), 
+            'discount': TextInput(attrs={'class': 'required form-control text-right', 'style':'text-align: right;'}), 
+            'amout_recieved': TextInput(attrs={'class': 'required form-control text-right', 'style':'text-align: right;'}), 
         }
         
     # def __init__(self, *args, **kwargs):

@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import *
-from .forms import  *
+from . forms import  *
 from accounts.models import *
 from master.models import *
 from product.models import *
@@ -10,7 +10,7 @@ import json
 from django.core.serializers import serialize
 from django.views import View
 from datetime import datetime
-from client_management.models import Customer_Custody_Items
+from client_management.models import CustodyCustomItems
 from master.forms import *
 # Create your views here.
 from accounts.models import Customers
@@ -140,7 +140,7 @@ def requestType(request):
 
 def change_of_address(request,pk):
     branch = request.user.branch_id
-    cust_Data = Customers.objects.get(pk = pk)
+    cust_Data = Customers.objects.get(customer_id = pk)
     form = ChangeofaddressForm(branch,instance = cust_Data)
     template_name = 'customer_care/changeofaddress.html'
     context = {"form":form}
@@ -165,7 +165,7 @@ def change_of_address(request,pk):
 
 def default_bottle_qty(request,pk):
     branch = request.user.branch_id
-    cust_Data = Customers.objects.get(pk = pk)
+    cust_Data = Customers.objects.get(customer_id = pk)
     form = DefaultBottleQuantityForm(branch,instance = cust_Data)
     template_name = 'customer_care/default_bottleqty.html'
     context = {"form":form}
@@ -192,7 +192,7 @@ def get_item_quantity(request):
         try:
             customer = request.GET['customer']
             item_name = request.GET['item_name']
-            item_count = Customer_Custody_Items.objects.get(customer=customer,product=item_name)
+            item_count = CustodyCustomItems.objects.get(customer=customer,product=item_name)
             dat = {'item_count': item_count.count,'customer_custody_item':item_count.custody_item_id}
             return JsonResponse(dat)
         except:
@@ -200,9 +200,9 @@ def get_item_quantity(request):
             return JsonResponse(dat)
    
 def custody_pullout(request, pk):
-    cust_data = Customers.objects.get(pk=pk)
-    count = Customer_Custody_Items.objects.get(customer=cust_data).count
-    item_name = Customer_Custody_Items.objects.get(customer=cust_data).product
+    cust_data = Customers.objects.get(customer_id=pk)
+    count = CustodyCustomItems.objects.get(customer=cust_data).count
+    item_name = CustodyCustomItems.objects.get(customer=cust_data).product
 
     template_name = 'customer_care/custodypullout.html'
     context = {"count": count, "item_name": item_name, "cust_data": cust_data}
@@ -245,7 +245,7 @@ class Bottle_List(ListAPIView):
 
     @method_decorator(login_required)
     def get(self, request, pk, *args, **kwargs):
-        id_customer = Customers.objects.get(pk=pk).customer_id
+        id_customer = Customers.objects.get(customer_id=pk).customer_id
         bottle_list_exists = DiffBottlesModel.objects.filter(customer=pk).exists()
         bottle_list=[]
         if bottle_list_exists:
@@ -263,7 +263,7 @@ class Diffbottles_Create(View):
     @method_decorator(login_required)
     def get(self, request, pk, *args, **kwargs):
         try:
-            id_customer = Customers.objects.get(pk=pk).customer_id
+            id_customer = Customers.objects.get(customer_id=pk).customer_id
             context = {'form': self.form_class}
             return render(request, self.template_name, context)
         except Exception as e:
@@ -277,7 +277,7 @@ class Diffbottles_Create(View):
             form = self.form_class(request.POST, request.FILES)
             if form.is_valid():
                 data = form.save(commit=False)
-                id_customer = Customers.objects.get(pk=pk)
+                id_customer = Customers.objects.get(customer_id=pk)
                 data.customer = id_customer
                 data.created_by = str(request.user.id)
                 data.save()
@@ -302,7 +302,7 @@ class Other_List(ListAPIView):
 
     @method_decorator(login_required)
     def get(self, request, pk, *args, **kwargs):
-        id_customer = Customers.objects.get(pk=pk).customer_id
+        id_customer = Customers.objects.get(customer_id=pk).customer_id
         other_list_exists = OtherRequirementModel.objects.filter(customer=pk).exists()
         other_list=[]
         if other_list_exists:
@@ -317,7 +317,7 @@ class Other_Req_Create(View):
     @method_decorator(login_required)
     def get(self, request, pk, *args, **kwargs):        
         try:
-            id_customer = Customers.objects.get(pk=pk).customer_id
+            id_customer = Customers.objects.get(customer_id=pk).customer_id
             #requestype_obj = RequestTypeMaster.objects.exclude(request_name__in = ['Coupons','Others'])
             #print("requestype_obj=====",requestype_obj)
             context = {'form': self.form_class}            
@@ -332,7 +332,7 @@ class Other_Req_Create(View):
             form = self.form_class(request.POST, request.FILES)
             if form.is_valid():
                 data = form.save(commit=False)
-                id_customer = Customers.objects.get(pk=pk)
+                id_customer = Customers.objects.get(customer_id=pk)
                 data.customer = id_customer
                 data.created_by = str(request.user.id)
                 data.save()
@@ -355,13 +355,13 @@ class Custody_Pullout_List(ListAPIView):
 
     @method_decorator(login_required)
     def get(self, request, pk, *args, **kwargs):
-        id_customer = Customers.objects.get(pk=pk).customer_id
+        id_customer = Customers.objects.get(customer_id=pk).customer_id
         custody_pullout_list=[]
-        custody_customer_exists = Customer_Custody_Items.objects.filter(customer=id_customer).exists()
+        custody_customer_exists = CustodyCustomItems.objects.filter(customer=id_customer).exists()
         if custody_customer_exists:
-            # count = Customer_Custody_Items.objects.get(customer=id_customer).count
+            # count = CustodyCustomItems.objects.get(customer=id_customer).count
             # print('count',count)
-            # item_name = Customer_Custody_Items.objects.get(customer=id_customer).product
+            # item_name = CustodyCustomItems.objects.get(customer=id_customer).product
             # print("item_name",item_name)
             custody_pullout_list_exists = CustodyPullOutModel.objects.filter(customer=pk).exists()
             if custody_pullout_list_exists:
@@ -380,7 +380,7 @@ class Custody_Pullout_Create(View):
     @method_decorator(login_required)
     def get(self, request, pk, *args, **kwargs):        
         try:
-            id_customer = Customers.objects.get(pk=pk).customer_id
+            id_customer = Customers.objects.get(customer_id=pk).customer_id
             #requestype_obj = RequestTypeMaster.objects.exclude(request_name__in = ['Coupons','Others'])
             #print("requestype_obj=====",requestype_obj)
             form_instance = self.form_class(id_customer)
@@ -399,7 +399,7 @@ class Custody_Pullout_Create(View):
             if form.is_valid():
                 print("inside form")
                 data = form.save(commit=False)
-                id_customer = Customers.objects.get(pk=pk)
+                id_customer = Customers.objects.get(customer_id=pk)
                 print(id_customer,"<-----id_customer")
                 data.customer = id_customer
                 data.created_by = str(request.user.id)
@@ -424,7 +424,7 @@ class Coupon_Purchse_List(ListAPIView):
 
     @method_decorator(login_required)
     def get(self, request, pk, *args, **kwargs):
-        id_customer = Customers.objects.get(pk=pk).customer_id
+        id_customer = Customers.objects.get(customer_id=pk).customer_id
         coupon_list_exists = CouponPurchaseModel.objects.filter(customer=pk).exists()
         coupon_list=[]
         if coupon_list_exists:
@@ -441,7 +441,7 @@ class Coupon_Purchse_Create(View):
     @method_decorator(login_required)
     def get(self, request, pk, *args, **kwargs):
         try:
-            id_customer = Customers.objects.get(pk=pk).customer_id
+            id_customer = Customers.objects.get(customer_id=pk).customer_id
             context = {'form': self.form_class}
             return render(request, self.template_name, context)
         except Exception as e:
@@ -455,7 +455,7 @@ class Coupon_Purchse_Create(View):
             form = self.form_class(request.POST, request.FILES)
             if form.is_valid():
                 data = form.save(commit=False)
-                id_customer = Customers.objects.get(pk=pk)
+                id_customer = Customers.objects.get(customer_id=pk)
                 data.customer = id_customer
                 data.created_by = str(request.user.id)
                 data.save()

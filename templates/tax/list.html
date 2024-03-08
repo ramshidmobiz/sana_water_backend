@@ -43,7 +43,7 @@
                                     </thead>
                                     <tbody>
                                         {% load el_pagination_tags %}
-                                        {% paginate 1 instances %}
+                                        {% paginate 20 instances %}
                                         {% for instance in instances %}
                                         <tr>
                                             <td class="text-center">{{forloop.counter}}</td>

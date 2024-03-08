@@ -29,7 +29,7 @@
                                     Custody Item 
                                 </div>
                                 <div class="ms-auto">
-                                <a href="{% url 'create_custody_item' %}"><button type="button" class="btn btn-success btn-wave text-end d-flex me-4 my-auto"><i class="bi bi-plus-circle me-1"></i>Create</button>
+                                <a href=""><button type="button" class="btn btn-success btn-wave text-end d-flex me-4 my-auto"><i class="bi bi-plus-circle me-1"></i>Create</button>
                                 </a>
                                 </div>  
                             </div>
@@ -38,12 +38,8 @@
                                 <form method="get" action="">
                                 {{ form.as_p }}
                                 <div class="d-flex align-items-center">
-                                    <button type="submit" class="btn btn-success btn-wave me-2">Filter</button>
                                     <a href="{% url 'competitor_analysis_list' %}" class="text-decoration-none">
-                                      <button type="button" class="btn btn-outline-danger">
-                                        <i class="bi bi-cross-circle me-1"></i>
-                                        Reset
-                                      </button>
+                                     
                                     </a>
                                   </div>
                                 </form>
@@ -58,7 +54,6 @@
                                             <th scope="col">Customer Name</th>
                                             <th scope="col">Custody Item</th>
                                             <th scope="col">Mobile No</th>
-                                            <th scope="col">No Of Custody Items</th>
                                             <th scope="col">Empty Bottles</th>
                                             <th scope="col">Coolers</th>
                                             <th scope="col">DIspenser</th>
@@ -67,20 +62,18 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                    {% for i in customer_list %}
-                                        <tr>
+                                    {% for i in customer_list %} 
+                                      <tr>
                                             <td>{{ forloop.counter }}</td>
                                             <td>{{ i.customer.customer_name }}</td>
                                             <td>{{ i.product.product_name }}</td>
-                                            <td>{{ i.mobile_numbers}}</td>
-                                            <td>{{ i.count }}</td>
+                                            <td>{{ i.customer.mobile_no}}</td>
                                             <td>{{ i.empty_bottles }}</td>
-                                            <td>{{ i.coolers }}</td>
-                                            <td>{{ i.Dispenser }}</td>
-                                            <td><a href="{% url 'add_category_list' i.customer_id %}">Add</td>
-                                            <td><a href="{% url 'pullout_list' i.customer_id %}">Pullout</td>
-                                            <td><a href="{% url 'custody_item_list'%}">Transactions</td>
-                                        </tr>
+                                            <td>{{ i.cooler }}</td>
+                                            <td>{{ i.dispenser }}</td>
+                                            <td><a href="">Add</td>
+                                            <td><a href="">Pullout</td>
+                                        </tr> 
                                     {% endfor %}
                                     </tbody>
                                 </table>

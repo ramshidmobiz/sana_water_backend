@@ -7,7 +7,7 @@ from django.urls import reverse, reverse_lazy
 from django.views import View
 from django.shortcuts import render
 from django.db.models import Q
-from client_management.models import Customer_Custody_Items
+from client_management.models import CustodyCustomItems
 from coupon_management.models import AssignStaffCouponDetails
 from master.models import RouteMaster  # Assuming you have imported RouteMaster
 from accounts.models import Customers
@@ -34,7 +34,7 @@ from django.db.models.functions import Coalesce
 from django.views.generic import ListView
 from django.db.models import Count
 
-from .models import Transaction
+from .models import *
 
 class TransactionHistoryListView(ListView):
     model = Transaction
@@ -126,7 +126,7 @@ class CustomerDetailsView(View):
 
     def get(self, request, pk, *args, **kwargs):
         # Retrieve user details
-        user_det = Customers.objects.get(pk=pk)
+        user_det = Customers.objects.get(customer_id=pk)
         sales_type = user_det.sales_type
         
         # Retrieve visit schedule data from user details
@@ -171,8 +171,8 @@ class CustomerDetailsView(View):
         # Extract the sum of remaining_quantity from the aggregation result
         sum_remaining_quantity_coupons = total_remaining_quantity.get('total_remaining_quantity', 0)
 
-        # Fetch all data from Customer_Custody_Items model related to the user
-        custody_items = Customer_Custody_Items.objects.filter(customer=user_det)
+        # Fetch all data from CustodyCustomItems model related to the user
+        custody_items = CustodyCustomItems.objects.filter(customer=user_det)
 
         # Aggregate sum of coupons, empty bottles, and cash from OutstandingLog
         outstanding_log_aggregates = OutstandingLog.objects.filter(customer=user_det).aggregate(
@@ -204,7 +204,7 @@ class CustomerDetailsView(View):
     def post(self, request, pk, *args, **kwargs):
         print("dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd")
         # Retrieve user details
-        user_det = Customers.objects.get(pk=pk)
+        user_det = Customers.objects.get(customer_id=pk)
 
         # Process product form submission
         product_form = ProductForm(request.POST)
@@ -690,4 +690,194 @@ class CalculateTotaltoCollect(View):
         # products = Product.objects.filter(vat_value=vat_value).values('product_id', 'product_name')
         # print("productsproducts", products)
         return JsonResponse({'products': list(vat_value)})
+
+
+
+# class CouponSaleView(View):
+#     template_name = 'sales_management/coupon_sale.html'
+
+#     def get(self, request, *args, **kwargs):
+#         # Create an instance of the form and populate it with GET data
+#         form = SaleEntryFilterForm(request.GET)
+
+#         # Initialize not_found to False
+#         not_found = False
+
+#         # Check if the form is valid
+#         if form.is_valid():
+#             # Filter the queryset based on the form data
+#             route_filter = form.cleaned_data.get('route_name')
+#             search_query = form.cleaned_data.get('search_query')
+
+#             user_li = Customers.objects.all()
+
+#             if route_filter:
+#                 user_li = user_li.filter(routes__route_name=route_filter)
+
+#             if search_query:
+#                 # Apply search filter on relevant fields of the Customers model
+#                 user_li = user_li.filter(
+#                     Q(customer_name__icontains=search_query) |
+#                     Q(building_name__icontains=search_query) |
+#                     Q(door_house_no__icontains=search_query)
+#                     # Add more fields as needed
+#                 )
+
+#             not_found = not user_li.exists()
+
+#         else:
+#             # If the form is not valid, retrieve all customers
+#             user_li = Customers.objects.all()
+
+#         context = {'user_li': user_li, 'form': form, 'not_found': not_found}
+#         return render(request, self.template_name, context)
+
+
+
+#     def post(self, request, *args, **kwargs):
+        
     
+class CouponSaleView(View):
+    template_name = 'sales_management/coupon_sale.html'
+
+    def get(self, request, *args, **kwargs):
+        # Create an instance of the form and populate it with GET data
+        form = SaleEntryFilterForm(request.GET)
+
+        # Initialize not_found to False
+        not_found = False
+
+        # Check if the form is valid
+        if form.is_valid():
+            # Filter the queryset based on the form data
+            route_filter = form.cleaned_data.get('route_name')
+            search_query = form.cleaned_data.get('search_query')
+
+            user_li = Customers.objects.all()
+
+            if route_filter:
+                user_li = user_li.filter(routes__route_name=route_filter)
+
+            if search_query:
+                user_li = user_li.filter(
+                    Q(customer_name__icontains=search_query) |
+                    Q(building_name__icontains=search_query) |
+                    Q(door_house_no__icontains=search_query)
+                )
+
+            not_found = not user_li.exists()
+
+        else:
+            user_li = CustomerCoupons.objects.filter()
+
+        balance_coupons = user_li
+        print(balance_coupons,'balance_coupons')
+
+        # Get the manual book type last purchased
+        # manual_book_type_last_purchased = user_li.latest('created_date').deposit_type
+
+        context = {'user_li': user_li, 'form': form, 'not_found': not_found}
+        return render(request, self.template_name, context)
+    
+
+class DetailsView(View):
+    template_name = 'sales_management/detail.html'
+
+    def get(self, request, pk, *args, **kwargs):
+        # Retrieve user details
+        user_det = Customers.objects.get(customer_id=pk)
+        sales_type = user_det.sales_type
+        
+        # Retrieve visit schedule data from user details
+        visit_schedule_data = user_det.visit_schedule
+
+        if visit_schedule_data:
+            # Define a dictionary to map week names to numbers
+            week_mapping = {"week1": 1, "week2": 2, "week3": 3, "week4": 4}
+
+            # Initialize an empty list to store the result
+            result = []
+
+            # Loop through each day and its associated weeks
+            for day, weeks in visit_schedule_data.items():
+                for week in weeks:
+                    # Extract week number using the week_mapping dictionary
+                    week_number = week_mapping.get(week)
+                    # Append day, week number, and day name to the result list
+                    result.append((day, week_number))
+
+            # Sort the result by week number
+            # result.sort(key=lambda x: x[1])
+
+            # Prepare data for rendering
+            data_for_rendering = []
+            for slno, (day, week_number) in enumerate(result, start=1):
+                data_for_rendering.append({'slno': slno, 'week': week_number, 'day': day})
+        else:
+            # If visit_schedule_data is None, handle it appropriately
+            data_for_rendering = []
+
+        # Filter AssignStaffCouponDetails based on customer_id
+        assign_staff_coupon_details = AssignStaffCouponDetails.objects.filter(
+            to_customer_id=user_det.customer_id
+        )
+
+        # Join AssignStaffCouponDetails with AssignStaffCoupon and aggregate the sum of remaining_quantity
+        total_remaining_quantity = assign_staff_coupon_details.aggregate(
+            total_remaining_quantity=Sum('staff_coupon_assign__remaining_quantity')
+        )
+
+        # Extract the sum of remaining_quantity from the aggregation result
+        sum_remaining_quantity_coupons = total_remaining_quantity.get('total_remaining_quantity', 0)
+
+        # Fetch all data from CustodyCustomItems model related to the user
+        custody_items = CustodyCustomItems.objects.filter(customer=user_det)
+
+        # Aggregate sum of coupons, empty bottles, and cash from OutstandingLog
+        outstanding_log_aggregates = OutstandingLog.objects.filter(customer=user_det).aggregate(
+            total_coupons=Sum('coupons'),
+            total_empty_bottles=Sum('empty_bottles'),
+            total_cash=Sum('cash')
+        )
+        # Check if all values in outstanding_log_aggregates are None
+        if all(value is None for value in outstanding_log_aggregates.values()):
+            outstanding_log_aggregates = None
+
+        # Prepare the product form
+        product_form = ProductForm()
+
+        # Remove the coupon_method field from the form if sale type is "CASH" or "CREDIT"
+        if sales_type in ["CASH", "CREDIT"]:
+            del product_form.fields['coupon_method']
+        # Add custody_items and aggregated data to the context
+        context = {
+            'user_det': user_det,
+            'visit_schedule_data': data_for_rendering,
+            'custody_items': custody_items,
+            'outstanding_log_aggregates': outstanding_log_aggregates,  # Add aggregated data to the context
+            'product_form': product_form,  # Add the product form to the context
+        }
+
+        return render(request, self.template_name, context)
+
+    def post(self, request, pk, *args, **kwargs):
+        print("dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd")
+        # Retrieve user details
+        user_det = Customers.objects.get(customer_id=pk)
+
+        # Process product form submission
+        product_form = ProductForm(request.POST)
+        if product_form.is_valid():
+            # Save the product form data
+            product = product_form.save(commit=False)
+            product.created_by = request.user.username  # Set the created_by field
+            product.save()
+            return redirect('customer_details', pk=pk)
+        else:
+            # If the form is not valid, re-render the page with the form errors
+            context = {
+                'user_det': user_det,
+                'product_form': product_form,
+                # Add other context data as needed
+            }
+            return render(request, self.template_name, context)

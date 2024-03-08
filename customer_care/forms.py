@@ -106,9 +106,9 @@ class CustodyPullOutForm(forms.ModelForm):
     def __init__(self,customer_id, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['request_type'].queryset = RequestTypeMaster.objects.filter(request_name__in = ['Custody Pull Out'])
-        customer_items = Customer_Custody_Items.objects.filter(customer=customer_id).values_list('product', flat=True)
+        customer_items = CustodyCustomItems.objects.filter(customer=customer_id).values_list('product', flat=True)
         self.fields['item_name'].queryset = Product.objects.filter(product_id__in=customer_items)
-        #self.fields['qty_to_be_taken_out'].queryset = Customer_Custody_Items.objects.filter(customer = customer_id).count
+        #self.fields['qty_to_be_taken_out'].queryset = CustodyCustomItems.objects.filter(customer = customer_id).count
 
     class Meta:
         model = CustodyPullOutModel

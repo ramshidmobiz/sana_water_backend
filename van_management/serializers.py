@@ -19,3 +19,15 @@ class Van_LicenseSerializers(serializers.ModelSerializer):
     class Meta :
         model = Van_License
         fields = '__all__'
+        
+# Expense
+class ExpenseHeadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ExpenseHead
+        fields = '__all__'
+
+class ExpenseSerializer(serializers.ModelSerializer):
+    expense_type_name = serializers.CharField(source='expense_head.name', read_only=True)
+    class Meta:
+        model = Expense
+        fields = '__all__'

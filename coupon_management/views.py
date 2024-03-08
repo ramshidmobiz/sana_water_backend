@@ -313,9 +313,9 @@ class AssignStaffCouponDetailsListView(View):
 #------------------------New Coupon
 def new_coupon(request):
     all_coupon = NewCoupon.objects.all()
-    context = {'all_coupon': all_coupon}
+    coupon_stock_list = CouponStock.objects.all()  # Fetch all CouponStock instances
+    context = {'all_coupon': all_coupon, 'coupon_stock_list': coupon_stock_list}  # Add coupon_stock_list to context
     return render(request, 'coupon_management/index_Newcoupon.html', context)
-
 
 def create_Newcoupon(request):
     if request.method == 'POST':
@@ -324,6 +324,11 @@ def create_Newcoupon(request):
             data = form.save(commit=False)
             coupon_type_id = request.POST.get('coupon_type')
             book_num = request.POST.get('book_num')
+            # Check if the coupon book already exists
+            if NewCoupon.objects.filter(book_num=book_num,coupon_type=coupon_type_id).exists():
+                print("Exists")
+                messages.error(request, f'Coupon book {book_num} already exists.')
+                return redirect('new_coupon')
             selected_coupon_type = get_object_or_404(CouponType, coupon_type_id=coupon_type_id)
 
             data.coupon_type = selected_coupon_type
@@ -341,17 +346,33 @@ def create_Newcoupon(request):
             # Generate leaflets for the coupon
             leaflets = []
             no_of_leaflets = int(selected_coupon_type.no_of_leaflets)
+            print("no_of_leaflets",no_of_leaflets)
             for leaflet_num in range(1, no_of_leaflets + 1):
-                leaflet = CouponLeaflet(coupon=data, leaflet_number=str(leaflet_num))
+                if leaflet_num < 10:  # If leaflet number is less than 10, add a leading '0'
+                    leaflet_name = f"{book_num}0{leaflet_num}"
+                else:
+                    leaflet_name = f"{book_num}{leaflet_num}"  # Otherwise, use leaflet_num directly
+                print("leaflet_name", leaflet_name)
+
+                leaflet = CouponLeaflet(coupon=data, leaflet_number=str(leaflet_num),leaflet_name=leaflet_name)
+                print("leaflet",leaflet)
                 leaflet.save()
                 leaflets.append({'leaflet_number': leaflet.leaflet_number})
+            # Create CouponStock instance
+            coupon_stock = CouponStock.objects.create(couponbook=data, coupon_stock='company', created_by=str(request.user.id))
+            # print("coupon_stock",coupon_stock)
 
             response_data = {
                 'success': True,
                 'book_num': data.book_num,
                 'leaflets': leaflets
             }
+
+
+            
+
             return JsonResponse(response_data)
+        
         else:
             response_data = {'success': False, 'message': 'Invalid form data. Please check the input.'}
             return JsonResponse(response_data, status=400)
@@ -367,11 +388,13 @@ def generate_leaflets(request, coupon_id):
     no_of_leaflets = int(coupon.coupon_type.no_of_leaflets)
     for leaflet_num in range(1, no_of_leaflets + 1):
         leaflet = CouponLeaflet(coupon=coupon, leaflet_number=str(leaflet_num))
+        print("leaflet",leaflet)
         leaflets.append(leaflet)
         leaflet.save()
 
     context = {'coupon': coupon, 'leaflets': leaflets}
     return render(request, 'coupon_management/create_Newcoupon.html', context)
+
 def get_leaflet_serial_numbers(request):
     if request.method == 'GET':
         coupon_type_id = request.GET.get('coupon_type')
@@ -380,7 +403,9 @@ def get_leaflet_serial_numbers(request):
         # Fetch leaflets based on the provided coupon type
         try:
             leaflets = CouponLeaflet.objects.filter(coupon__coupon_type_id=coupon_type_id)
+            print("leaflets",leaflets)
             leaflet_data = [{'leaflet_number': leaflet.leaflet_number, 'is_used': leaflet.used} for leaflet in leaflets]
+            print("leaflet_data",leaflet_data)
             return JsonResponse(leaflet_data, safe=False)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
@@ -403,6 +428,7 @@ def save_coupon_data(request):
             return JsonResponse({'error': 'Invalid form data'}, status=400)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
+
 def view_Newcoupon(request, coupon_id):
     view_coupon = get_object_or_404(NewCoupon, coupon_id=coupon_id)
     return render(request, 'coupon_management/view_Newcoupon.html', {'view_coupon': view_coupon})

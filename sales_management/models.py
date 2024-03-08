@@ -1,4 +1,8 @@
 from django.db import models
+from django.db import models
+from accounts.models import Customers, CustomUser
+from master.models import RouteMaster
+from coupon_management.models  import Coupon, CouponType
 
 class OrderNumberField(models.CharField):
     def __init__(self, *args, **kwargs):
@@ -104,3 +108,35 @@ class Transaction(models.Model):
     order_number = OrderNumberField()
 
 
+
+
+class CustomerCoupons(models.Model):
+    TRANSACTION_TYPE = [
+        ('CREDIT', 'CREDIT'),
+        ('DEBIT', 'DEBIT'),
+    ]
+    customer = models.ForeignKey(Customers, on_delete=models.CASCADE)
+    routes = models.ForeignKey(RouteMaster, on_delete=models.SET_NULL, null=True, blank=True)
+    salesman = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
+    transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPE)
+    transaction_id = models.CharField(max_length=20)
+    transaction_date = models.DateTimeField(null=True, blank=True)
+    coupon_method = models.ForeignKey(Coupon, on_delete=models.SET_NULL, null=True, blank=True)
+    coupon_type = models.ForeignKey(CouponType, on_delete=models.SET_NULL, null=True, blank=True)
+    balance_coupons = models.IntegerField(default=0)
+    class Meta:
+        ordering = ('-id',)
+
+    def __str__(self):
+        return self.transaction_id
+    
+
+class Transactionn(models.Model):
+    transaction_id = models.CharField(max_length=20)
+    transaction_date = models.DateTimeField(null=True, blank=True)
+    transaction_type = models.ForeignKey(CustomerCoupons, on_delete=models.CASCADE)
+    no_of_qty = models.IntegerField(null=True, blank=True)
+    customer = models.ForeignKey(Customers, on_delete=models.CASCADE)
+    coupons = models.ForeignKey(Coupon, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    

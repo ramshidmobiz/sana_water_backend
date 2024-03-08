@@ -1,15 +1,18 @@
-from django.shortcuts import render
-from datetime import datetime, date, time
-from django.contrib.auth.decorators import login_required
-import datetime
 import uuid
+import datetime
 from datetime import datetime, date, time
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from master.functions import generate_serializer_errors
 from rest_framework.serializers import Serializer
 from rest_framework.utils import serializer_helpers
 from accounts.models import *
 from coupon_management.models import *
 from django.db.models import Q
+from django.http import Http404
+from django.db import transaction
+from django.urls import reverse
 
 #from .models import *
 from django.utils import timezone
@@ -72,6 +75,7 @@ from rest_framework.exceptions import (
 logger=logging.getLogger(__name__)
 
 from datetime import timedelta
+from django.db.models import Sum
 
 
 
@@ -646,7 +650,7 @@ def find_customers(request, def_date, route_id):
         date = datetime.strptime(date_str, '%Y-%m-%d')
         day_of_week = date.strftime('%A')
         week_num = (date.day - 1) // 7 + 1
-        week_number = f'week{week_num}'
+        week_number = f'Week{week_num}'
     route = RouteMaster.objects.get(route_id=route_id)
 
     todays_customers = []
@@ -658,14 +662,12 @@ def find_customers(request, def_date, route_id):
             if customer.building_name not in buildings:
                 buildings.append(customer.building_name)
 
-    
     # Customers on vacation
     date = datetime.strptime(def_date, '%Y-%m-%d').date()
     for vacation in Vacation.objects.all():
         if vacation.start_date <= date <= vacation.end_date:
             if vacation.customer in todays_customers:
                 todays_customers.remove(vacation.customer)
-    
 
     # Emergency customer
     special_customers = DiffBottlesModel.objects.filter(delivery_date = date)
@@ -681,51 +683,87 @@ def find_customers(request, def_date, route_id):
                     buildings.append(client.customer.building_name)
 
     
+    if not len(buildings) == 0:
+        building_count = {}
 
-    building_count = {}
-    for building in buildings:
-        for customer in todays_customers:
-            if customer.building_name == building:
-                if building in building_count:
-                    building_count[building] += customer.no_of_bottles_required
-                else:
-                    building_count[building] = customer.no_of_bottles_required
-    sorted_building_count = dict(sorted(building_count.items(), key=lambda item: item[1]))
+        for building in buildings:
+            for customer in todays_customers:
+                if customer.building_name == building:
+                    if building in building_count:
+                        building_count[building] += customer.no_of_bottles_required
+                    else:
+                        building_count[building] = customer.no_of_bottles_required
 
-    trips = {}
-    trip_count = 1
-    current_trip_bottle_count = 0
-    trip_buildings = []
 
-    for building, bottle_count in sorted_building_count.items():
-        if current_trip_bottle_count + bottle_count > 200:
-            trip_buildings = [building]
-            trips[f"Trip{trip_count+1}"] = trip_buildings
-            current_trip_bottle_count = bottle_count
-        else:
-            trip_buildings.append(building)
-            trips[f"Trip{trip_count}"] = trip_buildings
-            current_trip_bottle_count += bottle_count
+        building_gps = []
+
+        for building, bottle_count in building_count.items():
+        # Fetch GPS longitude and latitude for each building
+            c = Customers.objects.filter(building_name=building, routes=route).first()
+            gps_longitude = c.gps_longitude
+            gps_latitude = c.gps_latitude
+        # Append tuple of building name and its GPS coordinates
+            building_gps.append((building, gps_longitude, gps_latitude, bottle_count))
+
+            # Sort buildings based on GPS longitude and latitude
+        sorted_building_gps = sorted(building_gps, key=lambda x: (x[1], x[2]))
+        sorted_buildings = [item[0] for item in sorted_building_gps]
+        sorted_building_count = dict(sorted(building_count.items(), key=lambda item: item[1]))
+
+        trips = {}
+        trip_count = 1
+        current_trip_bottle_count = 0
+        trip_buildings = []
         
-    # List to store trip-wise customer details
-    trip_customers = []
-    for trip in trips:
-        for customer in todays_customers:
-            if customer.building_name in trips[trip]:
-                trip_customer = {
-                    "customer_name" : customer.customer_name,
-                    "trip":trip,
-                    "building":customer.building_name,
-                    "route" : customer.routes.route_name,
-                    "no_of_bottles": customer.no_of_bottles_required,
-                    "location" : customer.location.location_name,
-                }
-                if customer in emergency_customers:
-                    trip_customer['type'] = 'Emergency'
-                else:
-                    trip_customer['type'] = 'Default'
-                trip_customers.append(trip_customer)
-    return trip_customers
+        # for building, bottle_count in sorted_buildings.items():
+        # for building, bottle_count in sorted_building_count.items():
+        for building in sorted_buildings:
+          
+            for building_data in sorted_building_gps:
+                if building_data[0]==building:
+                    building = building_data[0]
+                    bottle_count = building_data[3]
+                    if current_trip_bottle_count + bottle_count > 200:
+                        trip_buildings = [building]
+                        trips[f"Trip{trip_count+1}"] = trip_buildings
+                        current_trip_bottle_count = bottle_count
+                    else:
+                        trip_buildings.append(building)
+                        trips[f"Trip{trip_count}"] = trip_buildings
+                        current_trip_bottle_count += bottle_count
+            
+        # List to store trip-wise customer details
+        trip_customers = []
+        for trip in trips:
+            for building in trips[trip]:
+                for customer in todays_customers:
+                    if customer.building_name ==building:
+                        trip_customer = {
+                            "customer_name" : customer.customer_name,
+                            "customer_id" : customer.customer_id,
+                            "trip":trip,
+                            "building":customer.building_name,
+                            "route" : customer.routes.route_name,
+                            "no_of_bottles": customer.no_of_bottles_required,
+                            "location" : customer.location.location_name,
+                            "location_id" : customer.location.location_id,
+                            "gps_latitude": customer.gps_latitude,
+                            "gps_longitude": customer.gps_longitude,
+                            "building": customer.building_name,
+                            "door_house_no": customer.door_house_no,
+                            "floor_no": customer.floor_no,
+                            "customer_type": customer.customer_type,
+                            "sales type" : customer.sales_type,
+                            'mobile_no': customer.mobile_no,
+                            'whats_app': customer.whats_app,
+                            'email_id': customer.email_id,
+                        }
+                        if customer in emergency_customers:
+                            trip_customer['type'] = 'Emergency'
+                        else:
+                            trip_customer['type'] = 'Default'
+                        trip_customers.append(trip_customer)
+        return trip_customers
 
 
 class ScheduleView(APIView):
@@ -774,7 +812,77 @@ class ScheduleByRoute(APIView):
             'todays_customers': customers,
         }, status=status.HTTP_200_OK)
 
+# Expense
+    
+class ExpenseHeadListAPI(APIView):
+    def get(self, request):
+        expense_heads = ExpenseHead.objects.all()
+        serializer = ExpenseHeadSerializer(expense_heads, many=True)
+        return Response(serializer.data)
+    
+    def post(self, request):
+        serializer = ExpenseHeadSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class ExpenseHeadDetailAPI(APIView):
+    def get_object(self, pk):
+        try:
+            return ExpenseHead.objects.get(pk=pk)
+        except ExpenseHead.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk):
+        expense_head = self.get_object(pk)
+        serializer = ExpenseHeadSerializer(expense_head)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        expense_head = self.get_object(pk)
+        serializer = ExpenseHeadSerializer(expense_head, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        expense_head = self.get_object(pk)
+        expense_head.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+class ExpenseListAPI(APIView):
+    def get(self, request):
+        expenses = Expense.objects.all()
+        serializer = ExpenseSerializer(expenses, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = ExpenseSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ExpenseDetailAPI(APIView):
+    def get(self, request, expense_id):
+        expense = Expense.objects.get(expense_id = expense_id)
+        serializer = ExpenseSerializer(expense)
+        return Response(serializer.data)
+
+    def put(self, request, expense_id):
+        expense = Expense.objects.get(expense_id = expense_id)
+        serializer = ExpenseSerializer(expense, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, expense_id):
+        expense = Expense.objects.get(expense_id = expense_id)
+        expense.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 
@@ -787,7 +895,7 @@ class UserSignUpView(APIView):
     serializer_class=CustomUserSerializers
     def get(self, request,id=None):
         if id :
-            queryset=Customers.objects.get(pk=id)
+            queryset=Customers.objects.get(customer_id=id)
             serializer=CustomersSerializers(queryset)
             return Response(serializer.data)
         queryset = CustomUser.objects.all()
@@ -824,7 +932,7 @@ class Customer_API(APIView):
     def get(self,request,id=None):
         try:
             if id :
-                queryset=Customers.objects.get(pk=id)
+                queryset=Customers.objects.get(customer_id=id)
                 serializer=CustomersSerializers(queryset)
                 return Response(serializer.data)
             queryset= Customers.objects.all()
@@ -862,7 +970,7 @@ class Customer_API(APIView):
 
     def put(self, request, id):
         try:
-            product = Customers.objects.get(pk=id)
+            product = Customers.objects.get(customer_id=id)
             serializer = CustomersSerializers(product, data=request.data)
             if serializer.is_valid():
                 serializer.save(modified_by=request.user.id,modified_date = datetime.now())
@@ -877,7 +985,7 @@ class Customer_Custody_Item_API(APIView):
     serializer_class = CustomerCustodyItemSerializers
     def get(self,request):
         customer = request.data['customer_id']
-        custodyitems = Customer_Custody_Items.objects.filter(customer=customer).all()
+        custodyitems = CustodyCustomItems.objects.filter(customer=customer).all()
         cus_list=list(custodyitems)
         customerser=CustomerCustodyItemSerializers(cus_list,many=True).data
         return JsonResponse({'customerser':customerser})
@@ -1215,11 +1323,13 @@ class Create_Customer(APIView):
             user=CustomUser.objects.get(username=username)
             print(request.data,"<--request.data")
             serializer=Create_Customers_Serializers(data=request.data)
+            
             if serializer.is_valid():
                 serializer.save(created_by=user.id,branch_id=user.branch_id)
                 return Response({'status':True,'message':'Customer Succesfully Created'},status=status.HTTP_201_CREATED)
             else :
                 return Response({'status':False,'message':serializer.errors},status=status.HTTP_400_BAD_REQUEST)
+        
         except Exception as e:
             print(e)
             return Response({'status': False, 'message': 'Something went wrong!'})
@@ -1227,7 +1337,7 @@ class Create_Customer(APIView):
     def get(self,request,id=None):
         try:
             if id :
-                queryset = Customers.objects.get(pk=id)
+                queryset = Customers.objects.get(customer_id=id)
                 serializer = Create_Customers_Serializers(queryset)
                 return Response(serializer.data)
             queryset = Customers.objects.all()
@@ -1239,7 +1349,7 @@ class Create_Customer(APIView):
 
     def put(self, request, id):
         try:
-            customers = Customers.objects.get(pk=id)
+            customers = Customers.objects.get(customer_id=id)
             serializer = Create_Customers_Serializers(customers, data=request.data)
             if serializer.is_valid():
                 serializer.save(modified_by=request.user.id,branch_id=request.user.branch_id,modified_date = datetime.now())
@@ -1261,7 +1371,7 @@ class Get_Items_API(APIView):
             #customer = request.data['id']
             customer_exists = Customers.objects.filter(customer_id=id).exists()
             if customer_exists:
-                customer_data = Customers.objects.get(pk=id)
+                customer_data = Customers.objects.get(customer_id=id)
                 print(customer_data.branch_id)
                 branch_id = customer_data.branch_id.branch_id
                 branch = BranchMaster.objects.get(branch_id=branch_id)
@@ -1318,8 +1428,8 @@ class Add_Customer_Custody_Item_API(APIView):
             customer_exists = Customers.objects.filter(customer_id=id).exists()
             print("customer_exists")
             if customer_exists:
-                customer_exists = Customers.objects.get(pk=id)
-                custody_list = Customer_Custody_Items.objects.filter(customer=customer_exists.customer_id)
+                customer_exists = Customers.objects.get(customer_id=id)
+                custody_list = CustodyCustomItems.objects.filter(customer=customer_exists.customer_id)
                 if custody_list:
                     serializer = CustodyItemSerializers(custody_list, many=True)
                     print(serializer.data)
@@ -1336,7 +1446,7 @@ class Add_Customer_Custody_Item_API(APIView):
     def put(self, request, *args, **kwargs):
         try:
             data_list = request.data.get('data_list', [])
-            objects_to_update = Customer_Custody_Items.objects.filter(pk__in=[item['id'] for item in data_list])
+            objects_to_update = CustodyCustomItems.objects.filter(pk__in=[item['id'] for item in data_list])
 
             for data_item in data_list:
                 obj = objects_to_update.get(pk=data_item['id'])
@@ -1373,7 +1483,7 @@ class Add_No_Coupons(APIView):
         try:
             customer_exists = Customers.objects.filter(customer_id=id).exists()
             if customer_exists:
-                customer_exists = Customers.objects.get(pk=id)
+                customer_exists = Customers.objects.get(customer_id=id)
                 custody_list = Customer_Inhand_Coupons.objects.filter(customer=customer_exists.customer_id)
                 if custody_list:
                     serializer = GetCustomerInhandCouponsSerializers(custody_list, many=True)
@@ -1399,13 +1509,37 @@ class Add_No_Coupons(APIView):
                 return Response({'status': False,'message':serializer.errors},status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             print(e)
-            return Response({'status': False, 'message': 'Something went wrong!'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)   
+            return Response({'status': False, 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)   
+
+from collections import defaultdict
+
+@api_view(['GET'])
+def product_items(request):
+    if (instances:=ProdutItemMaster.objects.all()).exists():
+        serializer = ProdutItemMasterSerializer(instances, many=True, context={"request": request})
+
+        status_code = status.HTTP_200_OK  
+        response_data = {
+            "status": status_code,
+            "StatusCode": 6000,
+            "data": serializer.data,
+        }
+    else:
+        status_code = status.HTTP_400_BAD_REQUEST 
+        response_data = {
+            "status": status_code,
+            "StatusCode": 6001,
+            "message": "No data",
+        }
+
+    return Response(response_data, status_code)
 
 class Staff_New_Order(APIView):
-    # authentication_classes = [BasicAuthentication]
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
     staff_order_serializer = StaffOrderSerializers
     staff_order_details_serializer = StaffOrderDetailsSerializers
+    
     def post(self, request, *args, **kwargs):
         try:
             data_list = request.data.get('data_list', [])
@@ -1415,28 +1549,46 @@ class Staff_New_Order(APIView):
             dty = date.today().year
             dty = str(dty)[2:]
             num = str(uid) + str(dtm) + str(dty)
-            print(num,"<===num")
-            request.data["order_num"]=num
-            print(request.data,"<===request.data")
-            created_by = request.data["id"]
-            print(created_by,"created_by")
+            request.data["order_num"] = num
+            
             serializer_1 = self.staff_order_serializer(data=request.data)
             if serializer_1.is_valid(raise_exception=True):
-                data=serializer_1.save(created_by=created_by)
-                staff_order = data.staff_order_id
-                for datas in data_list:
-                    datas["staff_order_id"] = staff_order
-                serializer_2 = self.staff_order_details_serializer(data=data_list, many=True)
+                order_data = serializer_1.save(
+                    created_by=request.user.id,
+                    order_number=num
+                )
+                staff_order = order_data.staff_order_id
+                
+                # Aggregate products by ID
+                product_dict = defaultdict(int)
+                for data in data_list:
+                    product_id = data.get("product_id")
+                    count = int(data.get("count", 0))
+                    product_dict[product_id] += count
+                
+                # Create order details for each product
+                order_details_data = []
+                for product_id, count in product_dict.items():
+                    order_details_data.append({
+                        "created_by": request.user.id,
+                        "staff_order_id": staff_order,
+                        "product_id": product_id,
+                        "count": count
+                    })
+                
+                serializer_2 = self.staff_order_details_serializer(data=order_details_data, many=True)
+                
                 if serializer_2.is_valid(raise_exception=True):
-                    data=serializer_2.save(created_by=created_by)
-                    return Response({'status': True,'message':'Order Placed Succesfully'},status=status.HTTP_201_CREATED)
+                    serializer_2.save()
+                    return Response({'status': True, 'message': 'Order Placed Successfully'}, status=status.HTTP_201_CREATED)
                 else:
-                    return Response({'status':False,'message':serializer_2.errors},status=status.HTTP_400_BAD_REQUEST)
+                    return Response({'status': False, 'message': serializer_2.errors}, status=status.HTTP_400_BAD_REQUEST)
             else:
-                return Response({'status':False,'message':serializer_1.errors},status=status.HTTP_400_BAD_REQUEST)
+                return Response({'status': False, 'message': serializer_1.errors}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            print(e)
-            return Response({'status': False, 'message': 'Something went wrong!'})
+            return Response({'status': False, 'message': str(e)})
+
+
         
 class Customer_Create(APIView):
     serializer_class = CustomersSerializers
@@ -1448,12 +1600,21 @@ class Customer_Create(APIView):
             password=request.data["password"]
             print('password',password)
             hashed_password=make_password(password)
+            
             if Customers.objects.filter(mobile_no=request.data["mobile_no"]).exists():
                 return Response({'status':True,'message':'Customer with this mobile number already exist !! Try another number'},status=status.HTTP_201_CREATED)
-            customer_data=CustomUser.objects.create(password=hashed_password,username=username,first_name=request.data['customer_name'],email=request.data['email_id'],user_type='Customer')
+            
+            customer_data=CustomUser.objects.create(
+                password=hashed_password,
+                username=username,
+                first_name=request.data['customer_name'],
+                email=request.data['email_id'],
+                user_type='Customer'
+                )
             request.data["user_id"]=customer_data.id
             request.data["created_by"]=str(request.data["customer_name"])
             serializer=CustomersSerializers(data=request.data)
+            
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
                 return Response({'status':True, 'data':request.data, 'message':'Customer Succesfully Created'},status=status.HTTP_201_CREATED)
@@ -1475,7 +1636,7 @@ class CustomerDetails(APIView):
     def get(self,request,id=None):
         try:
             if id :
-                queryset = Customers.objects.get(pk=id)
+                queryset = Customers.objects.get(customer_id=id)
                 serializer = CustomersSerializers(queryset)
                 return Response(serializer.data)
             queryset = Customers.objects.all()
@@ -1487,7 +1648,7 @@ class CustomerDetails(APIView):
 
     def put(self, request, id):
         try:
-            customers = Customers.objects.get(pk=id)
+            customers = Customers.objects.get(customer_id=id)
             serializer = CustomersSerializers(customers, data=request.data)
             if serializer.is_valid():
                 serializer.save(modified_by=request.user.id,modified_date = datetime.now())
@@ -1597,50 +1758,82 @@ class VacationDeleteAPI(APIView):
 
 
 class ScheduleView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request, date_str):
         if date_str:
             date = datetime.strptime(date_str, '%Y-%m-%d')
         else:
             return Response({'error': 'Date parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-        routes = RouteMaster.objects.all()
-        route_trip_details = []
+        # print(staff_id)
+        
+        staff = CustomUser.objects.get(id=request.user.id)
+        if staff.user_type not in ['Driver', 'Salesman', 'Supervisor', 'Manager']:
+            return Response({'error': 'Invalid user type'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if staff.user_type == "Driver":
+            van = Van.objects.filter(driver = staff)
+        elif staff.user_type == "Salesman":
+            van = Van.objects.filter(salesman = staff)
+            
+        routes=[]
+        for v in van:
+            van_routes = Van_Routes.objects.filter(van=v)
+            for v_r in van_routes:
+                if v_r.routes not in routes:
+                    routes.append(v_r.routes)
+                    
+        # routes = RouteMaster.objects.all()
+        route_details = []
         for route in routes:
-            todays_route_wise_customers = find_customers(request, date_str, route.route_id)
-            if todays_route_wise_customers:
-                trips = set(customer['trip'] for customer in todays_route_wise_customers)
-                for trip in trips:
-                    trip_customers = [customer['customer_name'] for customer in todays_route_wise_customers if customer['trip'] == trip]
-                    route_trip_details.append({
-                        'route_id': route.route_id,
-                        'route_name': route.route_name,
-                        'trip': trip,
-                        'customers': trip_customers,
-                    })
-            else:
-                route_trip_details.append({
-                    'route_id': route.route_id,
-                    'route_name': route.route_name,
-                    'trip': 'No trip',  # Indicate no trip
-                    'customers': []  # Indicate no customers
+            trip_count = 0
+            customer_count = 0
+            bottle_count=0
+            todays_customers = find_customers(request, date_str, route.route_id)
+            trips=[]
+            for customer in todays_customers:
+                customer_count+=1
+                bottle_count+=customer['no_of_bottles']
+                if customer['trip'] not in trips:
+                    trips.append(customer['trip'])
+            if bottle_count > 0:
+                route_details.append({
+                    'route_name':route.route_name,
+                    'route_id':route.route_id,
+                    'no_of_customers':customer_count,
+                    'no_of_bottles':bottle_count,
+                    'no_of_trips':len(trips),
+                    'trips': trips
                 })
-        return Response({'def_date': date_str, 'details': route_trip_details}, status=status.HTTP_200_OK)
+        return Response({'def_date': date_str,'staff': staff.first_name, 'details': route_details}, status=status.HTTP_200_OK)
 
 
 class ScheduleByRoute(APIView):
+    
     def get(self, request, date_str, route_id, trip):
         route = RouteMaster.objects.get(route_id=route_id)
+        print(route)
         todays_customers = find_customers(request, date_str, route_id)
-        customers = [customer for customer in todays_customers if customer['trip'] == trip]
-        return Response({
-            'def_date': date_str,
-            'route': {
-                'route_id': route.route_id,
-                'route_name': route.route_name,
-                'trip' : trip
-            },
-            'todays_customers': customers,
-        }, status=status.HTTP_200_OK)
+        
+        if todays_customers:
+            customers = [customer for customer in todays_customers if customer['trip'] == trip.capitalize()]
+            print(customers)
+            
+            totale_bottle=0
+            for customer in customers:
+                totale_bottle+=customer['no_of_bottles']
+            return Response({
+                'def_date': date_str,
+                'totale_bottle':totale_bottle,
+                'route': {
+                    'route_id': route.route_id,
+                    'route_name': route.route_name,
+                    'trip' : trip
+                },
+                'todays_customers': customers,
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'No customers found for today'}, status=status.HTTP_404_NOT_FOUND)
 
 class Get_Category_API(APIView):
     def get(self, request):
@@ -1677,137 +1870,472 @@ class Myclient_API(APIView):
             print(e)
             return Response({'status': False, 'message': 'Something went wrong!'})
 
-
-
-# class CustomerCustody_API(APIView):
-#     authentication_classes = [BasicAuthentication]
-#     permission_classes = [IsAuthenticated]
-#     customer_custody_item = CustomerCustodyItemSerializers
-#     get_custody_item = CustodyItemSerializers
-
-    # def post(self,request, *args, **kwargs):
-    #     try:
-    #         username = request.headers['username']
-    #         print("username")
-    #         user = CustomUser.objects.get(username=username)
-    #         data_list = request.data.get('data_list', [])
-    #         serializer = CustomerCustodyItemSerializer(data=data_list, many=True)
-    #         if serializer.is_valid():
-    #             serializer.save(created_by=user.id)
-    #             return Response({'status': True,'message':'Customer Custody Item Succesfully Created'},status=status.HTTP_201_CREATED)
-    #         else :
-    #             return Response({'status': False,'message':serializer.errors},status=status.HTTP_400_BAD_REQUEST)
-
-    #     except Exception as e:
-    #         print(e)
-    #         return Response({'status': False, 'message': 'Something went wrong!'})
-
-
-    #         class Add_Customer_Custody_Item_API(APIView):
-    # def post(self, request, *args, **kwargs):
-    #     try:
-    #         # Get the data from the request
-    #         category = request.data.get['category']
-    #         product = request.data.get['product']
-    #         serial_no = request.data.get['serial_no']
-    #         quantity = request.data.get['quantity']
-
-    #         # Create a new customer custody item
-    #         customer_custody_item = Customer_Custody_Items.objects.create(
-    #             category=category,
-    #             product=product,
-    #             serial_no=serial_no,
-    #             quantity=quantity
-    #         )
-
-    #         # Serialize the customer custody item
-    #         serializer = CustomerCustodyItemSerializer(customer_custody_item)
-
-    #         # Return the serialized data
-    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    #     except Exception as e:
-    #         # If there's an error, return a 400 Bad Request response
-    #         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-
-from client_management.models import Customer_Custody_Items
-from .serializers import CustomerCustodyItemSerializer
-
-
-
 class GetCustodyItem_API(APIView):
-    # authentication_classes = [BasicAuthentication]
-    # permission_classes = [IsAuthenticated]
-    serializer_class = CustomerCustodyItemSerializer
-    def get(self, request, *args, **kwargs):
-        try:
-            custody_items=Customer_Custody_Items.objects.all()
-            serializer=self.serializer_class(custody_items,many=True)
-            return Response({'status': True, 'data':serializer.data, 'message': 'custody items lis passed!'})            
-        except Exception as e:
-            return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'})
-
-
-
-class GetCategoryAPI(APIView):
-    # authentication_classes = [BasicAuthentication]
-    # permission_classes = [IsAuthenticated]
-    serializer_class = SelectCategorySerializer
-    def get(self, request, *args, **kwargs):
-        try:
-            category=CategoryMaster.objects.all()
-            print(category,'category')
-            serializer=self.serializer_class(category,many=True)
-            return Response({'status': True, 'data':serializer.data, 'message': 'category items lis passed!'})            
-        except Exception as e:
-            return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'})
-        
-class GetProductsAPI(APIView):
-    # authentication_classes = [BasicAuthentication]
-    # permission_classes = [IsAuthenticated]
-    serializer_class = SelectProductSerializer
-    def get(self, request, *args, **kwargs):
-        try:
-            product=Product.objects.all()
-            print(product,'product')
-            serializer=self.serializer_class(product,many=True)
-            return Response({'status': True, 'data':serializer.data, 'message': 'product items lis passed!'})
-        except Exception as e:
-            return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'})
-
-class AddCustomerCustodyItem(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = CustomerCustodyItemSerializer
-    def post(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         try:
-            print("kkkk")
-            serializer = CustomerCustodyItemSerializer(data=request.data)
-            print(serializer)
-            if serializer.is_valid(raise_exception=True):
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            user_id=request.user.id
+            print(user_id)
+            customerobj=Customers.objects.filter(sales_staff=user_id)
+            print(customerobj)
+            for customer in customerobj:
+                customerid=customer.customer_id
+                print(customerid,"kkkk")
+                custody_items=CustodyCustomItems.objects.filter(customer=customerid)
+                print(custody_items)
+                serializer=self.serializer_class(custody_items,many=True)
+                return Response({'status': True, 'data':serializer.data, 'message': 'custody items lis passed!'})            
         except Exception as e:
-            print("kkkkk",e)
             return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'})
-            
 
-class Custody_Add_API(APIView):
-    serializer_class = CustomerCustodyItemSerializer
+
+# coupon sales
+@api_view(['GET'])
+# @permission_classes((AllowAny,))
+# @renderer_classes((JSONRenderer,))
+def get_lower_coupon_customers(request):
+    if (inhand_instances:=CustomerCouponStock.objects.filter(count__lte=5)).exists():
+        customers_ids = inhand_instances.values_list('customer__id', flat=True)
+        instances = Customers.objects.filter(pk__in=customers_ids)
+        
+        serialized = LowerCouponCustomersSerializer(instances, many=True, context={"request": request})
+        
+        status_code = status.HTTP_200_OK  
+        response_data = {
+            "status": status_code,
+            "StatusCode": 6000,
+            "data": serialized.data,
+        }
+    else:
+        status_code = status.HTTP_400_BAD_REQUEST 
+        response_data = {
+            "status": status_code,
+            "StatusCode": 6001,
+            "message": "No data",
+        }
+
+    return Response(response_data, status_code)
+
+@api_view(['GET'])
+# @permission_classes((AllowAny,))
+# @renderer_classes((JSONRenderer,))
+def fetch_coupon(request):
+    coupon_type = request.GET.get("coupon_type")
+    book_no = request.GET.get("book_no")
+    
+    van_stocks = VanCouponStock.objects.filter(coupon__coupon_type_id__coupon_type_name=coupon_type,coupon__book_num=book_no)
+
+
+    if van_stocks.exists():
+        coupons = van_stocks.first().coupon.all()
+        
+        serialized = VanCouponStockSerializer(coupons, many=True, context={"request": request})
+            
+        status_code = status.HTTP_200_OK  
+        response_data = {
+            "status": status_code,
+            "StatusCode": 6000,
+            "data": serialized.data,
+        }
+    else:
+        status_code = status.HTTP_400_BAD_REQUEST 
+        response_data = {
+            "status": status_code,
+            "StatusCode": 6001,
+            "message": "No data",
+        }
+
+    return Response(response_data, status_code)
+
+
+@api_view(['POST'])
+# @permission_classes((IsAuthenticated,))
+# @renderer_classes((JSONRenderer,))
+def customer_coupon_recharge(request):
+    serializer_varified = False
+    
+    recharge_customer_coupon_serializer = RechargeCustomerCouponSerializer(data=request.data)
+    customer_coupon_payment_serializer = CustomerCouponPaymentSerializer(data=request.data)
+    cash_coupon_payment_perializer = CashCouponPaymentSerializer(data=request.data)
+    cheque_coupon_payment_serializer = ChequeCouponPaymentSerializer(data=request.data)
+    
+    if recharge_customer_coupon_serializer.is_valid() and customer_coupon_payment_serializer.is_valid():
+        if customer_coupon_payment_serializer.validated_data.get('coupon_type') == "credit_coupon" :
+            serializer_varified = True
+        else:
+            if customer_coupon_payment_serializer.validated_data.get('payment_type') == "cash" :
+                if cash_coupon_payment_perializer.is_valid():
+                    serializer_varified = True
+            else :
+                if customer_coupon_payment_serializer.validated_data.get('payment_type') == "cheque" :
+                    if cheque_coupon_payment_serializer.is_valid():
+                        serializer_varified = True
+    
+    if serializer_varified:
+        
+        customer_coupon = recharge_customer_coupon_serializer.save(
+            created_by=request.user,
+        )
+        
+        customer_coupon_payment = customer_coupon_payment_serializer.save(
+            customer_coupon=customer_coupon,
+        )
+        if not customer_coupon_payment_serializer.validated_data.get('coupon_type') == "credit_coupon" :
+            if customer_coupon_payment_serializer.validated_data.get('payment_type') == "cash" :
+                cash_coupon_payment_perializer.save(
+                    customer_coupon_payment=customer_coupon_payment
+                    )
+            elif customer_coupon_payment_serializer.validated_data.get('payment_type') == "cheque" :
+                cheque_coupon_payment_serializer.save(
+                    customer_coupon_payment=customer_coupon_payment
+                    )
+                
+        if (update_customer_coupon_stock:=CustomerCouponStock.objects.filter(coupon_type_id=customer_coupon.coupon.coupon_type,is_deleted=False)).exists():
+            stock = CustomerCouponStock.objects.get(coupon_type_id=customer_coupon.coupon.coupon_type,is_deleted=False)
+            stock.count += 1
+            stock.save()
+        else:
+            CustomerCouponStock.objects.create(
+                coupon_type_id = customer_coupon.coupon.coupon_type,
+                customer = customer_coupon.customer,
+                count = 1,
+            )
+        
+        status_code = status.HTTP_200_OK
+        response_data = {
+            "status": status_code,
+            "StatusCode": 6000,
+            "message": "recharge successfull"
+        }
+    else:
+        recharge_customer_coupon_error = generate_serializer_errors(recharge_customer_coupon_serializer.errors)
+        customer_coupon_payment_error = generate_serializer_errors(customer_coupon_payment_serializer.errors)
+        cash_coupon_payment_error = generate_serializer_errors(cash_coupon_payment_perializer.errors)
+        cheque_coupon_payment_error = generate_serializer_errors(cheque_coupon_payment_serializer.errors)
+
+        combined_errors = "\n".join([recharge_customer_coupon_error,customer_coupon_payment_error,cash_coupon_payment_error,cheque_coupon_payment_error])
+        
+        status_code = status.HTTP_400_BAD_REQUEST
+        response_data = {
+            "status": status_code,
+            "StatusCode": 6001,
+            "message": combined_errors,
+        }
+
+    return Response(response_data, status=status_code)
+    
+from django.shortcuts import get_object_or_404
+
+
+class GetProductAPI(APIView):
+   
+    def get(self, request, *args, **kwargs):
+        try:
+            product_names = ["5 Gallon", "Water Cooler", "Dispenser"]
+            product_items = ProdutItemMaster.objects.filter(product_name__in=product_names)
+            print('product_items',product_items)
+            serializer = ProdutItemMasterSerializer(product_items, many=True)          
+            return Response({"products": serializer.data}, status=status.HTTP_200_OK)
+           
+        except Exception as e:
+            print(e, "error")
+            return Response({"status": False, "data": str(e), "message": "Something went wrong!"})
+
+class CustodyCustomItemAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = CustodyCustomItemSerializer
+
+    def post(self, request, *args, **kwargs):
+        # try:
+            customer_id = request.data['customer_id'] 
+            product_id = request.data['product_id']
+            print("product_id",product_id)
+            serial_number = request.data['serialnumber']
+            quantity = request.data['count']
+            is_deposit = request.data['deposit_form']
+            agreement_number = request.data['deposit_form_number']
+            amount = request.data['amount'] if is_deposit else None
+            
+            custody_item = CustodyCustomItems.objects.create(
+                customer_id=customer_id,
+                product_id=ProdutItemMaster.objects.get(pk=product_id).pk,
+                serialnumber=serial_number,
+                count=quantity,
+                deposit_form=is_deposit,
+                amount=amount,
+                deposit_form_number=agreement_number
+            )
+            
+            serializer = self.serializer_class(custody_item, many=False)
+            return Response({"status": True, "data": serializer.data, "message": "Data saved successfully!"})
+        # except Exception as e:
+        #     print(e)
+        #     return Response({"status": False, "message": str(e)})
+
+
+@api_view(['GET'])
+def supply_product(request,customer_id,product_id):
+    if (instances:=VanProductStock.objects.filter(product__pk=product_id)).exists():
+        product = instances.first().product
+        customer = Customers.objects.get(pk=customer_id)
+
+        if product.product_name.product_name=="5 Gallon":
+            serializer = SupplyItemFiveCanWaterProductGetSerializer(product, many=False, context={"request": request,"customer":customer.pk})
+        else:
+            serializer = SupplyItemProductGetSerializer(product, many=False, context={"request": request,"customer":customer.pk})
+
+        status_code = status.HTTP_200_OK  
+        response_data = {
+            "status": status_code,
+            "StatusCode": 6000,
+            "data": serializer.data,
+        }
+    else:
+        status_code = status.HTTP_400_BAD_REQUEST 
+        response_data = {
+            "status": status_code,
+            "StatusCode": 6001,
+            "message": "No data",
+        }
+
+    return Response(response_data, status_code)
+
+@api_view(['POST'])
+def create_customer_supply(request):
+    if request.method == 'POST':
+        customer_supply_serializer = CustomerSupplySerializer(data=request.data)
+        customer_supply_items_serializer = CustomerSupplyItemsSerializer(data=request.data.get('items'), many=True)
+
+        if customer_supply_serializer.is_valid() and customer_supply_items_serializer.is_valid():
+            with transaction.atomic():
+                customer_supply = customer_supply_serializer.save(created_by=str(request.user.id))
+
+                items_data = customer_supply_items_serializer.validated_data
+                for item_data in items_data:
+                    # If product name is "5 Gallon", add additional fields
+                    if item_data['product'].name == "5 Gallon":
+                        item_data['collected_empty_bottle'] = request.data.get('collected_empty_bottle')
+                        item_data['allocate_bottle_to_pending'] = request.data.get('allocate_bottle_to_pending')
+                        item_data['allocate_bottle_to_custody'] = request.data.get('allocate_bottle_to_custody')
+                        item_data['allocate_bottle_to_paid'] = request.data.get('allocate_bottle_to_paid')
+
+                    item_data['customer_supply'] = customer_supply.id
+
+                customer_supply_items_serializer.save()
+
+                # Update customer supply stock
+                for item_data in items_data:
+                    product = item_data['product']
+                    quantity = item_data['quantity']
+                    customer = customer_supply.customer
+
+                    try:
+                        customer_supply_stock = CustomerSupplyStock.objects.get(customer=customer, product=product)
+                        customer_supply_stock.stock_quantity += quantity
+                        customer_supply_stock.save()
+                    except CustomerSupplyStock.DoesNotExist:
+                        CustomerSupplyStock.objects.create(customer=customer, product=product, stock_quantity=quantity)
+
+            response_data = {
+                "status": "true",
+                "title": "Successfully Created",
+                "message": "Customer Supply created successfully.",
+                'redirect': 'true',
+                "redirect_url": reverse('customer_supply:customer_supply_list')
+            }
+            return Response(response_data, status=status.HTTP_201_CREATED)
+        else:
+            errors = {}
+            errors.update(customer_supply_serializer.errors)
+            errors.update(customer_supply_items_serializer.errors)
+            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        
+@api_view(['GET'])
+def customer_coupon_stock(request):
+    if (instances:=CustomerCouponStock.objects.all()).exists():
+        
+        serializer = CustomerCouponStockSerializer(instances, many=True, context={"request": request})
+
+        status_code = status.HTTP_200_OK  
+        response_data = {
+            "status": status_code,
+            "StatusCode": 6000,
+            "data": serializer.data,
+        }
+    else:
+        status_code = status.HTTP_400_BAD_REQUEST 
+        response_data = {
+            "status": status_code,
+            "StatusCode": 6001,
+            "message": "No data",
+        }
+
+    return Response(response_data, status_code)
+
+    
+
+class CustodyCustomItemListAPI(APIView):
+    
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = CustodyCustomItemsSerializer
+    
+    def get(self, request, *args, **kwargs):
+        try:
+            user_id = request.user.id
+            customer_obj = Customers.objects.filter(sales_staff=user_id)
+            custody_items = CustodyCustomItems.objects.filter(customer__in=customer_obj)
+            serializer = self.serializer_class(custody_items, many=True)
+            
+            grouped_data = {}
+            
+            # Group items by customer id
+            for item in serializer.data:
+                customer_id = item['customer']['customer_id']
+                customer_name = item['customer']['customer_name']
+                if customer_id not in grouped_data:
+                    grouped_data[customer_id] = {
+                        'customer_id': customer_id,
+                        'customer_name': customer_name,
+                        'products': []
+                    }
+                grouped_data[customer_id]['products'].append({
+                    'product_name': item['product_name'],
+                    'product': item['product'],
+                    'rate': item['rate'],
+                    'count': item['count'],
+                    'serialnumber': item['serialnumber'],
+                    'deposit_type': item['deposit_type'],
+                    'deposit_form_number': item['deposit_form_number']
+                })
+            
+            final_response = list(grouped_data.values())
+            
+            return Response({'status': True, 'data': final_response, 'message': 'Custody items list passed!'})
+        
+        except Exception as e:
+            return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'})
+    
+    
+
+class CustodyItemReturnAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = CustodyCustomReturnSerializer
+
     def post(self, request, *args, **kwargs):
         try:
-            
-            serializer = CustomerCustodyItemSerializer(data=request.data)
-            if serializer.is_valid(raise_exception=True):
-                data=serializer.save()
+            id = request.data['id']
+            customer_id = request.data['customer_id'] 
+
+            product_id = request.data['product_id']
+            serial_number = request.data['serialnumber']
+            quantity = request.data['count']
+            agreement_number = request.data['deposit_form_number']
+            amount = request.data['amount'] 
+
+            custody_item_return = CustomerReturn.objects.create(
                 
-                return Response({"status": True, "data": serializer.data, "message": "Custody Items Added  Successfully!"})
-            else:
-                return Response({"status": True, "data": serializer.data, "message": "Data not valid!"})
+                customer_id = customer_id,
+                product_id=product_id,
+                serialnumber=serial_number,
+                count=quantity,
+                amount=amount,
+                deposit_form_number=agreement_number
+            )
+            print("hgdghfhfjhfj",custody_item_return)
+
+
+            CustodyCustomItems.objects.get(id=id).delete()
+
+            serializer = self.serializer_class(custody_item_return)
+            return Response({"status": True, "data": serializer.data, "message": "Data saved successfully!"})
+        except KeyError as e:
+            return Response({"status": False, "message": f"Missing required parameter: {e}"})
+        except ValueError as e:
+            return Response({"status": False, "message": f"Invalid value: {e}"})
+        except Product.DoesNotExist:
+            return Response({"status": False, "message": "Product not found"})
+        except Exception as e:
+            return Response({"status": False, "message": f"Something went wrong: {e}"})
+
+class OutstandingAmountAPI(APIView):
+
+    serializer_class = OutstandingAmountSerializer
+
+    def post(self, request, *args, **kwargs):
+        try:
+            customer_id = request.data['customer_id'] 
+            print(customer_id)
+            custody_items = CustodyCustomItems.objects.filter(customer=customer_id)
+            print("custody_items", custody_items)
+            total_amount = custody_items.aggregate(total_amount=Sum('amount'))['total_amount']
+            print("total_amount", total_amount)
+            amount_paid = request.data['amount_paid']
+            print("amount_paid", amount_paid)
+            amount_paid = int(amount_paid)
+            balance = total_amount - amount_paid
+            print('balance', balance)
+            product = custody_items.first().product
+            print("product", product)
+            outstanding_amount = OutstandingAmount.objects.create(
+                customer_id=customer_id,
+                product=product,
+                balance_amount=balance,
+                amount_paid=amount_paid
+            )
+
+            serializer = self.serializer_class(outstanding_amount)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+           
         except Exception as e:
             print(e,"errror")
-            return Response({"status": False, "data": str(e), "message": "Something went wrong!"})      
-
+            return Response({"status": False, "data": str(e), "message": "Something went wrong!"})
         
 
+class VanStockAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        coupon_stock = VanCouponStock.objects.all()
+        product_stock = VanProductStock.objects.all()
+        coupon_serializer = VanCouponStockSerializer(coupon_stock, many=True)
+        product_serializer = VanProductStockSerializer(product_stock, many=True)
+        print("coupon_serializer",coupon_serializer)
+        print("product_serializer",product_serializer)
+        return Response({
+            'coupon_stock': coupon_serializer.data,
+            'product_stock': product_serializer.data
+        }, status=status.HTTP_200_OK)
+
+class OutstandingAmountListAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get(self, request, *args, **kwargs):
+        id = request.user.id
+        print("id",id)
+        customer=Customers.objects.filter(sales_staff__id = id)
+        print("customer",customer)
+
+        custody_items = CustodyCustomItems.objects.filter(customer__in =customer)
+        print("custody_items",custody_items)
+
+        serializer =CustodyCustomItemListSerializer(custody_items, many=True)
+        return Response(serializer.data)
+    
+class VanStockAPI(APIView):
+    def get(self, request):
+        coupon_stock = VanCouponStock.objects.all()
+        product_stock = VanProductStock.objects.all()
+        coupon_serializer = VanCouponStockSerializer(coupon_stock, many=True)
+        product_serializer = VanProductStockSerializer(product_stock, many=True)
+        print("coupon_serializer",coupon_serializer)
+        print("product_serializer",product_serializer)
+        return Response({
+            'coupon_stock': coupon_serializer.data,
+            'product_stock': product_serializer.data
+        }, status=status.HTTP_200_OK)
+    

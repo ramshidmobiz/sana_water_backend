@@ -9,8 +9,10 @@ urlpatterns = [
     re_path(r'^get-products/(?P<category_id>.*)/$', views.get_products, name='get_products'),
     re_path(r'^get-customer-rate/(?P<product>.*)/(?P<customer>.*)/$', views.get_customer_rate, name='get_customer_rate'),
     
+    re_path(r'^invoice/(?P<pk>.*)/$', views.invoice, name='invoice'),   
     re_path(r'invoice-list/$', views.invoice_list, name='invoice_list'),
-    re_path(r'create-invoice/$', views.create_invoice, name='create_invoice'),
+    re_path(r'invoice-customers/$', views.invoice_customers, name='invoice_customers'),
+    re_path(r'create-invoice/(?P<customer_pk>.*)/$', views.create_invoice, name='create_invoice'),
     re_path(r'^invoice/(?P<pk>.*)/$', views.invoice_info, name='invoice_info'),
     re_path(r'^edit-invoice/(?P<pk>.*)/$', views.edit_invoice, name='edit_invoice'),
     re_path(r'^delete-invoice/(?P<pk>.*)/$', views.delete_invoice, name='delete_invoice'),   

@@ -3,7 +3,7 @@ from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-&7z8!ojgm$4khf4tj@-3!u=i^o2)osa(&2!clia!m-e#tl@6wt'
+SECRET_KEY = config('SECRET_KEY')
 
 DEBUG = config('DEBUG', cast=bool)
 SERVER = config('SERVER', cast=bool)
@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'tax_settings',
     'sales_management',
     'invoice_management',
+    'credit_note',
 ]
 
 MIDDLEWARE = [
@@ -71,6 +72,7 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+
 if not SERVER:
     DATABASES = {
         'default': {

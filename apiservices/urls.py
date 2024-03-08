@@ -1,7 +1,9 @@
-from django.urls import path
-from .views import *
 from django.conf import settings
+from django.urls import path,re_path
 from django.conf.urls.static import static
+
+from . views import *
+from . import views
 
 urlpatterns = [
 
@@ -13,7 +15,6 @@ urlpatterns = [
     path('customers/',Customer_API.as_view()),
     path('customers/<str:id>/',Customer_API.as_view()),
     #################Master Url##############################
-    
 
     path('route/<str:id>/',RouteMaster_API.as_view()),
     path('route/',RouteMaster_API.as_view())  ,
@@ -47,7 +48,15 @@ urlpatterns = [
     path('assign_route/',Route_Assign.as_view()),
 
     path('schedule_by_route/<str:route_id>/<str:date_str>/<str:trip>', ScheduleByRoute.as_view()),
-    path('schedule_view/<str:date_str>', ScheduleView.as_view()),
+    path('schedule_view/<str:date_str>/', ScheduleView.as_view()),
+
+
+    path('expense_heads/', ExpenseHeadListAPI.as_view(), name='expensehead-list'),
+    path('expense_heads/<uuid:pk>/', ExpenseHeadDetailAPI.as_view(), name='expensehead-detail'),
+
+    path('expenses/', ExpenseListAPI.as_view(), name='expense-list'),
+    path('expenses/<uuid:expense_id>/', ExpenseDetailAPI.as_view(), name='expense-detail'),
+
     
     ####################### Customer_Url s#################################
 
@@ -67,9 +76,11 @@ urlpatterns = [
     path('add_custody_item/<str:id>/',Add_Customer_Custody_Item_API.as_view()),
     path('add_no_of_coupons/', Add_No_Coupons.as_view()),
     path('add_no_of_coupons/<str:id>/', Add_No_Coupons.as_view()),
-
-
-
+    
+    # supply
+    re_path(r'^supply-product/(?P<customer_id>.*)/(?P<product_id>.*)/$', views.supply_product),
+    re_path(r'^create-customer-supply/$', views.create_customer_supply),
+    
     ################### COUPON MANAGEMENT URL ######################
     path('couponType/',CouponType_API.as_view()),
     path('couponType/<str:id>',CouponType_API.as_view()),
@@ -78,8 +89,15 @@ urlpatterns = [
     path('couponRequest/',CouponRequest_API.as_view()),
     path('assignStaffCoupon/',AssignStaffCoupon_API.as_view()),
     path('assignToCustomer/',AssigntoCustomer_API.as_view()),
-
-
+    
+    # coupon recharge
+    path('get-lower-coupon-customers/', views.get_lower_coupon_customers),
+    path('fetch-coupon-data/', views.fetch_coupon),
+    path('customer-coupon-recharge/', views.customer_coupon_recharge),
+    
+    path('customer-coupon-stock/', views.customer_coupon_stock),
+    
+    path('product-items/', views.product_items),
     path('staff_new_order_api/', Staff_New_Order.as_view()),
     path('customer_create/',Customer_Create.as_view()),
     path('customer_details/<str:id>/',CustomerDetails.as_view()),
@@ -93,13 +111,24 @@ urlpatterns = [
     path('vacations/<uuid:vacation_id>/delete/', VacationDeleteAPI.as_view(), name='vacation_delete_api'),
     
     path('myclient/',Myclient_API.as_view()),
+    path('get_products/', GetProductAPI.as_view(), name='get_products'),
+    path('custody_tems/', CustodyCustomItemAPI.as_view(), name='custody_tems'),
+    path('custody_item_list/' ,CustodyCustomItemListAPI.as_view(), name='custody_item_list'),
+    path('custody_item_return/', CustodyItemReturnAPI.as_view(), name='custody_item_return'),
 
-    # path('add_customer_custody', CustomerCustody_API.as_view()),
-    path('get_custody_item/', GetCustodyItem_API.as_view(), name='get_custody_item'),
-    path('add_custody_item/', AddCustomerCustodyItem.as_view(), name='add_custody_item'),
-    path('get_category/', GetCategoryAPI.as_view(), name='get_category'),
-    path('get_products/', GetProductsAPI.as_view(), name='get_products'),
-    path('custody_add/', Custody_Add_API.as_view(), name='custody_add'),
+    path('outstanding_amount/',OutstandingAmountAPI.as_view(), name = 'outstanding_amount'),
+    path('outstanding_amount_list/',OutstandingAmountListAPI.as_view(), name = 'outstanding_amount_list'),
+
+    # path('outstanding_coupon/',OutstandingCouponAPI.as_view(), name = 'outstanding_coupon'),
+
+
+
+
+
+
+
+
+    
 
     
 

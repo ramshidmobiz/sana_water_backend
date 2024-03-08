@@ -12,7 +12,6 @@ from django.db import transaction, IntegrityError
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
-from product.models import Product, Product_Default_Price_Level
 
 from rest_framework import status
 from rest_framework.response import Response
@@ -20,12 +19,13 @@ from rest_framework.permissions import AllowAny
 from rest_framework.renderers import JSONRenderer
 from rest_framework.decorators import api_view,renderer_classes, permission_classes
 #local
-from invoice_management.models import Invoice, InvoiceItems
-from invoice_management.serializers import BuildingNameSerializers, ProductSerializers,CustomersSerializers
+from accounts.models import Customers
 from master.functions import generate_form_errors
 from master.models import CategoryMaster, RouteMaster
-from accounts.models import Customers
+from invoice_management.models import Invoice, InvoiceItems
+from product.models import Product, Product_Default_Price_Level
 from invoice_management.forms import InvoiceForm, InvoiceItemsForm
+from invoice_management.serializers import BuildingNameSerializers, ProductSerializers,CustomersSerializers
 
 # Create your views here.
 @api_view(['GET'])
@@ -166,7 +166,46 @@ def invoice_list(request):
     return render(request, 'invoice_management/list.html', context)
 
 @login_required
-def create_invoice(request):
+def invoice_customers(request):
+    filter_data = {}
+    
+    instances = Customers.objects.all()
+    
+    if request.GET.get('route'):
+        instances = instances.filter(routes__pk=request.GET.get('route'))
+        
+    if request.GET.get('building_no'):
+        instances = instances.filter(door_house_no=request.GET.get('building_no'))
+    
+    query = request.GET.get("q")
+    
+    if query:
+
+        instances = instances.filter(
+            Q(customer_id__icontains=query) |
+            Q(mobile_no__icontains=query) |
+            Q(whats_app__icontains=query) |
+            Q(customer_name__icontains=query) 
+        )
+        title = "Invoice Customers - %s" % query
+        filter_data['q'] = query
+        
+    route_instances = RouteMaster.objects.all()
+
+    context = {
+        'instances': instances,
+        'route_instances' : route_instances,
+        
+        'page_title': 'Create invoice',
+        'invoice_page': True,
+        'is_need_datetime_picker': True
+    }
+    
+    return render(request,'invoice_management/customer_list.html',context)
+
+def create_invoice(request, customer_pk):
+    # customer_pk = request.GET.get("customer_pk")
+    customer_instance = Customers.objects.get(pk=customer_pk)
     InvoiceItemsFormset = formset_factory(InvoiceItemsForm, extra=2)
     
     message = ''
@@ -180,44 +219,43 @@ def create_invoice(request):
             random_part = str(random.randint(1000, 9999))
             invoice_number = f'WTR-{date_part}-{random_part}'
             
-            # try:
-            #     with transaction.atomic():
-            customer_instance = Customers.objects.get(pk=invoice_form.cleaned_data['customer_id'])
-            
-            invoice = invoice_form.save(commit=False)
-            invoice.created_date = datetime.datetime.today()
-            invoice.invoice_no = invoice_number
-            invoice.customer = customer_instance
-            invoice.save()
-            
-            for form in invoice_items_formset:
-                data = form.save(commit=False)
-                data.invoice = invoice
-                data.save()
-            
-            response_data = {
-                "status": "true",
-                "title": "Successfully Created",
-                "message": "Invoice created successfully.",
-                'redirect': 'true',
-                "redirect_url": reverse('invoice:invoice_list')
-            }
+            try:
+                with transaction.atomic():
+                    invoice = invoice_form.save(commit=False)
+                    invoice.created_date = datetime.datetime.today()
+                    invoice.invoice_no = invoice_number
+                    invoice.customer = customer_instance
+                    invoice.save()
                     
-            # except IntegrityError as e:
-            #     # Handle database integrity error
-            #     response_data = {
-            #         "status": "false",
-            #         "title": "Failed",
-            #         "message": "Integrity error occurred. Please check your data.",
-            #     }
+                    for form in invoice_items_formset:
+                        data = form.save(commit=False)
+                        data.invoice = invoice
+                        data.save()
+                    
+                    
+                    response_data = {
+                        "status": "true",
+                        "title": "Successfully Created",
+                        "message": "Invoice created successfully.",
+                        'redirect': 'true',
+                        "redirect_url": reverse('invoice:invoice_list')
+                    }
+                    
+            except IntegrityError as e:
+                # Handle database integrity error
+                response_data = {
+                    "status": "false",
+                    "title": "Failed",
+                    "message": str(e),
+                }
 
-            # except Exception as e:
-            #     # Handle other exceptions
-            #     response_data = {
-            #         "status": "false",
-            #         "title": "Failed",
-            #         "message": str(e),
-            #     }
+            except Exception as e:
+                # Handle other exceptions
+                response_data = {
+                    "status": "false",
+                    "title": "Failed",
+                    "message": str(e),
+                }
         else:
             message = generate_form_errors(invoice_form,formset=False)
             message += generate_form_errors(invoice_items_formset,formset=True)
@@ -233,20 +271,19 @@ def create_invoice(request):
     else:
         invoice_form = InvoiceForm()
         invoice_items_formset = InvoiceItemsFormset(prefix='invoice_items_formset')
-        route_instances = RouteMaster.objects.all()
         
         context = {
             'invoice_form': invoice_form,
             'invoice_items_formset': invoice_items_formset,
-            'route_instances' : route_instances,
+            'customer_instance': customer_instance,
             
             'page_title': 'Create invoice',
-            'url': reverse('invoice:create_invoice'),
             'invoice_page': True,
             'is_need_datetime_picker': True
         }
         
         return render(request,'invoice_management/create.html',context)
+
 
 @login_required
 def edit_invoice(request,pk):
@@ -258,6 +295,7 @@ def edit_invoice(request,pk):
     """
     invoice_instance = get_object_or_404(Invoice, pk=pk)
     invoice_items = InvoiceItems.objects.filter(invoice=invoice_instance)
+    customer_instance = invoice_instance.customer
     
     if invoice_items.exists():
         extra = 0
@@ -349,6 +387,7 @@ def edit_invoice(request,pk):
             'invoice_items_formset': invoice_items_formset,
             'route_instances': route_instances,
             'building_names': building_names_queryset,
+            'customer_instance': customer_instance,
             
             'message': message,
             'page_name' : 'edit invoice',
@@ -382,3 +421,25 @@ def delete_invoice(request, pk):
     }
     
     return HttpResponse(json.dumps(response_data), content_type='application/javascript')
+
+
+@login_required
+def invoice(request,pk):
+    """
+    Invoice Download
+    :param request:
+    :return: Invoices Download view
+    """
+    
+    instance = Invoice.objects.get(pk=pk,is_deleted=False)  
+           
+    context = {
+        'instance': instance,
+        'page_name' : 'Invoice',
+        'page_title' : 'Invoice',
+        
+        'is_invoice': True,
+        'is_need_datetime_picker': True,
+    }
+
+    return render(request, 'invoice_management/invoice.html', context)

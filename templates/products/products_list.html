@@ -37,7 +37,8 @@
                                             <th scope="col">Product Name</th>
                                             <th scope="col">Product Category</th>
                                             <th scope="col">Unit</th>
-                                            <th scope="col">Rate</th>                                    
+                                            <th scope="col">Rate</th>  
+                                            <th scope="col">Quantity</th>                                                                      
                                             <th scope="col">Actions</th>
                                         </tr>
                                     </thead>
@@ -45,10 +46,12 @@
                                         {% for data in product_li %}
                                         <tr>
                                             <td style="text-align:center;">{{forloop.counter}}</td>
-                                            <td style="text-align:center;">{{data.product_name}}</td>
+                                            <td style="text-align:center;">{{data.product_name.product_name}}</td>
                                             <td style="text-align:center;">{{data.category_id}}</td>
                                             <td style="text-align:center;">{{data.unit}}</td>
                                             <td style="text-align:center;">{{data.rate}}</td>
+                                            <td style="text-align:center;">{{data.quantity}}</td>
+
                                             
                                             <td>
                                                 <div class="g-2">

@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block title %} Order Change {% endblock %}
+{% block content %}
+
+
+<!-- Page Header -->
+<div class="page-header-breadcrumb d-md-flex d-block align-items-center justify-content-between ">
+    <h4 class="fw-medium mb-0">Order Change</h4>
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="javascript:void(0);" class="text-white-30">Order </a></li>
+        <li class="breadcrumb-item active" aria-current="page">Order Change</li>
+    </ol>
+</div>
+<div class="main-content app-content">
+    <div class="container-fluid">
+        <!-- Start:: row-2 -->
+        <div class="row">
+            <div class="col-xl-12">
+                <div class="card custom-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            Order Change
+                        </div>
+                    </div>
+
+                    <div class="">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="row mt-4">
+                                <div class="row col-md-8" style="">
+                                    <button id="selectByDateBtn" class="col-2" style="margin-left: 15px; background-color: white; border: 0;">Select by Date</button>
+                                    <button id="selectByPeriodBtn" class="col-3" style="background-color: white; border: 0;">Select by Period</button>
+                                    <div id="datePeriodDiv" class="row col-12" style="  visibility: hidden;;">
+                                        <div class="col-md-2 col-form-label text-end">
+                                            <h6>Start Date</h6>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <input name="start_date" type="date" class="form-select" style="width: min-content;" value="">
+                                        </div>
+                                        <div class="col-md-2 col-form-label text-end">
+                                            <h6>End Date</h6>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <input name="end_date" type="date" class="form-select" style="width: min-content;" value="">
+                                        </div>
+                                    </div>
+                                    <div id="dateDiv" class="row col-12" style=" visibility: hidden;">
+                                        <div class="col-2 col-form-label text-end">
+                                            <h6>Date</h6>
+                                        </div>
+                                        <div class="col-3">
+                                            <input name="date" type="date" class="form-select" style="width: min-content;" value="{{def_date}}">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row col-md-4" style="">
+                                    <div class="col-md-4 col-form-label text-end">
+                                        <h6>Product</h6>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <select name="product" id="product" class="form-select" style="width:100%">
+                                            <option value="" disabled selected>-------------</option>
+                                            {% for product in products %}
+                                                <option value="{{ product.product_id }}">{{ product }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-12 text-end">
+                                        <input type="submit" class="btn btn-primary btn-sm">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-4">
+                                <div class="row col-md-4">
+                                    <div class="row">
+                                        
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="ms-auto">
+                        <a href="{% url 'order_change_add' %}">
+                            <button type="button" class="btn btn-success btn-wave text-end d-flex me-4 my-auto">
+                                <i class="bi bi-plus-circle me-1"></i>Create
+                            </button>
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <table id="datatable-basic" class="table table-bordered text-wrap " style="width: 100%">
+                            <thead>
+                                <tr>
+                                    <th scope="col" style="border-bottom: 1; max-width: 5em;">Sl No</th>
+                                    <th scope="col" style="border-bottom: 1; max-width: 15em;">Route Name</th>
+                                    <th scope="col" style="border-bottom: 1;">Changed Quantity</th>
+                                    <th scope="col" style="border-bottom: 1;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for route_name, route_info in route_counts.items %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}</td>
+                                        <td>{{ route_name }}</td>
+                                        <td>{{ route_info.count }}</td>
+                                        
+                                        <td>
+                                            <div class="g-2">
+                                                <a href="{% url 'order_change_list' route_info.id %}?start_date={{ start_date }}&end_date={{ end_date }}&selected_date={{ selected_date }}&selected_product_id={{ selected_product_id }}" aria-label="anchor" class="btn  btn-warning-light btn-sm" data-bs-toggle="tooltip" data-bs-original-title="View">
+                                                    <span class="bi bi-eye fs-14"></span>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Get all elements with class 'clients-column'
+        var clientsColumns = document.querySelectorAll('.clients-column');
+
+        clientsColumns.forEach(function (column) {
+            // Check if the column is empty
+            if (column.innerText.trim() === '') {
+                column.innerHTML = '<p style="font-style: italic;  ">No clients today in this route.</p>';
+            }
+        });
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const selectByDateBtn = document.getElementById("selectByDateBtn");
+        const selectByPeriodBtn = document.getElementById("selectByPeriodBtn");
+        const dateDiv = document.getElementById("dateDiv");
+        const datePeriodDiv = document.getElementById("datePeriodDiv");
+
+        // Add event listeners to the buttons
+        selectByDateBtn.addEventListener("click", function() {
+            event.preventDefault();
+            dateDiv.style.visibility  = "visible";
+            datePeriodDiv.style.visibility  = "hidden";
+        });
+
+        selectByPeriodBtn.addEventListener("click", function() {
+            event.preventDefault();
+            dateDiv.style.visibility  = "hidden";
+            datePeriodDiv.style.visibility  = "visible";
+        });
+    });
+</script>
+
+{% endblock %}

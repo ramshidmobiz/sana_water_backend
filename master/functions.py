@@ -27,3 +27,16 @@ def generate_form_errors(args,formset=False):
     message = message.replace('<ul class="errorlist">', "")
     message = message.replace("</ul>", "")
     return message
+
+
+def generate_serializer_errors(args):
+    message = ""
+    print (args)
+    for key, values in args.items():
+        error_message = ""
+        for value in values:
+            error_message += value + ","
+        error_message = error_message[:-1]
+
+        message += "%s : %s | " %(key,error_message)
+    return message[:-3]

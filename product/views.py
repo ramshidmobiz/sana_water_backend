@@ -1,40 +1,68 @@
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
+import json
 import datetime
-from django.contrib import messages
-from django.shortcuts import render, redirect,HttpResponse
+
 from django.views import View
+from django.db.models import Q
+from django.utils import timezone
+from django.contrib import messages
+from django.shortcuts import render,redirect
+from django.db import transaction, IntegrityError
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.core.exceptions import ObjectDoesNotExist
+from django.shortcuts import redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+
+from master.functions import generate_form_errors
 from .forms import *
 import uuid
 from accounts.models import *
 from .models import *
-from django.utils import timezone
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse, HttpResponse
 from coupon_management.models import *
 from van_management.models import *
 
-from django.shortcuts import redirect, get_object_or_404
+from django.template.loader import get_template
+import pandas as pd
+from xhtml2pdf import pisa
 
+def varify_coupon(request):
+    request_id = request.GET.get("request_id")
+    coupon_book_no = request.GET.get("coupon_book_no")
+    varify_status = False
+    
+    if (instances:=Staff_Orders_details.objects.filter(pk=request_id)).exists():
+        instance = instances.first()
+        stock_instances = CouponStock.objects.filter(couponbook__book_num=coupon_book_no)
+        if stock_instances.exists() and stock_instances.first().coupon_stock == "company":
+            varify_status = True
+        
+        status_code = 200
+        response_data = {
+            "status": "true",
+            "varify_status": varify_status,
+        }
+    else:
+        status_code = 404
+        response_data = {
+            "status": "false",
+            "title": "Failed",
+            "message": "item not found",
+        }
 
-class Products_List(View):
-    template_name = 'products/products_list.html'
+    return HttpResponse(json.dumps(response_data),status=status_code, content_type="application/json")
 
+class Product_items_List(View):
+    template_name = 'products/product_items_list.html'
     @method_decorator(login_required)
     def get(self, request, *args, **kwargs):
-        product_li = Product.objects.filter()
-        context = {'product_li': product_li}
+        product_items = ProdutItemMaster.objects.filter()
+        context = {'product_items': product_items}
         return render(request, self.template_name, context)
-
-class Product_Create(View):
-    template_name = 'products/product_create.html'
-    form_class = Products_Create_Form
-
-    @method_decorator(login_required)
-    def get(self, request, *args, **kwargs):
-        context = {'form': self.form_class}
-        return render(request, self.template_name, context)
+    
+class Product_items_Create(View):
+    template_name = 'products/product_items_create.html'
+    form_class = Product_Item_Create_Form
 
     @method_decorator(login_required)
     def get(self, request, *args, **kwargs):
@@ -44,26 +72,96 @@ class Product_Create(View):
     @method_decorator(login_required)
     def post(self, request, *args, **kwargs):
         form = self.form_class(request.POST, request.FILES)
-        
-
         if form.is_valid():
-            category_id = form.data.get('category_id')
-            product_name = form.data.get('product_name')
-            print("category_id",category_id)
-            get_category = CategoryMaster.objects.get(category_id=category_id)
             data = form.save(commit=False)
             data.created_by = str(request.user.id)
-            branch_id=request.user.branch_id.branch_id
-            branch = BranchMaster.objects.get(branch_id=branch_id)  # Adjust the criteria based on your model
-            data.branch_id = branch
-            if get_category.category_name =='Coupons':
-                save_in_coupon_type = CouponType.objects.create(coupon_type_name = product_name,
-                                        no_of_leaflets =0,
-                                        valuable_leaflets =0,
-                                        free_leaflets =0 ,
-                                        created_by =str(request.user.id))
-                
             data.save()
+            messages.success(request, 'Product Item Successfully Added.', 'alert-success')
+            return redirect('product_items')
+        else:
+            #print(form.errors)
+            for field, errors in form.errors.items():
+                for error in errors:
+                    print(f"Field: {field}, Error: {error}")
+            messages.success(request, 'Data is not valid.', 'alert-danger')
+            context = {'form': form}
+            return render(request, self.template_name, context)
+        
+class Products_List(View):
+    template_name = 'products/products_list.html'
+
+    @method_decorator(login_required)
+    def get(self, request, *args, **kwargs):
+        product_li = Product.objects.filter()
+        print(request.user.branch_id.pk)
+        # print("product_li",product_li)
+        # if  product_li:
+        #     p_name=product_li.product_name.product_name
+        #     print("p_name",p_name)
+        context = {'product_li': product_li}
+        return render(request, self.template_name, context)
+
+class Product_Create(View):
+    template_name = 'products/product_create.html'
+    form_class = Products_Create_Form
+    @method_decorator(login_required)
+    def get(self, request, *args, **kwargs):
+        form = self.form_class()
+        # product_items = ProdutItemMaster.objects.all()  # Fetch all product items
+        context = {'form': form, }
+        return render(request, self.template_name, context)
+
+    @method_decorator(login_required)
+    def post(self, request, *args, **kwargs):
+        form = self.form_class(request.POST, request.FILES)
+        
+        if form.is_valid():
+            product_item = ProdutItemMaster.objects.get(pk=form.data.get('product_name'))
+            get_category = CategoryMaster.objects.get(pk=form.data.get('category_id'))
+            tax = Tax.objects.get(pk=form.data.get('tax'))
+            
+            data = Product(
+                product_name=product_item,
+                created_by = str(request.user.id),
+                unit=form.data.get('unit'),
+                rate=form.data.get('rate'),
+                branch_id=request.user.branch_id,
+                category_id=get_category,
+                tax=tax,
+                quantity=form.data.get('quantity')
+            )
+            data.save()
+            
+            if get_category.category_name == 'Coupons':
+                product_name = data.product_name.product_name  # Accessing the product name through the ForeignKey relationship
+                CouponType.objects.create(
+                    coupon_type_name=product_name,
+                    no_of_leaflets=0,
+                    valuable_leaflets=0,
+                    free_leaflets=0,
+                    created_by=str(request.user.id)
+                )
+
+            if request.user.branch_id:
+                try:
+                    branch_id = request.user.branch_id.branch_id
+                    branch = BranchMaster.objects.get(branch_id=branch_id)  
+                    data.branch_id = branch
+
+                    product_stock, created = ProductStock.objects.get_or_create(
+                        product_name=data.product_name,
+                        branch=data.branch_id,
+                        quantity=data.quantity
+                    )
+                    # Update quantity if the ProductStock already exists
+                    if not created:
+                        product_stock.quantity += int(data.quantity)
+                        product_stock.save()
+                    
+                except ObjectDoesNotExist:
+                    # Handle the case where branch_id is not found
+                    messages.error(request, 'Branch information not found for the current user.')
+
 
             messages.success(request, 'Product Successfully Added.', 'alert-success')
             return redirect('products')
@@ -211,70 +309,480 @@ class Defaultprice_Delete(View):
 
 #------------------Issue Orders------------------------------------
 
+def staff_issue_orders_list(request):
+    instances = Staff_Orders.objects.all().order_by('-created_date')
+    
+    filter_data = {}
+    query = request.GET.get("q")
+    
+    if query:
+
+        instances = instances.filter(
+            Q(order_number__icontains=query)
+        )
+        title = "Staff issue Orders - %s" % query
+        filter_data['q'] = query
+
+    context = {'instances': instances}
+    return render(request, 'products/staff_issue_orders_list.html', context)
         
-def staffIssueOrdersList(request):
-    staff_orders_details = Staff_Orders_details.objects.all()
+def staff_issue_orders_details_list(request,staff_order_id):
+    staff_orders_details = Staff_Orders_details.objects.filter(staff_order_id__pk=staff_order_id).order_by('-created_date')
 
     context = {'staff_orders_details': staff_orders_details}
-    return render(request, 'products/staff_issue_orders_list.html', context)
+    return render(request, 'products/staff_issue_orders_details_list.html', context)
 
-def staffIssueOrdersCreate(request,staff_order_details_id):
-
+def staffIssueOrdersCreate(request, staff_order_details_id):
     issue = get_object_or_404(Staff_Orders_details, staff_order_details_id=staff_order_details_id)
-    print("issue",issue)
     
     count = issue.count
-    print("count",count)
-    product_id =issue.product_id
-    print("product_id",product_id)
-    product_category= issue.product_id.category_id
-    print("product_category",product_category)
-    productunit=issue.product_id.unit
-    print("productunit",productunit)
-    staff_Orders_details_id=issue.staff_order_details_id
-    staff_order_id=issue.staff_order_id
-    print("staff_order_id",staff_order_id)
-    order_number=issue.staff_order_id.order_number
+    product_id = issue.product_id
+    staff_order_id = issue.staff_order_id
+    order_number = issue.staff_order_id.order_number
+    stock_quantity = issue.count
+    purchase_stock = ProductStock.objects.get(product_name=product_id)
+
     if request.method == 'POST':
         form = StaffIssueOrdersForm(request.POST)
-        # print("form",form)
         if form.is_valid():
-            # Get the AssignStaffCoupon instance from the form
-            print("VALID")
-            data = form.save(commit=False)
-            # Calculate stock quantity
-            quantity_issued = int(form.data.get('quantity_issued'))
-            stock_quantity =   quantity_issued - int(count)
-
+            if int(count) < int(purchase_stock.quantity) and not int(count) > int(purchase_stock.quantity):
+                data = form.save(commit=False)
+                data.created_by = str(request.user.id)
+                data.modified_by = str(request.user.id)
+                data.modified_date = datetime.now()
+                data.created_date = datetime.now()
+                
+                data.product_id = product_id
+                data.staff_Orders_details_id = issue
+                data.stock_quantity = stock_quantity
+                data.save()
             
-            
-            # Set other fields such as created_by, modified_by, etc.
-            
-            data.created_by = str(request.user.id)
-            data.modified_by = str(request.user.id)
-            data.modified_date = datetime.now()
-            data.created_date = datetime.now()
-            data.product_id=product_id
-            data.staff_Orders_details_id=issue
-            data.stock_quantity= stock_quantity
-            # Set other fields as needed...
+                # quantity_issued = int(form.cleaned_data.get('quantity_issued'))
+                # stock_quantity = issue.product_id.quantity - quantity_issued  # Subtract issued quantity from stock
 
-            # Save the instance
-            data.save()
+                # # Update the product's stock quantity
+                # product = issue.product_id
+                # product.quantity = stock_quantity
+                # product.save()
 
-            return redirect('staff_issue_orders_list')  # Redirect to a success page or another URL
+                # #  ProductStock 
+                # product_stock = ProductStock.objects.get(product=product)
+                # product_stock.quantity = stock_quantity
+                # product_stock.save()
+                
+                # # VanStock
+                # salesman_id = form.cleaned_data.get('salesman_id')
+                
+                # salesman = CustomUser.objects.get(id=salesman_id.id)
+                
+                # van = Van.objects.get(salesman_id=salesman)  
+                # van_stock = VanStock.objects.create(
+                #     created_by=str(request.user.id),
+                #     modified_by=str(request.user.id),
+                #     van=van )
+                # van_product_item, created = VanProductItems.objects.get_or_create(product=product, van_stock=van_stock)
+                # if created:
+                #     van_product_item.count = quantity_issued
+                # else:
+                #     van_product_item.count += quantity_issued
+                # van_product_item.save()
+                
+                # van_product_stock, created = VanProductStock.objects.get_or_create(product=product)
+                # if created:
+                #     van_product_stock.count = quantity_issued
+                # else:
+                #     van_product_stock.count += quantity_issued
+                # van_product_stock.save()
+                response_data = {
+                        "status": "true",
+                        "title": "Successfully Created",
+                        "message": "created successfully.",
+                        'redirect': 'true',
+                        "redirect_url": redirect('staff_issue_orders_list')
+                    }
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": f"Qty: No stock available in {purchase_stock.product_name.product_name}, only {purchase_stock.quantity} left",
+            }
+        else:
+            message = generate_form_errors(form,formset=False)
+            
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": message,
+            }
+        return HttpResponse(json.dumps(response_data), content_type='application/javascript')
     else:
         form = StaffIssueOrdersForm()
-    
-
-    
-    
-    return render(request, 'products/staff_issue_orders_create.html', {
-        'count': count,
-        'product_id':product_id,
-        'product_category':product_category,
-        'productunit':productunit,
-        'order_number':order_number,
-        'form':form,
         
-    })
+    context = {
+        'form': form,
+    }
+    return render(request, 'products/coupon_issue_orders_create.html', context)
+    # else:
+    #     form = StaffIssueOrdersForm()
+    
+    #     return render(request, 'products/staff_issue_orders_create.html', {
+    #     'count': count,
+    #     'product_id': product_id,
+    #     'order_number': order_number,
+    #     'form': form,
+    # })
+
+def issue_coupons_orders(request, staff_order_details_id):
+    coupon_no = request.GET.get("coupo_no")
+    issue_instance = get_object_or_404(Staff_Orders_details, staff_order_details_id=staff_order_details_id)
+    
+    if request.method == 'POST':
+        form = StaffIssue_CouponsOrdersForm(request.POST)
+                
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    coupon = NewCoupon.objects.get(coupon_type__coupon_type_name=issue_instance.product_id.product_name,book_num=coupon_no)
+                    
+                    data = form.save(commit=False)
+                    data.created_by = str(request.user.id)
+                    data.modified_by = str(request.user.id)
+                    data.modified_date = datetime.now()
+                    data.created_date = datetime.now()
+                    data.product_id = issue_instance.product_id
+                    data.staff_Orders_details_id = issue_instance
+                    data.coupon_book = coupon
+                    data.save()
+                    
+                    #  ProductStock 
+                    if (update_purchase_stock:=ProductStock.objects.filter(product=data.product_id)).exists():
+                        stock = update_purchase_stock.first()
+                        stock.quantity -= int(data.quantity)
+                        stock.save()
+                    
+                    # Update VanStock
+                    van = Van.objects.get(salesman_id=data.salesman_id)
+                    
+                    if (update_van_stock:=VanCouponStock.objects.filter(va=van,coupon=coupon,stock_type="opening_stock")).exists():
+                        stock = update_van_stock.first()
+                        stock.count += int(data.quantity)
+                        stock.save()
+                    else:
+                        vanstock = VanStock.objects.create(
+                            created_by=str(request.user.id),
+                            created_date=datetime.now(),
+                            product=data.product_id,
+                            van=van,
+                            stock_type="opening_stock",
+                        )
+                        
+                        VanCouponItems.objects.create(
+                            coupon=coupon,
+                            book_no=coupon_no,
+                            coupon_type=coupon.coupon_type,
+                            van_stock=vanstock,
+                        )
+                        
+                        VanCouponStock.objects.create(
+                            coupon=coupon,
+                            stock_type="opening_stock",
+                            count=int(data.quantity),
+                            van=van
+                        )
+                    
+                    # salesman_id = form.cleaned_data.get('salesman_id')
+                    # salesman = CustomUser.objects.get(id=salesman_id.id)
+                    # van = Van.objects.get(salesman_id=salesman)  
+                    # print("van",van)
+
+                    # van_stock = VanStock.objects.create(
+                    #     created_by=str(request.user.id),
+                    #     modified_by=str(request.user.id),
+                    #     van=van,
+                    #     stock_type="opening_stock",
+                    #     )
+                    # print("van_stock",van_stock)
+                    
+                    response_data = {
+                        "status": "true",
+                        "title": "Successfully Created",
+                        "message": "Product created successfully.",
+                        'redirect': 'true',
+                        "redirect_url": redirect('staff_issue_orders_list')
+                    }
+            
+            except IntegrityError as e:
+                # Handle database integrity error
+                response_data = {
+                    "status": "false",
+                    "title": "Failed",
+                    "message": str(e),
+                }
+
+            except Exception as e:
+                # Handle other exceptions
+                response_data = {
+                    "status": "false",
+                    "title": "Failed",
+                    "message": str(e),
+                }
+        else:
+            message = generate_form_errors(form,formset=False)
+            
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": message,
+            }
+        return HttpResponse(json.dumps(response_data), content_type='application/javascript')
+    else:
+        form = StaffIssue_CouponsOrdersForm(initial={"coupo_no":coupon_no})
+        
+    context = {
+        'form': form,
+        'issue_instance':issue_instance,
+    }
+    return render(request, 'products/coupon_issue_orders_create.html', context)
+
+
+# def issue_coupons_orders(request, staff_order_details_id):
+#     coupon_no = request.GET.get("coupo_no")
+#     print("coupon_no",coupon_no)
+#     issue = get_object_or_404(Staff_Orders_details, staff_order_details_id=staff_order_details_id)
+#     count = issue.count
+#     product_id = issue.product_id
+#     print("product_id",product_id)
+#     productunit = issue.product_id.unit
+#     product_category = issue.product_id.category_id.category_name
+
+#     if product_category == 'Coupons':
+#         print("Product is present")
+
+#         product = issue.product_id 
+#         if product:
+#             product_name = product.product_name
+#             print("Product Name:", product_name)
+
+#             coupontypes = CouponType.objects.filter(coupon_type_name=product_name)
+#             print("coupontypes", coupontypes)
+
+           
+#             if coupontypes.exists():
+                
+#                 for coupontype in coupontypes:
+#                     print("Coupon Type:", coupontype.coupon_type_name)
+#                     coupontype_id = coupontype.coupon_type_id
+#                     print("coupontype_id",coupontype_id)
+#                     couponbook = NewCoupon.objects.filter(coupon_type__coupon_type_id=coupontype_id)
+#                     print("couponbook",couponbook)
+#                     if request.method == 'POST':
+#                         form = StaffIssue_CouponsOrdersForm(request.POST)
+#                         if form.is_valid():
+#                             data = form.save(commit=False)
+#                             quantity_issued = int(form.cleaned_data.get('quantity_issued'))
+#                             print("quantity_issued",quantity_issued)
+                            
+
+#                             #  ProductStock 
+#                             product_stock = ProductStock.objects.get(product=product)
+#                             product_stock.quantity = int(form.cleaned_data.get('quantity_issued'))
+#                             product_stock.save()
+                                            
+                         
+#                             # Update VanStock
+#                             salesman_id = form.cleaned_data.get('salesman_id')
+#                             salesman = CustomUser.objects.get(id=salesman_id.id)
+#                             van = Van.objects.get(salesman_id=salesman)  
+#                             print("van",van)
+                            
+#                             van_stock = VanStock.objects.create(
+#                                 created_by=str(request.user.id),
+#                                 modified_by=str(request.user.id),
+#                                 van=van )
+#                             print("van_stock",van_stock)
+                            
+#                              # Set other fields
+#                             data.created_by = str(request.user.id)
+#                             data.modified_by = str(request.user.id)
+#                             data.modified_date = datetime.now()
+#                             data.created_date = datetime.now()
+#                             data.product_id = product_id
+#                             data.staff_Orders_details_id = issue
+#                             data.stock_quantity = stock_quantity
+
+#                             data.save()
+#                             return redirect('staff_issue_orders_list')
+#                         else:
+#                             print(form.errors)
+
+#                     form = StaffIssue_CouponsOrdersForm(initial={"coupo_no":coupon_no})
+#                     return render(request,'products/coupon_issue_orders_create.html',{'form': form,
+#                                                                                       'product_name':product_name,
+#                                                                                       'productunit':productunit,
+#                                                                                       'product_category': product_category,
+#                                                                                       'count': count,'product_id': product_id,})
+
+#             else:
+#                 print("No CouponType found for the product name")
+
+#         else:
+#             print("Product not found or product_id is None")
+
+#     return render(request, 'products/staff_issue_orders_list.html')
+
+
+# def issue_coupons_orders(request, staff_order_details_id):
+#     issue = get_object_or_404(Staff_Orders_details, staff_order_details_id=staff_order_details_id)
+#     count = issue.count
+#     product_id = issue.product_id.product_id
+#     productunit = issue.product_id.unit
+#     product_category = issue.product_id.category_id.category_name
+
+#     if product_category == 'Coupons':
+#         print("Product is present")
+
+#         product = issue.product_id 
+#         if product:
+#             product_name = product.product_name
+#             print("Product Name:", product_name)
+
+#             coupontypes = CouponType.objects.filter(coupon_type_name=product_name)
+#             print("coupontypes", coupontypes)
+
+           
+#             if coupontypes.exists():
+                
+#                 for coupontype in coupontypes:
+#                     print("Coupon Type:", coupontype.coupon_type_name)
+#                     coupontype_id = coupontype.coupon_type_id
+#                     print("coupontype_id",coupontype_id)
+#                     couponbook = NewCoupon.objects.filter(coupon_type__coupon_type_id=coupontype_id)
+#                     print("couponbook",couponbook)
+#                     if request.method == 'POST':
+#                         form = StaffIssueOrdersForm(request.POST)
+#                         if form.is_valid():
+#                             data = form.save(commit=False)
+#                             quantity_issued = int(form.cleaned_data.get('quantity_issued'))
+#                             stock_quantity = issue.product_id.quantity - quantity_issued  # Subtract issued quantity from stock
+
+#                             # Update the product's stock quantity
+#                             product.quantity = stock_quantity
+#                             product.save()
+
+#                             # Update ProductStock
+#                             product_stock, _ = ProductStock.objects.get_or_create(product=product)
+#                             product_stock.quantity = stock_quantity
+#                             product_stock.save()
+                            
+#                             # Update VanStock
+#                             salesman_id = form.cleaned_data.get('salesman_id')
+#                             salesman = CustomUser.objects.get(id=salesman_id.id)
+#                             van = Van.objects.get(salesman_id=salesman)  
+#                             print("van",van)
+#                             van_stock, _ = VanStock.objects.get_or_create(van=van, defaults={
+#                                 'created_by': str(request.user.id),
+#                                 'modified_by': str(request.user.id),
+#                             })
+
+#                             # Update VanCouponItems or VanProductItems based on product category
+#                             if product_category == "Coupons":
+#                                 van_coupon_item, _ = VanCouponItems.objects.get_or_create(coupon=product.coupon_book, van_stock=van_stock)
+#                                 van_coupon_item.book_no = product.coupon_book.book_no
+#                                 van_coupon_item.coupon_type = product.coupon_book.coupon_type
+#                                 van_coupon_item.save()
+
+#                                 van_coupon_stock, _ = VanCouponStock.objects.get_or_create(coupon=product.coupon_book)
+#                                 van_coupon_stock.count += quantity_issued
+#                                 van_coupon_stock.save()
+#                             else:
+#                                 van_product_item, _ = VanProductItems.objects.get_or_create(product=product, van_stock=van_stock)
+#                                 van_product_item.count += quantity_issued
+#                                 van_product_item.save()
+
+#                                 van_product_stock, _ = VanProductStock.objects.get_or_create(product=product)
+#                                 van_product_stock.count += quantity_issued
+#                                 van_product_stock.save()
+                            
+#                             # Set other fields and save the form
+#                             data.created_by = str(request.user.id)
+#                             data.modified_by = str(request.user.id)
+#                             data.modified_date = timezone.now()
+#                             data.created_date = timezone.now()
+#                             data.product_id = product_id
+#                             data.staff_Orders_details_id = issue
+#                             data.stock_quantity = stock_quantity
+#                             data.save()
+
+#                             return redirect('staff_issue_orders_list')
+
+#                     form = StaffIssue_CouponsOrdersForm()
+#                     return render(request,'products/coupon_issue_orders_create.html',{'form': form,'couponbook':couponbook,
+#                                                                                       'product_name':product_name,
+#                                                                                       'productunit':productunit,
+#                                                                                       'product_category': product_category,
+#                                                                                       'count': count,'product_id': product_id,})
+
+#             else:
+#                 print("No CouponType found for the product name")
+
+#         else:
+#             print("Product not found or product_id is None")
+
+#     return render(request, 'products/staff_issue_orders_list.html')
+
+#---------------------REPORTS-----
+def product_stock_report(request):
+    instances = ProductStock.objects.order_by('-created_date')  # Order by latest created date
+
+    return render(request, 'products/product_report.html', {'instances': instances})
+
+def download_productstock_pdf(request):
+    instances = ProductStock.objects.order_by('-created_date')  # Order by latest created date
+    template_path = 'products/product_stock_pdf_template.html'
+    context = {'instances': instances}
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="product_stock_details.pdf"'
+
+    template = get_template(template_path)
+    html = template.render(context)
+
+    # Create PDF
+    pisa_status = pisa.CreatePDF(html, dest=response)
+
+    if pisa_status.err:
+        return HttpResponse('We had some errors <pre>' + html + '</pre>')
+    return response
+
+
+def product_stock_excel_download(request):
+    # Retrieve product stock data
+    product_stocks = ProductStock.objects.order_by('-created_date')  # Order by latest created date
+
+
+    # Create a dictionary to store data
+    data = {
+        'Product Name': [product_stock.product_name for product_stock in product_stocks],
+        'Stock Quantity': [product_stock.quantity for product_stock in product_stocks],
+        'Branch': [product_stock.branch for product_stock in product_stocks],
+        'Status': [product_stock.status for product_stock in product_stocks],
+        
+    }
+
+    # Create a DataFrame from the data dictionary
+    df = pd.DataFrame(data)
+
+    # Create a buffer to store the Excel file
+    buffer = BytesIO()
+
+    # Write the DataFrame to the buffer in Excel format
+    df.to_excel(buffer, index=False)
+
+    # Set the buffer's file pointer to the beginning
+    buffer.seek(0)
+
+    # Create the HttpResponse object with the Excel file
+    filename = f"product_stock_{timezone.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx"
+    response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    return response
+

@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils.timezone import now
 from .models import Van, Van_Routes, Van_License
 from accounts.models import CustomUser, Customers
 from master.models import EmirateMaster, RouteMaster
@@ -19,6 +20,8 @@ from django.http import HttpResponse
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from django.db.models import Q
+from datetime import datetime
+
 
 
 
@@ -130,7 +133,6 @@ def route_assign(request,van_id):
     all_van=Van_Routes.objects.filter(van__van_id = van_id)
     van_data = Van.objects.get(van_id = van_id)
     context = {'all_van' : all_van,"form":form,"van_data":van_data}
-    
     if request.method == 'POST':
         form = VanAssignRoutesForm(request.POST)
         context = {'all_van' : all_van,"form":form,"van_data":van_data}
@@ -281,61 +283,31 @@ def licence_delete(request, plate):
 
 
 # Trip schedule
+
 def schedule_view(request):
-    if request.method == 'POST':
-        date_str = request.POST.get('date')
-        if date_str:
-            date = datetime.strptime(date_str, '%Y-%m-%d')
-        
-        routes = RouteMaster.objects.all()
-        route_trip_details = []
-        route_details=[]
-        
-        for route in routes:
-            trip_count = 0
-            customer_count = 0
-            bottle_count=0
-            todays_customers = find_customers(request, date_str, route.route_id)
-            trips=[]
-            for customer in todays_customers:
-                customer_count+=1
-                bottle_count+=customer['no_of_bottles']
-                if customer['trip'] not in trips:
-                    trips.append(customer['trip'])
-            if bottle_count > 0:
-                route_details.append({
-                    'route_name':route.route_name,
-                    'route_id':route.route_id,
-                    'no_of_customers':customer_count,
-                    'no_of_bottles':bottle_count,
-                    'no_of_trips':len(trips),
-                    'trips': trips
-                })
-
-
-        # for route in routes:
-        #     todays_route_wise_customers = find_customers(request, date_str, route.route_id)
-        #     if todays_route_wise_customers:
-        #         trips = set(customer['trip'] for customer in todays_route_wise_customers)
-        #         for trip in trips:
-        #             trip_customers = [customer['customer_name'] for customer in todays_route_wise_customers if customer['trip'] == trip]
-        #             route_trip_details.append({
-        #                 'route_id': route.route_id,
-        #                 'route_name': route.route_name,
-        #                 'trip': trip,
-        #                 'customers': trip_customers,
-        #             })
-        #     else:
-        #         route_trip_details.append({
-        #             'route_id': route.route_id,
-        #             'route_name': route.route_name,
-        #             'trip': 'No trip',  # Indicate no trip
-        #             'customers': []  # Indicate no customers
-        #         })
-        
-        return render(request, 'van_management/schedule_view.html', {'def_date':date_str, 'details':route_details})
-        # return render(request, 'van_management/schedule_view.html', {'def_date':date_str, 'details':route_trip_details})
-    return render(request, 'van_management/schedule_view.html')
+    date_str = request.POST.get('date') if request.method == 'POST' else now().strftime('%Y-%m-%d')
+    date = datetime.strptime(date_str, '%Y-%m-%d')
+    
+    routes = RouteMaster.objects.all()
+    route_details = []
+    
+    for route in routes:
+        todays_customers = find_customers(request, date_str, route.route_id)
+        if todays_customers:
+            customer_count = len(todays_customers)
+            bottle_count = sum(customer['no_of_bottles'] for customer in todays_customers)
+            trips = list(set(customer['trip'] for customer in todays_customers))
+            trips.reverse()
+            route_details.append({
+                'route_name': route.route_name,
+                'route_id': route.route_id,
+                'no_of_customers': customer_count,
+                'no_of_bottles': bottle_count,
+                'no_of_trips': len(trips),
+                'trips': trips
+            })
+    
+    return render(request, 'van_management/schedule_view.html', {'def_date': date_str, 'details': route_details})
 
             
 def schedule_by_route(request, def_date, route_id, trip):
@@ -347,8 +319,13 @@ def schedule_by_route(request, def_date, route_id, trip):
             customers.append(customer)
     totale_bottle=0
     for customer in customers:
-        totale_bottle+=customer['no_of_bottles']
-    return render(request, 'van_management/schedule_by_route.html', {'def_date':def_date,  'route':route, 'todays_customers' :customers, 'trip':trip, 'totale_bottle':totale_bottle })
+        totale_bottle+=customer['no_of_bottles'] 
+    return render(request, 'van_management/schedule_by_route.html', {
+        'def_date':def_date,  
+        'route':route, 
+        'todays_customers' :customers, 
+        'trip':trip, 
+        'totale_bottle':totale_bottle })
     
 
 
@@ -389,55 +366,105 @@ def find_customers(request, def_date, route_id):
                 emergency_customers.append(client.customer)
                 if client.customer.building_name not in buildings:
                     buildings.append(client.customer.building_name)
-
+    co = 0
+    for cus in todays_customers:
+        co+=cus.no_of_bottles_required
+    # print(route,co)
     
+    if not len(buildings) == 0:
+        building_count = {}
 
-    building_count = {}
-    for building in buildings:
-        for customer in todays_customers:
-            if customer.building_name == building:
-                if building in building_count:
-                    building_count[building] += customer.no_of_bottles_required
-                else:
-                    building_count[building] = customer.no_of_bottles_required
-    sorted_building_count = dict(sorted(building_count.items(), key=lambda item: item[1]))
+        for building in buildings:
+            for customer in todays_customers:
+                if customer.building_name == building:
+                    if building in building_count:
+                        building_count[building] += customer.no_of_bottles_required
+                    else:
+                        building_count[building] = customer.no_of_bottles_required
 
-    trips = {}
-    trip_count = 1
-    current_trip_bottle_count = 0
-    trip_buildings = []
 
-    for building, bottle_count in sorted_building_count.items():
-        if current_trip_bottle_count + bottle_count > 200:
-            trip_buildings = [building]
-            trips[f"Trip{trip_count+1}"] = trip_buildings
-            current_trip_bottle_count = bottle_count
-        else:
-            trip_buildings.append(building)
-            trips[f"Trip{trip_count}"] = trip_buildings
-            current_trip_bottle_count += bottle_count
+        building_gps = []
+
+        for building, bottle_count in building_count.items():
+            c = Customers.objects.filter(building_name=building, routes=route).first()
+            gps_longitude = c.gps_longitude
+            gps_latitude = c.gps_latitude
+            building_gps.append((building, gps_longitude, gps_latitude, bottle_count))
+
+        sorted_building_gps = sorted(building_gps, key=lambda x: (x[1], x[2]))
+        sorted_buildings = [item[0] for item in sorted_building_gps]
+        sorted_building_count = dict(sorted(building_count.items(), key=lambda item: item[1]))
+
+        trips = {}
+        trip_count = 1
+        current_trip_bottle_count = 0
+        trip_buildings = []
+        for building in sorted_buildings:
+          
+            for building_data in sorted_building_gps:
+                if building_data[0]==building:
+                    building = building_data[0]
+                    bottle_count = building_data[3]
+                    if current_trip_bottle_count + bottle_count > 200:
+                        trip_buildings = [building]
+                        trip_count+=1
+                        trips[f"Trip{trip_count}"] = trip_buildings
+                        # print(route,"trip",trip_count)
+                        current_trip_bottle_count = bottle_count
+                    else:
+                        
+                        trip_buildings.append(building)
+                        trips[f"Trip{trip_count}"] = trip_buildings
+                        current_trip_bottle_count += bottle_count
+            
         
-    # List to store trip-wise customer details
-    trip_customers = []
-    for trip in trips:
-        for customer in todays_customers:
-            if customer.building_name in trips[trip]:
-                trip_customer = {
-                    "customer_name" : customer.customer_name,
-                    "trip":trip,
-                    "building":customer.building_name,
-                    "route" : customer.routes.route_name,
-                    "no_of_bottles": customer.no_of_bottles_required,
-                    "location" : customer.location,
-                }
-                if customer in emergency_customers:
-                    trip_customer['type'] = 'Emergency'
-                else:
-                    trip_customer['type'] = 'Default'
-                trip_customers.append(trip_customer)
-    return trip_customers
 
-# pdf and excel
+        # Merge trips if possible to optimize
+        merging_occurred = False
+        for trip_num in range(1, trip_count + 1):
+            for other_trip_num in range(trip_num + 1, trip_count + 1):
+                trip_key = f"Trip{trip_num}"
+                other_trip_key = f"Trip{other_trip_num}"
+                combined_buildings = trips.get(trip_key, []) + trips.get(other_trip_key, [])
+                total_bottles = sum(sorted_building_count.get(building, 0) for building in combined_buildings)
+                if total_bottles <= 200:
+                    trips[trip_key] = combined_buildings
+                    del trips[other_trip_key]
+                    merging_occurred = True
+                    break
+            if merging_occurred:  
+                break
+                    
+        # List to store trip-wise customer details
+        trip_customers = []
+        for trip in trips:
+            for building in trips[trip]:
+                for customer in todays_customers:
+                    if customer.building_name ==building:
+                        trip_customer = {
+                            "customer_name" : customer.customer_name,
+                            "trip":trip,
+                            "building":customer.building_name,
+                            "route" : customer.routes.route_name,
+                            "no_of_bottles": customer.no_of_bottles_required,
+                            "location" : customer.location.location_name,
+                            "building": customer.building_name,
+                            "door_house_no": customer.door_house_no,
+                            "floor_no": customer.floor_no,
+                            "gps_longitude": customer.gps_longitude,
+                            "gps_latitude": customer.gps_latitude,
+                            "customer_type": customer.customer_type,
+                        }
+                        if customer in emergency_customers:
+                            trip_customer['type'] = 'Emergency'
+                        else:
+                            trip_customer['type'] = 'Default'
+                        trip_customers.append(trip_customer)
+        return trip_customers
+
+
+
+import math
 
 def pdf_download(request, route_id, def_date, trip):
     route = RouteMaster.objects.get(route_id=route_id)
@@ -472,37 +499,86 @@ def pdf_download(request, route_id, def_date, trip):
     y -= 16
     p.line(x, y, x + 460, y)
 
-    y -= 15
-
+    y -= 25
     counter = 1
+    multiline_client = False  # Flag to track multiline client name in the row
     for customer in customers:
-        if customer['type'] == 'Emergency':
-            p.setFillColorRGB(140, 0, 0)
-            p.drawString(x, y, str(counter))
-            p.drawString(x+30, y, str(customer['customer_name']))
-            p.drawString(x + 120, y, str(customer['location']))
-            p.drawString(x + 220, y, str(customer['no_of_bottles']))
-            p.drawString(x + 300, y, "")
-            p.drawString(x + 350, y, "")
-            p.drawString(x + 400, y, "Emergency")
-            y -= 20
-            counter += 1
-        else:
-            p.setFillColorRGB(0, 0, 0)
-            p.drawString(x, y, str(counter))
-            p.drawString(x+30, y, str(customer['customer_name']))
-            p.drawString(x + 120, y, str(customer['location']))
-            p.drawString(x + 220, y, str(customer['no_of_bottles']))
-            p.drawString(x + 300, y, "")
-            p.drawString(x + 350, y, "")
-            p.drawString(x + 400, y, "Default")
-            y -= 20
-            counter += 1
-    if counter == 1:
-        p.setFont("Helvetica", 11)
-        p.drawString(x + 150 , y-60, "No Clients in this Route Today")
+        if y <= 100:  
+            p.showPage()  
+            y = 700 
+            
+            
+            # Draw headers on the new page
+            p.setFont("Helvetica", 9)
+            p.drawString(x, y, "Si No")
+            p.drawString(x + 30, y, "Client Name")
+            p.drawString(x + 135, y, "Location")
+            p.drawString(x + 200, y, "No of Bottles")
+            p.drawString(x + 267, y, "Outstanding")
+            p.drawString(x + 280, y-10, "Bottles")
+            p.drawString(x + 330, y, "Outstanding")
+            p.drawString(x + 337, y-10, "Coupons")
+            p.drawString(x + 400, y, "Type")
+            y -= 16
+            p.line(x, y, x + 460, y)
+            y -= 50
 
-    p.showPage()
+        # Split the client name from the nearest space if it needs to be split into multiple lines
+        client_name = customer['customer_name']
+        client_name_parts = []
+        if p.stringWidth(client_name, "Helvetica", 9) > 86:
+            parts = client_name.split()
+            current_line = parts[0]
+            for part in parts[1:]:
+                if p.stringWidth(current_line + ' ' + part, "Helvetica", 9) <= 86:
+                    current_line += ' ' + part
+                else:
+                    client_name_parts.append(current_line)
+                    current_line = part
+            client_name_parts.append(current_line)
+            multiline_client = True  # Set flag for multiline client name
+        else:
+            client_name_parts.append(client_name)
+
+        if multiline_client:
+            client_name_height = 10 * len(client_name_parts)
+            cell_middle_y = y - client_name_height / 2
+            p.drawString(x + 5, cell_middle_y + 6, str(counter))
+        else:
+            y -= 0
+            
+            p.drawString(x + 5, y, str(counter))
+            
+        # Draw the client name
+        client_name_height = 10 * len(client_name_parts)
+        for part in client_name_parts:
+            p.drawString(x + 30, y, part)
+            y -= 10
+            
+
+        # Adjust vertical position for the other cells if multiline client name is printed
+        if multiline_client:
+            cell_middle_y = y + client_name_height / 2
+            cell_middle_y += 10
+            p.drawString(x + 135, cell_middle_y, str(customer['location']))
+            p.drawString(x + 220, cell_middle_y, str(customer['no_of_bottles']))
+            p.drawString(x + 300, cell_middle_y, "")
+            p.drawString(x + 350, cell_middle_y, "")
+            p.drawString(x + 400, cell_middle_y, "Emergency" if customer['type'] == 'Emergency' else "Default")
+        else:
+            y += 10
+            p.drawString(x + 135, y, str(customer['location']))
+            p.drawString(x + 220, y, str(customer['no_of_bottles']))
+            p.drawString(x + 300, y, "")
+            p.drawString(x + 350, y, "")
+            p.drawString(x + 400, y, "Emergency" if customer['type'] == 'Emergency' else "Default")
+            y -= 20  # Adjust vertical position for the next entry
+
+        # Draw horizontal line below each row
+        p.line(x, y, x + 460, y)
+        y -= 25
+        counter += 1
+
     p.save()
     buffer.seek(0)
 
@@ -510,7 +586,6 @@ def pdf_download(request, route_id, def_date, trip):
     response = HttpResponse(buffer, content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="{filename}"'
     return response
-    
 
 
 def excel_download(request, route_id, def_date, trip):
@@ -545,3 +620,158 @@ def excel_download(request, route_id, def_date, trip):
     response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'inline; filename="{filename}"'
     return response
+
+
+#Expence
+
+class ExpenseHeadList(View):
+    template_name = 'van_management/expensehead_list.html'
+    def get(self, request, *args, **kwargs):
+        expence_heads = ExpenseHead.objects.all()
+        context = {'expence_heads':expence_heads}
+        return render(request, self.template_name, context)
+
+
+
+class ExpenseHeadAdd(View):
+    template_name = 'van_management/expensehead_add.html'
+    form_class = ExpenseHeadForm
+
+    def get(self, request, *args, **kwargs):
+        form = self.form_class
+        context = {'form': form}
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        form = self.form_class(request.POST)
+        if form.is_valid:
+            form.save()
+            return redirect('expensehead_list')
+        else:
+            return render(request, self.template_name, {'form':form})
+        
+
+class ExpenseHeadEdit(View):
+    template_name = 'van_management/expensehead_edit.html'
+    form_class = ExpenseHeadForm
+
+    def get(self, request, expensehead_id, *args, **kwargs):
+        expensehead = ExpenseHead.objects.get(expensehead_id=expensehead_id)
+        form = self.form_class(instance = expensehead)
+        context = {'form':form, 'expensehead':expensehead}
+        return render(request, self.template_name, context)
+
+    def post(self, request, expensehead_id, *args, **kwargs):
+       expensehead = ExpenseHead.objects.get(expensehead_id=expensehead_id)
+       form = self.form_class(request.POST, instance=expensehead)
+       if form.is_valid():
+           form.save()
+           return redirect('expensehead_list')
+       else:
+           context = {'form':form}
+           return render(request, self.template_name, context)
+       
+class ExpenseHeadDelete(View):
+    template_name = 'van_management/expensehead_delete.html'
+    def get(self, request, expensehead_id, *args, **kwargs):
+        expensehead = ExpenseHead.objects.get(expensehead_id=expensehead_id)
+        context = {'expensehead':expensehead}
+        return render(request, self.template_name, context)
+    def post(self, request, expensehead_id, *args, **kwargs):
+        expensehead = ExpenseHead.objects.get(expensehead_id=expensehead_id)
+        expensehead.delete()
+        return redirect('expensehead_list')
+
+
+
+
+class ExpenseList(View):
+    template_name = 'van_management/expense_list.html'
+
+    def get(self, request, *args, **kwargs):
+        from_date = request.GET.get('from_date')
+        to_date = request.GET.get('to_date')
+        fil_expe = request.GET.get('expense_type')
+        
+        expenses = Expense.objects.all()  
+        
+        if from_date and to_date:
+            from_date = datetime.strptime(from_date, '%Y-%m-%d')
+            to_date = datetime.strptime(to_date, '%Y-%m-%d')
+            expenses = expenses.filter(expense_date__range=[from_date, to_date])
+        else:
+            expenses = expenses.filter(expense_date=datetime.today())
+        
+        if fil_expe:
+            expenses = expenses.filter(expence_type_id=fil_expe)
+        expense_types = ExpenseHead.objects.all()
+        context = {'expenses': expenses, 'expense_types':expense_types}
+        return render(request, self.template_name, context)
+
+class ExpenseAdd(View):
+    template_name = 'van_management/expense_add.html'
+    form_class = ExpenseAddForm
+
+    def get(self, request, *args, **kwargs):
+        form = self.form_class()
+        context = {'form': form}
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        form = self.form_class(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('expense_list')
+        else:
+            context = {'form': form}
+            return render(request, self.template_name, context)
+
+class ExpenseEdit(View):
+    template_name = 'van_management/expense_edit.html'
+    form_class = ExpenseEditForm
+
+    def get(self, request, expense_id, *args, **kwargs):
+        expense = Expense.objects.get(expense_id=expense_id)
+        form = self.form_class(instance=expense)
+        context = {'form': form, 'expense':expense}
+        return render(request, self.template_name, context)
+
+    def post(self, request, expense_id, *args, **kwargs):
+        expense = get_object_or_404(Expense, expense_id=expense_id)
+        form = self.form_class(request.POST, instance=expense)
+        if form.is_valid():
+            form.save()
+            print('updated')
+            return redirect('expense_list')
+        else:
+            context = {'form': form, 'expense':expense}
+            return render(request, self.template_name, context)
+
+class ExpenseDelete(View):
+    template_name = 'van_management/expense_delete.html'
+
+    def get(self, request, expense_id, *args, **kwargs):
+        expense = Expense.objects.get(expense_id=expense_id)
+        context = {'expense': expense}
+        return render(request, self.template_name, context)
+
+    def post(self, request, expense_id, *args, **kwargs):
+        expense = Expense.objects.get(expense_id=expense_id)
+        expense.delete()
+        return redirect('expense_list')
+    
+    
+# ----------VanStock-----------
+
+def vanstock(request):
+    van_stock = VanProductStock.objects.all()
+    for item in van_stock:
+        item.total_stock = item.count + item.product.quantity
+    context = {'van_stock': van_stock}
+    return render(request, 'van_management/vanstock_list.html', context)
+
+def offload(request):
+    van_stock = VanProductStock.objects.all()
+    
+    context = {'van_stock': van_stock}
+    return render(request, 'van_management/offload.html', context)

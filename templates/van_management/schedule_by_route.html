@@ -18,7 +18,8 @@
         <div class="container-fluid">
 
             <!-- Start:: row-2 -->
-            <div   id="printArea">
+            
+            <div>
             <div class="row">
                 <div class="col-xl-12">
                     <div class="card custom-card">
@@ -35,28 +36,21 @@
                                     <div class="row">
                                         <div class="row col-md-6">
                                             <div class="col-md-4 col-form-label text-end">
-                                                <h6>Date</h6>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <input name="date" type="date" class="form-select" style="width: min-content;" value="{{def_date}}" readonly>
+                                                <h6>Date : {{def_date}}</h6>
                                             </div>
                                             <div class="col-md-4 " >
                                                 
                                             </div>
                                         
                                         </div>
-                                        <div class="row col-md-6 exclude-from-pdf">
+                                        <div class="row col-md-6 ">
                                             <div class="col-6 col-form-label"><b>Total Bottles : {{totale_bottle}}</b></div>
+                                            <div class="col-2"></div>
                                             <div class="col-2">
                                                 
                                                 <input type="button" onclick="printDiv('printArea')" value="PRINT" class="btn btn-outline-success btn-sm" style="width: 6em;">
                                             </div>
-                                            <div class="col-2">
-                                                <a href="{% url 'pdf_download' route.route_id def_date trip %}" class="btn btn-outline-success btn-sm" style="width: 6em;" target="_blank">
-                                                    <i class="fas fa-file-pdf"></i>   PDF
-                                                    
-                                                </a>
-                                            </div>
+                                            
                                             <div class="col-2">
                                                 <a href="{% url 'excel_download' route.route_id def_date trip %}" class="btn btn-outline-success btn-sm" style="width: 6em;">
                                                     <i class="fas fa-file-excel"></i>   EXCEL
@@ -73,10 +67,16 @@
                                         <th scope="col" style="border-bottom: 1; max-width: 5em;">Sl No</th>
                                         <th scope="col" style="border-bottom: 1; max-width: 11em;">Client Name</th>
                                         <th scope="col" style="border-bottom: 1;">Locations</th>
+                                        <th scope="col" style="border-bottom: 1;">Building</th>
                                         <th scope="col" style="border-bottom: 1;">No of Bottles</th>
                                         <th scope="col" style="border-bottom: 1;">Outstanding Bottles</th>
                                         <th scope="col" style="border-bottom: 1;">Outstanding Coupons</th>
-                                        <th scope="col" style="border-bottom: 1;" >Type</th>
+                                        
+                                        <!-- <th scope="col" style="border-bottom: 1;">longitude</th>
+                                        <th scope="col" style="border-bottom: 1;">latitude</th> -->
+                                        <th scope="col" style="border-bottom: 1;">Type</th>
+                                        
+                                        <th scope="col" style="border-bottom: 1;" >Delivery Type</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -85,9 +85,14 @@
                                             <td>{{ forloop.counter }}</td>
                                             <td>{{ todays_customer.customer_name }}</td>
                                             <td>{{ todays_customer.location }}</td>
+                                            <td>{{ todays_customer.building   }}</td>
                                             <td>{{ todays_customer.no_of_bottles   }}</td>
                                             <td></td>
                                             <td></td>
+                                            
+                                            <!-- <td>{{ todays_customer.gps_longitude   }}</td>
+                                            <td>{{ todays_customer.gps_latitude   }}</td> -->
+                                            <td>{{ todays_customer.customer_type   }}</td>
                                             <td>{{todays_customer.type}}</td>
                                         </tr>
                                     {% endfor %}
@@ -100,29 +105,66 @@
 
         </div>
     </div>
+    
 </div> 
+<div id="printArea"  style="display: none; padding: 10em;">
+    <div style="margin-top: 4em;">
+        <h3>National Water</h3>
+    </div>
+    <div class="container" style="padding-top: 1em;"></div>
+    <h5>Trip Schedule to {{route.route_name}} ({{trip}})</h5>
+    <h6>Date : {{def_date}}</h6>
+    <h6>Total Bottle: {{totale_bottle}}</h6>
+    <table class="table table-bordered text-wrap " style="width: 100%; margin-top: 3em;">
+        <thead>
+            <tr>
+                <th scope="col" style="border-bottom: 1; max-width: 5em;">Sl No</th>
+                <th scope="col" style="border-bottom: 1; max-width: 15em;">Client Name</th>
+                <th scope="col" style="border-bottom: 1;">Locations</th>
+                <th scope="col" style="border-bottom: 1;">Building</th>
+                <th scope="col" style="border-bottom: 1;">Flat</th>
+                <th scope="col" style="border-bottom: 1; max-width: 18em;">No of Bottles</th>
+                <th scope="col" style="border-bottom: 1;">Outstanding Bottles</th>
+                <th scope="col" style="border-bottom: 1;">Outstanding Coupons</th>
+                
+                <th scope="col" style="border-bottom: 1;" >Type</th>
+                <th scope="col" style="border-bottom: 1;" >Delivery Type</th>
+                
+            </tr>
+        </thead>
+        <tbody>
+            {% for todays_customer in todays_customers %}
+                <tr style="font-weight: bold;">
+                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %}>{{ forloop.counter }}</td>
+                    <td  {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %} style="max-width: 15em; min-width: 12em;">{{ todays_customer.customer_name }}</td>
+                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %} >{{ todays_customer.location }}</td>
+                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %} >{{ todays_customer.building }}</td>
+                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %}  style="max-width: 9em; min-width: 8em;">Door: {{ todays_customer.door_house_no }} floor: {{ todays_customer.floor_no }} </td>
+                    
+                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %} >{{ todays_customer.no_of_bottles   }}</td>
+                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %} ></td>
+                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %} ></td>
+                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %} >{{ todays_customer.customer_type   }}</td>
+                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %} >{{todays_customer.type}}</td>
+
+                    
+                </tr>
+            {% endfor %}
+        </tbody>
+        
+    </table>
+        
+    </div>
+
+
 
 <script>
     function printDiv(divName) {
-        // Hide elements to exclude from PDF
-        var elementsToExclude = document.querySelectorAll('.exclude-from-pdf');
-        elementsToExclude.forEach(function(element) {
-            element.style.display = 'none';
-        });
-
-        // Print the specified div
         var printContents = document.getElementById(divName).innerHTML;
         var originalContents = document.body.innerHTML;
         document.body.innerHTML = printContents;
         window.print();
-        
-        // Restore original contents
         document.body.innerHTML = originalContents;
-
-        // Restore visibility of excluded elements
-        elementsToExclude.forEach(function(element) {
-            element.style.display = '';
-        });
     }
 </script>
 

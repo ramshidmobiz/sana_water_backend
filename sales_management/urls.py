@@ -18,6 +18,9 @@ urlpatterns = [
 
     
 
+    path('coupon_sale', CouponSaleView.as_view(), name='coupon_sale'),
+    path('details_view/<str:pk>',DetailsView.as_view(), name='details_view'),
+
 
     
 

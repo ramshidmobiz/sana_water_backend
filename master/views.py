@@ -140,7 +140,7 @@ class Route_Create(View):
         if form.is_valid():
             data = form.save(commit=False)
             data.created_by = str(request.user.id)
-            print(str(request.user.branch_id.branch_id))
+            
             branch_id=request.user.branch_id.branch_id
             branch = BranchMaster.objects.get(branch_id=branch_id)  # Adjust the criteria based on your model
             data.branch_id = branch
@@ -347,7 +347,9 @@ class Location_Delete(View):
         rec.delete()
         messages.success(request, 'Location Data Deleted Successfully', 'alert-success')
         return redirect('locations_list')
+    
 
+        
 class Category_List(View):
     template_name = 'master/category_list.html'
 

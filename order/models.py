@@ -32,3 +32,17 @@ class Customer_Order(models.Model):
 
     def __str__(self):
         return str(self.order_id)
+
+class Order(models.Model):
+    order_id= models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    driver = models.ForeignKey(CustomUser, on_delete=models.SET_NULL,  null=True, blank=True, related_name='driver',)
+    route = models.ForeignKey(RouteMaster, on_delete=models.SET_NULL,  null=True, blank=True)
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
+    quantity = models.PositiveIntegerField()
+    salesman = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, blank=True, null=True,  related_name='salesman',)
+    order_date = models.DateField(blank=True, null=True)
+    created_by = models.CharField(max_length=20, null=True, blank=True)
+    created_date = models.DateTimeField(auto_now_add=True, editable=False, null=True, blank=True)
+    class Meta:
+        ordering = ('-created_date',)
+        

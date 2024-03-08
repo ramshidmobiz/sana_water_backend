@@ -13,6 +13,7 @@ from . forms import  *
 from tax_settings.models import Tax
 from tax_settings.forms import TaxTypesForm
 
+
 # Create your views here.
 def tax_types(request):
     instances = Tax.objects.all()

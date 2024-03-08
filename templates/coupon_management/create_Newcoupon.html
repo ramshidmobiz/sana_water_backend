@@ -21,7 +21,7 @@
                         </div>
                     </div>
                     <div class="card-body">
-                        <form enctype="multipart/form-data" role="form" id="create-coupon-form" method="post" class="row g-3 needs-validation">
+                        <form enctype="multipart/form-data" role="form" id="create-coupon-form" method="post" class="row g-3 needs-validation ajax redirect">
                             {% csrf_token %}
                             <!--row 1-->
                             <div class="col-md-6">
@@ -71,6 +71,42 @@
     </div>
 </div>
 
+{% comment %} <script>
+    document.getElementById("generate-btn").addEventListener("click", function(event) {
+        event.preventDefault();  // Prevent form submission
+
+        // Serialize form data
+        var formData = new FormData(document.getElementById("create-coupon-form"));
+
+        // Send AJAX request to create and generate coupons
+        fetch('/coupon/create_Newcoupon/', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById("coupon-book-num").textContent = data.book_num;
+                var leafletList = document.getElementById("leaflet-list");
+                leafletList.innerHTML = "";  // Clear existing leaflets
+                data.leaflets.forEach(function(leaflet) {
+                    var listItem = document.createElement("li");
+                    var couponBookNum = data.book_num.replace(/\s+/g, ''); // Remove white spaces from book_num
+                    var leafletNum = leaflet.leaflet_number.padStart(2, '0'); // Pad leaflet number with '0' if necessary
+                    listItem.textContent = couponBookNum + leafletNum; // Concatenate book number and leaflet number
+                    leafletList.appendChild(listItem);
+                });
+                document.getElementById("leaflet-serial-numbers").style.display = "block";  // Show leaflet section
+                document.getElementById("back-button").style.display = "block"; // Show back button
+            } else {
+                document.getElementById("error-message").textContent = data.message;
+            }
+        })
+        .catch(error => console.error('Error:', error));
+
+            });
+</script> {% endcomment %}
+
 <script>
     document.getElementById("generate-btn").addEventListener("click", function(event) {
         event.preventDefault();  // Prevent form submission
@@ -92,19 +128,20 @@
                 data.leaflets.forEach(function(leaflet) {
                     var listItem = document.createElement("li");
                     var couponBookNum = data.book_num.replace(/\s+/g, ''); // Remove white spaces from book_num
-                    listItem.textContent = couponBookNum + " " + leaflet.leaflet_number.padStart(2, '0');
+                    var leafletNum = leaflet.leaflet_number.padStart(2, '0'); // Pad leaflet number with '0' if necessary
+                    listItem.textContent = couponBookNum + leafletNum; // Concatenate book number and leaflet number
                     leafletList.appendChild(listItem);
                 });
                 document.getElementById("leaflet-serial-numbers").style.display = "block";  // Show leaflet section
                 document.getElementById("back-button").style.display = "block"; // Show back button
             } else {
+                // If the response indicates that the coupon book already exists, display the error message
                 document.getElementById("error-message").textContent = data.message;
             }
         })
         .catch(error => console.error('Error:', error));
     });
 </script>
-
 
 {% endblock %}
 

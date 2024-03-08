@@ -30,6 +30,8 @@ urlpatterns = [
     path('category_create',Category_Create.as_view(), name='category_create'),
     path('category_edit/<str:pk>', Category_Edit.as_view(), name='category_edit'),
     path('category_details/<str:pk>', Category_Details.as_view(), name='category_details'),
+    
+    
    ]
 
 
