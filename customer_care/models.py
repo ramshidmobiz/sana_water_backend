@@ -105,7 +105,7 @@ class CouponPurchaseModel(models.Model):
 class CustodyPullOutModel(models.Model): 
     custodypullout_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     request_type = models.ForeignKey(RequestTypeMaster,on_delete=models.SET_NULL, null=True, blank=True)
-    customer_custody_item = models.ForeignKey('client_management.CustodyCustomItems', on_delete=models.SET_NULL, null=True, blank=True,related_name='customer_custody_item')
+    # customer_custody_item = models.ForeignKey('client_management.CustodyCustomItems', on_delete=models.SET_NULL, null=True, blank=True,related_name='customer_custody_item')
     item_name = models.ForeignKey('product.Product', on_delete=models.SET_NULL, null=True, blank=True,related_name='customer_product')
     qty_to_be_taken_out = models.IntegerField(default=0)
     scheduled_date = models.DateField(blank=True, null=True)

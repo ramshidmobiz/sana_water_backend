@@ -200,31 +200,31 @@ class CustodyItemFilterForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-control', 'required': 'true'})
     )
 
-from django import forms
-from product.models import Product
-from master.models import CategoryMaster
-from django import forms
-from .models import *
-class CustomerCustodyItemsForm(forms.ModelForm):
+# from django import forms
+# from product.models import Product
+# from master.models import CategoryMaster
+# from django import forms
+# from .models import *
+# class CustomerCustodyItemsForm(forms.ModelForm):
     
-    class Meta:
-        model = CustodyCustomItems
-        fields = ['customer', 'product', 'count', 'deposit_form', 'deposit_form_number','serialnumber','amount']
-        widgets = {
+#     class Meta:
+#         model = CustodyCustomItems
+#         fields = ['customer', 'product', 'count', 'deposit_form', 'deposit_form_number','serialnumber','amount']
+#         widgets = {
 
-        'customer': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-        'product': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-        'count': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-        'amount': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-        'deposit_form': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-        'serialnumber': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-        'deposit_form_number': forms.TextInput(attrs={'class': 'form-control', 'type': 'hidden', 'required': 'true'}),
-        }
+#         'customer': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+#         'product': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+#         'count': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+#         'amount': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+#         'deposit_form': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+#         'serialnumber': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+#         'deposit_form_number': forms.TextInput(attrs={'class': 'form-control', 'type': 'hidden', 'required': 'true'}),
+#         }
 
    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Filter the queryset of the product field to include only specific products
-        product_choices = Product.objects.filter(product_name__in=["5 Gallon", "Water Cooler", "Dispenser"])
-        self.fields['product'].queryset = product_choices
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         # Filter the queryset of the product field to include only specific products
+#         product_choices = Product.objects.filter(product_name__in=["5 Gallon", "Water Cooler", "Dispenser"])
+#         self.fields['product'].queryset = product_choices
 

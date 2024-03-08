@@ -3,7 +3,7 @@ from django.forms import ModelForm
 from .models import *
 from master.models import *
 from client_management.models import *
-
+CustodyCustomItems={}
 class RequestType_Create_Form(forms.ModelForm):
     class Meta:
         model = RequestTypeMaster
@@ -103,23 +103,24 @@ class DefaultBottleQuantityForm(forms.ModelForm):
         }
 
 class CustodyPullOutForm(forms.ModelForm):
-    def __init__(self,customer_id, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['request_type'].queryset = RequestTypeMaster.objects.filter(request_name__in = ['Custody Pull Out'])
-        customer_items = CustodyCustomItems.objects.filter(customer=customer_id).values_list('product', flat=True)
-        self.fields['item_name'].queryset = Product.objects.filter(product_id__in=customer_items)
-        #self.fields['qty_to_be_taken_out'].queryset = CustodyCustomItems.objects.filter(customer = customer_id).count
+    pass
+    # def __init__(self,customer_id, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     self.fields['request_type'].queryset = RequestTypeMaster.objects.filter(request_name__in = ['Custody Pull Out'])
+    #     customer_items = CustodyCustomItems.objects.filter(customer=customer_id).values_list('product', flat=True)
+    #     self.fields['item_name'].queryset = Product.objects.filter(product_id__in=customer_items)
+    #     #self.fields['qty_to_be_taken_out'].queryset = CustodyCustomItems.objects.filter(customer = customer_id).count
 
-    class Meta:
-        model = CustodyPullOutModel
-        fields = ['request_type','item_name','qty_to_be_taken_out','scheduled_date','customer_custody_item']
-        widgets = {
-            'request_type': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'item_name': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'qty_to_be_taken_out': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'scheduled_date':forms.DateInput(attrs={'class': 'form-control','type':'date', 'required': 'true'}),
-            'customer_custody_item': forms.TextInput(attrs={'class': 'form-control','type':'hidden', 'required': 'true'}),
-        }
+    # class Meta:
+    #     model = CustodyPullOutModel
+    #     fields = ['request_type','item_name','qty_to_be_taken_out','scheduled_date','customer_custody_item']
+    #     widgets = {
+    #         'request_type': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+    #         'item_name': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+    #         'qty_to_be_taken_out': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+    #         'scheduled_date':forms.DateInput(attrs={'class': 'form-control','type':'date', 'required': 'true'}),
+    #         'customer_custody_item': forms.TextInput(attrs={'class': 'form-control','type':'hidden', 'required': 'true'}),
+    #     }
 
 class DiffBottles_Create_Form(forms.ModelForm):
     def __init__(self, *args, **kwargs):
