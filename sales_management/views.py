@@ -7,7 +7,7 @@ from django.urls import reverse, reverse_lazy
 from django.views import View
 from django.shortcuts import render
 from django.db.models import Q
-# from client_management.models import CustodyCustomItems
+from client_management.models import CustodyCustomItems
 from coupon_management.models import AssignStaffCouponDetails
 from master.models import RouteMaster  # Assuming you have imported RouteMaster
 from accounts.models import Customers
@@ -35,7 +35,7 @@ from django.views.generic import ListView
 from django.db.models import Count
 
 from .models import *
-CustodyCustomItems = {}
+
 class TransactionHistoryListView(ListView):
     model = Transaction
     template_name = 'sales_management/transaction_history.html'  # Update with your actual template path

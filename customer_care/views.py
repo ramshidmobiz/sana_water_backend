@@ -10,7 +10,7 @@ import json
 from django.core.serializers import serialize
 from django.views import View
 from datetime import datetime
-# from client_management.models import CustodyCustomItems
+from client_management.models import CustodyCustomItems
 from master.forms import *
 # Create your views here.
 from accounts.models import Customers
@@ -23,7 +23,6 @@ from django.contrib.auth.decorators import login_required
 from rest_framework.generics import ListAPIView
 from django.shortcuts import get_object_or_404
 
-CustodyCustomItems ={}
 
 class RequestType_List(View):
     template_name = 'customer_care/requesttype_list.html'

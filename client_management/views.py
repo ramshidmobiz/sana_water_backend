@@ -248,7 +248,7 @@ class Custody_ItemListView(View):
         return render(request, self.template_name, {'customer_list': customer_list})
 
 from django.shortcuts import render, redirect
-# from .forms import CustomerCustodyItemsForm
+from .forms import CustomerCustodyItemsForm
 
 # def create_custody_item(request):
 #     if request.method == 'POST':
@@ -308,8 +308,7 @@ from django.shortcuts import render, redirect
 #             return redirect('custodyitem_list')  # Redirect to a success page
 #         return render(request, self.template_name, {'form': form, 'route': route})
 
-CustodyCustomItems = {}
-CustomerCustodyItemsForm = {}
+
 
 class Add_ProductView(View):
     template_name = 'client_management/add_product.html'

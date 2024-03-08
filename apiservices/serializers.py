@@ -7,7 +7,7 @@ from client_management.models  import *
 from accounts.serializers import *
 from van_management.serializers import *
 from order.models import *
-CustodyCustomItems = {}
+
 class CustomerCustodyItemSerializers(serializers.ModelSerializer):
     class Meta:
         model = CustodyCustomItems
@@ -96,7 +96,7 @@ class CustomerOrderSerializer(serializers.ModelSerializer):
         model = Customer_Order
         fields = '__all__'
 
-# from client_management.models import CustodyCustomItems
+from client_management.models import CustodyCustomItems
 
 class Category_Serializer(serializers.ModelSerializer):
     class Meta:
