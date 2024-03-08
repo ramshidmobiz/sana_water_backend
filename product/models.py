@@ -33,10 +33,10 @@ class Product(models.Model):
     unit = models.CharField(max_length=50, choices=unit_choices, null=True, blank=True)
     rate = models.CharField(max_length=50)
     quantity=models.PositiveIntegerField(null=True, blank=True)
-    branch_id = models.ForeignKey('master.BranchMaster', on_delete=models.CASCADE)
-    category_id = models.ForeignKey('master.CategoryMaster', on_delete=models.CASCADE)
+    branch_id = models.ForeignKey('master.BranchMaster', on_delete=models.CASCADE,null=True,blank=True)
+    category_id = models.ForeignKey('master.CategoryMaster', on_delete=models.CASCADE,null=True,blank=True)
     fiveg_status = models.BooleanField(default=False)
-    tax = models.ForeignKey('tax_settings.Tax', on_delete=models.CASCADE)
+    tax = models.ForeignKey('tax_settings.Tax', on_delete=models.CASCADE,null=True,blank=True)
     quantity=models.PositiveIntegerField(null=True, blank=True)
 
     
