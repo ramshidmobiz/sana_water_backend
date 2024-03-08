@@ -24,7 +24,7 @@ class Product(models.Model):
     created_date = models.DateTimeField(auto_now_add=True,blank=True, null=True)
     modified_by = models.CharField(max_length=20, null=True, blank=True)
     modified_date = models.DateTimeField(blank=True, null=True)
-    product_name = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,default=uuid.UUID('5dabe43b-6964-49bb-9732-85073300ace0'))
+    product_name = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True,blank=True)
 
     unit_choices = (
         ('Pcs', 'Pcs'),
