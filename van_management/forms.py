@@ -5,10 +5,6 @@ from accounts.models import *
 from master.models import *
 
 class VanForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['driver'].queryset = CustomUser.objects.filter(user_type='Driver')
-        self.fields['salesman'].queryset = CustomUser.objects.filter(user_type='Salesman')
 
     class Meta:
         model = Van
@@ -27,10 +23,6 @@ class VanForm(forms.ModelForm):
 
 
 class EditVanForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['driver'].queryset = CustomUser.objects.filter(user_type='Driver')
-        self.fields['salesman'].queryset = CustomUser.objects.filter(user_type='Salesman')
 
     class Meta:
         model = Van
