@@ -170,7 +170,6 @@ def create_customer(request):
                 branch_id=request.user.branch_id.branch_id
                 branch = BranchMaster.objects.get(branch_id=branch_id)  # Adjust the criteria based on your model
                 data.branch_id = branch
-                data.customer_id = generate_customer_id()
                 data.save()
                 
                 Staff_Day_of_Visit.objects.create(customer = data)

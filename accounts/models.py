@@ -52,7 +52,7 @@ class CustomUser(AbstractUser):
     #    ordering = ('username',)
 
     def __str__(self):
-       return str(self.username)
+       return f'{self.first_name} {self.last_name}'
     
     def get_fullname(self):
         return f'{self.first_name} {self.last_name}'
@@ -105,6 +105,17 @@ class Customers(models.Model):
 
     def __str__(self):
         return str(self.customer_name)
+    
+    # def save(self, *args, **kwargs):
+    #     if not self.customer_id:  # Generate customer_id if not already set
+    #         last_customer = Customers.objects.order_by('-id').first()
+    #         if last_customer:
+    #             last_id = int(last_customer.customer_id.split('-')[-1])
+    #             new_id = last_id + 1
+    #         else:
+    #             new_id = 1
+    #         self.customer_id = f'SW-{new_id:03d}'  # Format with leading zeros
+    #     super().save(*args, **kwargs)
 
 class Staff_Day_of_Visit(models.Model):
     visit_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
