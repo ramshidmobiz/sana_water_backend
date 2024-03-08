@@ -14,8 +14,8 @@ class Van(models.Model):
     renewal_date = models.DateTimeField(blank=True, null=True)
     insurance_expiry_date = models.DateTimeField(blank=True, null=True)
     capacity = models.IntegerField(null=True, blank=True)
-    driver = models.ForeignKey('accounts.CustomUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='driver_van', limit_choices_to={'user_type': ['Driver','driver']})
-    salesman = models.ForeignKey('accounts.CustomUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='salesman_van', limit_choices_to={'user_type': ['Salesman','salesmn']})
+    driver = models.ForeignKey('accounts.CustomUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='driver_van', limit_choices_to={'user_type': 'Driver'})
+    salesman = models.ForeignKey('accounts.CustomUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='salesman_van', limit_choices_to={'user_type': 'Salesman'})
     branch_id = models.ForeignKey('master.BranchMaster', on_delete=models.SET_NULL, null=True, blank=True, related_name='van_branch')
 
 
