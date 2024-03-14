@@ -23,6 +23,7 @@ from competitor_analysis.forms import CompetitorAnalysisFilterForm
 from master.functions import generate_form_errors
 from .forms import *
 from .models import *
+from django.db.models import Q
 
 
 # Create your views here.
@@ -130,26 +131,66 @@ class User_Details(View):
         return render(request, self.template_name, context)  
     
 
+# class Customer_List(View):
+#     template_name = 'accounts/customer_list.html'
+
+#     def get(self, request, *args, **kwargs):
+#         # Create an instance of the form and populate it with GET data
+#         form = CompetitorAnalysisFilterForm(request.GET)
+        
+#         user_li = Customers.objects.all()
+#         query = request.GET.get("q")
+#         if query:
+#             user_li = user_li.filter(
+#                 Q(customer_name__icontains=query) |
+#                 Q(mobile_no__icontains=query) |
+#                 Q(routes__route_name__icontains=query) |
+#                 Q(location__location_name__icontains=query)|
+#                 Q(building_name__icontains=query)
+#             )
+
+#         # Check if the form is valid
+#         # if form.is_valid():
+#             # Filter the queryset based on the form data
+#         route_filter = request.GET.get('route_name')
+#         if route_filter :
+#             user_li = Customers.objects.filter(routes__route_name=route_filter)
+#         # else:
+#         #         user_li = Customers.objects.all()
+#         # else:
+#         #     # If the form is not valid, retrieve all customers
+#         #     user_li = Customers.objects.all()
+#         route_li = RouteMaster.objects.all()
+#         context = {'user_li': user_li, 'form': form, 'route_li': route_li}
+#         return render(request, self.template_name, context)
+
 class Customer_List(View):
     template_name = 'accounts/customer_list.html'
 
     def get(self, request, *args, **kwargs):
-        # Create an instance of the form and populate it with GET data
-        form = CompetitorAnalysisFilterForm(request.GET)
+        # Retrieve the query parameter
+        query = request.GET.get("q")
+        route_filter = request.GET.get('route_name')
+        # Start with all customers
+        user_li = Customers.objects.all()
 
-        # Check if the form is valid
-        if form.is_valid():
-            # Filter the queryset based on the form data
-            route_filter = form.cleaned_data.get('route_name')
-            if route_filter :
-                user_li = Customers.objects.filter(routes__route_name=route_filter)
-            else:
-                user_li = Customers.objects.all()
-        else:
-            # If the form is not valid, retrieve all customers
-            user_li = Customers.objects.all()
+        # Apply filters if they exist
+        if query:
+            user_li = user_li.filter(
+                Q(customer_name__icontains=query) |
+                Q(mobile_no__icontains=query) |
+                Q(routes__route_name__icontains=query) |
+                Q(location__location_name__icontains=query) |
+                Q(building_name__icontains=query)
+            )
 
-        context = {'user_li': user_li, 'form': form}
+        if route_filter:
+            user_li = user_li.filter(routes__route_name=route_filter)
+
+        # Get all route names for the dropdown
+        route_li = RouteMaster.objects.all()
+
+        context = {'user_li': user_li, 'route_li': route_li}
         return render(request, self.template_name, context)
     
 

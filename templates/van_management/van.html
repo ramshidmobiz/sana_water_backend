@@ -38,9 +38,14 @@
                                     <thead>
                                         <tr>
                                             <th scope="col">Sl No</th>
+                                            <th scope="col">Van Make</th>
                                             <th scope="col">Plate</th>
                                             <th scope="col">Renewal Date</th>
                                             <th scope="col">Insurance Expiry Date</th>
+                                            <th scope="col">Capacity</th>
+                                            <th scope="col">Driver</th>
+                                            <th scope="col">Salesman</th>
+                                            <th scope="col">Route</th>
                                             <th scope="col">Actions</th>
                                             
                                         </tr>
@@ -50,9 +55,26 @@
                                             {% for van in all_van %}
                                             <tr>
                                                 <td>{{ forloop.counter }}</td>
+                                                <td>{{van.van_make}}</td>
                                                 <td>{{van.plate}}</td>
                                                 <td>{{van.renewal_date|date:"d-m-Y"}}</td>
                                                 <td>{{van.insurance_expiry_date|date:"d-m-Y"}}</td>
+                                                <td>{{van.capacity}}</td>
+                                                <td>{{van.driver}}</td>
+                                                <td>{{van.salesman}}</td>
+                                                
+                                                <td>
+                                                    {% for van_id, route_names in routes_assigned.items %}
+                                                        {% if van_id == van.van_id %}
+                                                            {% for route_name in route_names %}
+                                                                {{ route_name }}<br>
+                                                            {% endfor %}
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </td>
+                                                
+                                                
+
                                                 <td>
                                                     <div class="g-2">
                                                         <a href="{% url 'view_van' van.van_id %}" aria-label="anchor" class="btn  btn-warning-light btn-sm" data-bs-toggle="tooltip" data-bs-original-title="View">

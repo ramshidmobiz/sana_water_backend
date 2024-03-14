@@ -44,23 +44,21 @@ class ProductForm(forms.ModelForm):
 
     class Meta:
         model = Product
-        fields = ['category', 'product_name', 'coupon_method']
+        fields = ['product_name', 'coupon_method']
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if 'category' in self.data:
-            try:
-                category_id = int(self.data.get('category'))
-                self.fields['product_name'].queryset = Product.objects.filter(category_id=category_id).order_by('product_name')
-            except (ValueError, TypeError):
-                pass
-        elif self.instance.category_id is not None:
-            self.fields['product_name'].queryset = self.instance.category_id.product_set.order_by('product_name')
-        else:
-            self.fields['product_name'].queryset = Product.objects.none()
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     if 'category' in self.data:
+    #         try:
+    #             category_id = int(self.data.get('category'))
+    #             self.fields['product_name'].queryset = Product.objects.filter(product_name__category__pk=category_id).order_by('product_name')
+    #         except (ValueError, TypeError):
+    #             pass
+    #     else:
+    #         self.fields['product_name'].queryset = Product.objects.none()
 
-        # Set default value for coupon_method
-        self.fields['coupon_method'].initial = 'manual'
+        # # Set default value for coupon_method
+        # self.fields['coupon_method'].initial = 'manual'
 
 
 

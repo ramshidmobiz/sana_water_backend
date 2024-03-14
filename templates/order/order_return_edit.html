@@ -17,13 +17,20 @@
                     <div class="card custom-card">
                         <div class="card-header">
                             <div class="card-title mx-auto">
-                            Edit order Return </div>
+                            Edit order Return --> {{customer}}</div>
                         </div>
                         <div class="card-body">
         <form enctype="multipart/form-data" role="form" method="post"
               class="row g-3 needs-validation">
             {% csrf_token %}
             <!--row 1-->
+            <div class="col-md-6">
+                        <div class="form-group required">
+                            <label class='control-label'>Product</label>
+                            {{ form.product }}
+                            <span style="color: red;">{{ form.product.errors }}</span>
+                        </div>
+                    </div>
                     <div class="col-md-6">
                         <div class="form-group required">
                             <label class='control-label'>Quantity</label>
@@ -38,13 +45,7 @@
                             <span style="color: red;">{{ form.return_date.errors }}</span>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="form-group required">
-                            <label class='control-label'>Salesman</label>
-                            {{ form.salesman }}
-                            <span style="color: red;">{{ form.salesman.errors }}</span>
-                        </div>
-                    </div>
+                    
                     <div class="col-md-6">
                         <div class="form-group required">
                             <label class='control-label'>Reason for Return</label>

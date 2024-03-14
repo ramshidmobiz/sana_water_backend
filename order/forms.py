@@ -7,99 +7,116 @@ from product.models import Product
 
 
 
-# class Reason_Add_Form(forms.ModelForm):
-#     class Meta:
-#         model = Order_change_Reason
-#         fields = ['reason_name']
-#         widgets= {
-#             'reason_name':forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-#         }
+class Reason_Add_Form(forms.ModelForm):
+    class Meta:
+        model = Change_Reason
+        fields = ['reason_name']
+        widgets= {
+            'reason_name':forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+        }
 
-# class Reason_Edit_Form(forms.ModelForm):
-#     class Meta:
-#         model = Order_change_Reason
-#         fields = ['reason_name']
-#         widgets= {
-#             'reason_name':forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-#         }
-
-
-
-# class Order_change_Form(forms.ModelForm):
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         self.fields['salesman'].queryset = CustomUser.objects.filter(user_type='Salesman')
-#         self.fields['order'].queryset = Customer_Order.objects.all()
-#         self.fields['reason'].queryset = Order_change_Reason.objects.all()
-
-#     class Meta:
-#         model = Order_change
-#         fields = ['order', 'salesman', 'reason', 'note', 'changed_quantity', 'change_date']
-#         widgets= {
-#             'changed_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
-#             'change_date': forms.DateInput(attrs={'class': 'form-control', 'type':'date'}),
-#             'order': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-#             'salesman': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-#             'reason':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-#             'note':forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
-#         }
+class Reason_Edit_Form(forms.ModelForm):
+    class Meta:
+        model = Change_Reason
+        fields = ['reason_name']
+        widgets= {
+            'reason_name':forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+        }
 
 
-# class Order_change_Edit_Form(forms.ModelForm):
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         self.fields['salesman'].queryset = CustomUser.objects.filter(user_type='Salesman')
-#         self.fields['reason'].queryset = Order_change_Reason.objects.all()
 
-#     class Meta:
-#         model = Order_change
-#         fields = [ 'salesman', 'reason', 'note', 'changed_quantity', 'change_date']
-#         widgets= {
-#             'changed_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
-#             'change_date': forms.DateInput(attrs={'class': 'form-control', 'type':'date'}),
-#             'salesman': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-#             'reason':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-#             'note':forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
-#         }
+class Order_change_Form(forms.ModelForm):
+    def __init__(self, route_id, *args, **kwargs):
+        
+        super().__init__(*args, **kwargs)
+        print(route_id)
+        self.fields['reason'].queryset = Change_Reason.objects.all()
+        self.fields['customer'].queryset = Customers.objects.filter(routes_id = route_id)
+        self.fields['product'].queryset = Product.objects.all()
+    
+    def save(self, route, commit=True):
+        instance = super().save(commit=False)
+        instance.route = route  
+        if commit:
+            instance.save()
+        return instance
 
-
-# # Return
-# class Order_return_Form(forms.ModelForm):
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         self.fields['salesman'].queryset = CustomUser.objects.filter(user_type='Salesman')
-#         self.fields['order'].queryset = Customer_Order.objects.all()
-#         self.fields['reason'].queryset = Order_change_Reason.objects.all()
-
-#     class Meta:
-#         model = Order_return
-#         fields = ['order', 'salesman', 'reason', 'note', 'returned_quantity', 'return_date']
-#         widgets= {
-#             'returned_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
-#             'return_date': forms.DateInput(attrs={'class': 'form-control', 'type':'date'}),
-#             'order': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-#             'salesman': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-#             'reason':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-#             'note':forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
-#         }
+    class Meta:
+        model = Order_change
+        fields = ['customer', 'reason', 'note', 'changed_quantity', 'change_date','product']
+        widgets= {
+            'product': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+            'changed_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
+            'change_date': forms.DateInput(attrs={'class': 'form-control', 'type':'date'}),
+            'reason':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+            'customer':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+            'note':forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
+        }
 
 
-# class Order_return_Edit_Form(forms.ModelForm):
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         self.fields['salesman'].queryset = CustomUser.objects.filter(user_type='Salesman')
-#         self.fields['reason'].queryset = Order_change_Reason.objects.all()
+class Order_change_Edit_Form(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['product'].queryset = Product.objects.all()
+        self.fields['reason'].queryset = Change_Reason.objects.all()
 
-#     class Meta:
-#         model = Order_return
-#         fields = ['salesman', 'reason', 'note', 'returned_quantity', 'return_date']
-#         widgets= {
-#             'returned_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
-#             'return_date': forms.DateInput(attrs={'class': 'form-control', 'type':'date'}),
-#             'salesman': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-#             'reason':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-#             'note':forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
-#         }
+    class Meta:
+        model = Order_change
+        fields = [ 'reason', 'note', 'changed_quantity', 'change_date', 'product']
+        widgets= {
+            'product': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+            'changed_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
+            'change_date': forms.DateInput(attrs={'class': 'form-control', 'type':'date'}),
+            'reason':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+            'note':forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
+        }
+
+# Return
+class Order_return_Form(forms.ModelForm):
+    def __init__(self, route_id, *args, **kwargs):
+        
+        super().__init__(*args, **kwargs)
+        print(route_id)
+        self.fields['reason'].queryset = Change_Reason.objects.all()
+        self.fields['customer'].queryset = Customers.objects.filter(routes_id = route_id)
+        self.fields['product'].queryset = Product.objects.all()
+    
+    def save(self, route, commit=True):
+        instance = super().save(commit=False)
+        instance.route = route  # Assign route_id to the instance
+        if commit:
+            instance.save()
+        return instance
+
+    class Meta:
+        model = Order_return
+        fields = ['customer', 'reason', 'note', 'returned_quantity', 'return_date','product']
+        widgets= {
+            'product': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+            'returned_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
+            'return_date': forms.DateInput(attrs={'class': 'form-control', 'type':'date'}),
+            'reason':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+            'customer':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+            'note':forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
+        }
+
+
+class Order_return_Edit_Form(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['product'].queryset = Product.objects.all()
+        self.fields['reason'].queryset = Change_Reason.objects.all()
+
+    class Meta:
+        model = Order_return
+        fields = [ 'reason', 'note', 'returned_quantity', 'return_date', 'product']
+        widgets= {
+            'product': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+            'returned_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
+            'return_date': forms.DateInput(attrs={'class': 'form-control', 'type':'date'}),
+            'reason':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+            'note':forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
+        }
 
 
 class OrderForm(forms.ModelForm):

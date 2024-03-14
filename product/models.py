@@ -11,7 +11,15 @@ class ProdutItemMaster(models.Model):
     created_date = models.DateTimeField(auto_now_add=True,blank=True, null=True)
     modified_by = models.CharField(max_length=20, null=True, blank=True)
     modified_date = models.DateTimeField(blank=True, null=True)
-    product_name = models.CharField(max_length=50,unique=True,default='Default Product Name')
+    
+    product_name = models.CharField(max_length=50,unique=True)
+    category = models.ForeignKey('master.CategoryMaster', on_delete=models.CASCADE,null=True,blank=True)
+    unit_choices = (
+        ('Pcs', 'Pcs'),
+        ('Nos', 'Nos'),  # Added 'Nos' as an option
+    )
+    unit = models.CharField(max_length=50, choices=unit_choices, null=True, blank=True)
+    
     class Meta:
         ordering = ('product_name',)
     
@@ -24,19 +32,13 @@ class Product(models.Model):
     created_date = models.DateTimeField(auto_now_add=True,blank=True, null=True)
     modified_by = models.CharField(max_length=20, null=True, blank=True)
     modified_date = models.DateTimeField(blank=True, null=True)
-    product_name = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True,blank=True)
-
-    unit_choices = (
-        ('Pcs', 'Pcs'),
-        ('Nos', 'Nos'),  # Added 'Nos' as an option
-    )
-    unit = models.CharField(max_length=50, choices=unit_choices, null=True, blank=True)
+    
+    product_name = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True, blank=True)
     rate = models.CharField(max_length=50)
     quantity=models.PositiveIntegerField(null=True, blank=True)
-    branch_id = models.ForeignKey('master.BranchMaster', on_delete=models.CASCADE,null=True,blank=True)
-    category_id = models.ForeignKey('master.CategoryMaster', on_delete=models.CASCADE,null=True,blank=True)
+    branch_id = models.ForeignKey('master.BranchMaster', on_delete=models.CASCADE)
     fiveg_status = models.BooleanField(default=False)
-    tax = models.ForeignKey('tax_settings.Tax', on_delete=models.CASCADE,null=True,blank=True)
+    tax = models.ForeignKey('tax_settings.Tax', on_delete=models.CASCADE)
     quantity=models.PositiveIntegerField(null=True, blank=True)
 
     
@@ -58,7 +60,7 @@ class Product_Default_Price_Level(models.Model):
         ('SHOP', 'SHOP')
     )
     customer_type = models.CharField(max_length=100, choices=CUSTOMER_TYPE_CHOICES, null=True, blank=True)
-    product_id = models.ForeignKey(Product, on_delete=models.CASCADE, null=True, blank=True)
+    product_id = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE, null=True, blank=True)
     rate = models.CharField(max_length=50)
     class Meta:
         ordering = ('customer_type',)
@@ -147,7 +149,7 @@ class Staff_IssueOrders(models.Model):
 
 class ProductStock(models.Model):
     product_stock_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    product_name = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE)
+    product_name = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True, blank=True)
     quantity=models.PositiveIntegerField(null=True, blank=True)
     branch = models.ForeignKey('master.BranchMaster', on_delete=models.SET_NULL, null=True, blank=True,related_name='prod_stock_branch')
     status = models.BooleanField(default=False)

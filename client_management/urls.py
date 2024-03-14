@@ -17,20 +17,18 @@ urlpatterns = [
         path('vacation_delete/<uuid:vacation_id>',  Vacation_Delete.as_view(), name="vacation_delete"),
         path('vacation_route',  RouteSelection.as_view(), name="vacation_route"),   
 
-        # path('get_route/', get_route.as_view(), name='get_route'),
-        # path('get_routes/', GetRoutesView.as_view(), name='get_route'),
+       
 
         
         # path('create_custody_item/<uuid:pk>', CreateCustodyItemView.as_view(), name='create_custody_item'),
-
-        path('custodyitem_list', Custody_ItemListView.as_view(), name='custodyitem_list'),
-        # path('create_custodyitem', CreateCustodyItemView.as_view(), name='create_custodyitem'),
-
-        # path('add_product<str:pk>', Add_ProductView.as_view(), name='add_category_list'),
-        # path('get_products_by_category/', GetProductsByCategoryView.as_view(), name='get_products_by_category'),
-        # path('get_rate_by_products/', GetRateByProductsView.as_view(), name='get_rate_by_products'),
-        # path('added_list', AddListView.as_view(), name='added_list'),
+        path('customer_custody_list', CustomerCustodyList.as_view(), name='customer_custody_list'),
+        path('add_custody_items', AddCustodyItems.as_view(), name='add_custody_items'),
+        path('add_custody_list',AddCustodyList.as_view(),name='add_custody_list'),
+        path('edit_custody_item',EditCustodyItem.as_view(),name='add_custody_list'),
+        # path('edit_custody_item',DeleteCustodyItem.as_view(),name='add_custody_list'),
         # path('pullout_list<str:pk>', PulloutListView.as_view(), name='pullout_list'),
+
+
         
         re_path(r'customer-supply-list/$', customer_supply_list, name='customer_supply_list'),
         re_path(r'supply-customers/$', customer_supply_customers, name='customer_supply_customers'),
@@ -43,9 +41,7 @@ urlpatterns = [
         path('client_report', client_report, name='client_report'),
         path('clientdownload_pdf/<uuid:customer_id>/', clientdownload_pdf, name='clientdownload_pdf'),
         path('clientexport_to_csv/<uuid:customer_id>/', clientexport_to_csv, name='clientexport_to_csv'),
-
-        # path('sale_entry_log_view/', SaleEntryLogView.as_view(), name='sale_entry_log_view'),
-
+        path('custody_items_list_report', custody_items_list_report, name='custody_items_list_report'),
 
 
 

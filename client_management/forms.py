@@ -205,26 +205,65 @@ from product.models import Product
 from master.models import CategoryMaster
 from django import forms
 from .models import *
-class CustomerCustodyItemsForm(forms.ModelForm):
+# class CustomerCustodyItemsForm(forms.ModelForm):
     
-    class Meta:
-        model = CustodyCustomItems
-        fields = ['customer', 'product', 'count', 'deposit_form', 'deposit_form_number','serialnumber','amount']
-        widgets = {
+#     class Meta:
+#         model = CustodyCustomItems
+#         fields = ['customer', 'product', 'count', 'deposit_form', 'deposit_form_number','serialnumber','amount']
+#         widgets = {
 
-        'customer': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-        'product': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-        'count': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-        'amount': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-        'deposit_form': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-        'serialnumber': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-        'deposit_form_number': forms.TextInput(attrs={'class': 'form-control', 'type': 'hidden', 'required': 'true'}),
-        }
+#         'customer': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+#         'product': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+#         'count': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+#         'amount': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+#         'deposit_form': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+#         'serialnumber': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+#         'deposit_form_number': forms.TextInput(attrs={'class': 'form-control', 'type': 'hidden', 'required': 'true'}),
+#         }
 
    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Filter the queryset of the product field to include only specific products
-        product_choices = Product.objects.filter(product_name__in=["5 Gallon", "Water Cooler", "Dispenser"])
-        self.fields['product'].queryset = product_choices
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         # Filter the queryset of the product field to include only specific products
+#         product_choices = Product.objects.filter(product_name__in=["5 Gallon", "Water Cooler", "Dispenser"])
+#         self.fields['product'].queryset = product_choices
 
+# class CustodyCustomItemsForm(forms.Form):
+#     from_date = forms.DateField(label='From Date', widget=forms.DateInput(attrs={'type': 'date'}))
+#     to_date = forms.DateField(label='To Date', widget=forms.DateInput(attrs={'type': 'date'}))
+
+
+
+# class CustodyCustomItemForm(forms.ModelForm):
+#     class Meta:
+#         model = CustodyCustomItems
+#         fields = ['product', 'count', 'serialnumber','deposit_form','deposit_form_number','amount']
+#         widgets = {
+#             'product': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+#             'count': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+#             'serialnumber': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+           
+#         }
+class CustodyCustomForm(forms.ModelForm):
+    class Meta:
+        model = CustodyCustom
+        fields = ['agreement_no','total_amount','deposit_type']
+        
+        widgets = {
+            'agreement_no': forms.TextInput(attrs={'class': 'form-control'}),
+            'total_amount': forms.TextInput(attrs={'class': 'form-control'}),
+            'deposit_type': forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        }
+
+class CustodyCustomItemForm(forms.ModelForm):
+
+    class Meta:
+        model = CustodyCustomItems
+        fields = ['product', 'quantity', 'serialnumber', 'amount']
+        
+        widgets = {
+            'product': forms.Select(attrs={'class': 'form-control', 'required': True,}),
+            'quantity': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter QTY'}),
+            'serialnumber': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Serial Number'}),
+            'amount': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Amount'}),
+        }

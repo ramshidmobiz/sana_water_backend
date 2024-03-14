@@ -41,14 +41,14 @@
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="form-group required">
+                        <div class="form-group ">
                             <label class='control-label'>Door House Number</label>
                             {{ form.door_house_no }}
                             <span style="color: red;">{{ form.door_house_no.errors }}</span>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="form-group required">
+                        <div class="form-group ">
                             <label class='control-label'>Floor Number</label>
                             {{ form.floor_no }}
                             <span style="color: red;">{{ form.floor_no.errors }}</span> 
@@ -81,7 +81,7 @@
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="form-group required">
+                        <div class="form-group ">
                             <label class='control-label'>Mobile Number</label>
                             {{ form.mobile_no }}
                             <span style="color: red;">{{ form.mobile_no.errors }}</span>
@@ -89,7 +89,7 @@
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="form-group required">
+                        <div class="form-group ">
                             <label class='control-label'>Whatsapp Number</label>
                             {{ form.whats_app }}
                             <span style="color: red;">{{ form.whats_app.errors }}</span>
@@ -97,7 +97,7 @@
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="form-group required">
+                        <div class="form-group ">
                             <label class='control-label'>Email</label>
                             {{ form.email_id }}
                             <span style="color: red;">{{ form.email_id.errors }}</span>
@@ -105,7 +105,7 @@
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="form-group required">
+                        <div class="form-group ">
                             <label class='control-label'>Latitude</label>
                             {{ form.gps_latitude }}
                             <span style="color: red;">{{ form.gps_latitude.errors }}</span>
@@ -113,7 +113,7 @@
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="form-group required">
+                        <div class="form-group ">
                             <label class='control-label'>Longitude</label>
                             {{ form.gps_longitude }}
                             <span style="color: red;">{{ form.gps_longitude.errors }}</span>
@@ -128,6 +128,14 @@
                             <!--                                <small class="form-text text-muted">Select Category.</small>-->
                         </div>
                     </div>
+                    <div class="col-md-6">
+                        <div class="form-group required">
+                            <label class='control-label'>Rate</label>
+                            {{ form.rate }}
+                            <span style="color: red;">{{ form.rate.errors }}</span>
+                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                        </div>
+                    </div>
 
                     <div class="col-md-6">
                         <div class="form-group required">
@@ -139,41 +147,43 @@
                     </div>
 
                     <div class="col-md-6">
-                        <div class="form-group required">
-                            <label class='control-label'>No Of Bottles Required</label>
+                        <div class="form-group ">
+                            <label class='control-label'>Default Bottles</label>
                             {{ form.no_of_bottles_required }}
                             <span style="color: red;">{{ form.no_of_bottles_required.errors }}</span>
                             <!--                                <small class="form-text text-muted">Select Category.</small>-->
                         </div>
                     </div>
+                    <div  id="credit-fields" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group ">
+                                    <label class='control-label'>Maximum Credit Limit</label>
+                                    {{ form.max_credit_limit}}
+                                    <span style="color: red;">{{ form.max_credit_limit.errors }}</span>
+                                    <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                                </div>
+                            </div>
 
-                    <div class="col-md-6">
-                        <div class="form-group required">
-                            <label class='control-label'>Maximum Credit Limit</label>
-                            {{ form.max_credit_limit}}
-                            <span style="color: red;">{{ form.max_credit_limit.errors }}</span>
-                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
-                        </div>
+                            <div class="col-md-6">
+                                <div class="form-group ">
+                                    <label class='control-label'>Credit Days</label>
+                                    {{ form.credit_days }}
+                                    <span style="color: red;">{{ form.credit_days.errors }}</span>
+                                    <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group ">
+                                    <label class='control-label'>No Of Permitted Invoices</label>
+                                    {{ form.no_of_permitted_invoices }}
+                                    <span style="color: red;">{{ form.no_of_permitted_invoices.errors }}</span>
+                                    <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                                </div>
+                            </div>
+                        </div>    
                     </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group required">
-                            <label class='control-label'>Credit Days</label>
-                            {{ form.credit_days }}
-                            <span style="color: red;">{{ form.credit_days.errors }}</span>
-                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group required">
-                            <label class='control-label'>No Of Permitted Invoices</label>
-                            {{ form.no_of_permitted_invoices }}
-                            <span style="color: red;">{{ form.no_of_permitted_invoices.errors }}</span>
-                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
-                        </div>
-                    </div>
-
             <div class="col-12 text-end mt-5">
                 <input type="submit" class="btn btn-primary me-2 mb-2" value="Submit">
                     <button class="btn btn-success   me-md-2  mb-2" type="button" onClick="javascript:history.go(-1);">
@@ -184,6 +194,19 @@
         </form>
         </div>
     </div>
+    <script>
+       
+        document.getElementById("id_sales_type").addEventListener("change", function () {
+            var creditFields = document.getElementById("credit-fields");
+    
+            
+            if (this.value === "CREDIT") {
+                creditFields.style.display = "block";
+            } else {
+                creditFields.style.display = "none";
+            }
+        });
+    </script>
 {% endblock %}
 
 

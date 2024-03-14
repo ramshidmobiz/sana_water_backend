@@ -31,7 +31,7 @@ from datetime import date as dt
 
 def order_change_reason(request):
     template = 'order/reason_list.html'
-    reasons = Order_change_Reason.objects.all()
+    reasons = Change_Reason.objects.all()
     context = {'reasons':reasons}
     return render(request, template, context)
 
@@ -55,12 +55,12 @@ class Reason_Add(View):
 class Reason_Edit(View):
     template = 'order/reason_edit.html'
     def get(self, request, reason_id):
-        reason = Order_change_Reason.objects.get(id=reason_id)
+        reason = Change_Reason.objects.get(id=reason_id)
         form = Reason_Edit_Form(instance=reason)
         return render(request, self.template, {'form': form, 'reason': reason})
 
     def post(self, request, reason_id):
-        reason = Order_change_Reason.objects.get(id=reason_id)
+        reason = Change_Reason.objects.get(id=reason_id)
         form = Reason_Edit_Form(request.POST, instance=reason)
         if form.is_valid():
             form.save()
@@ -70,23 +70,43 @@ class Reason_Edit(View):
 class Reason_Delete(View):
     template='order/reason_delete.html'
     def get(self, request, reason_id):
-        reason = Order_change_Reason.objects.get(id=reason_id)
+        reason = Change_Reason.objects.get(id=reason_id)
         return render(request, self.template, {'reason': reason})
 
     def post(self, request, reason_id):
-        reason = Order_change_Reason.objects.get(id=reason_id)
+        reason = Change_Reason.objects.get(id=reason_id)
         reason.delete()
         return redirect(order_change_reason)
     
 
 from django.utils import timezone
 # Order_change
+
+
+def filter_route(request, action):
+    routes = RouteMaster.objects.all()
+    if request.method == 'POST':
+        route = request.POST.get('route')
+        if action == 'change':
+            return redirect('order_change_add', route_id = route)
+        if action == 'return':
+            return redirect('order_return_add', route_id = route)
+    return render(request, 'order/filter_route.html', {'routes':routes, 'action':action})
+
+    
+
+# Change
 def order_change(request):
+    start_date = None
+    end_date = None
+    selected_date = None
+    selected_product_id = None
+    selected_product = None
     template = 'order/order_change.html'
     order_changes = Order_change.objects.all()
     products = Product.objects.all()
     route_counts = {}
-    start_date=None; end_date=None; selected_date=None; selected_product_id=None;
+    today = datetime.today()
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
@@ -94,60 +114,64 @@ def order_change(request):
         selected_product_id = request.POST.get('product')
         if start_date and end_date:
             order_changes = order_changes.filter(change_date__range=[start_date, end_date])
-        if selected_date:
+        elif selected_date:
             order_changes = order_changes.filter(change_date=selected_date)
+        else:
+            order_changes=Order_change.objects.filter(change_date=timezone.now().date())
         
         if selected_product_id:
-            order_changes = order_changes.filter(order__item_name_id=selected_product_id)
+            selected_product = Product.objects.get(product_id = selected_product_id)
+            order_changes = order_changes.filter(product=selected_product)
     else:
         order_changes=Order_change.objects.filter(change_date=timezone.now().date())
     
     for order_change in order_changes:
+        
         route = order_change.route
         if route:
             route_name = route.route_name
-            route_id = route.route_id  # Include the route_id
+            route_id = route.route_id  
+            q=order_change.changed_quantity
             if route_name not in route_counts:
-                route_counts[route_name] = {'count': 1, 'id': route_id}  
+                route_counts[route_name] = {'count': q, 'id': route_id}  
             else:
-                route_counts[route_name]['count'] += 1
+                route_counts[route_name]['count'] += q
         
-            
-    print(route_counts)
-    context = {'order_changes':order_changes, 'products' :products, 'route_counts': route_counts,
-               'start_date':start_date, 'end_date':end_date, 'selected_date':selected_date, 'selected_product_id':selected_product_id}
+
+    context = {'order_changes':order_changes, 'products' :products, 'route_counts': route_counts, 'today':today,
+               'start_date':start_date, 'end_date':end_date, 'selected_date':selected_date, 'selected_product_id':selected_product_id, 'selected_product':selected_product}
     return render(request, template, context)
 
-
+import datetime
+from datetime import date as dt
 def order_change_list(request, route_id):
     route = RouteMaster.objects.get(route_id=route_id)
-    start_date = request.GET.get('start_date', None)
-    end_date = request.GET.get('end_date', None)
-    selected_date = request.GET.get('selected_date', None)
-    selected_product_id = request.GET.get('selected_product_id', None)
-    date = ''
     
-    order_changes=Order_change.objects.filter(order__customer_id__routes=route)
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    selected_date = request.GET.get('selected_date')
+    selected_product_id = request.GET.get('selected_product_id', None)
+    # date = ''
+    today = datetime.today()
+    order_changes = Order_change.objects.filter(customer__routes=route)
    
-    if start_date and end_date and start_date != "None" and end_date != "None":
-        start_datetime = timezone.make_aware(datetime.datetime.strptime(start_date, '%Y-%m-%d'))
-        end_datetime = timezone.make_aware(datetime.datetime.strptime(end_date, '%Y-%m-%d'))
-        
-        order_changes = order_changes.filter(change_date__range=[start_datetime, end_datetime])
+    if start_date and end_date and start_date != 'None' and end_date != 'None':
+        order_changes = order_changes.filter(change_date__range=[start_date, end_date])
         date=f" {start_date} --> { end_date }"
-    elif selected_date and selected_date != "None":
+    elif selected_date and selected_date != 'None':
         order_changes = order_changes.filter(change_date=selected_date)
         date=f"{selected_date}"
     else:
-        today = timezone.now().date()
+        today = dt.today()
         order_changes = order_changes.filter(change_date=today)
         date=f"{today}"
-    if selected_product_id and selected_product_id != "None":
+    if selected_product_id != 'None':
         selected_product=Product.objects.get(product_id=selected_product_id)
-        order_changes = order_changes.filter(order__item_name_id=selected_product_id)
+        order_changes = order_changes.filter(product=selected_product)
     else:
         selected_product=None
-        
+    # Render the template with necessary context
+    
     
     context = {
         'order_changes': order_changes,
@@ -155,8 +179,10 @@ def order_change_list(request, route_id):
         'start_date': start_date,
         'end_date': end_date,
         'selected_date': selected_date,
+        
         'selected_product': selected_product,
-        'date':date
+        'date':date,
+
     }
     return render(request, 'order/order_change_list.html', context)
 
@@ -165,35 +191,33 @@ def order_change_list(request, route_id):
 def order_change_list_excel(request, route_id):
     route = RouteMaster.objects.get(route_id=route_id)
     
-    start_date = request.GET.get('start_date', None)
-    end_date = request.GET.get('end_date', None)
-    selected_date = request.GET.get('selected_date', None)
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    selected_date = request.GET.get('selected_date')
     selected_product_id = request.GET.get('selected_product_id', None)
-    date = ''
-    
-    order_changes=Order_change.objects.filter(order__customer_id__routes=route)
+    # date = ''
+    today = datetime.today()
+    order_changes = Order_change.objects.filter(customer__routes=route)
    
-    if start_date and end_date and start_date != "None" and end_date != "None":
-        start_datetime = timezone.make_aware(datetime.datetime.strptime(start_date, '%Y-%m-%d'))
-        end_datetime = timezone.make_aware(datetime.datetime.strptime(end_date, '%Y-%m-%d'))
-        order_changes = order_changes.filter(change_date__range=[start_datetime, end_datetime])
+    if start_date and end_date and start_date != 'None' and end_date != 'None':
+        order_changes = order_changes.filter(change_date__range=[start_date, end_date])
         date=f" {start_date} --> { end_date }"
-    elif selected_date and selected_date != "None":
+    elif selected_date and selected_date != 'None':
         order_changes = order_changes.filter(change_date=selected_date)
         date=f"{selected_date}"
     else:
-        today = timezone.now().date()
+        today = dt.today()
         order_changes = order_changes.filter(change_date=today)
         date=f"{today}"
-    if selected_product_id and selected_product_id != "None":
+    if selected_product_id and selected_product_id != 'None':
         selected_product=Product.objects.get(product_id=selected_product_id)
-        order_changes = order_changes.filter(order__item_name_id=selected_product_id)
+        order_changes = order_changes.filter(product=selected_product)
     else:
         selected_product=None
-    # Render the template with necessary context
+
     data = []
-    data = list(order_changes.values_list('order__customer_id__customer_name', 'order__item_name__product_name', 'changed_quantity', 'reason__reason_name'))
-    df = pd.DataFrame(data, columns=['Customer Name', 'Product Name', 'Changed Quantity', 'Reason'])
+    data = list(order_changes.values_list('customer__customer_name', 'product__product_name__product_name', 'changed_quantity', 'reason__reason_name'))
+    df = pd.DataFrame(data, columns=['Customer Name', 'Product Name', 'Returned Quantity', 'Reason'])
 
     # Create a new Excel workbook
     wb = Workbook()
@@ -204,18 +228,19 @@ def order_change_list_excel(request, route_id):
     ws['A1'] = 'National Water'
     ws['A1'].font = Font(size=14, bold=True)
     ws['A1'].alignment = Alignment(horizontal='center')
-    ws['A3'] = 'Order Change Information'  
-    ws['A4'] = f'Route: {route.route_name}'  # Route information
-    ws['A5'] = f'Date: {date}'  # Date information
+    ws['A3'] = 'Order Return Information'  
+    ws['A4'] = f'Route: {route.route_name}'  
+    ws['A5'] = f'Date: {date}'  
     if selected_product:
         ws['A6'] = f'Selected Product: {selected_product}'  
-    headers = ['Customer Name', 'Product Name', 'Changed Quantity', 'Reason']
+    headers =['SiNo']+ ['Customer Name', 'Product Name', 'Returned Quantity', 'Reason']
     for col_idx, header in enumerate(headers, start=1):
         cell = ws.cell(row=7, column=col_idx, value=header)
         cell.font = Font(bold=True) 
     # Write DataFrame to the Excel file starting from row 6
-    for r_idx, row in enumerate(df.values, start=8):
-        for c_idx, value in enumerate(row, start=1):
+    for r_idx, row in enumerate(df.values, start=8):  # Start from index 7
+        ws.cell(row=r_idx, column=1, value=r_idx - 7)  # Add serial number starting from 1
+        for c_idx, value in enumerate(row, start=2):  # Start from column 2 to avoid overwriting serial number
             ws.cell(row=r_idx, column=c_idx, value=value)
 
     # Save the workbook to a BytesIO object
@@ -226,36 +251,37 @@ def order_change_list_excel(request, route_id):
 
     # Serve the Excel file as an HTTP response
     response = HttpResponse(excel_file.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename=order_changes.xlsx'
+    response['Content-Disposition'] = 'attachment; filename=order_returns.xlsx'
     return response
 
     
     
 
 class Order_change_Add(View):
-    def get(self, request):
+    def get(self, request, route_id):
         template = 'order/order_change_add.html'
-        form = Order_change_Form
+        form = Order_change_Form(route_id=route_id)
         
         return render(request, template, {'form': form})
 
-    def post(self, request):
+    def post(self, request, route_id):
         template = 'order/order_change_add.html'
-        form = Order_change_Form(request.POST)
+        form = Order_change_Form(route_id=route_id, data=request.POST)
         if form.is_valid():
-            form.save()
+            route = RouteMaster.objects.get(route_id=route_id)
+            form.save(route=route)
             return redirect(order_change)
-        return render(request, template, {'form': form})
+        customer = request.POST.get('customer')
+        return render(request, template,)
 
 
 class Order_change_Edit(View):
     template = 'order/order_change_edit.html'
     def get(self, request, order_change_id):
+        customer = Order_change.objects.get(order_change_id=order_change_id).customer
         order_change = Order_change.objects.get(order_change_id=order_change_id)
         form = Order_change_Edit_Form(instance=order_change)
-        initial_salesman = order_change.salesman
-        form.fields['salesman'].initial = initial_salesman
-        return render(request, self.template, {'form': form, 'order_change': order_change})
+        return render(request, self.template, {'form': form, 'order_change': order_change, 'customer':customer})
 
     def post(self, request, order_change_id):
         order_change = Order_change.objects.get(order_change_id=order_change_id)
@@ -268,7 +294,7 @@ class Order_change_Edit(View):
             print(form.errors)
         return render(request, self.template, {'form': form, 'order_change': order_change})
     
-class Order_Change_Delete(View):
+class Order_change_Delete(View):
     template='order/order_change_delete.html'
     def get(self, request, order_change_id):
         order_change = Order_change.objects.get(order_change_id=order_change_id)
@@ -282,74 +308,86 @@ class Order_Change_Delete(View):
 
 # Return
 def order_return(request):
+    start_date = None
+    end_date = None
+    selected_date = None
+    selected_product_id = None
+    selected_product = None
     template = 'order/order_return.html'
     order_returns = Order_return.objects.all()
     products = Product.objects.all()
     route_counts = {}
-    start_date=None; end_date=None; selected_date=None; selected_product_id=None;
+    today = datetime.today()
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         selected_date = request.POST.get('date')
         selected_product_id = request.POST.get('product')
+
         if start_date and end_date:
             order_returns = order_returns.filter(return_date__range=[start_date, end_date])
-        if selected_date:
+        elif selected_date:
             order_returns = order_returns.filter(return_date=selected_date)
+        else:
+            order_returns=Order_return.objects.filter(return_date=timezone.now().date())
+        
+            
         
         if selected_product_id:
-            order_returns = order_returns.filter(order__item_name_id=selected_product_id)
+            selected_product = Product.objects.get(product_id = selected_product_id)
+            order_returns = order_returns.filter(product=selected_product)
     else:
         order_returns=Order_return.objects.filter(return_date=timezone.now().date())
     
     for order_return in order_returns:
+        
         route = order_return.route
         if route:
             route_name = route.route_name
             route_id = route.route_id  # Include the route_id
+            q=order_return.returned_quantity
             if route_name not in route_counts:
-                route_counts[route_name] = {'count': 1, 'id': route_id}  # Store both count and id
+                route_counts[route_name] = {'count': q, 'id': route_id}  
             else:
-                route_counts[route_name]['count'] += 1
+                route_counts[route_name]['count'] += q
         
-            
-    context = {'order_returns':order_returns, 'products' :products, 'route_counts': route_counts,
-               'start_date':start_date, 'end_date':end_date, 'selected_date':selected_date, 'selected_product_id':selected_product_id}
+
+    context = {'order_returns':order_returns, 'products' :products, 'route_counts': route_counts, 'today':today,
+               'start_date':start_date, 'end_date':end_date, 'selected_date':selected_date, 'selected_product_id':selected_product_id, 'selected_product':selected_product}
     return render(request, template, context)
 
-
+import datetime
+from datetime import date as dt
 def order_return_list(request, route_id):
     # Retrieve route object
     route = RouteMaster.objects.get(route_id=route_id)
     
     # Get query parameters
-    start_date = request.GET.get('start_date', None)
-    end_date = request.GET.get('end_date', None)
-    selected_date = request.GET.get('selected_date', None)
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    selected_date = request.GET.get('selected_date')
     selected_product_id = request.GET.get('selected_product_id', None)
-    date = ''
-    order_returns=Order_return.objects.filter(order__customer_id__routes=route)
-   
-    if start_date and end_date and start_date != "None" and end_date != "None":
-        start_datetime = timezone.make_aware(datetime.datetime.strptime(start_date, '%Y-%m-%d'))
-        end_datetime = timezone.make_aware(datetime.datetime.strptime(end_date, '%Y-%m-%d'))
-        # Filter by date range
-        order_returns = order_returns.filter(return_date__range=[start_datetime, end_datetime])
+    # date = ''
+    order_returns = Order_return.objects.filter(customer__routes=route)
+    
+    if start_date and end_date and start_date != 'None' and end_date != 'None':
+        order_returns = order_returns.filter(return_date__range=[start_date, end_date])
         date=f" {start_date} --> { end_date }"
-    elif selected_date and selected_date != "None":
+    elif selected_date and selected_date != 'None':
         order_returns = order_returns.filter(return_date=selected_date)
         date=f"{selected_date}"
     else:
-        today = timezone.now().date()
+        today = dt.today()
         order_returns = order_returns.filter(return_date=today)
         date=f"{today}"
-    if selected_product_id and selected_product_id != "None":
+    if selected_product_id != 'None':
+        
         selected_product=Product.objects.get(product_id=selected_product_id)
-        order_returns = order_returns.filter(order__item_name_id=selected_product_id)
+        order_returns = order_returns.filter(product=selected_product)
     else:
         selected_product=None
     # Render the template with necessary context
-        
+    
     
     context = {
         'order_returns': order_returns,
@@ -357,7 +395,7 @@ def order_return_list(request, route_id):
         'start_date': start_date,
         'end_date': end_date,
         'selected_date': selected_date,
-        
+        'selected_product_id':selected_product_id,
         'selected_product': selected_product,
         'date':date
     }
@@ -369,34 +407,31 @@ def order_return_list_excel(request, route_id):
     route = RouteMaster.objects.get(route_id=route_id)
     
     # Get query parameters
-    start_date = request.GET.get('start_date', None)
-    end_date = request.GET.get('end_date', None)
-    selected_date = request.GET.get('selected_date', None)
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    selected_date = request.GET.get('selected_date')
     selected_product_id = request.GET.get('selected_product_id', None)
-    date = ''
-    order_returns=Order_return.objects.filter(order__customer_id__routes=route)
+    # date = ''
+    order_returns = Order_return.objects.filter(customer__routes=route)
    
-    if start_date and end_date and start_date != "None" and end_date != "None":
-        start_datetime = timezone.make_aware(datetime.datetime.strptime(start_date, '%Y-%m-%d'))
-        end_datetime = timezone.make_aware(datetime.datetime.strptime(end_date, '%Y-%m-%d'))
-        # Filter by date range
-        order_returns = order_returns.filter(return_date__range=[start_datetime, end_datetime])
+    if start_date and end_date and selected_date != 'None' and end_date != 'None':
+        order_returns = order_returns.filter(return_date__range=[start_date, end_date])
         date=f" {start_date} --> { end_date }"
-    elif selected_date and selected_date != "None":
+    elif selected_date and selected_date != 'None':
         order_returns = order_returns.filter(return_date=selected_date)
         date=f"{selected_date}"
     else:
-        today = timezone.now().date()
+        today = dt.today()
         order_returns = order_returns.filter(return_date=today)
         date=f"{today}"
-    if selected_product_id and selected_product_id != "None":
+    if selected_product_id != 'None':
+        
         selected_product=Product.objects.get(product_id=selected_product_id)
-        order_returns = order_returns.filter(order__item_name_id=selected_product_id)
+        order_returns = order_returns.filter(product=selected_product)
     else:
         selected_product=None
-    # Render the template with necessary context
     data = []
-    data = list(order_returns.values_list('order__customer_id__customer_name', 'order__item_name__product_name', 'returned_quantity', 'reason__reason_name'))
+    data = list(order_returns.values_list('customer__customer_name', 'product__product_name__product_name', 'returned_quantity', 'reason__reason_name'))
     df = pd.DataFrame(data, columns=['Customer Name', 'Product Name', 'Returned Quantity', 'Reason'])
 
     # Create a new Excel workbook
@@ -413,13 +448,17 @@ def order_return_list_excel(request, route_id):
     ws['A5'] = f'Date: {date}'  # Date information
     if selected_product:
         ws['A6'] = f'Selected Product: {selected_product}'  
-    headers = ['Customer Name', 'Product Name', 'Returned Quantity', 'Reason']
+    headers = ['Sino'] +  ['Customer Name', 'Product Name', 'Returned Quantity', 'Reason']
     for col_idx, header in enumerate(headers, start=1):
         cell = ws.cell(row=7, column=col_idx, value=header)
         cell.font = Font(bold=True) 
     # Write DataFrame to the Excel file starting from row 6
+    # for r_idx, row in enumerate(df.values, start=8):
+    #     for c_idx, value in enumerate(row, start=1):
+    #         ws.cell(row=r_idx, column=c_idx, value=value)
     for r_idx, row in enumerate(df.values, start=8):
-        for c_idx, value in enumerate(row, start=1):
+        ws.cell(row=r_idx, column=1, value=r_idx - 7)  # Add serial number
+        for c_idx, value in enumerate(row, start=2):  # Start from column 2 to avoid overwriting serial number
             ws.cell(row=r_idx, column=c_idx, value=value)
 
     # Save the workbook to a BytesIO object
@@ -437,29 +476,30 @@ def order_return_list_excel(request, route_id):
     
 
 class Order_return_Add(View):
-    def get(self, request):
+    def get(self, request, route_id):
         template = 'order/order_return_add.html'
-        form = Order_return_Form
+        form = Order_return_Form(route_id=route_id)
         
         return render(request, template, {'form': form})
 
-    def post(self, request):
+    def post(self, request, route_id):
         template = 'order/order_return_add.html'
-        form = Order_return_Form(request.POST)
+        form = Order_return_Form(route_id=route_id, data=request.POST)
         if form.is_valid():
-            form.save()
+            route = RouteMaster.objects.get(route_id=route_id)
+            form.save(route=route)
             return redirect(order_return)
-        return render(request, template, {'form': form})
+        customer = request.POST.get('customer')
+        return render(request, template,)
 
 
 class Order_return_Edit(View):
     template = 'order/order_return_edit.html'
     def get(self, request, order_return_id):
+        customer = Order_return.objects.get(order_return_id=order_return_id).customer
         order_return = Order_return.objects.get(order_return_id=order_return_id)
         form = Order_return_Edit_Form(instance=order_return)
-        initial_salesman = order_return.salesman
-        form.fields['salesman'].initial = initial_salesman
-        return render(request, self.template, {'form': form, 'order_return': order_return})
+        return render(request, self.template, {'form': form, 'order_return': order_return, 'customer':customer})
 
     def post(self, request, order_return_id):
         order_return = Order_return.objects.get(order_return_id=order_return_id)

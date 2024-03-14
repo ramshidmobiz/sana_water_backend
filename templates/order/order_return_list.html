@@ -52,8 +52,7 @@
                                     <i class="fas fa-file-excel"></i>   EXCEL
                                 </a>
                             </div>
-                        
-                        <div class="card-body" style="margin-top: 3em;">
+                         <div class="card-body" style="margin-top: 3em;">
                             <table id="datatable-basic" class="table table-bordered text-wrap " style="width: 100%;">
                                 <thead>
                                     <tr>
@@ -69,8 +68,8 @@
                                     {% for order_return in order_returns %}
                                         <tr>
                                             <td>{{ forloop.counter }}</td>
-                                            <td>{{ order_return.order.customer_id }}</td>
-                                            <td>{{ order_return.order.item_name }}</td>
+                                            <td>{{ order_return.customer }}</td>
+                                            <td>{{ order_return.product }}</td>
                                             <td>{{ order_return.returned_quantity }}</td>
                                             <td>{{ order_return.reason }}</td>
                                             <td>
@@ -125,8 +124,8 @@
                 {% for order_return in order_returns %}
                       <tr>  
                         <td>{{ forloop.counter }}</td>
-                        <td>{{ order_return.order.customer_id }}</td>
-                        <td>{{ order_return.order.item_name }}</td>
+                        <td>{{ order_return.customer }}</td>
+                        <td>{{ order_return.product }}</td>
                         <td>{{ order_return.returned_quantity }}</td>
                         <td>{{ order_return.reason }}</td>
                         

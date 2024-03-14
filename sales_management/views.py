@@ -202,7 +202,7 @@ class CustomerDetailsView(View):
         return render(request, self.template_name, context)
 
     def post(self, request, pk, *args, **kwargs):
-        print("dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd")
+        # print("dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd")
         # Retrieve user details
         user_det = Customers.objects.get(customer_id=pk)
 

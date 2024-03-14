@@ -5,21 +5,13 @@ from master.models import *
 
 
 class Products_Create_Form(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['unit'].choices = [
-            (choice[0], choice[1]) for choice in self.fields['unit'].choices]
-        self.fields['category_id'].queryset = CategoryMaster.objects.filter()
-
-
+    
     class Meta:
         model = Product
-        fields = ['product_name', 'unit', 'rate', 'category_id', 'tax','quantity']
+        fields = ['product_name', 'rate','tax','quantity']
         widgets = {
             'product_name': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'unit': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
             'rate': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'category_id' : forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
             'tax' : forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
             'quantity': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'})
 
@@ -27,9 +19,11 @@ class Products_Create_Form(forms.ModelForm):
 class Product_Item_Create_Form(forms.ModelForm):
     class Meta:
         model = ProdutItemMaster
-        fields = ['product_name']
+        fields = ['product_name','category','unit']
         widgets = {
             'product_name': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+            'category': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+            'unit': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
         }
 
 class Products_Edit_Form(forms.ModelForm):
@@ -38,11 +32,10 @@ class Products_Edit_Form(forms.ModelForm):
         
     class Meta:
         model = Product
-        fields = ['product_name', 'rate', 'category_id', 'tax']
+        fields = ['product_name', 'rate', 'tax']
         widgets = {
-            'product_name': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+            'product_name': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
             'rate': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'category_id' : forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
             'tax' : forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
 
         }

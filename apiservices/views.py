@@ -1,18 +1,19 @@
 import uuid
+import base64
 import datetime
 from datetime import datetime, date, time
+
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from master.functions import generate_serializer_errors
-from rest_framework.serializers import Serializer
 from rest_framework.utils import serializer_helpers
 from accounts.models import *
-from coupon_management.models import *
 from django.db.models import Q
 from django.http import Http404
-from django.db import transaction
 from django.urls import reverse
+from django.db import transaction
+from django.http import JsonResponse
+from django.db import transaction, IntegrityError
 
 #from .models import *
 from django.utils import timezone
@@ -21,23 +22,22 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.hashers import make_password, check_password
-
-
 ######rest framwework section
-from rest_framework.views import APIView
-from rest_framework.permissions import BasePermission, IsAuthenticated,IsAuthenticatedOrReadOnly
-from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.authentication import BasicAuthentication 
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+from rest_framework.response import Response
 from rest_framework.decorators import api_view
+from rest_framework.serializers import Serializer
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import BasicAuthentication 
+from rest_framework.permissions import BasePermission, IsAuthenticated,IsAuthenticatedOrReadOnly
 
-import base64
-from django.http import JsonResponse
 from master.serializers import *
+from master.functions import generate_serializer_errors
 from master.models import *
 from random import randint
 from datetime import datetime as dt
+from coupon_management.models import *
 from datetime import timedelta
 from django.utils import timezone
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
@@ -49,6 +49,8 @@ from master.models import *
 from product.models import *
 from van_management.models import *
 from customer_care.models import *
+from order.models import *
+
 
 from master.serializers import *
 from product.serializers import *
@@ -57,6 +59,7 @@ from accounts.serializers import *
 from .serializers import *
 from client_management.serializers import VacationSerializer
 from coupon_management.serializers import *
+from order.serializers import *
 
 
 import random
@@ -884,6 +887,137 @@ class ExpenseDetailAPI(APIView):
         expense.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+ ####################################Order####################################
+    
+# Reason
+class ChangeReasonListAPI(APIView):
+    def get(self, request):
+        change_reason = Change_Reason.objects.all()
+        serializer = ChangeReasonSerializer(change_reason, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = ChangeReasonSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ChangeReasonDetailAPI(APIView):
+    def get(self, request, change_reason_id):
+        change_reason = Change_Reason.objects.get(id = change_reason_id)
+        serializer = ChangeReasonSerializer(change_reason)
+        return Response(serializer.data)
+
+    def put(self, request, change_reason_id):
+        change_reason = Change_Reason.objects.get(id = change_reason_id)
+        serializer = ChangeReasonSerializer(change_reason, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, change_reason_id):
+        change_reason = Change_Reason.objects.get(id = change_reason_id)
+        change_reason.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
+
+
+# order Change 
+class OrderChangeListAPI(APIView):
+    def get(self, request):
+        order_change = Order_change.objects.all()
+        serializer = OrderChangeSerializer(order_change, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = OrderChangeSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class OrderChangeDetailAPI(APIView):
+    def get_object(self, order_change_id):
+        try:
+            return Order_change.objects.get(order_change_id=order_change_id)
+        except Order_change.DoesNotExist:
+            raise Http404
+
+    def get(self, request, order_change_id):
+        order_change = self.get_object(order_change_id)
+        serializer = OrderChangeSerializer(order_change)
+        return Response(serializer.data)
+
+    def put(self, request, order_change_id):
+        order_change = self.get_object(order_change_id)
+        existing_data = OrderChangeSerializer(order_change).data  # Get existing data
+
+        # Merge existing data with request data
+        merged_data = {**existing_data, **request.data}
+        serializer = OrderChangeSerializer(order_change, data=merged_data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, order_change_id):
+        order_change = self.get_object(order_change_id)
+        order_change.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+# Return
+class OrderReturnListAPI(APIView):
+    def get(self, request):
+        order_retrn = Order_return.objects.all()
+        serializer = OrderReturnSerializer(order_retrn, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = OrderReturnSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class OrderReturnDetailAPI(APIView):
+    def get_object(self, order_return_id):
+        try:
+            return Order_return.objects.get(order_return_id=order_return_id)
+        except Order_return.DoesNotExist:
+            raise Http404
+
+    def get(self, request, order_return_id):
+        order_return = self.get_object(order_return_id)
+        serializer = OrderReturnSerializer(order_return)
+        return Response(serializer.data)
+
+    def put(self, request, order_return_id):
+        order_return = self.get_object(order_return_id)
+        existing_data = OrderReturnSerializer(order_return).data  
+
+        merged_data = {**existing_data, **request.data}
+        serializer = OrderReturnSerializer(order_return, data=merged_data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, order_return_id):
+        order_return = self.get_object(order_return_id)
+        order_return.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
 
 
 
@@ -1542,51 +1676,59 @@ class Staff_New_Order(APIView):
     
     def post(self, request, *args, **kwargs):
         try:
-            data_list = request.data.get('data_list', [])
-            uid = uuid.uuid4()
-            uid = str(uid)[:5]
-            dtm = date.today().month
-            dty = date.today().year
-            dty = str(dty)[2:]
-            num = str(uid) + str(dtm) + str(dty)
-            request.data["order_num"] = num
-            
-            serializer_1 = self.staff_order_serializer(data=request.data)
-            if serializer_1.is_valid(raise_exception=True):
-                order_data = serializer_1.save(
-                    created_by=request.user.id,
-                    order_number=num
-                )
-                staff_order = order_data.staff_order_id
+            with transaction.atomic():
+                data_list = request.data.get('data_list', [])
+                uid = uuid.uuid4()
+                uid = str(uid)[:5]
+                dtm = date.today().month
+                dty = date.today().year
+                dty = str(dty)[2:]
+                num = str(uid) + str(dtm) + str(dty)
+                request.data["order_num"] = num
                 
-                # Aggregate products by ID
-                product_dict = defaultdict(int)
-                for data in data_list:
-                    product_id = data.get("product_id")
-                    count = int(data.get("count", 0))
-                    product_dict[product_id] += count
-                
-                # Create order details for each product
-                order_details_data = []
-                for product_id, count in product_dict.items():
-                    order_details_data.append({
-                        "created_by": request.user.id,
-                        "staff_order_id": staff_order,
-                        "product_id": product_id,
-                        "count": count
-                    })
-                
-                serializer_2 = self.staff_order_details_serializer(data=order_details_data, many=True)
-                
-                if serializer_2.is_valid(raise_exception=True):
-                    serializer_2.save()
-                    return Response({'status': True, 'message': 'Order Placed Successfully'}, status=status.HTTP_201_CREATED)
+                serializer_1 = self.staff_order_serializer(data=request.data)
+                if serializer_1.is_valid(raise_exception=True):
+                    order_data = serializer_1.save(
+                        created_by=request.user.id,
+                        order_number=num
+                    )
+                    staff_order = order_data.staff_order_id
+                    
+                    # Aggregate products by ID
+                    product_dict = defaultdict(int)
+                    for data in data_list:
+                        product_id = data.get("product_id")
+                        count = int(data.get("count", 0))
+                        product_dict[product_id] += count
+                    
+                    # Create order details for each product
+                    order_details_data = []
+                    for product_id, count in product_dict.items():
+                        order_details_data.append({
+                            "created_by": request.user.id,
+                            "staff_order_id": staff_order,
+                            "product_id": product_id,
+                            "count": count
+                        })
+                    
+                    serializer_2 = self.staff_order_details_serializer(data=order_details_data, many=True)
+                    
+                    if serializer_2.is_valid(raise_exception=True):
+                        serializer_2.save()
+                        return Response({'status': True, 'message': 'Order Placed Successfully'}, status=status.HTTP_201_CREATED)
+                    else:
+                        return Response({'status': False, 'message': serializer_2.errors}, status=status.HTTP_400_BAD_REQUEST)
                 else:
-                    return Response({'status': False, 'message': serializer_2.errors}, status=status.HTTP_400_BAD_REQUEST)
-            else:
-                return Response({'status': False, 'message': serializer_1.errors}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({'status': False, 'message': serializer_1.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+        except IntegrityError as e:
+                # Handle database integrity error
+                response_data = {"status": "false","title": "Failed","message": str(e),}
+
         except Exception as e:
-            return Response({'status': False, 'message': str(e)})
+            # Handle other exceptions
+            response_data = {"status": "false","title": "Failed","message": str(e),}
+        return Response(response_data)
 
 
         
@@ -2055,18 +2197,21 @@ class CustodyCustomItemAPI(APIView):
             print("product_id",product_id)
             serial_number = request.data['serialnumber']
             quantity = request.data['count']
-            is_deposit = request.data['deposit_form']
-            agreement_number = request.data['deposit_form_number']
+            is_deposit = request.data['deposit_form',False]
+            agreement_number = request.data['deposit_form_number', '']
             amount = request.data['amount'] if is_deposit else None
             
+            custody_custom, _ = CustodyCustom.objects.get_or_create(customer_id=customer_id)
+
             custody_item = CustodyCustomItems.objects.create(
-                customer_id=customer_id,
+                custody_custom=custody_custom,
                 product_id=ProdutItemMaster.objects.get(pk=product_id).pk,
                 serialnumber=serial_number,
                 count=quantity,
                 deposit_form=is_deposit,
                 amount=amount,
-                deposit_form_number=agreement_number
+                # deposit_form_number=agreement_number
+                deposit_form_number=agreement_number if is_deposit else ''
             )
             
             serializer = self.serializer_class(custody_item, many=False)
@@ -2177,6 +2322,48 @@ def customer_coupon_stock(request):
 
     
 
+# class CustodyCustomItemListAPI(APIView):
+    
+#     authentication_classes = [BasicAuthentication]
+#     permission_classes = [IsAuthenticated]
+#     serializer_class = CustodyCustomItemsSerializer
+    
+#     def get(self, request, *args, **kwargs):
+#         try:
+#             user_id = request.user.id
+#             customer_obj = Customers.objects.filter(sales_staff=user_id)
+#             custody_items = CustodyCustomItems.objects.filter(customer__in=customer_obj)
+#             serializer = self.serializer_class(custody_items, many=True)
+            
+#             grouped_data = {}
+            
+#             # Group items by customer id
+#             for item in serializer.data:
+#                 customer_id = item['customer']['customer_id']
+#                 customer_name = item['customer']['customer_name']
+#                 if customer_id not in grouped_data:
+#                     grouped_data[customer_id] = {
+#                         'customer_id': customer_id,
+#                         'customer_name': customer_name,
+#                         'products': []
+#                     }
+#                 grouped_data[customer_id]['products'].append({
+#                     'product_name': item['product_name'],
+#                     'product': item['product'],
+#                     'rate': item['rate'],
+#                     'count': item['count'],
+#                     'serialnumber': item['serialnumber'],
+#                     'deposit_type': item['deposit_type'],
+#                     'deposit_form_number': item['deposit_form_number']
+#                 })
+            
+#             final_response = list(grouped_data.values())
+            
+#             return Response({'status': True, 'data': final_response, 'message': 'Custody items list passed!'})
+        
+#         except Exception as e:
+#             return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'})
+    
 class CustodyCustomItemListAPI(APIView):
     
     authentication_classes = [BasicAuthentication]
@@ -2186,40 +2373,37 @@ class CustodyCustomItemListAPI(APIView):
     def get(self, request, *args, **kwargs):
         try:
             user_id = request.user.id
-            customer_obj = Customers.objects.filter(sales_staff=user_id)
-            custody_items = CustodyCustomItems.objects.filter(customer__in=customer_obj)
-            serializer = self.serializer_class(custody_items, many=True)
+            # Fetch all CustodyCustom objects for the current user
+            custody_custom_objects = CustodyCustom.objects.filter(customer__sales_staff=user_id)
             
+            # Initialize a dictionary to store grouped data
             grouped_data = {}
             
-            # Group items by customer id
-            for item in serializer.data:
-                customer_id = item['customer']['customer_id']
-                customer_name = item['customer']['customer_name']
-                if customer_id not in grouped_data:
-                    grouped_data[customer_id] = {
-                        'customer_id': customer_id,
-                        'customer_name': customer_name,
-                        'products': []
-                    }
-                grouped_data[customer_id]['products'].append({
-                    'product_name': item['product_name'],
-                    'product': item['product'],
-                    'rate': item['rate'],
-                    'count': item['count'],
-                    'serialnumber': item['serialnumber'],
-                    'deposit_type': item['deposit_type'],
-                    'deposit_form_number': item['deposit_form_number']
-                })
+            # Iterate over each CustodyCustom object
+            for custody_custom_obj in custody_custom_objects:
+                # Fetch CustodyCustomItems related to the CustodyCustom object
+                custody_items = CustodyCustomItems.objects.filter(custody_custom=custody_custom_obj)
+                
+                # Serialize CustodyCustomItems data
+                serialized_items = self.serializer_class(custody_items, many=True).data
+                
+                # Get customer_id
+                customer_id = custody_custom_obj.customer.customer_id
+                
+                # Add customer_id and serialized items to grouped_data
+                grouped_data[customer_id] = {
+                    'customer_id': customer_id,
+                    'customer_name': custody_custom_obj.customer.customer_name,
+                    'products': serialized_items
+                }
             
+            # Convert dictionary values to a list
             final_response = list(grouped_data.values())
             
             return Response({'status': True, 'data': final_response, 'message': 'Custody items list passed!'})
         
         except Exception as e:
-            return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'})
-    
-    
+            return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class CustodyItemReturnAPI(APIView):
     authentication_classes = [BasicAuthentication]

@@ -1063,7 +1063,7 @@
                                 <span class=" side-menu__icon">
                                     <i class='bx bx-desktop'></i>
                                 </span>
-                                <span class="side-menu__label">Van Management<span class="badge bg-warning-transparent ms-2 d-inline-block">3</span></span>
+                                <span class="side-menu__label">Van Management<span class="badge bg-warning-transparent ms-2 d-inline-block">6</span></span>
                                 <i class="fe fe-chevron-right side-menu__angle"></i>
                             </a>
                             <ul class="slide-menu child1">
@@ -1080,10 +1080,16 @@
                                     <a href="{% url 'schedule_view' %}" class="side-menu__item">Trip Schedule</a>
                                 </li>
                                 <li class="slide">
-                                    <a href="{% url 'vanstock' %}" class="side-menu__item">Van Stock</a>
+                                    <a href="{% url 'vanstock' %}" class="side-menu__item">Van Stock Products</a>
+                                </li>
+                                <li class="slide">
+                                    <a href="{% url 'van_coupon_stock' %}" class="side-menu__item">Van Stock Coupons</a>
                                 </li>
                                 <li class="slide">
                                     <a href="{% url 'offload' %}" class="side-menu__item">Offload</a>
+                                </li>
+				<li class="slide">
+                                    <a href="{% url 'expense_list' %}" class="side-menu__item">Expense</a>
                                 </li>
                             </ul>
                         </li>
@@ -1144,13 +1150,16 @@
                                     <a href="{% url 'vacation_list' %}" class="side-menu__item">Customers on Vacation</a>
                                 </li>
                                 <li class="slide">
-                                    <a href="{% url 'custodyitem_list' %}" class="side-menu__item">Custody Item List</a>
+                                    <a href="{% url 'customer_custody_list' %}" class="side-menu__item">Custody Items</a>
                                 </li>
                                 <li class="slide">
                                     <a href="{% url 'customer_supply_list' %}" class="side-menu__item">Supply</a>
                                 </li>
                                 <li class="slide">
                                     <a href="{% url 'client_report' %}" class="side-menu__item">Client Report</a>
+                                </li>
+                                                                <li class="slide">
+                                    <a href="{% url 'custody_items_list_report' %}" class="side-menu__item">Custody Item Report</a>
                                 </li>
                                 <!-- <li class="slide">
                                     <a href="" class="side-menu__item">Assign Van To Route</a>

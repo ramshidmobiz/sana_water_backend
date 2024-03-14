@@ -5,6 +5,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('varify-coupon/', varify_coupon, name='varify_coupon'),
+    path('get-product-items/', get_product_items, name='get_product_items'),
     
     path('products', Products_List.as_view(), name='products'),
     path('product_create',Product_Create.as_view(), name='product_create'),

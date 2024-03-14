@@ -8,20 +8,24 @@ urlpatterns = [
     path('reason_edit/<int:reason_id>',  Reason_Edit.as_view(), name="reason_edit"),
     path('reason_delete/<int:reason_id>',  Reason_Delete.as_view(), name="reason_delete"),
 
+    path('filter_route/<str:action>', filter_route, name="filter_route"),
+
+    # Change
     path('order_change',  order_change, name="order_change"),
     path('order_change_list/<uuid:route_id>/', order_change_list, name="order_change_list"),
     path('order_change_list_excel/<uuid:route_id>/', order_change_list_excel, name="order_change_list_excel"),
-    path('order_change_add',  Order_change_Add.as_view(), name="order_change_add"),
+    path('order_change_add/<uuid:route_id>',  Order_change_Add.as_view(), name="order_change_add"),
     path('order_change_edit/<uuid:order_change_id>',  Order_change_Edit.as_view(), name="order_change_edit"),
-    path('order_change_delete/<uuid:order_change_id>',  Order_Change_Delete.as_view(), name="order_change_delete"),
+    path('order_change_delete/<uuid:order_change_id>',  Order_change_Delete.as_view(), name="order_change_delete"),
 
     # Return
     path('order_return',  order_return, name="order_return"),
     path('order_return_list/<uuid:route_id>/', order_return_list, name="order_return_list"),
     path('order_return_list_excel/<uuid:route_id>/', order_return_list_excel, name="order_return_list_excel"),
-    path('order_return_add',  Order_return_Add.as_view(), name="order_return_add"),
+    path('order_return_add/<uuid:route_id>',  Order_return_Add.as_view(), name="order_return_add"),
     path('order_return_edit/<uuid:order_return_id>',  Order_return_Edit.as_view(), name="order_return_edit"),
     path('order_return_delete/<uuid:order_return_id>',  Order_Return_Delete.as_view(), name="order_return_delete"),
+
 
     path('order_create/', OrderCreate.as_view(), name='order-create'),
     path('order_update/<uuid:pk>/', OrderUpdate.as_view(), name='order_update'),

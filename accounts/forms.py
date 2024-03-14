@@ -107,27 +107,29 @@ class CustomercreateForm(forms.ModelForm):
         self.fields['location'].queryset = LocationMaster.objects.filter(branch_id = branch)
 
     class Meta:
+        
         model = Customers
-        fields = ['customer_name','building_name','door_house_no','floor_no','sales_staff','routes','location','mobile_no','whats_app','email_id','gps_latitude','gps_longitude','customer_type','sales_type','no_of_bottles_required','max_credit_limit','credit_days','no_of_permitted_invoices']
+        fields = ['customer_name','building_name','door_house_no','floor_no','sales_staff','routes','location','mobile_no','whats_app','email_id','gps_latitude','gps_longitude','customer_type','rate','sales_type','no_of_bottles_required','max_credit_limit','credit_days','no_of_permitted_invoices']
         widgets = {
             'customer_name': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
             'building_name': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'door_house_no': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'floor_no': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+            'door_house_no': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
+            'floor_no': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
             'sales_staff': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
             'routes': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
             'location': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'mobile_no': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'whats_app': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'email_id': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'gps_latitude': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'gps_longitude': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+            'mobile_no': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
+            'whats_app': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
+            'email_id': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
+            'gps_latitude': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
+            'gps_longitude': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
+            'rate': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
             'customer_type': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'sales_type': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'no_of_bottles_required': forms.TextInput(attrs={'class': 'form-control', 'required': 'true','type':'number'}),
-            'max_credit_limit': forms.TextInput(attrs={'class': 'form-control', 'required': 'true','type':'number'}),
-            'credit_days': forms.TextInput(attrs={'class': 'form-control', 'required': 'true','type':'number'}),
-            'no_of_permitted_invoices': forms.TextInput(attrs={'class': 'form-control', 'required': 'true','type':'number'}),
+            'sales_type': forms.Select(attrs={'class': 'form-control', 'required': False}),
+            'no_of_bottles_required': forms.TextInput(attrs={'class': 'form-control', 'required': False,'type':'number'}),
+            'max_credit_limit': forms.TextInput(attrs={'class': 'form-control', 'required': False,'type':'number'}),
+            'credit_days': forms.TextInput(attrs={'class': 'form-control', 'required': False,'type':'number'}),
+            'no_of_permitted_invoices': forms.TextInput(attrs={'class': 'form-control', 'required': False,'type':'number'}),
         }
 
 
@@ -140,26 +142,27 @@ class CustomerEditForm(forms.ModelForm):
 
     class Meta:
         model = Customers
-        fields = ['customer_name','building_name','door_house_no','floor_no','sales_staff','routes','location','mobile_no','whats_app','email_id','gps_latitude','gps_longitude','customer_type','sales_type','no_of_bottles_required','max_credit_limit','credit_days','no_of_permitted_invoices','is_active']
+        fields = ['customer_name','building_name','door_house_no','floor_no','sales_staff','routes','location','mobile_no','whats_app','email_id','gps_latitude','gps_longitude','customer_type','rate','sales_type','no_of_bottles_required','max_credit_limit','credit_days','no_of_permitted_invoices','is_active']
         widgets = {
             'customer_name': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
             'building_name': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'door_house_no': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'floor_no': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+            'door_house_no': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
+            'floor_no': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
             'sales_staff': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
             'routes': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
             'location': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'mobile_no': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'whats_app': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'email_id': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'gps_latitude': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'gps_longitude': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+            'mobile_no': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
+            'whats_app': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
+            'email_id': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
+            'gps_latitude': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
+            'gps_longitude': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
+            'rate': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
             'customer_type': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'sales_type': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'no_of_bottles_required': forms.TextInput(attrs={'class': 'form-control', 'required': 'true','type':'number'}),
-            'max_credit_limit': forms.TextInput(attrs={'class': 'form-control', 'required': 'true','type':'number'}),
-            'credit_days': forms.TextInput(attrs={'class': 'form-control', 'required': 'true','type':'number'}),
-            'no_of_permitted_invoices': forms.TextInput(attrs={'class': 'form-control', 'required': 'true','type':'number'}),
+            'sales_type': forms.Select(attrs={'class': 'form-control', 'required': False}),
+            'no_of_bottles_required': forms.TextInput(attrs={'class': 'form-control', 'required': False,'type':'number'}),
+            'max_credit_limit': forms.TextInput(attrs={'class': 'form-control', 'required': False,'type':'number'}),
+            'credit_days': forms.TextInput(attrs={'class': 'form-control', 'required': False,'type':'number'}),
+            'no_of_permitted_invoices': forms.TextInput(attrs={'class': 'form-control', 'required': False,'type':'number'}),
             'is_active': forms.CheckboxInput(attrs={}),
 
         }

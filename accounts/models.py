@@ -101,7 +101,7 @@ class Customers(models.Model):
     visit_schedule = models.JSONField(null=True,blank=True)
     is_editable = models.BooleanField(default=True)
     user_id = models.ForeignKey('accounts.CustomUser', on_delete=models.SET_NULL, null=True, blank=True,related_name='user_sign')
-
+    rate = models.CharField(max_length=100, null=True, blank=True)
     def __str__(self):
         return str(self.customer_name)
 

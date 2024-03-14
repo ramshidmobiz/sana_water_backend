@@ -21,12 +21,12 @@
                     <div class="card-body">
                         <table class="table">
                             <tr>
-                                <td class="text-secondary">Product Name</td>
-                                <td>{{ issue_instance.product_id.product_name }}</td>
+                                <td class="text-secondary">Product Category</td>
+                                <td>{{ issue_instance.product_id.category.category_name}}</td>
                             </tr>
                             <tr>
-                                <td class="text-secondary">Product Category</td>
-                                <td>{{ issue_instance.product_id.category_id }}</td>
+                                <td class="text-secondary">Product Name</td>
+                                <td>{{ issue_instance.product_id.product_name }}</td>
                             </tr>
                             <tr>
                                 <td class="text-secondary">Product Unit</td>
@@ -54,6 +54,7 @@
                         <form enctype="multipart/form-data" role="form" method="post" class="row g-3 needs-validation ajax redirect">
                             {% csrf_token %}
                             <!-- Row 1 -->
+                            {% if form.coupo_no %}
                             <div class="col-md-6">
                                 <div class="form-group required">
                                     <label class='control-label'>Coupon Book</label>
@@ -61,7 +62,7 @@
                                     <span style="color: red;">{{ form.coupon_book.errors }}</span>
                                 </div>
                             </div>
-
+                            {% endif %}
                             <div class="col-md-6">
                                 <div class="form-group required">
                                     <label class='control-label'>Issue Quantity</label>

@@ -26,9 +26,30 @@ from datetime import datetime
 
 
 # Van
+# def van(request):
+#     all_van = Van.objects.all()
+#     context = {'all_van': all_van}
+#     return render(request, 'van_management/van.html', context)
 def van(request):
     all_van = Van.objects.all()
-    context = {'all_van': all_van}
+    
+    routes_assigned = {}  # Initialize an empty dictionary
+    
+    # print("All Vans:", all_van)  
+    
+    for van in all_van:
+        van_routes = Van_Routes.objects.filter(van=van)
+        route_names = [van_route.routes.route_name for van_route in van_routes]
+        routes_assigned[van.van_id] = route_names
+        
+    # print("Routes Assigned:", routes_assigned)  
+    context = {
+        'all_van': all_van,
+        'routes_assigned': routes_assigned,
+    }
+    
+    # print("Context:", context)  
+    
     return render(request, 'van_management/van.html', context)
 
 def create_van(request):
@@ -443,6 +464,7 @@ def find_customers(request, def_date, route_id):
                     if customer.building_name ==building:
                         trip_customer = {
                             "customer_name" : customer.customer_name,
+                            "mobile":customer.mobile_no,
                             "trip":trip,
                             "building":customer.building_name,
                             "route" : customer.routes.route_name,
@@ -604,6 +626,7 @@ def excel_download(request, route_id, def_date, trip):
     data = {
         'Serial Number': [customer['serial_number'] for customer in customers],
         'Client Name': [customer['customer_name'] for customer in customers],
+        'Mobile': [customer['mobile'] for customer in customers],
         'Locations': [customer['location'] for customer in customers],
         'No of Bottles': [customer['no_of_bottles'] for customer in customers],
         'Outstanding Bottles': ['' for _ in customers],
@@ -765,10 +788,17 @@ class ExpenseDelete(View):
 
 def vanstock(request):
     van_stock = VanProductStock.objects.all()
-    for item in van_stock:
-        item.total_stock = item.count + item.product.quantity
+    # for item in van_stock:
+    #     item.total_stock = item.count + item.product.quantity
     context = {'van_stock': van_stock}
     return render(request, 'van_management/vanstock_list.html', context)
+
+def van_coupon_stock(request):
+    instances = VanCouponStock.objects.all()
+    context = {
+        'instances': instances
+        }
+    return render(request, 'van_management/van_coupon_stock_list.html', context)
 
 def offload(request):
     van_stock = VanProductStock.objects.all()

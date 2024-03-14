@@ -57,6 +57,16 @@ urlpatterns = [
     path('expenses/', ExpenseListAPI.as_view(), name='expense-list'),
     path('expenses/<uuid:expense_id>/', ExpenseDetailAPI.as_view(), name='expense-detail'),
 
+    # Order change and return
+    path('change_reason/', ChangeReasonListAPI.as_view(), name='change_reason'),
+    path('change_reason/<int:change_reason_id>', ChangeReasonDetailAPI.as_view(), name="change_reason_detai"),
+
+    path('order_change/', OrderChangeListAPI.as_view(), name='order_change'),
+    path('order_change/<uuid:order_change_id>', OrderChangeDetailAPI.as_view(), name="order_change_detai"),
+
+    path('order_return/', OrderReturnListAPI.as_view(), name='order_return'),
+    path('order_return/<uuid:order_return_id>', OrderReturnDetailAPI.as_view(), name="order_return_detai"),  
+
     
     ####################### Customer_Url s#################################
 
@@ -118,10 +128,9 @@ urlpatterns = [
 
     path('outstanding_amount/',OutstandingAmountAPI.as_view(), name = 'outstanding_amount'),
     path('outstanding_amount_list/',OutstandingAmountListAPI.as_view(), name = 'outstanding_amount_list'),
-
     # path('outstanding_coupon/',OutstandingCouponAPI.as_view(), name = 'outstanding_coupon'),
 
-
+    path('vanstock/', VanStockAPI.as_view(), name='vanstock'),
 
 
 

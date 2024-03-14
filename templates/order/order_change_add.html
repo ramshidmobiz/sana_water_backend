@@ -25,16 +25,26 @@
             {% csrf_token %}
                     <div class="col-md-6">
                         <div class="form-group required">
-                            <label class='control-label'>Order</label>
-                            {{ form.order }}
-                            <span style="color: red;">{{ form.order.errors }}</span>
+                            <label class='control-label'>Customer</label>
+                            {{ form.customer }}
+                            <span style="color: red;">{{ form.customer.errors }}</span>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group required">
-                            <label class='control-label'>Salesman</label>
-                            {{ form.salesman }}
-                            <span style="color: red;">{{ form.salesman.errors }}</span>
+                            <label class='control-label'>Product</label>
+                            {{ form.product }}
+                            <span style="color: red;">{{ form.product.errors }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group required d-flex justify-content-between align-items-center">
+                            <label class='control-label'>Reason for Change</label>
+                            <a href="{% url 'order_change_reason' %}" style="color: blue; text-decoration: underline;">Manage Reasons</a>
+                        </div>
+                        <div class="form-group required">
+                            {{ form.reason }}
+                            <span style="color: red;">{{ form.reason.errors }}</span>
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -51,19 +61,10 @@
                             <span style="color: red;">{{ form.change_date.errors }}</span>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="form-group required d-flex justify-content-between align-items-center">
-                            <label class='control-label'>Reason for Change</label>
-                            <a href="{% url 'order_change_reason' %}" style="color: blue; text-decoration: underline;">Manage Reasons</a>
-                        </div>
-                        <div class="form-group required">
-                            {{ form.reason }}
-                            <span style="color: red;">{{ form.reason.errors }}</span>
-                        </div>
-                    </div>
+                    
                     <div class="col-md-6">
                         <div class="form-group ">
-                            <label class='control-label'>Extra note</label> 
+                            <label class='control-label'>Note</label>
                             {{ form.note }}
                             <span style="color: red;">{{ form.note.errors }}</span>
                         </div>

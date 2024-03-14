@@ -56,7 +56,7 @@ class CompetitorAnalysisFormView(View):
     
 
 
-from master.models import RouteMaster  #
+from master.models import RouteMaster  
 from django import forms
 from .forms import CompetitorAnalysisFilterForm
 

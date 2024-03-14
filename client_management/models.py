@@ -18,48 +18,33 @@ PAYMENT_METHOD =(
     ('cheque','Cheque'),
 )
 
+DEPOSIT_TYPES = (
+    ('deposit', 'Deposit'),
+    ('non_deposit', 'Non Deposit'),
+)
+
 class CustodyCustom(models.Model):
     custody_custom_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customer = models.ForeignKey('accounts.Customers', on_delete=models.CASCADE,null=True,blank=True)
     agreement_no = models.CharField(max_length=20, null=True, blank=True)
+    total_amount = models.IntegerField(blank=True,null=True)
+    deposit_type = models.CharField(max_length=20,choices=DEPOSIT_TYPES,null=True,blank=True)
+    
     created_by = models.CharField(max_length=20,  blank=True)
     created_date = models.DateTimeField(auto_now_add=True,blank=True, null=True)
     modified_by = models.CharField(max_length=20, null=True, blank=True)
     modified_date = models.DateTimeField(blank=True, null=True)
 
 class CustodyCustomItems(models.Model):
-    DEPOSIT_TYPES = [
-        ('cash', 'Cash Deposit'),
-        ('cheque', 'Cheque Deposit'),
-        ('other', 'Other Deposit'),
-    ]
-    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     custody_custom = models.ForeignKey(CustodyCustom, on_delete=models.CASCADE,null=True,blank=True)
-    customer = models.ForeignKey('accounts.Customers', on_delete=models.CASCADE,null=True,blank=True)
     product = models.ForeignKey('product.ProdutItemMaster', on_delete=models.CASCADE,null=True,blank=True)
-    # route = models.ForeignKey('master.RouteMaster', on_delete=models.CASCADE,null=True,blank=True)
-    rate = models.IntegerField(blank=True,null=True)
-    count = models.IntegerField(blank=True,null=True)
+    quantity = models.IntegerField(blank=True,null=True)
+    serialnumber = models.CharField(max_length=20, null=True, blank=True)
     amount = models.IntegerField(blank=True,null=True)
-    serialnumber = models.IntegerField(blank=True,null=True)
-    category = models.ForeignKey('master.CategoryMaster', on_delete=models.CASCADE,null=True,blank=True)
-    deposit_type = models.CharField(max_length=10, choices=DEPOSIT_TYPES,default='cash')
-    deposit_form = models.BooleanField(default=True)
-    deposit_form_number = models.CharField(max_length=100,default='')
 
-
-    # @property
-    # def total(self):
-    #     return self.count * self.rate
-    @property
-    def total(self):
-        if self.count is not None and self.rate is not None:
-            return self.count * self.rate
-        else:
-            return 0
     class Meta:
-        ordering = ('customer',)
+        ordering = ('custody_custom__created_date',)
 
     def __str__(self):
         return str(self.id)

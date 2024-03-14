@@ -2,7 +2,7 @@ from django.db import models
 import uuid
 from coupon_management.models import Coupon, CouponType, NewCoupon
 from master.models import *
-from product.models import Product
+from product.models import Product, ProdutItemMaster
 
 # Create your models here.
 STOCK_TYPES = (
@@ -103,7 +103,7 @@ class VanStock(models.Model):
     
 class VanProductItems(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE)
     count = models.PositiveIntegerField(default=0)
     van_stock = models.ForeignKey(VanStock, on_delete=models.CASCADE)
 
@@ -122,7 +122,7 @@ class VanCouponItems(models.Model):
     
 class VanProductStock(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE)
     stock_type = models.CharField(max_length=100,choices=STOCK_TYPES)
     count = models.PositiveIntegerField(default=0)
     van = models.ForeignKey(Van, on_delete=models.CASCADE,null=True,blank=True)
@@ -144,7 +144,7 @@ class VanCouponStock(models.Model):
 class OffloadVan(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     van = models.ForeignKey(Van, on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=0)
     stock_type = models.CharField(max_length=100,choices=STOCK_TYPES)
 

@@ -27,7 +27,8 @@ class ExpenseHeadSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ExpenseSerializer(serializers.ModelSerializer):
-    expense_type_name = serializers.CharField(source='expense_head.name', read_only=True)
+    expense_type_name = serializers.CharField(source='expence_type.name', read_only=True)
+
     class Meta:
         model = Expense
-        fields = '__all__'
+        fields = ('expense_id', 'expence_type', 'expense_type_name', 'route', 'van', 'amount', 'remarks', 'expense_date', 'date_created')

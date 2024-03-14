@@ -4,6 +4,7 @@ from django import template
 from django.db.models import Q, Sum
 
 from accounts.models import CustomUser
+from master.models import CategoryMaster
 from van_management.models import Van_Routes
 
 register = template.Library()
@@ -21,6 +22,13 @@ def get_salesman_name(staff_id):
 def get_route_name(staff_id):
     try:
         return Van_Routes.objects.get(van__salesman__pk=staff_id)
+    except :
+        return "--"
+    
+@register.simple_tag
+def get_categories():
+    try:
+        return CategoryMaster.objects.all()
     except :
         return "--"
 

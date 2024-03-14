@@ -23,10 +23,10 @@
                         </div>
                     </div>
 
-                    <div class="">
+                    <div class="" >
                         <form method="post">
                             {% csrf_token %}
-                            <div class="row mt-4">
+                            <div class="row mt-3 ">
                                 <div class="row col-md-8" style="">
                                     <button id="selectByDateBtn" class="col-2" style="margin-left: 15px; background-color: white; border: 0;">Select by Date</button>
                                     <button id="selectByPeriodBtn" class="col-3" style="background-color: white; border: 0;">Select by Period</button>
@@ -59,7 +59,11 @@
                                     </div>
                                     <div class="col-md-8">
                                         <select name="product" id="product" class="form-select" style="width:100%">
+                                            {% if selected_product %}
+                                            <option value="{{selected_product_id}}" disabled selected>{{selected_product}}</option>
+                                            {% else %}
                                             <option value="" disabled selected>-------------</option>
+                                            {% endif %}
                                             {% for product in products %}
                                                 <option value="{{ product.product_id }}">{{ product }}</option>
                                             {% endfor %}
@@ -70,21 +74,24 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="row mt-4">
-                                <div class="row col-md-4">
-                                    <div class="row">
-                                        
-                                    </div>
-                                </div>
-                            </div>
+                            
                         </form>
                     </div>
-                    <div class="ms-auto">
-                        <a href="{% url 'order_change_add' %}">
-                            <button type="button" class="btn btn-success btn-wave text-end d-flex me-4 my-auto">
-                                <i class="bi bi-plus-circle me-1"></i>Create
-                            </button>
-                        </a>
+                    <div class="row" style=" align-items: center;">
+                        <div class="col-md-6 text-center"> <!-- Column for the text, taking half the width -->
+                            <!-- Add your text here -->
+                            <h6>Date: {% if start_date and end_date %}{{ start_date }} -> {{ end_date }}{% elif selected_date %}{{ selected_date }}{% else %}{{ today|date:"Y-m-d" }}{% endif %}</h6>
+                        </div>
+                        <div class="col-4"></div>
+                        <div class="col-md-2"> <!-- Column for the button, taking half the width -->
+                            <div class="ms-auto">
+                                <a href="{% url 'filter_route' action="change" %}">
+                                    <button type="button" class="btn btn-success btn-wave text-end d-flex me-4 my-auto">
+                                        <i class="bi bi-plus-circle me-1"></i>Create
+                                    </button>
+                                </a>
+                            </div>
+                        </div>
                     </div>
                     <div class="card-body">
                         <table id="datatable-basic" class="table table-bordered text-wrap " style="width: 100%">

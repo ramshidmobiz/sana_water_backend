@@ -9,6 +9,7 @@ from django.contrib import messages
 from django.db import transaction, IntegrityError
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
+from django.forms import formset_factory, inlineformset_factory
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import  *
@@ -23,88 +24,155 @@ from django.template.loader import get_template
 from xhtml2pdf import pisa
 from openpyxl import Workbook
 from openpyxl.styles import Alignment
+from competitor_analysis.forms import CompetitorAnalysisFilterForm
+from django.db.models import Q
 
 
 def customer_custody_item(request,customer_id):
-    template_name = 'client_management/add_custody_items.html'
-    if request.method == "GET":
-        print(request.user.user_type,"<---user_type")
-        customer_exists = Customers.objects.filter(customer_id=customer_id).exists()
-        if customer_exists:
-            customer_data = Customers.objects.get(customer_id=customer_id)
-            if request.user.user_type == 'Admin':
-                branch = BranchMaster.objects.all().values_list('branch_id', flat=True)
-                print(branch,"<--branch")
-                products = Product.objects.filter(branch_id__in=branch)
-
-            else:
-                branch_id=request.user.branch_id.branch_id
-                branch = BranchMaster.objects.get(branch_id=branch_id)
-                products = Product.objects.filter(branch_id=branch)
-            print(products,"<--products")
-
-            price_list = []
-            for product in products:
-                default_rates_exists = Product_Default_Price_Level.objects.filter(product_id=product,customer_type=customer_data.customer_type).exists()
-                if default_rates_exists:
-                    default_rates = Product_Default_Price_Level.objects.get(product_id=product,customer_type=customer_data.customer_type)
-                    custody_items_exists = CustodyCustomItems.objects.filter(product_id=product,customer=customer_data.customer_id).exists()
-                    if custody_items_exists:
-                        custody_items = CustodyCustomItems.objects.get(product_id=product,customer=customer_data.customer_id)
-                        custody_item_id = custody_items.custody_item_id
-                        product_id = product.product_id
-                        product_name = product.product_name
-                        product_rate = custody_items.rate
-                        product_count = custody_items.count
-                    else:
-                        custody_item_id = ''
-                        product_id = product.product_id
-                        product_name = product.product_name
-                        product_rate = default_rates.rate
-                        product_count = 0
-                else:
-                    custody_item_id = ''
-                    product_id = product.product_id
-                    product_name = product.product_name
-                    product_rate = 0
-                    product_count = 0
-
-                ite = {'custody_item_id':custody_item_id,'product_id': product_id, 'product_name': product_name,'product_rate':product_rate,'product_count':product_count}
-                price_list.append(ite)
-        context = {'price_list': price_list,'customerid':customer_data.customer_id,'customername':customer_data.customer_name}
-        return render(request, template_name, context)
+    customer_instance = Customers.objects.get(customer_id=customer_id)
+    CustodyItemsFormset = formset_factory(CustodyCustomItemForm, extra=2)
     
+    message = ''
     if request.method == 'POST':
-        customer_id = request.POST.get('id_customer')
-        product_ids = request.POST.getlist('price_checkbox')
-        rate = request.POST.getlist('rate')
-        count = request.POST.getlist('count')
-        id_custody_items = request.POST.getlist('id_custody_item')
-        if customer_id is not None and product_ids is not None:
-            customer_instance = Customers.objects.get(customer_id=customer_id)
-            for i, item_id in enumerate(product_ids):
-                product_id, index = item_id.split('+')
-                index = int(index) - 1
+        custody_custom_form = CustodyCustomForm(request.POST)
+        custody_items_formset = CustodyItemsFormset(request.POST,prefix='custody_items_formset', form_kwargs={'empty_permitted': False})
+        
+        if custody_custom_form.is_valid() and custody_items_formset.is_valid():
+            try:
+                with transaction.atomic():
+                    custody_custom_data = custody_custom_form.save(commit=False)
+                    custody_custom_data.created_by=request.user.id
+                    custody_custom_data.created_date=datetime.today()
+                    custody_custom_data.modified_by=request.user.id
+                    custody_custom_data.modified_date=datetime.today()
+                    
+                    custody_custom_data.customer=customer_instance
+                    custody_custom_data.save()
+                    
+                    for form in custody_items_formset:
+                        item = form.save(commit=False)
+                        item.custody_custom = custody_custom_data
+                        item.save()
+                    response_data = {
+                        "status": "true",
+                        "title": "Successfully Created",
+                        "message": "custody Item created successfully.",
+                        'redirect': 'true',
+                        "redirect_url": reverse('customers')
+                    }
+            except IntegrityError as e:
+                # Handle database integrity error
+                response_data = {
+                    "status": "false",
+                    "title": "Failed",
+                    "message": str(e),
+                }
 
-                product_instance = Product.objects.get(product_id=product_id)
-                if id_custody_items[index]=='':
-                    CustodyCustomItems.objects.create(created_by=request.user,
-                                        customer=customer_instance,
-                                        rate=rate[index],
-                                        count=count[index],
-                                        product=product_instance)   
-                else:
-                    customer_custody_instance = CustodyCustomItems.objects.get(custody_item_id=id_custody_items[index])
-                    customer_custody_instance.rate = rate[index]
-                    customer_custody_instance.count = count[index]
-                    customer_custody_instance.save()
-
-            messages.success(request, 'Custody Items Successfully Added.', 'alert-success')
-            return redirect('customers')
+            except Exception as e:
+                # Handle other exceptions
+                response_data = {
+                    "status": "false",
+                    "title": "Failed",
+                    "message": str(e),
+                }
         else:
-            messages.success(request, 'Data is not valid.', 'alert-danger')
-            context = {}
-    return render(request, template_name, context)
+            message = generate_form_errors(custody_custom_form, formset=False)
+            message += generate_form_errors(custody_items_formset, formset=True)
+            
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": message,
+            }
+
+        return HttpResponse(json.dumps(response_data), content_type='application/javascript')
+    
+    else:
+        custody_custom_form = CustodyCustomForm()
+        custody_items_formset = CustodyItemsFormset(prefix='custody_items_formset')
+        
+        context = {
+            'custody_custom_form': custody_custom_form,
+            'custody_items_formset': custody_items_formset,
+            'customer_instance' : customer_instance,
+            
+            'page_title': 'Create Custody Item',
+            'page_name' : 'create Custody Item',
+        }
+        
+        return render(request,'client_management/add_custody_items.html',context)
+
+
+# def customer_custody_item(request,customer_id):
+#     template_name = 'client_management/add_custody_items.html'
+#     if request.method == "GET":
+#         customer_exists = Customers.objects.filter(customer_id=customer_id).exists()
+#         if customer_exists:
+#             customer_data = Customers.objects.get(customer_id=customer_id)
+#             products = ProdutItemMaster.objects.all()
+
+#             price_list = []
+#             for product in products:
+#                 default_rates_exists = Product_Default_Price_Level.objects.filter(product_id=product,customer_type=customer_data.customer_type).exists()
+#                 if default_rates_exists:
+#                     default_rates = Product_Default_Price_Level.objects.get(product_id=product,customer_type=customer_data.customer_type)
+#                     custody_items_exists = CustodyCustomItems.objects.filter(product_id=product,customer=customer_data.customer_id).exists()
+#                     if custody_items_exists:
+#                         custody_items = CustodyCustomItems.objects.get(product_id=product,customer=customer_data.customer_id)
+#                         custody_item_id = custody_items.custody_item_id
+#                         product_id = product.pk
+#                         product_name = product.product_name
+#                         product_rate = custody_items.rate
+#                         product_count = custody_items.count
+#                     else:
+#                         custody_item_id = ''
+#                         product_id = product.pk
+#                         product_name = product.product_name
+#                         product_rate = default_rates.rate
+#                         product_count = 0
+#                 else:
+#                     custody_item_id = ''
+#                     product_id = product.pk
+#                     product_name = product.product_name
+#                     product_rate = 0
+#                     product_count = 0
+
+#                 ite = {'custody_item_id':custody_item_id,'product_id': product_id, 'product_name': product_name,'product_rate':product_rate,'product_count':product_count}
+#                 price_list.append(ite)
+#         context = {'price_list': price_list,'customerid':customer_data.customer_id,'customername':customer_data.customer_name}
+#         return render(request, template_name, context)
+    
+#     if request.method == 'POST':
+#         customer_id = request.POST.get('id_customer')
+#         product_ids = request.POST.getlist('price_checkbox')
+#         rate = request.POST.getlist('rate')
+#         count = request.POST.getlist('count')
+#         id_custody_items = request.POST.getlist('id_custody_item')
+#         if customer_id is not None and product_ids is not None:
+#             customer_instance = Customers.objects.get(customer_id=customer_id)
+#             for i, item_id in enumerate(product_ids):
+#                 product_id, index = item_id.split('+')
+#                 index = int(index) - 1
+
+#                 product_instance = ProdutItemMaster.objects.get(pk=product_id)
+#                 if id_custody_items[index]=='':
+#                     CustodyCustomItems.objects.create(created_by=request.user,
+#                                         customer=customer_instance,
+#                                         rate=rate[index],
+#                                         count=count[index],
+#                                         product=product_instance)   
+#                 else:
+#                     customer_custody_instance = CustodyCustomItems.objects.get(custody_item_id=id_custody_items[index])
+#                     customer_custody_instance.rate = rate[index]
+#                     customer_custody_instance.count = count[index]
+#                     customer_custody_instance.save()
+
+#             messages.success(request, 'Custody Items Successfully Added.', 'alert-success')
+#             return redirect('customers')
+#         else:
+#             messages.success(request, 'Data is not valid.', 'alert-danger')
+#             context = {}
+#     return render(request, template_name, context)
 
 
 #ajax
@@ -227,163 +295,86 @@ class Vacation_Delete(View):
         return redirect(vacation_list)
     
 
-class Custody_ItemListView(View):
-    template_name = 'client_management/custody_item_list.html'
-    def get(self, request):
-        # form = CustodyItemFilterForm(request.GET)
-        customer_list = CustodyCustomItems.objects.all()
-        print(customer_list,'customer_list')
 
-        # if form.is_valid():
-        #     route_name = form.cleaned_data.get('route_name')
-        #     if route_name:
-        #         # Assuming the relationship is through a ForeignKey in the Customer model
-        #         customer_ids = Customers.objects.filter(routes__route_name=route_name).values_list('customer_id', flat=True)
-        #         # Filter using the correct field, which is 'customer_id__in'
-        #         customer_list = customer_list.filter(customer_id__in=list(customer_ids))
+class CustomerCustodyList(View):
+    template_name = 'client_management/custody_item/customer_custody_list.html'
 
-        #         # customer_list = customer_list.filter(customer_id__in=customer_ids)
-        #         print("customer_list",customer_list)
-
-        return render(request, self.template_name, {'customer_list': customer_list})
-
-from django.shortcuts import render, redirect
-from .forms import CustomerCustodyItemsForm
-
-# def create_custody_item(request):
-#     if request.method == 'POST':
-#         form = CustomerCustodyItemsForm(request.POST)
-#         if form.is_valid():
-#             form.save()
-
-#             return redirect('custodyitem_list')  # Redirect to a success page
-#     else:
-#         form = CustomerCustodyItemsForm()
-#     return render(request, 'client_management/addcustodyitem.html', {'form': form})
-
-# class get_route(View):
-
-#     def post(self, request, *args, **kwargs):
-#             template_name = 'client_management/get_route.html'
-
-#             routemaster = RouteMaster.objects.all()            
-#             return render(request, template_name, {'routemaster':routemaster})
+    def get(self, request, *args, **kwargs):
+        form = CompetitorAnalysisFilterForm(request.GET)
         
-           
-        
-# class create_custody_item(View):
-# #     template_name = 'client_management/addcustodyitem.html'
-    
-#     def post(self, request,pk, *args, **kwargs):
-# #         routemaster = RouteMaster.objects.get(route_id = pk)
-# #         print("routemaster",routemaster)
-# #         form = CustomerCustodyItemsForm(request.POST)
-# #         if form.is_valid():
-# #             form.save()
+        user_li = CustodyCustomItems.objects.all()
+        query = request.GET.get("q")
+        if query:
+            user_li = user_li.filter(
+                Q(custody_custom__customer__customer_name__icontains=query)|
+                Q(custody_custom__customer__mobile_no__icontains=query)|
+                Q(custody_custom__customer__building_name__icontains=query)|
+                Q(custody_custom__customer__routes__route_name__icontains=query)
 
-# #             return redirect('custodyitem_list')  # Redirect to a success page
-# #         else:
-# #             form = CustomerCustodyItemsForm()
-#         return render(request, 'client_management/addcustodyitem.html', {})
-# class GetRoutesView(View):
-#     template_name = 'client_management/get_routes.html'
-
-#     def get(self, request, *args, **kwargs):
-#         routes = RouteMaster.objects.all()
-#         return render(request, self.template_name, {'routes': routes})
-    
-# class CreateCustodyItemView(View):
-#     template_name = 'client_management/add_custodyitem.html'
-
-#     def get(self, request, route_id, *args, **kwargs):
-#         route = RouteMaster.objects.get(route_id=route_id)
-#         form = CustomerCustodyItemsForm()
-#         return render(request, self.template_name, {'form': form, 'route': route})
-
-#     def post(self, request, route_id, *args, **kwargs):
-#         route = RouteMaster.objects.get(route_id=route_id)
-#         form = CustomerCustodyItemsForm(request.POST)
-#         if form.is_valid():
-#             form.save()
-#             return redirect('custodyitem_list')  # Redirect to a success page
-#         return render(request, self.template_name, {'form': form, 'route': route})
-
-
-
-class Add_ProductView(View):
-    template_name = 'client_management/add_product.html'
-
-    def get(self, request, pk, *args, **kwargs):
-        user_det = Customers.objects.get(customer_id=pk)
-        print("======",user_det)
-        custody_items = CustodyCustomItems.objects.filter(customer=user_det).exclude(Q(category__category_name__in=["Coupons",]))
-        form = CustomerCustodyItemsForm()
-        context = {
-            'user_det': user_det,
-            'custody_items': custody_items,
-            'form': form,
-        }
-        return render(request, self.template_name, context)
-
-    def post(self, request, pk, *args, **kwargs):
-        user_det = Customers.objects.get(customer_id=pk)
-        category = request.POST.get('category')
-        product_id = request.POST.get('product_name')
-        print('product_name',product_id)
-        drate = request.POST.get('drate')
-        quantity = request.POST.get('quantity')
-        serial_number = request.POST.get('serial_number')
-        print("serial_number",serial_number)
-
-        try:
-            product = Product.objects.get(product_id=product_id)
-
-            # If you are using product_id instead of product_name
-            # product = Product.objects.get(pk=product_id)
-        except Product.DoesNotExist:
-            return JsonResponse({'error': 'Product not found'}, status=404)
-
-        try:
-            customer_custody_items = CustodyCustomItems.objects.create(
-                product=product,
-                rate=drate,
-                count=quantity,
-                serialnumber=serial_number
             )
-            # return JsonResponse({'success': 'customer custody items added successfully'}, status=200)
-            return redirect('added_list')
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            
+
+        route_filter = request.GET.get('route_name')
+        if route_filter:
+            user_li = user_li.filter(custody_custom__route__route_name=route_filter)
+
+        # Fetch counts of 5 gallons, dispenser, and water cooler from Product model
+        five_gallon_count = Product.objects.filter(product_name__product_name='5 Gallon').count()
+        dispenser_count = Product.objects.filter(product_name__product_name='Dispenser').count()
+        water_cooler_count = Product.objects.filter(product_name__product_name='Water Cooler').count()
+
+        context = {
+            'user_li': user_li,
+            'form': form,
+            'five_gallon_count': five_gallon_count,
+            'dispenser_count': dispenser_count,
+            'water_cooler_count': water_cooler_count,
+        }
+        return render(request, self.template_name, context)       
+
+
+class AddCustodyItems(View):
+    template_name = 'client_management/custody_item/add_custody_items.html'
+    form_class = CustodyCustomItemForm
+
+    def get(self, request):
+        form = self.form_class()
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request):
+        form = self.form_class(request.POST)
+        if form.is_valid():
+            instance = form.save(commit=False)
+            # Save the instance based on deposit_form value
+            if instance.deposit_form:
+                instance.amount = instance.deposit_amount
+                instance.deposit_form_number = instance.deposit_number
+            else:
+                instance.amount = None
+            instance.save()
+            messages.success(request, 'Entry created successfully!')
+            return redirect('add_custody_list')
+        return render(request, self.template_name, {'form': form})
+
         
-class AddListView(View):
-    template_name = 'client_management/added_list.html'
+class AddCustodyList(View):
+    template_name = 'client_management/custody_item/add_custody_list.html'
 
     def get(self, request):
         get_addedlist = CustodyCustomItems.objects.all()
         print(get_addedlist,'geddedlist')
-
+        return render(request, self.template_name, {'get_addedlist': get_addedlist })
     
+class EditCustodyItem(View):
+    template_name = 'client_management/custody_item/add_custody_list.html'
 
-
+    def get(self, request):
+        get_addedlist = CustodyCustomItems.objects.all()
+        print(get_addedlist,'geddedlist')
         return render(request, self.template_name, {'get_addedlist': get_addedlist })
 
 
-class GetProductsByCategoryView(View):
-    def get(self, request):
-        category_id = request.GET.get('category_id')
-        print(category_id,'category_id')
-        products = Product.objects.filter(category_id=category_id).values('product_id', 'product_name')
-        return JsonResponse({'products': list(products)})
-    
-class GetRateByProductsView(View):
-    def get(self, request):
-        product_id = request.GET.get('product_id')
-        product_rate = Product.objects.get(product_id=product_id).rate
-        print("product_rate\n",product_rate)
-        return JsonResponse({'product_rate': product_rate})
-    
 
-        
 class PulloutListView(View):
     template_name = 'client_management/pullout_list.html'
 
@@ -711,4 +702,20 @@ def clientexport_to_csv(request, customer_id):
     wb.save(response)
 
     return response
+
+
+def custody_items_list_report(request):
+    if request.method == 'GET':
+        
+        instances = CustodyCustom.objects.all()
+        # if start_date_str and end_date_str:
+        #     start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        #     end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        #     instances = CustodyCustomItems.objects.filter(custody_custom__created_date__range=[start_date, end_date])
+        # else:
+        
+        return render(request, 'client_management/custody_items_list_report.html', {'instances': instances})
+    
+
+
 

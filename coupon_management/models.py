@@ -212,6 +212,7 @@ COUPON_STOCK_CHOICES = (
     ('driver', 'Driver'),
     ('customer', 'Customer'),
     ('used', 'Used'),
+    ('van', 'Van'),
 )
 
 
