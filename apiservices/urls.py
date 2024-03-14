@@ -130,7 +130,7 @@ urlpatterns = [
     path('outstanding_amount_list/',OutstandingAmountListAPI.as_view(), name = 'outstanding_amount_list'),
     # path('outstanding_coupon/',OutstandingCouponAPI.as_view(), name = 'outstanding_coupon'),
 
-    path('vanstock-list/', VanStockAPI.as_view(), name='vanstock'),
+    path('vanstock-list/', VanStockAPI.as_view()),
 
 
 
