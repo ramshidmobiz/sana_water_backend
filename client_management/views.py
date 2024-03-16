@@ -346,11 +346,11 @@ class AddCustodyItems(View):
         if form.is_valid():
             instance = form.save(commit=False)
             # Save the instance based on deposit_form value
-            if instance.deposit_form:
-                instance.amount = instance.deposit_amount
-                instance.deposit_form_number = instance.deposit_number
-            else:
-                instance.amount = None
+            # if instance.deposit_form:
+            #     instance.amount = instance.deposit_amount
+            #     instance.deposit_form_number = instance.deposit_number
+            # else:
+            #     instance.amount = None
             instance.save()
             messages.success(request, 'Entry created successfully!')
             return redirect('add_custody_list')

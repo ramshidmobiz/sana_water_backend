@@ -15,20 +15,20 @@ class VanRoutesSerializers(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class Van_LicenseSerializers(serializers.ModelSerializer):
-    class Meta :
-        model = Van_License
-        fields = '__all__'
+# class Van_LicenseSerializers(serializers.ModelSerializer):
+#     class Meta :
+#         model = Van_License
+#         fields = '__all__'
         
-# Expense
-class ExpenseHeadSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ExpenseHead
-        fields = '__all__'
+# # Expense
+# class ExpenseHeadSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = ExpenseHead
+#         fields = '__all__'
 
-class ExpenseSerializer(serializers.ModelSerializer):
-    expense_type_name = serializers.CharField(source='expence_type.name', read_only=True)
+# class ExpenseSerializer(serializers.ModelSerializer):
+#     expense_type_name = serializers.CharField(source='expence_type.name', read_only=True)
 
-    class Meta:
-        model = Expense
-        fields = ('expense_id', 'expence_type', 'expense_type_name', 'route', 'van', 'amount', 'remarks', 'expense_date', 'date_created')
+#     class Meta:
+#         model = Expense
+#         fields = ('expense_id', 'expence_type', 'expense_type_name', 'route', 'van', 'amount', 'remarks', 'expense_date', 'date_created')
