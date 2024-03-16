@@ -1,8 +1,6 @@
 <!DOCTYPE html> 
 {%load static%}
-
 <html lang="en" dir="ltr" data-nav-layout="vertical"  data-theme-mode="light" data-header-styles="gradient" data-menu-styles="dark">
-
 <head>
     <!-- Meta Data -->
     <meta charset="UTF-8">
@@ -1813,7 +1811,8 @@
       <span class="arrow"><i class="ri-arrow-up-circle-fill fs-20"></i></span>
   </div>
   <div id="responsive-overlay"></div>
-  <script src="https://code.jquery.com/jquery-3.6.1.min.js" integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" crossorigin="anonymous"></script>
+  {% comment %} <script src="https://code.jquery.com/jquery-3.6.1.min.js" integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" crossorigin="anonymous"></script> {% endcomment %}
+  <script src="{% static 'js/jquery.min.js' %}"></script>
   <!-- Popper JS -->
   <script src="{%static 'libs/@popperjs/core/umd/popper.min.js'%}"></script>
 
@@ -1864,8 +1863,8 @@
   <script src="{%static 'sweet/actions.js' %}"></script>
   <script src="{%static 'sweet/sweetalert2.js' %}"></script>
 
-  {% block static %}
-    {% endblock %}
+{% block static %}
+{% endblock %}
 
 </body>
 
