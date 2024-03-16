@@ -79,77 +79,77 @@ class VanAssignRoutesForm(forms.ModelForm):
             'routes' : forms.Select(attrs={"class": "form-control", 'required': 'true'}),
         }
 
-# # Licence 
-# class Licence_Add_Form(forms.ModelForm):
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#     class Meta:
-#         model = Van_License
-#         fields = ['van', 'emirate','license_no','expiry_date']
-#         widgets = {
-#             'van': forms.TextInput(attrs={'class': 'form-control', 'required': True}),
-#             'emirate': forms.Select(attrs={'class': 'form-control', 'required': True}),
-#             'license_no': forms.TextInput(attrs={'class': 'form-control', 'required': True}),
-#             'expiry_date': forms.DateInput(attrs={'class': 'form-control','type':'date', 'required': 'true'}),
-#         }
+# Licence 
+class Licence_Add_Form(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    class Meta:
+        model = Van_License
+        fields = ['van', 'emirate','license_no','expiry_date']
+        widgets = {
+            'van': forms.TextInput(attrs={'class': 'form-control', 'required': True}),
+            'emirate': forms.Select(attrs={'class': 'form-control', 'required': True}),
+            'license_no': forms.TextInput(attrs={'class': 'form-control', 'required': True}),
+            'expiry_date': forms.DateInput(attrs={'class': 'form-control','type':'date', 'required': 'true'}),
+        }
 
 
-# class Licence_Edit_Form(forms.ModelForm):
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         self.fields['emirate'].queryset = EmirateMaster.objects.filter()
-#     class Meta:
-#         model = Van_License
-#         fields = ['emirate','expiry_date','license_no']
-#         widgets = {
+class Licence_Edit_Form(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['emirate'].queryset = EmirateMaster.objects.filter()
+    class Meta:
+        model = Van_License
+        fields = ['emirate','expiry_date','license_no']
+        widgets = {
             
-#             'emirate': forms.Select(attrs={'class': 'form-control', 'required': True}),
-#             'expiry_date': forms.DateInput(attrs={'class': 'form-control','type':'date', 'required': 'true'}),
-#             'license_no': forms.TextInput(attrs={'class': 'form-control', 'required': True}),
+            'emirate': forms.Select(attrs={'class': 'form-control', 'required': True}),
+            'expiry_date': forms.DateInput(attrs={'class': 'form-control','type':'date', 'required': 'true'}),
+            'license_no': forms.TextInput(attrs={'class': 'form-control', 'required': True}),
 
-#         }
-
-
+        }
 
 
-# # Expense
-# class ExpenseHeadForm(forms.ModelForm):
-#     class Meta:
-#         model = ExpenseHead
-#         fields = ['name']
-#         widgets = {
-#             'name': forms.TextInput(attrs={'class': 'form-control'}),
-#         }
 
-# class ExpenseAddForm(forms.ModelForm):
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         self.fields['route'].queryset = RouteMaster.objects.all()
-#         self.fields['van'].queryset = Van.objects.all()
-#     class Meta:
-#         model = Expense
-#         fields = ['expence_type', 'route', 'van', 'amount', 'expense_date', 'remarks']
-#         widgets = {
-#             'expence_type': forms.Select(attrs={'class': 'form-control'}),
-#             'route': forms.Select(attrs={'class': 'form-control', 'required':True}),
-#             'van': forms.Select(attrs={'class': 'form-control', 'required':True}),
-#             'amount': forms.NumberInput(attrs={'class': 'form-control'}),
-#             'expense_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-#             'remarks': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-#         }
+
+# Expense
+class ExpenseHeadForm(forms.ModelForm):
+    class Meta:
+        model = ExpenseHead
+        fields = ['name']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+class ExpenseAddForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['route'].queryset = RouteMaster.objects.all()
+        self.fields['van'].queryset = Van.objects.all()
+    class Meta:
+        model = Expense
+        fields = ['expence_type', 'route', 'van', 'amount', 'expense_date', 'remarks']
+        widgets = {
+            'expence_type': forms.Select(attrs={'class': 'form-control'}),
+            'route': forms.Select(attrs={'class': 'form-control', 'required':True}),
+            'van': forms.Select(attrs={'class': 'form-control', 'required':True}),
+            'amount': forms.NumberInput(attrs={'class': 'form-control'}),
+            'expense_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'remarks': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
     
-# class ExpenseEditForm(forms.ModelForm):
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         self.fields['route'].queryset = RouteMaster.objects.all()
-#         self.fields['van'].queryset = Van.objects.all()
-#     class Meta:
-#         model = Expense
-#         fields = ['route', 'van', 'amount', 'expense_date', 'remarks']
-#         widgets = {
-#             'route': forms.Select(attrs={'class': 'form-control', 'required':True}),
-#             'van': forms.Select(attrs={'class': 'form-control', 'required':True}),
-#             'amount': forms.NumberInput(attrs={'class': 'form-control'}),
-#             'expense_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-#             'remarks': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-#         }
+class ExpenseEditForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['route'].queryset = RouteMaster.objects.all()
+        self.fields['van'].queryset = Van.objects.all()
+    class Meta:
+        model = Expense
+        fields = ['route', 'van', 'amount', 'expense_date', 'remarks']
+        widgets = {
+            'route': forms.Select(attrs={'class': 'form-control', 'required':True}),
+            'van': forms.Select(attrs={'class': 'form-control', 'required':True}),
+            'amount': forms.NumberInput(attrs={'class': 'form-control'}),
+            'expense_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'remarks': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }

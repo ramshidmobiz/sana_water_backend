@@ -1,807 +1,807 @@
-# from django.contrib import messages
-# from django.shortcuts import render, redirect, get_object_or_404
-# from django.utils.timezone import now
-# from .models import Van, Van_Routes, Van_License
-# from accounts.models import CustomUser, Customers
-# from master.models import EmirateMaster, RouteMaster
-# from customer_care.models import DiffBottlesModel
-# from client_management.models import Vacation
+from django.contrib import messages
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils.timezone import now
+from .models import Van, Van_Routes, Van_License
+from accounts.models import CustomUser, Customers
+from master.models import EmirateMaster, RouteMaster
+from customer_care.models import DiffBottlesModel
+from client_management.models import Vacation
 
-# from .forms import  *
-# import json
-# from django.core.serializers import serialize
-# from django.views import View
-# from datetime import datetime
-# from collections import defaultdict
-# from reportlab.pdfgen import canvas
-# import pandas as pd
-# from io import BytesIO
-# from django.http import HttpResponse
-# from reportlab.lib.pagesizes import letter
-# from reportlab.lib import colors
-# from django.db.models import Q
-# from datetime import datetime
-
-
+from .forms import  *
+import json
+from django.core.serializers import serialize
+from django.views import View
+from datetime import datetime
+from collections import defaultdict
+from reportlab.pdfgen import canvas
+import pandas as pd
+from io import BytesIO
+from django.http import HttpResponse
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from django.db.models import Q
+from datetime import datetime
 
 
-# # Van
-# # def van(request):
-# #     all_van = Van.objects.all()
-# #     context = {'all_van': all_van}
-# #     return render(request, 'van_management/van.html', context)
+
+
+# Van
 # def van(request):
 #     all_van = Van.objects.all()
-    
-#     routes_assigned = {}  # Initialize an empty dictionary
-    
-#     # print("All Vans:", all_van)  
-    
-#     for van in all_van:
-#         van_routes = Van_Routes.objects.filter(van=van)
-#         route_names = [van_route.routes.route_name for van_route in van_routes]
-#         routes_assigned[van.van_id] = route_names
-        
-#     # print("Routes Assigned:", routes_assigned)  
-#     context = {
-#         'all_van': all_van,
-#         'routes_assigned': routes_assigned,
-#     }
-    
-#     # print("Context:", context)  
-    
+#     context = {'all_van': all_van}
 #     return render(request, 'van_management/van.html', context)
-
-# def create_van(request):
-#     if request.method == 'POST':
-#         form = VanForm(request.POST)
-#         if form.is_valid():
-#             data = form.save(commit=False)
-#             data.branch_id = request.user.branch_id
-#             data.created_by = str(request.user.id)
-#             data.save()
-#             messages.success(request, 'Van created successfully!')
-#             return redirect('van')
-#         else:
-#             messages.error(request, 'Invalid form data. Please check the input.')
-#     else:
-#         form = VanForm()
-#     context = {'form': form}
-#     return render(request, 'van_management/create_van.html', context)
-
-# def edit_van(request, van_id):
-#     van = get_object_or_404(Van, van_id=van_id)
-#     if request.method == 'POST':
-#         form = EditVanForm(request.POST, instance=van)
-#         if form.is_valid():
-#             data = form.save(commit=False)
-#             data.modified_by = str(request.user.id)
-#             data.modified_date = datetime.now()
-#             data.save()
-#             return redirect('van')
-#     else:
-#         form = EditVanForm(instance=van)
-#     return render(request, 'van_management/edit_van.html', {'form': form, 'van': van})
-
-# def view_van(request, van_id):
-#     van = get_object_or_404(Van, van_id=van_id)
-#     return render(request, 'van_management/view_van.html', {'van': van})
-
-# def delete_van(request, van_id):
-#     van = Van.objects.get(van_id=van_id)
-#     if request.method == 'POST':
-#         van.delete()
-#         return redirect('van')
-#     return render(request, 'master/confirm_delete.html', {'van': van})
-
-
-
-# # Van staff assigning
-# def view_association(request):
-#     vans_with_associations = Van.objects.exclude(driver=None).exclude(salesman=None)
-#     return render(request, 'van_management/driver_salesman_list.html', {'vans_with_associations': vans_with_associations})
-
-# def create_association(request):
-#     if request.method == 'POST':
-#         form = VanAssociationForm(request.POST)
-#         if form.is_valid():
-#             van_instance = form.cleaned_data['van']
-#             driver_id = form.cleaned_data['driver']
-#             salesman_id = form.cleaned_data['salesman']
-#             van = get_object_or_404(Van, van_id=van_instance.van_id)
-#             driver_instance = get_object_or_404(CustomUser, id=driver_id)
-#             salesman_instance = get_object_or_404(CustomUser, id=salesman_id)
-#             van.driver = driver_instance
-#             van.salesman = salesman_instance
-#             van.save()
-#             return redirect('/van_assign')
-#     else:
-#         form = VanAssociationForm()
-#     return render(request, 'van_management/create_assign.html', {'form': form})
-
-
-# def edit_assign(request, van_id):
-#     van = get_object_or_404(Van, van_id=van_id)
-#     if request.method == 'POST':
-#         form = EditAssignForm(van, request.POST)
-#         if form.is_valid(): 
-#             driver_id = form.cleaned_data['driver']
-#             salesman_id = form.cleaned_data['salesman']
-#             driver_instance = get_object_or_404(CustomUser, id=driver_id)
-#             salesman_instance = get_object_or_404(CustomUser, id=salesman_id)
-#             van.driver = driver_instance
-#             van.salesman = salesman_instance
-#             van.save()
-#             return redirect('/van_assign')
-#     else:
-#         form = EditAssignForm(van)
-
-#     return render(request, 'van_management/edit_assign.html', {'form': form, 'van': van})
-
-
-
-# def delete_assign(request, van_id):
-#     van = Van.objects.get(van_id=van_id)
-#     if request.method == 'POST':
-#         van.driver = None
-#         van.salesman = None
-#         van.save()
-#         return redirect('/van_assign')
-#     return render(request, 'master/confirm_delete_assign.html', {'van': van})
-
-# def route_assign(request,van_id):
-#     form = VanAssignRoutesForm()
-#     all_van=Van_Routes.objects.filter(van__van_id = van_id)
-#     van_data = Van.objects.get(van_id = van_id)
-#     context = {'all_van' : all_van,"form":form,"van_data":van_data}
-#     if request.method == 'POST':
-#         form = VanAssignRoutesForm(request.POST)
-#         context = {'all_van' : all_van,"form":form,"van_data":van_data}
-#         if form.is_valid():
-#             data = form.save(commit=False)
-#             route = data.routes
-#             route_exists = Van_Routes.objects.filter(van = van_data,routes = route).exists()
-#             if route_exists:
-#                 messages.success(request, 'Route is already assigned..')
-#                 context = {'all_van' : all_van,"form":form,"van_data":van_data}
-#                 return render(request, 'van_management/assignroute_tovan.html',context)
-#             data.van = van_data
-#             data.created_by = str(request.user)
-#             data.created_date = datetime.now()
-#             data.save()
-#             messages.success(request, 'Van Route Assigned successfully!')
-#             return redirect('route_assign',van_id)
-#         else:
-#             messages.success(request, 'Invalid form data. Please check the input.')
-#             return render(request, 'van_management/assignroute_tovan.html',context)
-#     return render(request, 'van_management/assignroute_tovan.html',context)
-
-# def delete_route_assign (request):
-#     van_route_id = request.POST.get('delete_id')
-#     van_id = request.POST.get('van_idd')
-#     van = Van_Routes.objects.get(van_route_id=van_route_id)
-#     if request.method == 'POST':
-#         van.delete()
-#         return redirect('route_assign',van_id)
-#     return render(request, 'master/confirm_delete.html',{'van': van} )
-
-
-
-
-
-# class Licence_List(View):
-#     template_name = 'van_management/licence_list.html'
+def van(request):
+    all_van = Van.objects.all()
     
-#     def get(self, request, *args, **kwargs):
-#         emirates = EmirateMaster.objects.all().order_by('emirate_id')
-#         licenses = Van_License.objects.all()
-#         vans = {}
-#         emirate_names = [emirate.name for emirate in emirates]  # List to store emirate names dynamically
-
-#         for license in licenses:
-#             van_plate = license.van.plate
-#             emirate_name = license.emirate.name
-#             emirate_id = license.emirate.emirate_id
-#             expiry_date = license.expiry_date
-#         license_list = []
-#         for license in licenses:
-#             lic= {'license_id':license.van_license_id,'van_plate':license.van.plate,
-#                    'emirate_name':license.emirate,"expiry_date":license.expiry_date}
-#             license_list.append(lic)
-
-#             if van_plate not in vans:
-#                 vans[van_plate] = {emirate: None for emirate in emirate_names}
-#             vans[van_plate][emirate_name] = expiry_date
-#         return render(request, self.template_name, {'vans': vans, 'emirate_names': emirate_names,'license_list':license_list})
+    routes_assigned = {}  # Initialize an empty dictionary
     
-
-# class Licence_Adding(View):
-#     template_name = 'van_management/licence_add.html'
-#     form_class = Licence_Add_Form
-
-#     def get(self, request, *args, **kwargs):
-#         emirate_values = EmirateMaster.objects.all()
-#         van = Van.objects.all()
-#         context = {'emirate_values': emirate_values, 'vans': van}
-#         return render(request, self.template_name, context)
-
-#     def post(self, request, *args, **kwargs):
-#         form = self.form_class(request.POST, request.FILES)
-#         if form.is_valid():
-#             data = form.save(commit = False )
-#             van_id = request.POST.get('van')
-#             license_no = request.POST.get('licence_no')
-#             emirate_id = request.POST.get('emirate')
-#             expiry_date = request.POST.get('expiry_date')
-#             van = Van.objects.get(van_id = van_id)
-#             emirate = EmirateMaster.objects.get(pk = emirate_id)
-#             data.created_by = str(request.user.id)
-#             data.license_no = license_no
-#             data.van = van
-#             data.emirate = emirate
-#             data.expiry_date = expiry_date
-#             data.save()
-#             messages.success(request, 'Licence Successfully Added.', 'alert-success')
-#             return redirect('licence_list')
-#         else:
-#             messages.success(request, 'Data is not valid.', 'alert-danger')
-#             context = {'form': form}
-#             return render(request, self.template_name, context)
+    # print("All Vans:", all_van)  
+    
+    for van in all_van:
+        van_routes = Van_Routes.objects.filter(van=van)
+        route_names = [van_route.routes.route_name for van_route in van_routes]
+        routes_assigned[van.van_id] = route_names
         
-# class License_Edit(View):
-#     template_name = 'van_management/licence_edit.html'
-#     form_class = Licence_Edit_Form
+    # print("Routes Assigned:", routes_assigned)  
+    context = {
+        'all_van': all_van,
+        'routes_assigned': routes_assigned,
+    }
+    
+    # print("Context:", context)  
+    
+    return render(request, 'van_management/van.html', context)
 
-#     def get(self, request, pk, *args, **kwargs):
-#         rec = Van_License.objects.get(van_license_id=pk)
-#         form = self.form_class(instance=rec)
-#         context = {'form': form,'rec':rec}
-#         return render(request, self.template_name, context)
+def create_van(request):
+    if request.method == 'POST':
+        form = VanForm(request.POST)
+        if form.is_valid():
+            data = form.save(commit=False)
+            data.branch_id = request.user.branch_id
+            data.created_by = str(request.user.id)
+            data.save()
+            messages.success(request, 'Van created successfully!')
+            return redirect('van')
+        else:
+            messages.error(request, 'Invalid form data. Please check the input.')
+    else:
+        form = VanForm()
+    context = {'form': form}
+    return render(request, 'van_management/create_van.html', context)
 
-#     def post(self, request, pk, *args, **kwargs):
-#         rec = Van_License.objects.get(van_license_id=pk)
-#         form = self.form_class(request.POST, request.FILES, instance=rec)
-#         if form.is_valid():
-#             data = form.save(commit=False)
-#             data.modified_by = str(request.user.id)
-#             data.modified_date = datetime.now()
-#             data.save()
-#             messages.success(request, 'Licence Successfully Updated', 'alert-success')
-#             return redirect('licence_list')
-#         else:
-#             messages.success(request, 'Data is not valid.', 'alert-danger')
-#             context = {'form': form}
-#             return render(request, self.template_name, context)
+def edit_van(request, van_id):
+    van = get_object_or_404(Van, van_id=van_id)
+    if request.method == 'POST':
+        form = EditVanForm(request.POST, instance=van)
+        if form.is_valid():
+            data = form.save(commit=False)
+            data.modified_by = str(request.user.id)
+            data.modified_date = datetime.now()
+            data.save()
+            return redirect('van')
+    else:
+        form = EditVanForm(instance=van)
+    return render(request, 'van_management/edit_van.html', {'form': form, 'van': van})
+
+def view_van(request, van_id):
+    van = get_object_or_404(Van, van_id=van_id)
+    return render(request, 'van_management/view_van.html', {'van': van})
+
+def delete_van(request, van_id):
+    van = Van.objects.get(van_id=van_id)
+    if request.method == 'POST':
+        van.delete()
+        return redirect('van')
+    return render(request, 'master/confirm_delete.html', {'van': van})
+
+
+
+# Van staff assigning
+def view_association(request):
+    vans_with_associations = Van.objects.exclude(driver=None).exclude(salesman=None)
+    return render(request, 'van_management/driver_salesman_list.html', {'vans_with_associations': vans_with_associations})
+
+def create_association(request):
+    if request.method == 'POST':
+        form = VanAssociationForm(request.POST)
+        if form.is_valid():
+            van_instance = form.cleaned_data['van']
+            driver_id = form.cleaned_data['driver']
+            salesman_id = form.cleaned_data['salesman']
+            van = get_object_or_404(Van, van_id=van_instance.van_id)
+            driver_instance = get_object_or_404(CustomUser, id=driver_id)
+            salesman_instance = get_object_or_404(CustomUser, id=salesman_id)
+            van.driver = driver_instance
+            van.salesman = salesman_instance
+            van.save()
+            return redirect('/van_assign')
+    else:
+        form = VanAssociationForm()
+    return render(request, 'van_management/create_assign.html', {'form': form})
+
+
+def edit_assign(request, van_id):
+    van = get_object_or_404(Van, van_id=van_id)
+    if request.method == 'POST':
+        form = EditAssignForm(van, request.POST)
+        if form.is_valid(): 
+            driver_id = form.cleaned_data['driver']
+            salesman_id = form.cleaned_data['salesman']
+            driver_instance = get_object_or_404(CustomUser, id=driver_id)
+            salesman_instance = get_object_or_404(CustomUser, id=salesman_id)
+            van.driver = driver_instance
+            van.salesman = salesman_instance
+            van.save()
+            return redirect('/van_assign')
+    else:
+        form = EditAssignForm(van)
+
+    return render(request, 'van_management/edit_assign.html', {'form': form, 'van': van})
+
+
+
+def delete_assign(request, van_id):
+    van = Van.objects.get(van_id=van_id)
+    if request.method == 'POST':
+        van.driver = None
+        van.salesman = None
+        van.save()
+        return redirect('/van_assign')
+    return render(request, 'master/confirm_delete_assign.html', {'van': van})
+
+def route_assign(request,van_id):
+    form = VanAssignRoutesForm()
+    all_van=Van_Routes.objects.filter(van__van_id = van_id)
+    van_data = Van.objects.get(van_id = van_id)
+    context = {'all_van' : all_van,"form":form,"van_data":van_data}
+    if request.method == 'POST':
+        form = VanAssignRoutesForm(request.POST)
+        context = {'all_van' : all_van,"form":form,"van_data":van_data}
+        if form.is_valid():
+            data = form.save(commit=False)
+            route = data.routes
+            route_exists = Van_Routes.objects.filter(van = van_data,routes = route).exists()
+            if route_exists:
+                messages.success(request, 'Route is already assigned..')
+                context = {'all_van' : all_van,"form":form,"van_data":van_data}
+                return render(request, 'van_management/assignroute_tovan.html',context)
+            data.van = van_data
+            data.created_by = str(request.user)
+            data.created_date = datetime.now()
+            data.save()
+            messages.success(request, 'Van Route Assigned successfully!')
+            return redirect('route_assign',van_id)
+        else:
+            messages.success(request, 'Invalid form data. Please check the input.')
+            return render(request, 'van_management/assignroute_tovan.html',context)
+    return render(request, 'van_management/assignroute_tovan.html',context)
+
+def delete_route_assign (request):
+    van_route_id = request.POST.get('delete_id')
+    van_id = request.POST.get('van_idd')
+    van = Van_Routes.objects.get(van_route_id=van_route_id)
+    if request.method == 'POST':
+        van.delete()
+        return redirect('route_assign',van_id)
+    return render(request, 'master/confirm_delete.html',{'van': van} )
+
+
+
+
+
+class Licence_List(View):
+    template_name = 'van_management/licence_list.html'
+    
+    def get(self, request, *args, **kwargs):
+        emirates = EmirateMaster.objects.all().order_by('emirate_id')
+        licenses = Van_License.objects.all()
+        vans = {}
+        emirate_names = [emirate.name for emirate in emirates]  # List to store emirate names dynamically
+
+        for license in licenses:
+            van_plate = license.van.plate
+            emirate_name = license.emirate.name
+            emirate_id = license.emirate.emirate_id
+            expiry_date = license.expiry_date
+        license_list = []
+        for license in licenses:
+            lic= {'license_id':license.van_license_id,'van_plate':license.van.plate,
+                   'emirate_name':license.emirate,"expiry_date":license.expiry_date}
+            license_list.append(lic)
+
+            if van_plate not in vans:
+                vans[van_plate] = {emirate: None for emirate in emirate_names}
+            vans[van_plate][emirate_name] = expiry_date
+        return render(request, self.template_name, {'vans': vans, 'emirate_names': emirate_names,'license_list':license_list})
+    
+
+class Licence_Adding(View):
+    template_name = 'van_management/licence_add.html'
+    form_class = Licence_Add_Form
+
+    def get(self, request, *args, **kwargs):
+        emirate_values = EmirateMaster.objects.all()
+        van = Van.objects.all()
+        context = {'emirate_values': emirate_values, 'vans': van}
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        form = self.form_class(request.POST, request.FILES)
+        if form.is_valid():
+            data = form.save(commit = False )
+            van_id = request.POST.get('van')
+            license_no = request.POST.get('licence_no')
+            emirate_id = request.POST.get('emirate')
+            expiry_date = request.POST.get('expiry_date')
+            van = Van.objects.get(van_id = van_id)
+            emirate = EmirateMaster.objects.get(pk = emirate_id)
+            data.created_by = str(request.user.id)
+            data.license_no = license_no
+            data.van = van
+            data.emirate = emirate
+            data.expiry_date = expiry_date
+            data.save()
+            messages.success(request, 'Licence Successfully Added.', 'alert-success')
+            return redirect('licence_list')
+        else:
+            messages.success(request, 'Data is not valid.', 'alert-danger')
+            context = {'form': form}
+            return render(request, self.template_name, context)
         
-# def licence_edit(request, plate):
-#     van = get_object_or_404(Van, plate=plate)
-#     van_id = van.van_id
-#     van_licence = Van_License.objects.filter(van=van)
-#     emirate = EmirateMaster.objects.all()
-#     if request.method == 'POST':
-#         emirate_id = request.POST.get('emirate')
-#         expiry_date = request.POST.get('expiry_date')
-#         existing_van_licence = Van_License.objects.filter(van=van, emirate_id=emirate_id).first()
-#         if existing_van_licence:
-#             existing_van_licence.expiry_date = expiry_date
-#             existing_van_licence.save()
-#         else:
-#             Van_License.objects.create(van=van, emirate_id=emirate_id, expiry_date=expiry_date)
-#         return redirect('licence_list')
-#     return render(request, 'van_management/licence_edit.html', {'emirate_values' : emirate})
+class License_Edit(View):
+    template_name = 'van_management/licence_edit.html'
+    form_class = Licence_Edit_Form
 
-# # Need to remove 
-# def licence_delete(request, plate):
-#     van = get_object_or_404(Van, plate=plate)
-#     if request.method == 'POST':
+    def get(self, request, pk, *args, **kwargs):
+        rec = Van_License.objects.get(van_license_id=pk)
+        form = self.form_class(instance=rec)
+        context = {'form': form,'rec':rec}
+        return render(request, self.template_name, context)
 
-#         van = get_object_or_404(Van, plate=plate)
-#         van_id = van.van_id
-#         van_licence = Van_License.objects.filter(van_id = van_id)
-#         van_licence.delete()
-#         return redirect('licence_list')
-#     return render(request, 'master/licence_delete.html', {'van' : van})
+    def post(self, request, pk, *args, **kwargs):
+        rec = Van_License.objects.get(van_license_id=pk)
+        form = self.form_class(request.POST, request.FILES, instance=rec)
+        if form.is_valid():
+            data = form.save(commit=False)
+            data.modified_by = str(request.user.id)
+            data.modified_date = datetime.now()
+            data.save()
+            messages.success(request, 'Licence Successfully Updated', 'alert-success')
+            return redirect('licence_list')
+        else:
+            messages.success(request, 'Data is not valid.', 'alert-danger')
+            context = {'form': form}
+            return render(request, self.template_name, context)
+        
+def licence_edit(request, plate):
+    van = get_object_or_404(Van, plate=plate)
+    van_id = van.van_id
+    van_licence = Van_License.objects.filter(van=van)
+    emirate = EmirateMaster.objects.all()
+    if request.method == 'POST':
+        emirate_id = request.POST.get('emirate')
+        expiry_date = request.POST.get('expiry_date')
+        existing_van_licence = Van_License.objects.filter(van=van, emirate_id=emirate_id).first()
+        if existing_van_licence:
+            existing_van_licence.expiry_date = expiry_date
+            existing_van_licence.save()
+        else:
+            Van_License.objects.create(van=van, emirate_id=emirate_id, expiry_date=expiry_date)
+        return redirect('licence_list')
+    return render(request, 'van_management/licence_edit.html', {'emirate_values' : emirate})
+
+# Need to remove 
+def licence_delete(request, plate):
+    van = get_object_or_404(Van, plate=plate)
+    if request.method == 'POST':
+
+        van = get_object_or_404(Van, plate=plate)
+        van_id = van.van_id
+        van_licence = Van_License.objects.filter(van_id = van_id)
+        van_licence.delete()
+        return redirect('licence_list')
+    return render(request, 'master/licence_delete.html', {'van' : van})
 
 
-# # Trip schedule
+# Trip schedule
 
-# def schedule_view(request):
-#     date_str = request.POST.get('date') if request.method == 'POST' else now().strftime('%Y-%m-%d')
-#     date = datetime.strptime(date_str, '%Y-%m-%d')
+def schedule_view(request):
+    date_str = request.POST.get('date') if request.method == 'POST' else now().strftime('%Y-%m-%d')
+    date = datetime.strptime(date_str, '%Y-%m-%d')
     
-#     routes = RouteMaster.objects.all()
-#     route_details = []
+    routes = RouteMaster.objects.all()
+    route_details = []
     
-#     for route in routes:
-#         todays_customers = find_customers(request, date_str, route.route_id)
-#         if todays_customers:
-#             customer_count = len(todays_customers)
-#             bottle_count = sum(customer['no_of_bottles'] for customer in todays_customers)
-#             trips = list(set(customer['trip'] for customer in todays_customers))
-#             trips.reverse()
-#             route_details.append({
-#                 'route_name': route.route_name,
-#                 'route_id': route.route_id,
-#                 'no_of_customers': customer_count,
-#                 'no_of_bottles': bottle_count,
-#                 'no_of_trips': len(trips),
-#                 'trips': trips
-#             })
+    for route in routes:
+        todays_customers = find_customers(request, date_str, route.route_id)
+        if todays_customers:
+            customer_count = len(todays_customers)
+            bottle_count = sum(customer['no_of_bottles'] for customer in todays_customers)
+            trips = list(set(customer['trip'] for customer in todays_customers))
+            trips.reverse()
+            route_details.append({
+                'route_name': route.route_name,
+                'route_id': route.route_id,
+                'no_of_customers': customer_count,
+                'no_of_bottles': bottle_count,
+                'no_of_trips': len(trips),
+                'trips': trips
+            })
     
-#     return render(request, 'van_management/schedule_view.html', {'def_date': date_str, 'details': route_details})
+    return render(request, 'van_management/schedule_view.html', {'def_date': date_str, 'details': route_details})
 
             
-# def schedule_by_route(request, def_date, route_id, trip):
-#     route = RouteMaster.objects.get(route_id = route_id)
-#     todays_customers = find_customers(request, def_date, route_id)
-#     customers = []
-#     for customer in todays_customers:
-#         if customer['trip'] == trip:
-#             customers.append(customer)
-#     totale_bottle=0
-#     for customer in customers:
-#         totale_bottle+=customer['no_of_bottles'] 
-#     return render(request, 'van_management/schedule_by_route.html', {
-#         'def_date':def_date,  
-#         'route':route, 
-#         'todays_customers' :customers, 
-#         'trip':trip, 
-#         'totale_bottle':totale_bottle })
+def schedule_by_route(request, def_date, route_id, trip):
+    route = RouteMaster.objects.get(route_id = route_id)
+    todays_customers = find_customers(request, def_date, route_id)
+    customers = []
+    for customer in todays_customers:
+        if customer['trip'] == trip:
+            customers.append(customer)
+    totale_bottle=0
+    for customer in customers:
+        totale_bottle+=customer['no_of_bottles'] 
+    return render(request, 'van_management/schedule_by_route.html', {
+        'def_date':def_date,  
+        'route':route, 
+        'todays_customers' :customers, 
+        'trip':trip, 
+        'totale_bottle':totale_bottle })
     
 
 
-# def find_customers(request, def_date, route_id):
-#     date_str = def_date
-#     if date_str:
-#         date = datetime.strptime(date_str, '%Y-%m-%d')
-#         day_of_week = date.strftime('%A')
-#         week_num = (date.day - 1) // 7 + 1
-#         week_number = f'Week{week_num}'
-#     route = RouteMaster.objects.get(route_id=route_id)
+def find_customers(request, def_date, route_id):
+    date_str = def_date
+    if date_str:
+        date = datetime.strptime(date_str, '%Y-%m-%d')
+        day_of_week = date.strftime('%A')
+        week_num = (date.day - 1) // 7 + 1
+        week_number = f'Week{week_num}'
+    route = RouteMaster.objects.get(route_id=route_id)
 
-#     todays_customers = []
+    todays_customers = []
 
-#     buildings = []
-#     for customer in Customers.objects.filter(routes = route):
-#         if customer.visit_schedule and day_of_week in customer.visit_schedule and week_number in customer.visit_schedule[day_of_week]:
-#             todays_customers.append(customer)
-#             if customer.building_name not in buildings:
-#                 buildings.append(customer.building_name)
+    buildings = []
+    for customer in Customers.objects.filter(routes = route):
+        if customer.visit_schedule and day_of_week in customer.visit_schedule and week_number in customer.visit_schedule[day_of_week]:
+            todays_customers.append(customer)
+            if customer.building_name not in buildings:
+                buildings.append(customer.building_name)
 
-#     # Customers on vacation
-#     date = datetime.strptime(def_date, '%Y-%m-%d').date()
-#     for vacation in Vacation.objects.all():
-#         if vacation.start_date <= date <= vacation.end_date:
-#             if vacation.customer in todays_customers:
-#                 todays_customers.remove(vacation.customer)
+    # Customers on vacation
+    date = datetime.strptime(def_date, '%Y-%m-%d').date()
+    for vacation in Vacation.objects.all():
+        if vacation.start_date <= date <= vacation.end_date:
+            if vacation.customer in todays_customers:
+                todays_customers.remove(vacation.customer)
 
-#     # Emergency customer
-#     special_customers = DiffBottlesModel.objects.filter(delivery_date = date)
-#     emergency_customers = []
-#     for client in special_customers:
-#         if client.customer in todays_customers:
-#             emergency_customers.append(client.customer)
-#         else:
-#             if client.customer.routes == route:
-#                 todays_customers.append(client.customer)
-#                 emergency_customers.append(client.customer)
-#                 if client.customer.building_name not in buildings:
-#                     buildings.append(client.customer.building_name)
-#     co = 0
-#     for cus in todays_customers:
-#         co+=cus.no_of_bottles_required
-#     # print(route,co)
+    # Emergency customer
+    special_customers = DiffBottlesModel.objects.filter(delivery_date = date)
+    emergency_customers = []
+    for client in special_customers:
+        if client.customer in todays_customers:
+            emergency_customers.append(client.customer)
+        else:
+            if client.customer.routes == route:
+                todays_customers.append(client.customer)
+                emergency_customers.append(client.customer)
+                if client.customer.building_name not in buildings:
+                    buildings.append(client.customer.building_name)
+    co = 0
+    for cus in todays_customers:
+        co+=cus.no_of_bottles_required
+    # print(route,co)
     
-#     if not len(buildings) == 0:
-#         building_count = {}
+    if not len(buildings) == 0:
+        building_count = {}
 
-#         for building in buildings:
-#             for customer in todays_customers:
-#                 if customer.building_name == building:
-#                     if building in building_count:
-#                         building_count[building] += customer.no_of_bottles_required
-#                     else:
-#                         building_count[building] = customer.no_of_bottles_required
+        for building in buildings:
+            for customer in todays_customers:
+                if customer.building_name == building:
+                    if building in building_count:
+                        building_count[building] += customer.no_of_bottles_required
+                    else:
+                        building_count[building] = customer.no_of_bottles_required
 
 
-#         building_gps = []
+        building_gps = []
 
-#         for building, bottle_count in building_count.items():
-#             c = Customers.objects.filter(building_name=building, routes=route).first()
-#             gps_longitude = c.gps_longitude
-#             gps_latitude = c.gps_latitude
-#             building_gps.append((building, gps_longitude, gps_latitude, bottle_count))
+        for building, bottle_count in building_count.items():
+            c = Customers.objects.filter(building_name=building, routes=route).first()
+            gps_longitude = c.gps_longitude
+            gps_latitude = c.gps_latitude
+            building_gps.append((building, gps_longitude, gps_latitude, bottle_count))
 
-#         sorted_building_gps = sorted(building_gps, key=lambda x: (x[1], x[2]))
-#         sorted_buildings = [item[0] for item in sorted_building_gps]
-#         sorted_building_count = dict(sorted(building_count.items(), key=lambda item: item[1]))
+        sorted_building_gps = sorted(building_gps, key=lambda x: (x[1], x[2]))
+        sorted_buildings = [item[0] for item in sorted_building_gps]
+        sorted_building_count = dict(sorted(building_count.items(), key=lambda item: item[1]))
 
-#         trips = {}
-#         trip_count = 1
-#         current_trip_bottle_count = 0
-#         trip_buildings = []
-#         for building in sorted_buildings:
+        trips = {}
+        trip_count = 1
+        current_trip_bottle_count = 0
+        trip_buildings = []
+        for building in sorted_buildings:
           
-#             for building_data in sorted_building_gps:
-#                 if building_data[0]==building:
-#                     building = building_data[0]
-#                     bottle_count = building_data[3]
-#                     if current_trip_bottle_count + bottle_count > 200:
-#                         trip_buildings = [building]
-#                         trip_count+=1
-#                         trips[f"Trip{trip_count}"] = trip_buildings
-#                         # print(route,"trip",trip_count)
-#                         current_trip_bottle_count = bottle_count
-#                     else:
+            for building_data in sorted_building_gps:
+                if building_data[0]==building:
+                    building = building_data[0]
+                    bottle_count = building_data[3]
+                    if current_trip_bottle_count + bottle_count > 200:
+                        trip_buildings = [building]
+                        trip_count+=1
+                        trips[f"Trip{trip_count}"] = trip_buildings
+                        # print(route,"trip",trip_count)
+                        current_trip_bottle_count = bottle_count
+                    else:
                         
-#                         trip_buildings.append(building)
-#                         trips[f"Trip{trip_count}"] = trip_buildings
-#                         current_trip_bottle_count += bottle_count
+                        trip_buildings.append(building)
+                        trips[f"Trip{trip_count}"] = trip_buildings
+                        current_trip_bottle_count += bottle_count
             
         
 
-#         # Merge trips if possible to optimize
-#         merging_occurred = False
-#         for trip_num in range(1, trip_count + 1):
-#             for other_trip_num in range(trip_num + 1, trip_count + 1):
-#                 trip_key = f"Trip{trip_num}"
-#                 other_trip_key = f"Trip{other_trip_num}"
-#                 combined_buildings = trips.get(trip_key, []) + trips.get(other_trip_key, [])
-#                 total_bottles = sum(sorted_building_count.get(building, 0) for building in combined_buildings)
-#                 if total_bottles <= 200:
-#                     trips[trip_key] = combined_buildings
-#                     del trips[other_trip_key]
-#                     merging_occurred = True
-#                     break
-#             if merging_occurred:  
-#                 break
+        # Merge trips if possible to optimize
+        merging_occurred = False
+        for trip_num in range(1, trip_count + 1):
+            for other_trip_num in range(trip_num + 1, trip_count + 1):
+                trip_key = f"Trip{trip_num}"
+                other_trip_key = f"Trip{other_trip_num}"
+                combined_buildings = trips.get(trip_key, []) + trips.get(other_trip_key, [])
+                total_bottles = sum(sorted_building_count.get(building, 0) for building in combined_buildings)
+                if total_bottles <= 200:
+                    trips[trip_key] = combined_buildings
+                    del trips[other_trip_key]
+                    merging_occurred = True
+                    break
+            if merging_occurred:  
+                break
                     
-#         # List to store trip-wise customer details
-#         trip_customers = []
-#         for trip in trips:
-#             for building in trips[trip]:
-#                 for customer in todays_customers:
-#                     if customer.building_name ==building:
-#                         trip_customer = {
-#                             "customer_name" : customer.customer_name,
-#                             "mobile":customer.mobile_no,
-#                             "trip":trip,
-#                             "building":customer.building_name,
-#                             "route" : customer.routes.route_name,
-#                             "no_of_bottles": customer.no_of_bottles_required,
-#                             "location" : customer.location.location_name,
-#                             "building": customer.building_name,
-#                             "door_house_no": customer.door_house_no,
-#                             "floor_no": customer.floor_no,
-#                             "gps_longitude": customer.gps_longitude,
-#                             "gps_latitude": customer.gps_latitude,
-#                             "customer_type": customer.customer_type,
-#                         }
-#                         if customer in emergency_customers:
-#                             trip_customer['type'] = 'Emergency'
-#                         else:
-#                             trip_customer['type'] = 'Default'
-#                         trip_customers.append(trip_customer)
-#         return trip_customers
+        # List to store trip-wise customer details
+        trip_customers = []
+        for trip in trips:
+            for building in trips[trip]:
+                for customer in todays_customers:
+                    if customer.building_name ==building:
+                        trip_customer = {
+                            "customer_name" : customer.customer_name,
+                            "mobile":customer.mobile_no,
+                            "trip":trip,
+                            "building":customer.building_name,
+                            "route" : customer.routes.route_name,
+                            "no_of_bottles": customer.no_of_bottles_required,
+                            "location" : customer.location.location_name,
+                            "building": customer.building_name,
+                            "door_house_no": customer.door_house_no,
+                            "floor_no": customer.floor_no,
+                            "gps_longitude": customer.gps_longitude,
+                            "gps_latitude": customer.gps_latitude,
+                            "customer_type": customer.customer_type,
+                        }
+                        if customer in emergency_customers:
+                            trip_customer['type'] = 'Emergency'
+                        else:
+                            trip_customer['type'] = 'Default'
+                        trip_customers.append(trip_customer)
+        return trip_customers
 
 
 
-# import math
+import math
 
-# def pdf_download(request, route_id, def_date, trip):
-#     route = RouteMaster.objects.get(route_id=route_id)
-#     customers = []
-#     todays_customers = find_customers(request, def_date, route_id)
-#     for customer in todays_customers:
-#         if customer['trip'] == trip:
-#             customers.append(customer)
+def pdf_download(request, route_id, def_date, trip):
+    route = RouteMaster.objects.get(route_id=route_id)
+    customers = []
+    todays_customers = find_customers(request, def_date, route_id)
+    for customer in todays_customers:
+        if customer['trip'] == trip:
+            customers.append(customer)
 
-#     buffer = BytesIO()
-#     p = canvas.Canvas(buffer, pagesize=letter)
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer, pagesize=letter)
 
-#     x_route_name, y_route_name = 80, 730
-#     formatted_date = datetime.strptime(def_date, '%Y-%m-%d').strftime('%d/%m/%Y')
-#     p.setFont("Helvetica", 14)
-#     p.drawString(x_route_name, y_route_name, f"Client list for {route.route_name} --> {trip}")
-#     p.drawString(x_route_name + 380, y_route_name, f"{formatted_date}")
-#     line_y = y_route_name - 14
-#     p.line(x_route_name - 12, line_y, x_route_name + 450, line_y)
+    x_route_name, y_route_name = 80, 730
+    formatted_date = datetime.strptime(def_date, '%Y-%m-%d').strftime('%d/%m/%Y')
+    p.setFont("Helvetica", 14)
+    p.drawString(x_route_name, y_route_name, f"Client list for {route.route_name} --> {trip}")
+    p.drawString(x_route_name + 380, y_route_name, f"{formatted_date}")
+    line_y = y_route_name - 14
+    p.line(x_route_name - 12, line_y, x_route_name + 450, line_y)
 
-#     x, y = 70, 700
-#     p.setFont("Helvetica", 9)
-#     p.drawString(x, y, "Si No")
-#     p.drawString(x + 30, y, "Client Name")
-#     p.drawString(x + 135, y, "Location")
-#     p.drawString(x + 200, y, "No of Bottles")
-#     p.drawString(x + 267, y, "Outstanding")
-#     p.drawString(x + 280, y-10, "Bottles")
-#     p.drawString(x + 330, y, "Outstanding")
-#     p.drawString(x + 337, y-10, "Coupons")
-#     p.drawString(x + 400, y, "Type")
-#     y -= 16
-#     p.line(x, y, x + 460, y)
+    x, y = 70, 700
+    p.setFont("Helvetica", 9)
+    p.drawString(x, y, "Si No")
+    p.drawString(x + 30, y, "Client Name")
+    p.drawString(x + 135, y, "Location")
+    p.drawString(x + 200, y, "No of Bottles")
+    p.drawString(x + 267, y, "Outstanding")
+    p.drawString(x + 280, y-10, "Bottles")
+    p.drawString(x + 330, y, "Outstanding")
+    p.drawString(x + 337, y-10, "Coupons")
+    p.drawString(x + 400, y, "Type")
+    y -= 16
+    p.line(x, y, x + 460, y)
 
-#     y -= 25
-#     counter = 1
-#     multiline_client = False  # Flag to track multiline client name in the row
-#     for customer in customers:
-#         if y <= 100:  
-#             p.showPage()  
-#             y = 700 
+    y -= 25
+    counter = 1
+    multiline_client = False  # Flag to track multiline client name in the row
+    for customer in customers:
+        if y <= 100:  
+            p.showPage()  
+            y = 700 
             
             
-#             # Draw headers on the new page
-#             p.setFont("Helvetica", 9)
-#             p.drawString(x, y, "Si No")
-#             p.drawString(x + 30, y, "Client Name")
-#             p.drawString(x + 135, y, "Location")
-#             p.drawString(x + 200, y, "No of Bottles")
-#             p.drawString(x + 267, y, "Outstanding")
-#             p.drawString(x + 280, y-10, "Bottles")
-#             p.drawString(x + 330, y, "Outstanding")
-#             p.drawString(x + 337, y-10, "Coupons")
-#             p.drawString(x + 400, y, "Type")
-#             y -= 16
-#             p.line(x, y, x + 460, y)
-#             y -= 50
+            # Draw headers on the new page
+            p.setFont("Helvetica", 9)
+            p.drawString(x, y, "Si No")
+            p.drawString(x + 30, y, "Client Name")
+            p.drawString(x + 135, y, "Location")
+            p.drawString(x + 200, y, "No of Bottles")
+            p.drawString(x + 267, y, "Outstanding")
+            p.drawString(x + 280, y-10, "Bottles")
+            p.drawString(x + 330, y, "Outstanding")
+            p.drawString(x + 337, y-10, "Coupons")
+            p.drawString(x + 400, y, "Type")
+            y -= 16
+            p.line(x, y, x + 460, y)
+            y -= 50
 
-#         # Split the client name from the nearest space if it needs to be split into multiple lines
-#         client_name = customer['customer_name']
-#         client_name_parts = []
-#         if p.stringWidth(client_name, "Helvetica", 9) > 86:
-#             parts = client_name.split()
-#             current_line = parts[0]
-#             for part in parts[1:]:
-#                 if p.stringWidth(current_line + ' ' + part, "Helvetica", 9) <= 86:
-#                     current_line += ' ' + part
-#                 else:
-#                     client_name_parts.append(current_line)
-#                     current_line = part
-#             client_name_parts.append(current_line)
-#             multiline_client = True  # Set flag for multiline client name
-#         else:
-#             client_name_parts.append(client_name)
+        # Split the client name from the nearest space if it needs to be split into multiple lines
+        client_name = customer['customer_name']
+        client_name_parts = []
+        if p.stringWidth(client_name, "Helvetica", 9) > 86:
+            parts = client_name.split()
+            current_line = parts[0]
+            for part in parts[1:]:
+                if p.stringWidth(current_line + ' ' + part, "Helvetica", 9) <= 86:
+                    current_line += ' ' + part
+                else:
+                    client_name_parts.append(current_line)
+                    current_line = part
+            client_name_parts.append(current_line)
+            multiline_client = True  # Set flag for multiline client name
+        else:
+            client_name_parts.append(client_name)
 
-#         if multiline_client:
-#             client_name_height = 10 * len(client_name_parts)
-#             cell_middle_y = y - client_name_height / 2
-#             p.drawString(x + 5, cell_middle_y + 6, str(counter))
-#         else:
-#             y -= 0
+        if multiline_client:
+            client_name_height = 10 * len(client_name_parts)
+            cell_middle_y = y - client_name_height / 2
+            p.drawString(x + 5, cell_middle_y + 6, str(counter))
+        else:
+            y -= 0
             
-#             p.drawString(x + 5, y, str(counter))
+            p.drawString(x + 5, y, str(counter))
             
-#         # Draw the client name
-#         client_name_height = 10 * len(client_name_parts)
-#         for part in client_name_parts:
-#             p.drawString(x + 30, y, part)
-#             y -= 10
+        # Draw the client name
+        client_name_height = 10 * len(client_name_parts)
+        for part in client_name_parts:
+            p.drawString(x + 30, y, part)
+            y -= 10
             
 
-#         # Adjust vertical position for the other cells if multiline client name is printed
-#         if multiline_client:
-#             cell_middle_y = y + client_name_height / 2
-#             cell_middle_y += 10
-#             p.drawString(x + 135, cell_middle_y, str(customer['location']))
-#             p.drawString(x + 220, cell_middle_y, str(customer['no_of_bottles']))
-#             p.drawString(x + 300, cell_middle_y, "")
-#             p.drawString(x + 350, cell_middle_y, "")
-#             p.drawString(x + 400, cell_middle_y, "Emergency" if customer['type'] == 'Emergency' else "Default")
-#         else:
-#             y += 10
-#             p.drawString(x + 135, y, str(customer['location']))
-#             p.drawString(x + 220, y, str(customer['no_of_bottles']))
-#             p.drawString(x + 300, y, "")
-#             p.drawString(x + 350, y, "")
-#             p.drawString(x + 400, y, "Emergency" if customer['type'] == 'Emergency' else "Default")
-#             y -= 20  # Adjust vertical position for the next entry
+        # Adjust vertical position for the other cells if multiline client name is printed
+        if multiline_client:
+            cell_middle_y = y + client_name_height / 2
+            cell_middle_y += 10
+            p.drawString(x + 135, cell_middle_y, str(customer['location']))
+            p.drawString(x + 220, cell_middle_y, str(customer['no_of_bottles']))
+            p.drawString(x + 300, cell_middle_y, "")
+            p.drawString(x + 350, cell_middle_y, "")
+            p.drawString(x + 400, cell_middle_y, "Emergency" if customer['type'] == 'Emergency' else "Default")
+        else:
+            y += 10
+            p.drawString(x + 135, y, str(customer['location']))
+            p.drawString(x + 220, y, str(customer['no_of_bottles']))
+            p.drawString(x + 300, y, "")
+            p.drawString(x + 350, y, "")
+            p.drawString(x + 400, y, "Emergency" if customer['type'] == 'Emergency' else "Default")
+            y -= 20  # Adjust vertical position for the next entry
 
-#         # Draw horizontal line below each row
-#         p.line(x, y, x + 460, y)
-#         y -= 25
-#         counter += 1
+        # Draw horizontal line below each row
+        p.line(x, y, x + 460, y)
+        y -= 25
+        counter += 1
 
-#     p.save()
-#     buffer.seek(0)
+    p.save()
+    buffer.seek(0)
 
-#     filename = f"{route.route_name}_{def_date}_{trip}.pdf"
-#     response = HttpResponse(buffer, content_type='application/pdf')
-#     response['Content-Disposition'] = f'inline; filename="{filename}"'
-#     return response
+    filename = f"{route.route_name}_{def_date}_{trip}.pdf"
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response
 
 
-# def excel_download(request, route_id, def_date, trip):
-#     route = RouteMaster.objects.get(route_id=route_id)
-#     customers = []
-#     todays_customers = find_customers(request, def_date, route_id)
+def excel_download(request, route_id, def_date, trip):
+    route = RouteMaster.objects.get(route_id=route_id)
+    customers = []
+    todays_customers = find_customers(request, def_date, route_id)
     
-#     # Manually generate serial numbers
-#     serial_number = 1
-#     for customer in todays_customers:
-#         if customer['trip'] == trip:
-#             customer['serial_number'] = serial_number
-#             customers.append(customer)
-#             serial_number += 1  # Increment serial number
+    # Manually generate serial numbers
+    serial_number = 1
+    for customer in todays_customers:
+        if customer['trip'] == trip:
+            customer['serial_number'] = serial_number
+            customers.append(customer)
+            serial_number += 1  # Increment serial number
 
-#     data = {
-#         'Serial Number': [customer['serial_number'] for customer in customers],
-#         'Client Name': [customer['customer_name'] for customer in customers],
-#         'Mobile': [customer['mobile'] for customer in customers],
-#         'Locations': [customer['location'] for customer in customers],
-#         'No of Bottles': [customer['no_of_bottles'] for customer in customers],
-#         'Outstanding Bottles': ['' for _ in customers],
-#         'Outstanding Coupons': ['' for _ in customers],
-#         'Type': [customer['type'] for customer in customers]
-#     }
+    data = {
+        'Serial Number': [customer['serial_number'] for customer in customers],
+        'Client Name': [customer['customer_name'] for customer in customers],
+        'Mobile': [customer['mobile'] for customer in customers],
+        'Locations': [customer['location'] for customer in customers],
+        'No of Bottles': [customer['no_of_bottles'] for customer in customers],
+        'Outstanding Bottles': ['' for _ in customers],
+        'Outstanding Coupons': ['' for _ in customers],
+        'Type': [customer['type'] for customer in customers]
+    }
 
-#     df = pd.DataFrame(data)
-#     buffer = BytesIO()
-#     df.to_excel(buffer, index=False, engine='openpyxl')
-#     buffer.seek(0)
+    df = pd.DataFrame(data)
+    buffer = BytesIO()
+    df.to_excel(buffer, index=False, engine='openpyxl')
+    buffer.seek(0)
 
-#     filename = f"{route.route_name}_{def_date}_{trip}.xlsx"
-#     response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-#     response['Content-Disposition'] = f'inline; filename="{filename}"'
-#     return response
-
-
-# #Expence
-
-# class ExpenseHeadList(View):
-#     template_name = 'van_management/expensehead_list.html'
-#     def get(self, request, *args, **kwargs):
-#         expence_heads = ExpenseHead.objects.all()
-#         context = {'expence_heads':expence_heads}
-#         return render(request, self.template_name, context)
+    filename = f"{route.route_name}_{def_date}_{trip}.xlsx"
+    response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response
 
 
+#Expence
 
-# class ExpenseHeadAdd(View):
-#     template_name = 'van_management/expensehead_add.html'
-#     form_class = ExpenseHeadForm
+class ExpenseHeadList(View):
+    template_name = 'van_management/expensehead_list.html'
+    def get(self, request, *args, **kwargs):
+        expence_heads = ExpenseHead.objects.all()
+        context = {'expence_heads':expence_heads}
+        return render(request, self.template_name, context)
 
-#     def get(self, request, *args, **kwargs):
-#         form = self.form_class
-#         context = {'form': form}
-#         return render(request, self.template_name, context)
 
-#     def post(self, request, *args, **kwargs):
-#         form = self.form_class(request.POST)
-#         if form.is_valid:
-#             form.save()
-#             return redirect('expensehead_list')
-#         else:
-#             return render(request, self.template_name, {'form':form})
+
+class ExpenseHeadAdd(View):
+    template_name = 'van_management/expensehead_add.html'
+    form_class = ExpenseHeadForm
+
+    def get(self, request, *args, **kwargs):
+        form = self.form_class
+        context = {'form': form}
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        form = self.form_class(request.POST)
+        if form.is_valid:
+            form.save()
+            return redirect('expensehead_list')
+        else:
+            return render(request, self.template_name, {'form':form})
         
 
-# class ExpenseHeadEdit(View):
-#     template_name = 'van_management/expensehead_edit.html'
-#     form_class = ExpenseHeadForm
+class ExpenseHeadEdit(View):
+    template_name = 'van_management/expensehead_edit.html'
+    form_class = ExpenseHeadForm
 
-#     def get(self, request, expensehead_id, *args, **kwargs):
-#         expensehead = ExpenseHead.objects.get(expensehead_id=expensehead_id)
-#         form = self.form_class(instance = expensehead)
-#         context = {'form':form, 'expensehead':expensehead}
-#         return render(request, self.template_name, context)
+    def get(self, request, expensehead_id, *args, **kwargs):
+        expensehead = ExpenseHead.objects.get(expensehead_id=expensehead_id)
+        form = self.form_class(instance = expensehead)
+        context = {'form':form, 'expensehead':expensehead}
+        return render(request, self.template_name, context)
 
-#     def post(self, request, expensehead_id, *args, **kwargs):
-#        expensehead = ExpenseHead.objects.get(expensehead_id=expensehead_id)
-#        form = self.form_class(request.POST, instance=expensehead)
-#        if form.is_valid():
-#            form.save()
-#            return redirect('expensehead_list')
-#        else:
-#            context = {'form':form}
-#            return render(request, self.template_name, context)
+    def post(self, request, expensehead_id, *args, **kwargs):
+       expensehead = ExpenseHead.objects.get(expensehead_id=expensehead_id)
+       form = self.form_class(request.POST, instance=expensehead)
+       if form.is_valid():
+           form.save()
+           return redirect('expensehead_list')
+       else:
+           context = {'form':form}
+           return render(request, self.template_name, context)
        
-# class ExpenseHeadDelete(View):
-#     template_name = 'van_management/expensehead_delete.html'
-#     def get(self, request, expensehead_id, *args, **kwargs):
-#         expensehead = ExpenseHead.objects.get(expensehead_id=expensehead_id)
-#         context = {'expensehead':expensehead}
-#         return render(request, self.template_name, context)
-#     def post(self, request, expensehead_id, *args, **kwargs):
-#         expensehead = ExpenseHead.objects.get(expensehead_id=expensehead_id)
-#         expensehead.delete()
-#         return redirect('expensehead_list')
+class ExpenseHeadDelete(View):
+    template_name = 'van_management/expensehead_delete.html'
+    def get(self, request, expensehead_id, *args, **kwargs):
+        expensehead = ExpenseHead.objects.get(expensehead_id=expensehead_id)
+        context = {'expensehead':expensehead}
+        return render(request, self.template_name, context)
+    def post(self, request, expensehead_id, *args, **kwargs):
+        expensehead = ExpenseHead.objects.get(expensehead_id=expensehead_id)
+        expensehead.delete()
+        return redirect('expensehead_list')
 
 
 
 
-# class ExpenseList(View):
-#     template_name = 'van_management/expense_list.html'
+class ExpenseList(View):
+    template_name = 'van_management/expense_list.html'
 
-#     def get(self, request, *args, **kwargs):
-#         from_date = request.GET.get('from_date')
-#         to_date = request.GET.get('to_date')
-#         fil_expe = request.GET.get('expense_type')
+    def get(self, request, *args, **kwargs):
+        from_date = request.GET.get('from_date')
+        to_date = request.GET.get('to_date')
+        fil_expe = request.GET.get('expense_type')
         
-#         expenses = Expense.objects.all()  
+        expenses = Expense.objects.all()  
         
-#         if from_date and to_date:
-#             from_date = datetime.strptime(from_date, '%Y-%m-%d')
-#             to_date = datetime.strptime(to_date, '%Y-%m-%d')
-#             expenses = expenses.filter(expense_date__range=[from_date, to_date])
-#         else:
-#             expenses = expenses.filter(expense_date=datetime.today())
+        if from_date and to_date:
+            from_date = datetime.strptime(from_date, '%Y-%m-%d')
+            to_date = datetime.strptime(to_date, '%Y-%m-%d')
+            expenses = expenses.filter(expense_date__range=[from_date, to_date])
+        else:
+            expenses = expenses.filter(expense_date=datetime.today())
         
-#         if fil_expe:
-#             expenses = expenses.filter(expence_type_id=fil_expe)
-#         expense_types = ExpenseHead.objects.all()
-#         context = {'expenses': expenses, 'expense_types':expense_types}
-#         return render(request, self.template_name, context)
+        if fil_expe:
+            expenses = expenses.filter(expence_type_id=fil_expe)
+        expense_types = ExpenseHead.objects.all()
+        context = {'expenses': expenses, 'expense_types':expense_types}
+        return render(request, self.template_name, context)
 
-# class ExpenseAdd(View):
-#     template_name = 'van_management/expense_add.html'
-#     form_class = ExpenseAddForm
+class ExpenseAdd(View):
+    template_name = 'van_management/expense_add.html'
+    form_class = ExpenseAddForm
 
-#     def get(self, request, *args, **kwargs):
-#         form = self.form_class()
-#         context = {'form': form}
-#         return render(request, self.template_name, context)
+    def get(self, request, *args, **kwargs):
+        form = self.form_class()
+        context = {'form': form}
+        return render(request, self.template_name, context)
 
-#     def post(self, request, *args, **kwargs):
-#         form = self.form_class(request.POST)
-#         if form.is_valid():
-#             form.save()
-#             return redirect('expense_list')
-#         else:
-#             context = {'form': form}
-#             return render(request, self.template_name, context)
+    def post(self, request, *args, **kwargs):
+        form = self.form_class(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('expense_list')
+        else:
+            context = {'form': form}
+            return render(request, self.template_name, context)
 
-# class ExpenseEdit(View):
-#     template_name = 'van_management/expense_edit.html'
-#     form_class = ExpenseEditForm
+class ExpenseEdit(View):
+    template_name = 'van_management/expense_edit.html'
+    form_class = ExpenseEditForm
 
-#     def get(self, request, expense_id, *args, **kwargs):
-#         expense = Expense.objects.get(expense_id=expense_id)
-#         form = self.form_class(instance=expense)
-#         context = {'form': form, 'expense':expense}
-#         return render(request, self.template_name, context)
+    def get(self, request, expense_id, *args, **kwargs):
+        expense = Expense.objects.get(expense_id=expense_id)
+        form = self.form_class(instance=expense)
+        context = {'form': form, 'expense':expense}
+        return render(request, self.template_name, context)
 
-#     def post(self, request, expense_id, *args, **kwargs):
-#         expense = get_object_or_404(Expense, expense_id=expense_id)
-#         form = self.form_class(request.POST, instance=expense)
-#         if form.is_valid():
-#             form.save()
-#             print('updated')
-#             return redirect('expense_list')
-#         else:
-#             context = {'form': form, 'expense':expense}
-#             return render(request, self.template_name, context)
+    def post(self, request, expense_id, *args, **kwargs):
+        expense = get_object_or_404(Expense, expense_id=expense_id)
+        form = self.form_class(request.POST, instance=expense)
+        if form.is_valid():
+            form.save()
+            print('updated')
+            return redirect('expense_list')
+        else:
+            context = {'form': form, 'expense':expense}
+            return render(request, self.template_name, context)
 
-# class ExpenseDelete(View):
-#     template_name = 'van_management/expense_delete.html'
+class ExpenseDelete(View):
+    template_name = 'van_management/expense_delete.html'
 
-#     def get(self, request, expense_id, *args, **kwargs):
-#         expense = Expense.objects.get(expense_id=expense_id)
-#         context = {'expense': expense}
-#         return render(request, self.template_name, context)
+    def get(self, request, expense_id, *args, **kwargs):
+        expense = Expense.objects.get(expense_id=expense_id)
+        context = {'expense': expense}
+        return render(request, self.template_name, context)
 
-#     def post(self, request, expense_id, *args, **kwargs):
-#         expense = Expense.objects.get(expense_id=expense_id)
-#         expense.delete()
-#         return redirect('expense_list')
+    def post(self, request, expense_id, *args, **kwargs):
+        expense = Expense.objects.get(expense_id=expense_id)
+        expense.delete()
+        return redirect('expense_list')
     
     
-# # ----------VanStock-----------
+# ----------VanStock-----------
 
-# def vanstock(request):
-#     van_stock = VanProductStock.objects.all()
-#     # for item in van_stock:
-#     #     item.total_stock = item.count + item.product.quantity
-#     context = {'van_stock': van_stock}
-#     return render(request, 'van_management/vanstock_list.html', context)
+def vanstock(request):
+    van_stock = VanProductStock.objects.all()
+    # for item in van_stock:
+    #     item.total_stock = item.count + item.product.quantity
+    context = {'van_stock': van_stock}
+    return render(request, 'van_management/vanstock_list.html', context)
 
-# def van_coupon_stock(request):
-#     instances = VanCouponStock.objects.all()
-#     context = {
-#         'instances': instances
-#         }
-#     return render(request, 'van_management/van_coupon_stock_list.html', context)
+def van_coupon_stock(request):
+    instances = VanCouponStock.objects.all()
+    context = {
+        'instances': instances
+        }
+    return render(request, 'van_management/van_coupon_stock_list.html', context)
 
-# def offload(request):
-#     van_stock = VanProductStock.objects.all()
+def offload(request):
+    van_stock = VanProductStock.objects.all()
     
-#     context = {'van_stock': van_stock}
-#     return render(request, 'van_management/offload.html', context)
+    context = {'van_stock': van_stock}
+    return render(request, 'van_management/offload.html', context)
