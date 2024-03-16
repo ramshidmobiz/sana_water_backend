@@ -81,7 +81,7 @@ class CustomerReturn(models.Model):
     customer = models.ForeignKey(Customers, on_delete=models.CASCADE,null=True,blank=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE,null=True,blank=True)
     count = models.IntegerField(blank=True,null=True)
-    serialnumber = models.CharField(max_length=20, null=True, blank=True)
+    serialnumber = models.IntegerField(blank=True,null=True)
     amount = models.IntegerField(blank=True,null=True)
     deposit_form_number = models.CharField(max_length=100,default='')
 

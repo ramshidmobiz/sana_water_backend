@@ -45,7 +45,6 @@ urlpatterns = [
     
                                    
     path('van-stock-product', vanstock, name="vanstock"),
-    path('van-stock-coupon', van_coupon_stock, name="van_coupon_stock"),
     path('offload', offload, name="offload"),
     
 ]

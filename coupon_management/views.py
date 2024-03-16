@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 
 from competitor_analysis.forms import CompetitorAnalysisFilterForm
+from master.functions import generate_form_errors
 from .models import *
 from .forms import  *
 from accounts.models import CustomUser
@@ -322,8 +323,10 @@ def create_Newcoupon(request):
         form = CreateNewCouponForm(request.POST)
         if form.is_valid():
             data = form.save(commit=False)
+            
             coupon_type_id = request.POST.get('coupon_type')
             book_num = request.POST.get('book_num')
+            
             # Check if the coupon book already exists
             if NewCoupon.objects.filter(book_num=book_num,coupon_type=coupon_type_id).exists():
                 print("Exists")
@@ -367,15 +370,15 @@ def create_Newcoupon(request):
                 'book_num': data.book_num,
                 'leaflets': leaflets
             }
-
-
-            
-
-            return JsonResponse(response_data)
+            return JsonResponse(response_data, status=200)
         
         else:
-            response_data = {'success': False, 'message': 'Invalid form data. Please check the input.'}
-            return JsonResponse(response_data, status=400)
+            message = generate_form_errors(form,formset=False)
+            response_data = {
+                'success': False, 
+                'message': message,
+                }
+            return JsonResponse(response_data, status=200)
     else:
         form = CreateNewCouponForm()
     
@@ -391,6 +394,7 @@ def generate_leaflets(request, coupon_id):
         print("leaflet",leaflet)
         leaflets.append(leaflet)
         leaflet.save()
+        
 
     context = {'coupon': coupon, 'leaflets': leaflets}
     return render(request, 'coupon_management/create_Newcoupon.html', context)

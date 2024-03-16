@@ -267,3 +267,27 @@ class CustodyCustomItemForm(forms.ModelForm):
             'serialnumber': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Serial Number'}),
             'amount': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Amount'}),
         }
+
+
+#------------------- Customer Supply
+class CustomerSupplyForm(forms.ModelForm):
+
+    class Meta:
+        model = CustomerSupply
+        fields = ['customer']
+
+        widgets = {
+            'customer': forms.Select(attrs={'class': 'form-control', 'required': True}),
+        }
+
+class CustomerSupplyItemsForm(forms.ModelForm):
+
+    class Meta:
+        model = CustomerSupplyItems
+        fields = ['product','quantity','amount']
+
+        widgets = {
+            'product': forms.Select(attrs={'class': 'form-control'}),
+            'quantity': forms.TextInput(attrs={'class': 'form-control'}),
+            'amount': forms.TextInput(attrs={'class': 'form-control'}),
+        }

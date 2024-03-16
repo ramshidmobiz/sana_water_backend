@@ -104,9 +104,12 @@
                                                     <a href="{% url 'visit_days_assign' data.customer_id %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Assign Visit Days">
                                                         <span class="ri-arrow-right-s-line fs-14"></span>
                                                     </a>
-                                                    <a href="{% url 'customer_custody_item' data.customer_id %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Custody Item">
+                                                    <a href="{% url 'custody_issue' %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Custody Item">
                                                         <span class="bi bi-cart fs-14"></span>
                                                     </a>
+                                                    {% comment %} <a href="{% url 'customer_custody_item' data.customer_id %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Custody Item">
+                                                        <span class="bi bi-cart fs-14"></span>
+                                                    </a> {% endcomment %}
                                                     <a href="" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Coupons">
                                                         <span class="bi bi-ticket-fill fs-14"></span>
                                                     </a>

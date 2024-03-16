@@ -346,11 +346,11 @@ class AddCustodyItems(View):
         if form.is_valid():
             instance = form.save(commit=False)
             # Save the instance based on deposit_form value
-            # if instance.deposit_form:
-            #     instance.amount = instance.deposit_amount
-            #     instance.deposit_form_number = instance.deposit_number
-            # else:
-            #     instance.amount = None
+            if instance.deposit_form:
+                instance.amount = instance.deposit_amount
+                instance.deposit_form_number = instance.deposit_number
+            else:
+                instance.amount = None
             instance.save()
             messages.success(request, 'Entry created successfully!')
             return redirect('add_custody_list')
@@ -717,5 +717,147 @@ def custody_items_list_report(request):
         return render(request, 'client_management/custody_items_list_report.html', {'instances': instances})
     
 
+# def custody_issue(request):
+#     if request.method == 'GET':
+#         instances = CustodyCustom.objects.all()
+#         gallon_deposit_counter = 0
+#         gallon_non_deposit_counter = 0
+#         dispenser_deposit_counter = 0
+#         dispenser_non_deposit_counter = 0
+#         cooler_deposit_counter = 0
+#         cooler_non_deposit_counter = 0
+
+#         for item in instances:
+#             for custody_item in item.custodycustomitems_set.all():
+#                 customer=custody_item.custody_custom.customer_id
+#                 print("customer",customer)
+#                 product = custody_item.product
+#                 print("product",product)
+#                 if product:
+#                     if product.product_name == '5 Gallon':
+#                         if custody_item.custody_custom.deposit_type == 'deposit':
+#                             gallon_deposit_counter += 1
+#                         else:
+#                             gallon_non_deposit_counter += 1
+#                     elif product.product_name == 'Dispenser':
+#                         if custody_item.custody_custom.deposit_type == 'deposit':
+#                             dispenser_deposit_counter += 1
+#                         else:
+#                             dispenser_non_deposit_counter += 1
+#                     elif product.product_name == 'Cooler':
+#                         if custody_item.custody_custom.deposit_type == 'deposit':
+#                             cooler_deposit_counter += 1
+#                         else:
+#                             cooler_non_deposit_counter += 1
+
+#         return render(request, 'client_management/custody_issue.html', {
+#             'instances': instances,
+#             'gallon_deposit_counter': gallon_deposit_counter,
+#             'gallon_non_deposit_counter': gallon_non_deposit_counter,
+#             'dispenser_deposit_counter': dispenser_deposit_counter,
+#             'dispenser_non_deposit_counter': dispenser_non_deposit_counter,
+#             'cooler_deposit_counter': cooler_deposit_counter,
+#             'cooler_non_deposit_counter': cooler_non_deposit_counter,
+#         })
 
 
+
+
+# def custody_issue(request):
+#     if request.method == 'GET':
+#         instances = CustodyCustom.objects.all()
+        
+#         # Create a dictionary to store counts for each customer
+#         customer_product_counts = {}
+
+#         for instance in instances:
+#             customer = instance.customer
+#             customer_product_counts[customer] = {
+#                 '5_gallon_deposit': 0,
+#                 '5_gallon_non_deposit': 0,
+#                 'dispenser_deposit': 0,
+#                 'dispenser_non_deposit': 0,
+#                 'cooler_deposit': 0,
+#                 'cooler_non_deposit': 0,
+#             }
+
+#             # Filter CustodyCustomItems for the current customer
+#             custody_items = instance.custodycustomitems_set.all()
+
+#             # Count products for the current customer
+#             for custody_item in custody_items:
+#                 product = custody_item.product
+#                 if product:
+#                     if product.product_name == '5 Gallon':
+#                         if custody_item.custody_custom.deposit_type == 'deposit':
+#                             customer_product_counts[customer]['5_gallon_deposit'] += 1
+#                         else:
+#                             customer_product_counts[customer]['5_gallon_non_deposit'] += 1
+#                     elif product.product_name == 'Dispenser':
+#                         if custody_item.custody_custom.deposit_type == 'deposit':
+#                             customer_product_counts[customer]['dispenser_deposit'] += 1
+#                         else:
+#                             customer_product_counts[customer]['dispenser_non_deposit'] += 1
+#                     elif product.product_name == 'Cooler':
+#                         if custody_item.custody_custom.deposit_type == 'deposit':
+#                             customer_product_counts[customer]['cooler_deposit'] += 1
+#                         else:
+#                             customer_product_counts[customer]['cooler_non_deposit'] += 1
+
+#         return render(request, 'client_management/custody_issue.html', {
+#             'customer_product_counts': customer_product_counts,
+#         })
+def custody_issue(request):
+    instances = CustodyCustom.objects.all()
+
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    if start_date_str and end_date_str:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        instances = instances.filter(created_date__range=[start_date, end_date])
+    
+
+    # Create a dictionary to store counts for each customer
+    customer_product_counts = {}
+
+    for instance in instances:
+        customer = instance.customer
+        print(customer,"customer")
+        if customer not in customer_product_counts:
+            customer_product_counts[customer] = {
+                '5_gallon_deposit': 0,
+                '5_gallon_non_deposit': 0,
+                'dispenser_deposit': 0,
+                'dispenser_non_deposit': 0,
+                'cooler_deposit': 0,
+                'cooler_non_deposit': 0,
+            }
+
+        # Filter CustodyCustomItems for the current instance
+        custody_items = instance.custodycustomitems_set.all()
+
+        # Count products for the current customer
+        for custody_item in custody_items:
+            product = custody_item.product
+            if product:
+                if product.product_name == '5 Gallon':
+                    if custody_item.custody_custom.deposit_type == 'deposit':
+                        customer_product_counts[customer]['5_gallon_deposit'] += 1
+                    else:
+                        customer_product_counts[customer]['5_gallon_non_deposit'] += 1
+                elif product.product_name == 'Dispenser':
+                    if custody_item.custody_custom.deposit_type == 'deposit':
+                        customer_product_counts[customer]['dispenser_deposit'] += 1
+                    else:
+                        customer_product_counts[customer]['dispenser_non_deposit'] += 1
+                elif product.product_name == 'Cooler':
+                    if custody_item.custody_custom.deposit_type == 'deposit':
+                        customer_product_counts[customer]['cooler_deposit'] += 1
+                    else:
+                        customer_product_counts[customer]['cooler_non_deposit'] += 1
+
+    return render(request, 'client_management/custody_issue.html', {
+        'customer_product_counts': customer_product_counts,'customer':customer
+    })

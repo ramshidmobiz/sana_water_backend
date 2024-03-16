@@ -58,7 +58,7 @@
                                                 <td>{{ item.amount }}</td>
                                             </tr>
                                             <td>
-                                                <a href="{% url 'edit_custody_item' item.id %}">Edit</a>
+                                                {% comment %} <a href="{% url 'edit_custody_item' %}">Edit</a> {% endcomment %}
                                                 <a href="{% url 'delete_custody_item' item.id %}">Delete</a>
                                             </td>
                                         {% endfor %}

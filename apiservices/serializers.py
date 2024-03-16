@@ -132,21 +132,21 @@ class CustodyCustomerSerializer(serializers.ModelSerializer):
         fields = ['customer_id','customer_name'] 
 
 class CustodyCustomItemsSerializer(serializers.ModelSerializer):
-    customer = CustodyCustomerSerializer()
-    product_name = serializers.SerializerMethodField()
+    # customer = CustodyCustomerSerializer()
+    # product_name = serializers.SerializerMethodField()
 
+    
     class Meta:
         model = CustodyCustomItems
-        fields = ['customer', 'product_name', 'product', 'rate', 'count', 'serialnumber', 'deposit_type', 'deposit_form_number'] 
- 
+        fields = ['id', 'custody_custom', 'product', 'quantity', 'serialnumber', 'amount']
     
-    def get_product_name(self, obj):
-        try:
-            product_name = obj.product.product_name
-        except:
-            product_name = ""
+    # def get_product_name(self, obj):
+    #     try:
+    #         product_name = obj.product.product_name
+    #     except:
+    #         product_name = ""
 
-        return product_name
+    #     return product_name
 
 class CustomersSerializer(serializers.ModelSerializer):
     class Meta:
@@ -275,7 +275,7 @@ class SupplyItemProductGetSerializer(serializers.ModelSerializer):
 class CustomerSupplySerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomerSupply
-        fields = ['id', 'customer', 'salesman', 'grand_total', 'discount', 'net_payable', 'vat', 'subtotal', 'amount_received', 'created_by', 'created_date', 'modified_by', 'modified_date']
+        fields = ['id', 'customer', 'salesman', 'grand_total', 'discount', 'net_payable', 'vat', 'subtotal', 'amount_recieved', 'created_by', 'created_date', 'modified_by', 'modified_date']
         read_only_fields = ['id', 'created_by', 'created_date', 'modified_by', 'modified_date']
 
 class CustomerSupplyItemsSerializer(serializers.ModelSerializer):

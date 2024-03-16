@@ -1,15 +1,17 @@
 <!DOCTYPE html> 
 {%load static%}
+
 <html lang="en" dir="ltr" data-nav-layout="vertical"  data-theme-mode="light" data-header-styles="gradient" data-menu-styles="dark">
+
 <head>
     <!-- Meta Data -->
     <meta charset="UTF-8">
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Sana Water</title>
-    <meta name="Description" content="Sana water admin dashboard">
+    <meta name="Description" content="Sana Water admin dashboard">
     <meta name="Author" content="Mobiz Technologies">
-	<meta name="keywords" content="Sana water admin dashboard">
+	<meta name="keywords" content="Sana Water admin dashboard">
 
     <!-- Favicon -->
     <link rel="icon" href="{%static 'images/brand-logos/desktop-logos.png'%}" type="image/x-icon">
@@ -1045,8 +1047,8 @@
                                 <li class="slide">
                                     <a href="{% url 'coupon_sale' %}" class="side-menu__item">Create Coupon Sale</a>
                                 </li>
-				<li class="slide">
-                                    <a href="{% url 'order_by_date' %}" class="side-menu__item">View Orders</a>
+				                <li class="slide">
+                                    <a href="{% url 'staff_issue_orders_list' %}" class="side-menu__item">Orders</a>
                                 </li>
                             </ul>
                         </li>
@@ -1078,11 +1080,11 @@
                                     <a href="{% url 'schedule_view' %}" class="side-menu__item">Trip Schedule</a>
                                 </li>
                                 <li class="slide">
-                                    <a href="{% url 'vanstock' %}" class="side-menu__item">Van Stock Products</a>
+                                    <a href="{% url 'vanstock' %}" class="side-menu__item">Van Stock </a>
                                 </li>
-                                <li class="slide">
+                                {% comment %} <li class="slide">
                                     <a href="{% url 'van_coupon_stock' %}" class="side-menu__item">Van Stock Coupons</a>
-                                </li>
+                                </li> {% endcomment %}
                                 <li class="slide">
                                     <a href="{% url 'offload' %}" class="side-menu__item">Offload</a>
                                 </li>
@@ -1117,9 +1119,9 @@
                                 <li class="slide">
                                     <a href="{% url 'defaultprice' %}" class="side-menu__item">Customer Default Price</a>
                                 </li>
-                                <li class="slide">
+                                {% comment %} <li class="slide">
                                     <a href="{% url 'staff_issue_orders_list' %}" class="side-menu__item">Issue Order</a>
-                                </li>
+                                </li> {% endcomment %}
                                 <li class="slide">
                                     <a href="{% url 'product_stock_report' %}" class="side-menu__item">Product Stock Report</a>
                                 </li>
@@ -1812,7 +1814,7 @@
   </div>
   <div id="responsive-overlay"></div>
   {% comment %} <script src="https://code.jquery.com/jquery-3.6.1.min.js" integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" crossorigin="anonymous"></script> {% endcomment %}
-  <script src="{% static 'js/jquery.min.js' %}"></script>
+  <script src="{%static 'js/jquery.min.js'%}"></script>
   <!-- Popper JS -->
   <script src="{%static 'libs/@popperjs/core/umd/popper.min.js'%}"></script>
 
@@ -1863,8 +1865,8 @@
   <script src="{%static 'sweet/actions.js' %}"></script>
   <script src="{%static 'sweet/sweetalert2.js' %}"></script>
 
-{% block static %}
-{% endblock %}
+  {% block static %}
+    {% endblock %}
 
 </body>
 

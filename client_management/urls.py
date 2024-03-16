@@ -42,6 +42,8 @@ urlpatterns = [
         path('clientdownload_pdf/<uuid:customer_id>/', clientdownload_pdf, name='clientdownload_pdf'),
         path('clientexport_to_csv/<uuid:customer_id>/', clientexport_to_csv, name='clientexport_to_csv'),
         path('custody_items_list_report', custody_items_list_report, name='custody_items_list_report'),
+        path('custody_issue', custody_issue, name='custody_issue'),
+
 
 
 

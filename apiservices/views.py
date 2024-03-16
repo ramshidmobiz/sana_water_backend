@@ -2191,36 +2191,43 @@ class CustodyCustomItemAPI(APIView):
     serializer_class = CustodyCustomItemSerializer
 
     def post(self, request, *args, **kwargs):
-        # try:
+        try:
             customer_id = request.data['customer_id'] 
             product_id = request.data['product_id']
-            print("product_id",product_id)
             serial_number = request.data['serialnumber']
             quantity = request.data['count']
-            is_deposit = request.data['deposit_form',False]
-            agreement_number = request.data['deposit_form_number', '']
-            amount = request.data['amount'] if is_deposit else None
+            deposit_type = request.data['deposit_type'] 
+            agreement_number = request.data['agreement_no']
+            amount = request.data['amount']
+            # total_amount = request.data['total_amount']
             
-            custody_custom, _ = CustodyCustom.objects.get_or_create(customer_id=customer_id)
+            custody_custom, _ = CustodyCustom.objects.get_or_create(
+                customer_id=customer_id,
+                agreement_no=agreement_number,
+                deposit_type=deposit_type
+            )
 
+            # Set total_amount only if a deposit is made
+            # if is_deposit:
+            #     custody_custom.total_amount = total_amount
+            #     custody_custom.save()
+
+            # Create CustodyCustomItems instance
             custody_item = CustodyCustomItems.objects.create(
                 custody_custom=custody_custom,
-                product_id=ProdutItemMaster.objects.get(pk=product_id).pk,
-                serialnumber=serial_number,
-                count=quantity,
-                deposit_form=is_deposit,
+                product_id=product_id,
                 amount=amount,
-                # deposit_form_number=agreement_number
-                deposit_form_number=agreement_number if is_deposit else ''
+                serialnumber=serial_number,
+                quantity=quantity
             )
-            
+
             serializer = self.serializer_class(custody_item, many=False)
             return Response({"status": True, "data": serializer.data, "message": "Data saved successfully!"})
-        # except Exception as e:
-        #     print(e)
-        #     return Response({"status": False, "message": str(e)})
-
-
+        except Exception as e:
+            print(e)
+            return Response({"status": False, "message": str(e)})
+        
+        
 @api_view(['GET'])
 def supply_product(request,customer_id,product_id):
     if (instances:=VanProductStock.objects.filter(product__pk=product_id)).exists():
