@@ -139,26 +139,26 @@ class NewCoupon(models.Model):
     def __str__(self):
         return str(self.book_num)
 
-    def save_qr_code(self):
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
-            border=4,
-        )
-        qr.add_data(str(self.coupon_id))
-        qr.make(fit=True)
+    # def save_qr_code(self):
+    #     qr = qrcode.QRCode(
+    #         version=1,
+    #         error_correction=qrcode.constants.ERROR_CORRECT_L,
+    #         box_size=10,
+    #         border=4,
+    #     )
+    #     qr.add_data(str(self.coupon_id))
+    #     qr.make(fit=True)
 
-        img = qr.make_image(fill_color="blue", back_color="white")
-        fname = f'coupon_qr_code-{self.book_num}.png'
-        buffer = BytesIO()
-        img.save(buffer, 'PNG')
-        self.qr_code.save(fname, File(buffer), save=False)
-        img.close()
+    #     img = qr.make_image(fill_color="blue", back_color="white")
+    #     fname = f'coupon_qr_code-{self.book_num}.png'
+    #     buffer = BytesIO()
+    #     img.save(buffer, 'PNG')
+    #     self.qr_code.save(fname, File(buffer), save=False)
+    #     img.close()
 
-    def save(self, *args, **kwargs):
-        self.save_qr_code()
-        super().save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     self.save_qr_code()
+    #     super().save(*args, **kwargs)
     
 class CouponLeaflet(models.Model):
     couponleaflet_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -178,34 +178,34 @@ class CouponLeaflet(models.Model):
     def __str__(self):
         return f"{self.coupon.book_num} - Leaflet {self.leaflet_number}"
 
-    def save_qr_code(self):
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
-            border=4,
-        )
+    # def save_qr_code(self):
+    #     qr = qrcode.QRCode(
+    #         version=1,
+    #         error_correction=qrcode.constants.ERROR_CORRECT_L,
+    #         box_size=10,
+    #         border=4,
+    #     )
         
-        # Ensure that leaflet_number is always formatted with leading zeros to maintain a consistent length
-        formatted_leaflet_number = self.leaflet_number.zfill(2)
+    #     # Ensure that leaflet_number is always formatted with leading zeros to maintain a consistent length
+    #     formatted_leaflet_number = self.leaflet_number.zfill(2)
         
-        data_to_encode = f"{self.coupon.book_num}{formatted_leaflet_number}"  # Combine book_num and formatted leaflet_number
-        qr.add_data(data_to_encode)
-        qr.make(fit=True)
+    #     data_to_encode = f"{self.coupon.book_num}{formatted_leaflet_number}"  # Combine book_num and formatted leaflet_number
+    #     qr.add_data(data_to_encode)
+    #     qr.make(fit=True)
 
-        img = qr.make_image(fill_color="blue", back_color="white")
+    #     img = qr.make_image(fill_color="blue", back_color="white")
         
-        # Adjusted filename format with book_num and formatted leaflet_number
-        fname = f'leaflet_qr_codes/leaflet_qr_code-{self.coupon.book_num}{formatted_leaflet_number}.png'
+    #     # Adjusted filename format with book_num and formatted leaflet_number
+    #     fname = f'leaflet_qr_codes/leaflet_qr_code-{self.coupon.book_num}{formatted_leaflet_number}.png'
 
-        buffer = BytesIO()
-        img.save(buffer, 'PNG')
-        self.qr_code.save(fname, File(buffer), save=False)
-        img.close()
+    #     buffer = BytesIO()
+    #     img.save(buffer, 'PNG')
+    #     self.qr_code.save(fname, File(buffer), save=False)
+    #     img.close()
 
-    def save(self, *args, **kwargs):
-        self.save_qr_code()
-        super().save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     self.save_qr_code()
+    #     super().save(*args, **kwargs)
 
 COUPON_STOCK_CHOICES = (
     ('company', 'Company'),
