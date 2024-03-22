@@ -2687,6 +2687,7 @@ class customer_outstanding(APIView):
                 if customer_id not in customer_data:
                     customer_data[customer_id] = {
                         'customer': report.customer.pk,
+                        'customer_name': report.customer.customer_name,
                         'building_name': report.customer.building_name,
                         'route_name': report.customer.routes.route_name,
                         'route_id': report.customer.routes.pk,

@@ -386,6 +386,7 @@ class CustomerCouponStockSerializer(serializers.ModelSerializer):
 
 class CustomerOutstandingSerializer(serializers.Serializer):
     customer = serializers.UUIDField()
+    customer_name = serializers.CharField(max_length=200)
     building_name = serializers.CharField(max_length=200)
     route_name = serializers.CharField(max_length=200)
     route_id = serializers.UUIDField()
