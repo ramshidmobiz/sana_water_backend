@@ -2456,38 +2456,38 @@ class CustodyItemReturnAPI(APIView):
         except Exception as e:
             return Response({"status": False, "message": f"Something went wrong: {e}"})
 
-# class OutstandingAmountAPI(APIView):
+class OutstandingAmountAPI(APIView):
 
-#     serializer_class = OutstandingAmountSerializer
+    serializer_class = OutstandingAmountSerializer
 
-#     def post(self, request, *args, **kwargs):
-#         try:
-#             customer_id = request.data['customer_id'] 
-#             print(customer_id)
-#             custody_items = CustodyCustomItems.objects.filter(customer=customer_id)
-#             print("custody_items", custody_items)
-#             total_amount = custody_items.aggregate(total_amount=Sum('amount'))['total_amount']
-#             print("total_amount", total_amount)
-#             amount_paid = request.data['amount_paid']
-#             print("amount_paid", amount_paid)
-#             amount_paid = int(amount_paid)
-#             balance = total_amount - amount_paid
-#             print('balance', balance)
-#             product = custody_items.first().product
-#             print("product", product)
-#             outstanding_amount = OutstandingAmount.objects.create(
-#                 customer_id=customer_id,
-#                 product=product,
-#                 balance_amount=balance,
-#                 amount_paid=amount_paid
-#             )
+    def post(self, request, *args, **kwargs):
+        try:
+            customer_id = request.data['customer_id'] 
+            print(customer_id)
+            custody_items = CustodyCustomItems.objects.filter(customer=customer_id)
+            print("custody_items", custody_items)
+            total_amount = custody_items.aggregate(total_amount=Sum('amount'))['total_amount']
+            print("total_amount", total_amount)
+            amount_paid = request.data['amount_paid']
+            print("amount_paid", amount_paid)
+            amount_paid = int(amount_paid)
+            balance = total_amount - amount_paid
+            print('balance', balance)
+            product = custody_items.first().product
+            print("product", product)
+            outstanding_amount = OutstandingAmount.objects.create(
+                customer_id=customer_id,
+                product=product,
+                balance_amount=balance,
+                amount_paid=amount_paid
+            )
 
-#             serializer = self.serializer_class(outstanding_amount)
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+            serializer = self.serializer_class(outstanding_amount)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
            
-#         except Exception as e:
-#             print(e,"errror")
-#             return Response({"status": False, "data": str(e), "message": "Something went wrong!"})
+        except Exception as e:
+            print(e,"errror")
+            return Response({"status": False, "data": str(e), "message": "Something went wrong!"})
         
 
 class VanStockAPI(APIView):

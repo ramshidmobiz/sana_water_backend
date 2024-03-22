@@ -234,66 +234,66 @@ class ChequeCouponPayment(models.Model):
     def __str__(self):
         return self.customer_coupon_payment
     
-# class CustomerOutstanding(models.Model):
-#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-#     customer = models.ForeignKey('accounts.Customers', on_delete=models.CASCADE)
-#     product_type = models.CharField(max_length=200, choices=PRODUCT_TYPES)
-#     created_by = models.CharField(max_length=30, blank=True)
-#     created_date = models.DateTimeField(auto_now_add=True)
-#     modified_by = models.CharField(max_length=20, null=True, blank=True)
-#     modified_date = models.DateTimeField(auto_now=True, blank=True, null=True)
+class CustomerOutstanding(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    customer = models.ForeignKey('accounts.Customers', on_delete=models.CASCADE)
+    product_type = models.CharField(max_length=200, choices=PRODUCT_TYPES)
+    created_by = models.CharField(max_length=30, blank=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_by = models.CharField(max_length=20, null=True, blank=True)
+    modified_date = models.DateTimeField(auto_now=True, blank=True, null=True)
     
-#     class Meta:
-#         ordering = ('-id',)
+    class Meta:
+        ordering = ('-id',)
         
-#     def __str__(self):
-#         return str(self.product_type)
+    def __str__(self):
+        return str(self.product_type)
 
-# class OutstandingAmount(models.Model):
-#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-#     customer_outstanding = models.ForeignKey(CustomerOutstanding, on_delete=models.CASCADE)
-#     amount = models.IntegerField(default=0)
+class OutstandingAmount(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    customer_outstanding = models.ForeignKey(CustomerOutstanding, on_delete=models.CASCADE)
+    amount = models.IntegerField(default=0)
 
-#     class Meta:
-#         ordering = ('-id',)
+    class Meta:
+        ordering = ('-id',)
         
-#     def __str__(self):
-#         return str(self.id)
+    def __str__(self):
+        return str(self.id)
 
-# class OutstandingProduct(models.Model):
-#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-#     customer_outstanding = models.ForeignKey(CustomerOutstanding, on_delete=models.CASCADE)
-#     empty_bottle = models.IntegerField(default=0)
+class OutstandingProduct(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    customer_outstanding = models.ForeignKey(CustomerOutstanding, on_delete=models.CASCADE)
+    empty_bottle = models.IntegerField(default=0)
 
-#     class Meta:
-#         ordering = ('-id',)
+    class Meta:
+        ordering = ('-id',)
         
-#     def __str__(self):
-#         return str(self.empty_bottle)
+    def __str__(self):
+        return str(self.empty_bottle)
     
-# class OutstandingCoupon(models.Model):
-#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-#     coupon_type = models.ForeignKey(CouponType,on_delete=models.CASCADE)
-#     count = models.IntegerField(default=0)
-#     customer_outstanding = models.ForeignKey(CustomerOutstanding, on_delete=models.CASCADE)
+class OutstandingCoupon(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    coupon_type = models.ForeignKey(CouponType,on_delete=models.CASCADE)
+    count = models.IntegerField(default=0)
+    customer_outstanding = models.ForeignKey(CustomerOutstanding, on_delete=models.CASCADE)
 
-#     class Meta:
-#         ordering = ('-id',)
+    class Meta:
+        ordering = ('-id',)
         
-#     def __str__(self):
-#         return str(self.coupon_type)
+    def __str__(self):
+        return str(self.coupon_type)
     
-# class CustomerOutstandingReport(models.Model):
-#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-#     product_type = models.CharField(max_length=200, choices=PRODUCT_TYPES)
-#     value = models.IntegerField(default=0)
-#     customer = models.ForeignKey('accounts.Customers', on_delete=models.CASCADE)
+class CustomerOutstandingReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    product_type = models.CharField(max_length=200, choices=PRODUCT_TYPES)
+    value = models.IntegerField(default=0)
+    customer = models.ForeignKey('accounts.Customers', on_delete=models.CASCADE)
 
-#     class Meta:
-#         ordering = ('-id',)
+    class Meta:
+        ordering = ('-id',)
         
-#     def __str__(self):
-#         return str(self.id)
+    def __str__(self):
+        return str(self.id)
 
 class CustomerSupply(models.Model):
         id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

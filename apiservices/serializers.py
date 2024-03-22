@@ -302,22 +302,22 @@ class CustomerCouponStockSerializer(serializers.ModelSerializer):
     def get_customer_name(self, obj):
         return obj.customer.customer_name
 
-# class VanCouponStockSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = OutstandingAmount
-#         fields = '__all__'
+class VanCouponStockSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OutstandingAmount
+        fields = '__all__'
 
 
-# class OutstandingCouponSerializer(serializers.ModelSerializer):
-#     custodycustomitems = CustodyCustomItemSerializer
-#     class Meta:
-#         model = OutstandingAmount
-#         fields = '__all__'
-# class OutstandingAmountSerializer(serializers.ModelSerializer):
-#     custodycustomitems = CustodyCustomItemSerializer
-#     class Meta:
-#         model = OutstandingAmount
-#         fields = '__all__'
+class OutstandingCouponSerializer(serializers.ModelSerializer):
+    custodycustomitems = CustodyCustomItemSerializer
+    class Meta:
+        model = OutstandingAmount
+        fields = '__all__'
+class OutstandingAmountSerializer(serializers.ModelSerializer):
+    custodycustomitems = CustodyCustomItemSerializer
+    class Meta:
+        model = OutstandingAmount
+        fields = '__all__'
 
 
 class VanCouponStockSerializer(serializers.ModelSerializer):

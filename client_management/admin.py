@@ -4,5 +4,5 @@ from django.contrib import admin
 from . models import *
 
 admin.site.register(CustomerCouponStock)
-# admin.site.register(CustomerOutstanding)
-# admin.site.register(CustomerOutstandingReport)
+admin.site.register(CustomerOutstanding)
+admin.site.register(CustomerOutstandingReport)
