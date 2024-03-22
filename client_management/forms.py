@@ -292,27 +292,27 @@ class CustomerSupplyItemsForm(forms.ModelForm):
             'amount': forms.TextInput(attrs={'class': 'form-control'}),
         }
 #
-class CoupenEditForm(forms.ModelForm):
-    class Meta:
-        model = CustomerCouponStock
-        fields = ['coupon_type_id', 'count']  # Include the 'coupon_type_id' field
-        widgets = {
-            'count': forms.NumberInput(attrs={'class': 'form-control', 'required': True}),
-            'coupon_type_id': forms.Select(attrs={'class': 'form-control', 'required': True}),
-        }
+# class CoupenEditForm(forms.ModelForm):
+#     class Meta:
+#         model = CustomerCouponStock
+#         fields = ['coupon_type_id', 'count']  # Include the 'coupon_type_id' field
+#         widgets = {
+#             'count': forms.NumberInput(attrs={'class': 'form-control', 'required': True}),
+#             'coupon_type_id': forms.Select(attrs={'class': 'form-control', 'required': True}),
+#         }
 
-    def clean_count(self):
-        count = self.cleaned_data['count']
-        if count <= 0:
-            raise forms.ValidationError("Count must be a positive integer.")
-        return count
+#     def clean_count(self):
+#         count = self.cleaned_data['count']
+#         if count <= 0:
+#             raise forms.ValidationError("Count must be a positive integer.")
+#         return count
 
-    def save(self, commit=True):
-        instance = super(CoupenEditForm, self).save(commit=False)
-        instance.count = self.cleaned_data['count']
-        if commit:
-            instance.save()
-        return instance
+#     def save(self, commit=True):
+#         instance = super(CoupenEditForm, self).save(commit=False)
+#         instance.count = self.cleaned_data['count']
+#         if commit:
+#             instance.save()
+#         return instance
     
 class CustomerOutstandingForm(forms.ModelForm):
 
