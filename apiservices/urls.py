@@ -90,7 +90,8 @@ urlpatterns = [
     # supply
     re_path(r'^supply-product/(?P<customer_id>.*)/(?P<product_id>.*)/$', views.supply_product),
     re_path(r'^create-customer-supply/$', views.create_customer_supply),
-    
+    re_path(r'^customer-outstanding/$', customer_outstanding.as_view()),
+   
     ################### COUPON MANAGEMENT URL ######################
     path('couponType/',CouponType_API.as_view()),
     path('couponType/<str:id>',CouponType_API.as_view()),
@@ -103,7 +104,7 @@ urlpatterns = [
     # coupon recharge
     path('get-lower-coupon-customers/', views.get_lower_coupon_customers),
     path('fetch-coupon-data/', views.fetch_coupon),
-    path('customer-coupon-recharge/', views.customer_coupon_recharge),
+    path('customer-coupon-recharge/', customer_coupon_recharge.as_view()),
     
     path('customer-coupon-stock/', views.customer_coupon_stock),
     
@@ -131,14 +132,12 @@ urlpatterns = [
     # path('outstanding_coupon/',OutstandingCouponAPI.as_view(), name = 'outstanding_coupon'),
 
     path('vanstock-list/', VanStockAPI.as_view()),
-
-
-
-
-
-
     
-
-    
+    # path('api/coupon_count/<uuid:pk>/', CouponCountListAPI.as_view(), name='coupon_count_list_api'),
+    # path('check_customer_existence/', check_customer_existence, name='check_customer_existence'),
+    # path('coupon_count/<uuid:pk>/', CouponCountList.as_view(), name='coupon_count_list_api'),
+    path('coupon_count/<uuid:pk>/', CouponCountListAPI.as_view(), name='coupon_count_list_api'),
+    path('add_new_coupon/<uuid:pk>/', NewCouponCountAPI.as_view(), name='api_new_coupon_count'),
+    path('delete_coupon_count/<uuid:pk>/', DeleteCouponCount.as_view(), name='delete_coupon_count'),
 
 ]

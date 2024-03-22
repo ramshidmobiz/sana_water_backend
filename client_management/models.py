@@ -8,12 +8,12 @@ from coupon_management.models import Coupon, CouponType, NewCoupon
 from product.models import *
 from django.http import HttpResponse
 
-COUPON_TYPE =(
+COUPON_TYPE = (
     ('cash_coupon','Cash Coupon'),
     ('credit_coupon','Credit Coupon'),
 )
 
-PAYMENT_METHOD =(
+PAYMENT_METHOD = (
     ('cash','Cash'),
     ('cheque','Cheque'),
 )
@@ -21,6 +21,12 @@ PAYMENT_METHOD =(
 DEPOSIT_TYPES = (
     ('deposit', 'Deposit'),
     ('non_deposit', 'Non Deposit'),
+)
+
+PRODUCT_TYPES = (
+    ('amount','Amount'),
+    ('emptycan','Emptycan'),
+    ('coupons','Coupons'),
 )
 
 class CustodyCustom(models.Model):
@@ -182,7 +188,7 @@ class CustomerCouponStock(models.Model):
         ordering = ('-id',)
         
     def __str__(self):
-        return self.customer
+        return self.customer.customer_name
     
 class CustomerCouponPayment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -227,14 +233,8 @@ class ChequeCouponPayment(models.Model):
         
     def __str__(self):
         return self.customer_coupon_payment
+    
 class CustomerOutstanding(models.Model):
-   
-
-    PRODUCT_TYPES = (
-            ('amount','Amount'),
-            ('emptycan','Emptycan'),
-            ('coupons','Coupons'),
-    )
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customer = models.ForeignKey('accounts.Customers', on_delete=models.CASCADE)
     product_type = models.CharField(max_length=200, choices=PRODUCT_TYPES)
@@ -247,15 +247,12 @@ class CustomerOutstanding(models.Model):
         ordering = ('-id',)
         
     def __str__(self):
-        return self.product_type
+        return str(self.product_type)
 
-    
 class OutstandingAmount(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    customer = models.ForeignKey(Customers, on_delete=models.CASCADE, default=1)  # Set the default value to the first customer
-    product = models.ForeignKey('product.Product', on_delete=models.CASCADE)
-    balance_amount = models.IntegerField(blank=True, null=True)
-    amount_paid = models.IntegerField(blank=True, null=True)
+    customer_outstanding = models.ForeignKey(CustomerOutstanding, on_delete=models.CASCADE)
+    amount = models.IntegerField(default=0)
 
     class Meta:
         ordering = ('-id',)
@@ -263,37 +260,40 @@ class OutstandingAmount(models.Model):
     def __str__(self):
         return str(self.id)
 
-
 class OutstandingProduct(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    customer = models.ForeignKey(Customers, on_delete=models.CASCADE, default=1)  # Set the default value to the first customer
-    product = models.ForeignKey('product.Product', on_delete=models.CASCADE)
-    amount_paid = models.IntegerField(blank=True, null=True)
-    empty_bottle = models.IntegerField(blank=True, null=True)
+    customer_outstanding = models.ForeignKey(CustomerOutstanding, on_delete=models.CASCADE)
+    empty_bottle = models.IntegerField(default=0)
 
-    
     class Meta:
         ordering = ('-id',)
         
     def __str__(self):
-        return self.product
+        return str(self.empty_bottle)
     
 class OutstandingCoupon(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    coupon_type = models.CharField(max_length=100)
-    balance_leaflet = models.IntegerField(blank=True, null=True)
-    # bookno = models.CharField(max_length=100) 
-    leafletno = models.CharField(max_length=100) 
+    coupon_type = models.ForeignKey(CouponType,on_delete=models.CASCADE)
+    count = models.IntegerField(default=0)
+    customer_outstanding = models.ForeignKey(CustomerOutstanding, on_delete=models.CASCADE)
 
     class Meta:
         ordering = ('-id',)
         
     def __str__(self):
-        return self.coupon_type
+        return str(self.coupon_type)
+    
+class CustomerOutstandingReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    product_type = models.CharField(max_length=200, choices=PRODUCT_TYPES)
+    value = models.IntegerField(default=0)
+    customer = models.ForeignKey('accounts.Customers', on_delete=models.CASCADE)
 
-
-
-
+    class Meta:
+        ordering = ('-id',)
+        
+    def __str__(self):
+        return str(self.id)
 
 class CustomerSupply(models.Model):
         id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

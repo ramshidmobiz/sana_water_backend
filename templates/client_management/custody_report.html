@@ -8,7 +8,7 @@
     <h4 class="fw-medium mb-0">Custody Item Report</h4>
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="javascript:void(0);" class="text-white-30">Client Management</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Custody Issue</li>
+        <li class="breadcrumb-item active" aria-current="page">Custody Items Rport</li>
     </ol>
 </div>
 <div class="main-content app-content">
@@ -19,7 +19,7 @@
                 <div class="card custom-card">
                     <div class="card-header">
                         <div class="card-title">
-                            Custody Issue
+                            Custody Items
                         </div>
                     </div>
                     <div class="mt">
@@ -49,40 +49,34 @@
                                     <tr>
                                         <th rowspan="2">Sl No</th>
                                         <th rowspan="2">Customer</th>
-                                        <th rowspan="2">Mobile No</th>
                                         <th rowspan="2">Building No</th>
                                         <th rowspan="2">Room No/Floor No</th>
-                                        <th rowspan="2">Route</th>
-                                        <th colspan="2">5 Gallon</th>
-                                        <th colspan="2">Dispenser</th>
-                                        <th colspan="2">Cooler</th>
+                                        <th rowspan="2">Item Name</th>
+                                        <th rowspan="2">Agreement Form No</th>
+                                        <th rowspan="2">Product Issued</th>
+                                        <th rowspan="2">Deposit/Non Deposit</th>
+
+                                       
                                     </tr>
-                                    <tr>
-                                        <th>Deposit</th>
-                                        <th>Non-Deposit</th>
-                                        <th>Deposit</th>
-                                        <th>Non-Deposit</th>
-                                        <th>Deposit</th>
-                                        <th>Non-Deposit</th>
-                                    </tr>
+                                    
                                 </thead>
                                 <tbody>
-                                    {% for customer, product_counts in customer_product_counts.items %}
-                                    <tr>
-                                        <td>{{ forloop.counter }}</td>
-                                        <td>{{ customer.customer_name }}</td>
-                                        <td>{{ customer.mobile_no }}</td>
-                                        <td>{{ customer.building_name }}</td>
-                                        <td>{{ customer.door_house_no }}</td>
-                                        <td>{{ customer.routes }}</td>
-                                        <td>{{ product_counts.5_gallon_deposit }}</td>
-                                        <td>{{ product_counts.5_gallon_non_deposit }}</td>
-                                        <td>{{ product_counts.dispenser_deposit }}</td>
-                                        <td>{{ product_counts.dispenser_non_deposit }}</td>
-                                        <td>{{ product_counts.cooler_deposit }}</td>
-                                        <td>{{ product_counts.cooler_non_deposit }}</td>
-                                    </tr>
+        
+
+                                    {% for custody_item_data in custody_items_with_products %}
+                                    {% for item in custody_item_data.custody_custom_items %}
+                                        <tr>
+                                            <td>{{ forloop.counter }}</td>
+                                            <td>{{ item.custody_custom.customer.customer_name }}</td>
+                                            <td>{{ item.custody_custom.customer.building_name }}</td>
+                                            <td>{{ item.custody_custom.customer.door_house_no }}</td>
+                                            <td>{{ item.product.product_name }}</td>
+                                            <td>{{ custody_item_data.custody_custom.agreement_no }}</td>
+                                            <td>{{ custody_item_data.custody_custom.created_date }}</td>
+                                            <td>{{ custody_item_data.custody_custom.deposit_type }}</td>
+                                        </tr>
                                     {% endfor %}
+                                {% endfor %}
                                 </tbody>
                             </table>
                         </div>

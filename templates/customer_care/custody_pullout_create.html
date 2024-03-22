@@ -26,19 +26,19 @@
                         <form enctype="multipart/form-data" role="form" method="post" class="row g-3 needs-validation">
                             {% csrf_token %}
             <!--row 1-->
-            <div class="col-md-6">
-                <div class="form-group required">
-                    <input type="hidden" id="customer" name="" value="{{customer}}"
-                        class="form-control">
-                </div>
-            </div>
+                            <div class="col-md-6">
+                                <div class="form-group required">
+                                    <input type="hidden" id="customer" name="" value="{{customer}}"
+                                        class="form-control">
+                                </div>
+                            </div>
 
-            <div class="col-md-6">
-                <div class="form-group required">
-                    {{ form.customer_custody_item}}
-                </div>
-            </div>
-            
+                            <div class="col-md-6">
+                                <div class="form-group required">
+                                    {{ form.customer_custody_item}}
+                                </div>
+                            </div>
+                            
                             <div class="col-md-6">
                                 <div class="form-group required">
                                     <label class='control-label'>Request Type</label>

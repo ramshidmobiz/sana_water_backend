@@ -70,7 +70,7 @@
                                     <span style="color: red;">{{ form.quantity_issued.errors }}</span>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            {% comment %} <div class="col-md-6">
                                 <div class="form-group required">
                                     <label class='control-label'>Assign Route</label>
                                     {{ form.van_route_id }}
@@ -83,7 +83,7 @@
                                     {{ form.salesman_id }}
                                     <span style="color: red;">{{ form.salesman_id.errors }}</span>
                                 </div>
-                            </div>
+                            </div> {% endcomment %}
                             <div class="col-12 text-end mt-5">
                                 <input type="submit" class="btn btn-primary me-2 mb-2" value="Submit">
                                 <button class="btn btn-success me-md-2  mb-2" type="button" onClick="javascript:history.go(-1);">

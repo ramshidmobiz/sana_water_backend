@@ -309,27 +309,58 @@ class Defaultprice_Delete(View):
 
 #------------------Issue Orders------------------------------------
 
+# def staff_issue_orders_list(request):
+#     instances = Staff_Orders.objects.all().order_by('-created_date')
+    
+#     filter_data = {}
+#     query = request.GET.get("q")
+    
+#     if query:
+
+#         instances = instances.filter(
+#             Q(order_number__icontains=query)
+#         )
+#         title = "Staff issue Orders - %s" % query
+#         filter_data['q'] = query
+
+#     context = {'instances': instances}
+#     return render(request, 'products/staff_issue_orders_list.html', context)
+    
+
 def staff_issue_orders_list(request):
-    instances = Staff_Orders.objects.all().order_by('-created_date')
+    instances = Staff_Orders.objects.filter().order_by('-created_date')
     
     filter_data = {}
     query = request.GET.get("q")
-    
-    if query:
+    date_param = request.GET.get("date")
 
+    if query:
         instances = instances.filter(
             Q(order_number__icontains=query)
         )
         title = "Staff issue Orders - %s" % query
         filter_data['q'] = query
+        
+    if date_param:
+        date = datetime.strptime(date_param, "%Y-%m-%d").date()
+        instances = instances.filter(created_date__date=date)
+        filter_data['date'] = date_param
 
-    context = {'instances': instances}
+    context = {
+        'instances': instances,
+        'filter_data': filter_data
+        }
     return render(request, 'products/staff_issue_orders_list.html', context)
         
 def staff_issue_orders_details_list(request,staff_order_id):
-    staff_orders_details = Staff_Orders_details.objects.filter(staff_order_id__pk=staff_order_id).order_by('-created_date')
+    order = Staff_Orders.objects.get(pk=staff_order_id)
+    staff_orders_details = Staff_Orders_details.objects.filter(staff_order_id=order).order_by('-created_date')
 
-    context = {'staff_orders_details': staff_orders_details}
+    context = {
+        'staff_orders_details': staff_orders_details,
+        'order_date': order.created_date,
+        'order_number': order.order_number
+        }
     return render(request, 'products/staff_issue_orders_details_list.html', context)
 
 @transaction.atomic
@@ -348,7 +379,7 @@ def staffIssueOrdersCreate(request, staff_order_details_id):
                     if 0 < int(quantity_issued) <= int(product_stock.quantity):
                         # Creating Staff Issue Order
                         data = form.save(commit=False)
-                        data.created_by = request.user.id
+                        # data.created_by = request.user.id
                         data.modified_by = request.user.id
                         data.modified_date = datetime.now()
                         data.created_date = datetime.now()
@@ -361,8 +392,9 @@ def staffIssueOrdersCreate(request, staff_order_details_id):
                         product_stock.quantity -= int(quantity_issued)
                         product_stock.save()
                         
+                        van = Van.objects.get(salesman_id__id=issue.staff_order_id.created_by)
                         # Updating VanStock and VanProductStock
-                        van = Van.objects.get(salesman_id__id=form.cleaned_data.get('salesman_id').pk)
+                        # van = Van.objects.get(salesman_id__id=form.cleaned_data.get('salesman_id').pk)
                         vanstock = VanStock.objects.create(
                             created_by=request.user.id,
                             created_date=datetime.now(),
@@ -373,34 +405,22 @@ def staffIssueOrdersCreate(request, staff_order_details_id):
                         )
                         VanProductItems.objects.create(
                             product=issue.product_id,
-                            count=quantity_issued,
+                            count=int(quantity_issued),
                             van_stock=vanstock,
                         )
                         
                         if VanProductStock.objects.filter(product=issue.product_id,stock_type='opening_stock',van=van).exists():
                             van_product_stock = VanProductStock.objects.get(product=issue.product_id,stock_type='opening_stock',van=van)
-                            van_product_stock.count += quantity_issued
+                            van_product_stock.count += int(quantity_issued)
                             van_product_stock.save()
                         else:
                             van_product_stock = VanProductStock.objects.create(
                                 product=issue.product_id,
                                 stock_type='opening_stock',
                                 van=van,
-                                count=quantity_issued
+                                count=int(quantity_issued)
                                 )
                         
-                        
-                        # van_stock, created = VanStock.objects.get_or_create(van__salesman_id__pk=van)
-                        # van_product_item, created = VanProductItems.objects.get_or_create(product=issue.product_id, van_stock=van_stock)
-                        # van_product_stock, created = VanProductStock.objects.get_or_create(product=issue.product_id)
-                        
-                        # van_product_item.count += int(quantity_issued)
-                        # van_product_item.save()
-                        
-                        # van_product_stock.count += int(quantity_issued)
-                        # van_product_stock.save()
-                            
-                        # Updating Staff_Orders_details
                         issue.count = int(issue.count) - int(quantity_issued)
                         issue.save()
                         
@@ -489,9 +509,9 @@ def issue_coupons_orders(request, staff_order_details_id):
                         update_purchase_stock.save()
                         
                         # Update VanStock
-                        van = Van.objects.get(salesman_id=data.salesman_id)
+                        van = Van.objects.get(salesman_id__id=issue_instance.staff_order_id.created_by)
                         
-                        if (update_van_stock:=VanCouponStock.objects.filter(van=van,coupon=coupon,)).exists():
+                        if (update_van_stock:=VanCouponStock.objects.filter(van=van,coupon=coupon,stock_type="opening_stock")).exists():
                             van_stock = update_van_stock.first()
                             van_stock.count += int(data.quantity_issued)
                             van_stock.save()

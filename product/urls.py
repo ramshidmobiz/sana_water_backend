@@ -20,7 +20,7 @@ urlpatterns = [
     
     
 
-    path('staff-issue-orders-list/',staff_issue_orders_list, name='staff_issue_orders_list'),
+    path('staff-issue-orders-list',staff_issue_orders_list, name='staff_issue_orders_list'),
     path('staff-issue-order-details/<str:staff_order_id>/', staff_issue_orders_details_list, name='staff_issue_orders_details_list'),
     
     path('staffIssueOrdersCreate/<str:staff_order_details_id>/',staffIssueOrdersCreate, name='staffIssueOrdersCreate'),

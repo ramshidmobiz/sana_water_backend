@@ -44,7 +44,7 @@ urlpatterns = [
     path('expense_delete/<uuid:expense_id>', ExpenseDelete.as_view(), name="expense_delete"),
     
                                    
-    path('van-stock-product', vanstock, name="vanstock"),
+    path('van-stock-product', VanStock.as_view(), name="vanstock"),
     path('offload', offload, name="offload"),
     
 ]

@@ -45,7 +45,7 @@ class Coupon(models.Model):
     modified_by = models.CharField(max_length=20, null=True, blank=True)
     created_date = models.DateTimeField(auto_now_add=True,blank=True, null=True)
     modified_date = models.DateTimeField(blank=True, null=True)
-    coupon_method = models.CharField(max_length=10,choices=COUPON_METHOD_CHOICES,default='digital',null=True,blank=True)
+    coupon_method = models.CharField(max_length=10,choices=COUPON_METHOD_CHOICES,default='manual',null=True,blank=True)
 
 
     class Meta:

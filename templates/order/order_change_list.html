@@ -5,10 +5,10 @@
 <!-- Page Header -->
 
     <div class="page-header-breadcrumb d-md-flex d-block align-items-center justify-content-between ">
-        <h4 class="fw-medium mb-0">Order Change</h4>
+        <h4 class="fw-medium mb-0">Changed Products</h4>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="javascript:void(0);" class="text-white-30">order</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Order change</li>
+            <li class="breadcrumb-item active" aria-current="page">Changed Products</li>
         </ol>
     </div>
     <div class="main-content app-content">
@@ -21,7 +21,7 @@
                     <div class="card custom-card">
                         <div class="card-header">
                             <div class="card-title">
-                                Changeed Orders 
+                                Changed Products 
                             </div><br>
                                 
                         </div>
@@ -59,8 +59,10 @@
                                     <tr>
                                         <th scope="col" style="border-bottom: 1; max-width: 5em;">Sl No</th>
                                         <th scope="col" style="border-bottom: 1; max-width: 11em;">Customer Name</th>
+                                        <th scope="col">Location, building</th>
+                                        <th scope="col">Flat</th>
                                         <th scope="col" style="border-bottom: 1;">Product Name</th>
-                                        <th scope="col" style="border-bottom: 1;">Changed Quantity</th>
+                                        <th scope="col" style="border-bottom: 1;">Quantity</th>
                                         <th scope="col" style="border-bottom: 1;">Reason</th>
                                         <th scope="col" style="border-bottom: 1;">Action</th>
                                     </tr>
@@ -69,16 +71,27 @@
                                     {% for order_change in order_changes %}
                                         <tr>
                                             <td>{{ forloop.counter }}</td>
-                                            <td>{{ order_change.customer }}</td>
+                                            <td>
+                                                {{ order_change.customer }}<br>
+                                                {{order_change.customer.mobile_no}}
+                                            </td>
+                                            <td>
+                                                {{order_change.customer.location}} <br> 
+                                                {{order_change.customer.building_name}}
+                                            </td>
+                                            <td>
+                                                Floor No: {{ order_change.customer.floor_no }}<br>
+                                                Door No: {{ order_change.customer.door_house_no }}
+                                            </td>
                                             <td>{{ order_change.product }}</td>
                                             <td>{{ order_change.changed_quantity }}</td>
                                             <td>{{ order_change.reason }}</td>
                                             <td>
                                                 
                                                     <div class="g-2">
-                                                        <a href="{% url 'order_change_edit' order_change.order_change_id %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Edit">
+                                                        <!-- <a href="{% url 'order_change_edit' order_change.order_change_id %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Edit">
                                                             <span class="ri-pencil-line fs-14"></span>
-                                                        </a>
+                                                        </a> -->
                                                         <a href="{% url 'order_change_delete' order_change.order_change_id %}"  aria-label="anchor" class="btn btn-danger-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Delete">
                                                             <span class="ri-delete-bin-7-line fs-14"></span>
                                                         </a>
@@ -98,24 +111,36 @@
         </div>
     </div>
     <div id="printArea"  style="display: none; padding: 10em;">
-        <div style="margin-top: 4em;">
+        <div class="text-center" style="margin-top: 4em;">
             <h3>National Water</h3>
         </div>
-        <div class="container" style="padding-top: 1em;"></div>
-        <h5>changed orders</h5>
-        <h6>Route : {{route.route_name}}</h6>
-        <h6>Date : {{date}}</h6>
-        <h6>{% if selected_product %}
-                Product : {{selected_product}}</h6>
-            {% endif %}
-        </h6>
+        <div class="row">
+            <div class="col-12">
+                <h5>Changed orders</h5>
+            </div>
+            <div class="col-3">
+                <h6>Route : {{route.route_name}}</h6>
+            </div>
+            <div class="col-5">
+                <h6>Date : {{date}}</h6>
+            </div>
+            <div class="col-4 ">
+                <h6>{% if selected_product %}
+                        Filterd Product : {{selected_product}}</h6>
+                    {% endif %}
+                </h6>
+            </div>
+        </div>
+        <hr>
         <table class="table table-bordered text-wrap " style="width: 100%; margin-top: 3em;">
             <thead>
                 <tr>
                     <th scope="col" style="border-bottom: 1; max-width: 5em;">Sl No</th>
                     <th scope="col" style="border-bottom: 1; max-width: 15em;">Customer Name</th>
+                    <th scope="col"  style="border-bottom: 1;">Location, building</th>
+                    <th scope="col"  style="border-bottom: 1; min-width: 8em;">Flat</th>
                     <th scope="col" style="border-bottom: 1;">Product Name</th>
-                    <th scope="col" style="border-bottom: 1;">changed Quantity</th>
+                    <th scope="col" style="border-bottom: 1;"> Quantity</th>
                     <th scope="col" style="border-bottom: 1;">Reason</th>
                     
                     
@@ -125,7 +150,15 @@
                 {% for order_change in order_changes %}
                       <tr>  
                         <td>{{ forloop.counter }}</td>
-                        <td>{{ order_change.customer }}</td>
+                        <td>{{ order_change.customer }} <br>{{ order_change.customer.mobile_no }} </td>
+                        <td>
+                            {{order_change.customer.location}} <br> 
+                            {{order_change.customer.building_name}}
+                        </td>
+                        <td>
+                            Floor No: {{ order_change.customer.floor_no }}<br>
+                            Door No: {{ order_change.customer.door_house_no }}
+                        </td>
                         <td>{{ order_change.product }}</td>
                         <td>{{ order_change.changed_quantity }}</td>
                         <td>{{ order_change.reason }}</td>

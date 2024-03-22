@@ -22,6 +22,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from rest_framework.generics import ListAPIView
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 
 
 class RequestType_List(View):
@@ -134,6 +135,36 @@ def requestType(request):
     print("hdfhjfasH",all_requestType)
     context = {'all_requestType': all_requestType}
     return render(request, 'customer_care/all_customers.html', context)
+
+class requestType(View):
+    template_name = 'customer_care/all_customers.html'
+
+    def get(self, request, *args, **kwargs):
+        # Retrieve the query parameter
+        query = request.GET.get("q")
+        route_filter = request.GET.get('route_name')
+        # Start with all customers
+        user_li = Customers.objects.all()
+
+        # Apply filters if they exist
+        if query:
+            user_li = user_li.filter(
+                Q(customer_name__icontains=query) |
+                Q(mobile_no__icontains=query) |
+                Q(routes__route_name__icontains=query) |
+                Q(location__location_name__icontains=query) |
+                Q(building_name__icontains=query)
+            )
+
+        if route_filter:
+            user_li = user_li.filter(routes__route_name=route_filter)
+
+        # Get all route names for the dropdown
+        route_li = RouteMaster.objects.all()
+
+        context = {'user_li': user_li, 'route_li': route_li}
+        return render(request, self.template_name, context)
+    
 
 
          
@@ -472,3 +503,135 @@ class Coupon_Purchse_Create(View):
         except Exception as e:
             print(e)
             return render(request,'customer_care/coupon_create.html')
+        
+import calendar
+from datetime import date, timedelta
+# from .utils import find_next_schedule_date 
+
+def get_weeks_in_month(year, month):
+    _, last_day = calendar.monthrange(year, month)
+    cal = calendar.Calendar()
+    days_in_month = cal.itermonthdays(year, month)
+    weeks = []
+    current_week = []
+    current_week_number = 1
+    for day in days_in_month:
+        if day != 0:
+            current_week.append(day)
+            if len(current_week) == 7 or day == last_day:
+                weeks.append((current_week_number, current_week))
+                current_week_number += 1
+                current_week = []
+    return weeks
+
+def find_next_schedule_date(current_year, current_month):
+    # Get the weeks in the current month
+    weeks_in_month = get_weeks_in_month(current_year, current_month)
+    
+    # Get the current date
+    today = date.today()
+    
+    # Initialize variables to store the next schedule date
+    next_schedule_date = ''
+    
+    # Iterate over the weeks to find the next schedule date
+    for week_number, week_days in weeks_in_month:
+        for day in week_days:
+            # Check if the day is greater than or equal to today's date
+            if date(current_year, current_month, day) >= today:
+                next_schedule_date = date(current_year, current_month, day)
+                break
+        if next_schedule_date:
+            break
+    
+    return next_schedule_date
+
+
+class NewRequestHome(View):
+    template_name = 'customer_care/new_request_home.html'
+    form_class = DiffBottles_Create_Form
+    current_year = date.today().year
+    current_month = date.today().month
+    
+    # Find the next schedule date
+    next_schedule_date = find_next_schedule_date(current_year, current_month)
+
+    # @method_decorator(login_required)
+    def get(self, request, customer_id, *args, **kwargs):
+        try:
+            customer = Customers.objects.get(customer_id=customer_id)
+            
+            
+            initial_data = {'delivery_date': self.next_schedule_date}
+
+            initial_data['mode'] = 'paid'
+            if customer and customer.sales_staff:
+                initial_data['assign_this_to'] = customer.sales_staff.get_fullname()
+            else:
+                initial_data['assign_this_to'] = "Driver"  # Default to "Driver" if no salesman is assigned
+            form = self.form_class(initial=initial_data)
+
+            
+            context = {
+                'customer': customer,
+                'username': customer.customer_name,
+                'building_name': customer.building_name,
+                'mobile_no': customer.mobile_no,
+                'customer_type': customer.customer_type,
+                'door_house_no': customer.door_house_no,
+                'email_id': customer.email_id,
+                'sales_man_name': customer.sales_staff.username,
+                'route': customer.routes.route_name,
+                'form':form
+                # 'next_schedule_date': next_schedule_date
+            }
+          
+            return render(request, self.template_name,context)
+        except Exception as e:
+            print(e)
+            return render(request, self.template_name)
+        
+
+    def post(self, request, customer_id, *args, **kwargs):
+        try:
+            # form = self.form_class()
+            customer = Customers.objects.get(customer_id=customer_id)
+
+            initial_data = {'delivery_date': self.next_schedule_date}
+            if customer and customer.sales_staff:
+                initial_data['assign_this_to'] = customer.sales_staff.get_fullname()
+            else:
+                initial_data['assign_this_to'] = "Driver"  # Default to "Driver" if no salesman is assigned
+            form = self.form_class(request.POST, request.FILES,initial=initial_data)
+            if form.is_valid():
+                data = form.save(commit=False)
+                data.customer = customer
+                data.created_by = str(request.user.id)
+                data.save()
+                messages.success(request, 'Bottles Successfully Added.', 'alert-success')
+                return redirect('requestType')
+            else:
+                messages.error(request, 'Form data is not valid.', 'alert-danger')
+                context = {'form': form}
+                return render(request, self.template_name, context)
+        except Customers.DoesNotExist:
+            messages.error(request, 'Customer does not exist.', 'alert-danger')
+            return render(request, self.template_name)
+
+class WaterDeliveryStatus(View):
+    template_name = 'customer_care/water_delivery_status.html'
+    # form_class = DiffBottles_Create_Form
+
+    # @method_decorator(login_required)
+    def get(self, request, *args, **kwargs):
+        try:
+            instance = DiffBottlesModel.objects.all()
+            print("instance",instance)
+            context = {
+                "instance:instance"}
+          
+            return render(request, self.template_name,context)
+        except Exception as e:
+            print(e)
+            return render(request, self.template_name)
+        

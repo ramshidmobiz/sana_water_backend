@@ -3,6 +3,8 @@ from django.forms import ModelForm
 from .models import *
 from master.models import *
 from client_management.models import *
+from datetime import datetime, timedelta
+
 
 class RequestType_Create_Form(forms.ModelForm):
     class Meta:
@@ -122,25 +124,20 @@ class CustodyPullOutForm(forms.ModelForm):
         }
 
 class DiffBottles_Create_Form(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['request_type'].queryset = RequestTypeMaster.objects.exclude(request_name__in = ['Coupons','Others'])
-        self.fields['mode'].choices = [
-            (choice[0], choice[1]) for choice in self.fields['mode'].choices]
+    # def __init__(self, customer=None, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     self.fields['request_type'].queryset = RequestTypeMaster.objects.exclude(request_name__in=['Coupons', 'Others'])
     class Meta:
         model = DiffBottlesModel
-        fields = ['quantity_required','delivery_date','assign_this_to','mode','amount','request_type']
+        fields = ['quantity_required', 'delivery_date', 'assign_this_to', 'mode', 'request_type']
 
         widgets = {
-            'quantity_required': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'delivery_date': forms.DateInput(attrs={'class': 'form-control', 'type':'date','required': True}),
-            'assign_this_to': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
-            'mode': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'amount': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'request_type': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-
+            'quantity_required': forms.TextInput(attrs={'class': 'form-control','required': False}),
+            'delivery_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'assign_this_to': forms.TextInput(attrs={'class': 'form-control'}),
+            'mode': forms.Select(attrs={'class': 'form-control'}),
+            'request_type': forms.Select(attrs={'class': 'form-control'}),
         }
-
 
 
 class Other_Req_Create_Form(forms.ModelForm):

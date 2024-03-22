@@ -12,12 +12,12 @@ class SaleEntryFilterForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-control', 'required': 'true'})
     )
 
-    search_query = forms.CharField(
-        label='Search',
-        max_length=100,
-        required=False,
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
+    # search_query = forms.CharField(
+    #     label='Search',
+    #     max_length=100,
+    #     required=False,
+    #     widget=forms.TextInput(attrs={'class': 'form-control'})
+    # )
 
 
 from django import forms

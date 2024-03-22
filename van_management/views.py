@@ -7,6 +7,7 @@ from master.models import EmirateMaster, RouteMaster
 from customer_care.models import DiffBottlesModel
 from client_management.models import Vacation
 
+
 from .forms import  *
 import json
 from django.core.serializers import serialize
@@ -19,9 +20,9 @@ from io import BytesIO
 from django.http import HttpResponse
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
-from django.db.models import Q
+from django.db.models import Q,Count,Sum
 from datetime import datetime
-
+import math
 
 
 
@@ -475,7 +476,7 @@ def find_customers(request, def_date, route_id):
                             "floor_no": customer.floor_no,
                             "gps_longitude": customer.gps_longitude,
                             "gps_latitude": customer.gps_latitude,
-                            "customer_type": customer.customer_type,
+                            "customer_type": customer.sales_type,
                         }
                         if customer in emergency_customers:
                             trip_customer['type'] = 'Emergency'
@@ -483,7 +484,6 @@ def find_customers(request, def_date, route_id):
                             trip_customer['type'] = 'Default'
                         trip_customers.append(trip_customer)
         return trip_customers
-
 
 
 import math
@@ -621,26 +621,53 @@ def excel_download(request, route_id, def_date, trip):
         if customer['trip'] == trip:
             customer['serial_number'] = serial_number
             customers.append(customer)
-            serial_number += 1  # Increment serial number
+            serial_number += 1 
 
+    # Prepare data for DataFrame
     data = {
-        'Serial Number': [customer['serial_number'] for customer in customers],
+        'Si No': [customer['serial_number'] for customer in customers],
         'Client Name': [customer['customer_name'] for customer in customers],
         'Mobile': [customer['mobile'] for customer in customers],
         'Locations': [customer['location'] for customer in customers],
+        'Building': [customer['building'] for customer in customers],
+        'Floor': [customer['floor_no'] for customer in customers],
+        'Door': [customer['door_house_no'] for customer in customers],
         'No of Bottles': [customer['no_of_bottles'] for customer in customers],
-        'Outstanding Bottles': ['' for _ in customers],
-        'Outstanding Coupons': ['' for _ in customers],
-        'Type': [customer['type'] for customer in customers]
+        'Out- Bottles': [' ' for _ in customers],
+        'Out- Coupons': [' ' for _ in customers],
+        'Out- Cash': [' ' for _ in customers],
+        'Type': [customer['customer_type'] for customer in customers],
+        'Delivery Type': [customer['type'] for customer in customers]
     }
-
+    total_bottle = 0
+    for customer in customers:
+        total_bottle+=customer['no_of_bottles']
+    # Create DataFrame
     df = pd.DataFrame(data)
+
+    # Convert DataFrame to Excel
     buffer = BytesIO()
-    df.to_excel(buffer, index=False, engine='openpyxl')
-    buffer.seek(0)
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='Sheet1', index=False, startrow=4)
+
+        workbook = writer.book
+        worksheet = writer.sheets['Sheet1']
+
+        table_border_format = workbook.add_format({'border': 1})  
+        worksheet.conditional_format(4, 0, len(df.index) + 4, len(df.columns) - 1, {'type': 'cell', 'criteria': '>', 'value': 0, 'format': table_border_format})
+
+        # Merge cells and write other information with borders
+        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 16, 'border': 1})
+        worksheet.merge_range('A1:M2', f'National Water', merge_format)
+        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
+        worksheet.merge_range('A3:D3', f'Route:    {route.route_name}    {trip}', merge_format)
+        worksheet.merge_range('E3:H3', f'Date: {def_date}', merge_format)
+        worksheet.merge_range('I3:M3', f'Total bottle: {total_bottle}', merge_format)
+        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
+        worksheet.merge_range('A4:LM', '', merge_format)
 
     filename = f"{route.route_name}_{def_date}_{trip}.xlsx"
-    response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'inline; filename="{filename}"'
     return response
 
@@ -785,20 +812,28 @@ class ExpenseDelete(View):
     
     
 # ----------VanStock-----------
+class VanStock(View):
+    
+    def get(self, request, *args, **kwargs):
+        instances = VanCouponStock.objects.all()
+        van_stock = VanProductStock.objects.all()
 
-def vanstock(request):
-    van_stock = VanProductStock.objects.all()
-    # for item in van_stock:
-    #     item.total_stock = item.count + item.product.quantity
-    context = {'van_stock': van_stock}
-    return render(request, 'van_management/vanstock_list.html', context)
+        if request.user.is_authenticated and request.user.user_type == "Salesman":
+            instances = instances.filter(van__salesman_id=request.user.id)
+            van_stock = van_stock.filter(van__salesman_id=request.user.id)
+            
+        # Aggregate the total count of each coupon type for each van
+        van_coupon_counts = instances.values('van__van_make', 'coupon__coupon_type__coupon_type_name').annotate(
+            coupon_count=Sum('count')
+        )
+        
+        # Calculate opening stock based on total count of coupons
+        for van_coupon in van_coupon_counts:
+            van_coupon['opening_stock'] = van_coupon['coupon_count']
+    
+        context = {'van_stock': van_stock, 'van_coupon_counts': van_coupon_counts}
+        return render(request, 'van_management/vanstock_list.html', context)
 
-def van_coupon_stock(request):
-    instances = VanCouponStock.objects.all()
-    context = {
-        'instances': instances
-        }
-    return render(request, 'van_management/van_coupon_stock_list.html', context)
 
 def offload(request):
     van_stock = VanProductStock.objects.all()

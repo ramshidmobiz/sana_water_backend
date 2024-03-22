@@ -21,8 +21,16 @@
             <div class="col-xl-12">
                 <div class="card custom-card">
                     <div class="card-header">
-                        <div class="card-title">
-                            Issue Order Details
+                        <div class="card-title w-100">
+                            <div class="row justify-space-between">
+                                <div class = "col-6">
+                                    Issue Order Details
+                                </div>
+                                <div class = "col-6">
+                                    <p class="date-section m-0" style="font-size: small;">Order Date: {{order_date|date}}</p>
+                                    <p class="oder-number-section m-0" style="font-size: small;">Order No: {{order_number}}</p>
+                                </div>
+                            </div>
                         </div>
                         
                     </div>
@@ -31,11 +39,9 @@
                             <thead>
                                 <tr>
                                     <th scope="col">Sl.No</th>
-                                    <th scope="col">Created Date</th>
-                                    <th scope="col">Order Number</th>
-                                    <th scope="col">Product Name</th>
+                                    <th scope="col">Item name</th>
                                     <th scope="col">Requested Quantity</th>
-                                    {% comment %} <th scope="col">Unit</th> {% endcomment %}
+                                    <th scope="col">Issued Quantity</th>
                                     <th scope="col">Actions</th>
                                 </tr>
                             </thead>
@@ -43,11 +49,9 @@
                                 {% for data in staff_orders_details %}
                                 <tr>
                                     <td style="text-align:center;">{{forloop.counter}}</td>
-                                    <td style="text-align:center;">{{data.created_date|date}}</td>
-                                    <td style="text-align:center;">{{data.staff_order_id.order_number}}</td>
-                                    <td style="text-align:center;">{{data.product_id}}</td>
+                                    <td style="text-align:left;">{{data.product_id}}</td>
                                     <td style="text-align:center;">{{data.count}}</td>
-                                    {% comment %} <td style="text-align:center;">{{ data.product_id.unit }}</td> {% endcomment %}
+                                    <td style="text-align:center;"></td>
                                     <td>
                                         <div class="g-2">
                                             <!-- Add the action button for issuing a quantity -->

@@ -291,7 +291,7 @@ def visit_days_assign(request, customer_id):
     
     form = Day_OfVisit_Form()
     message_content = "Day of visit updated successfully!"
-    
+
     day_visits = None
     if Staff_Day_of_Visit.objects.filter(customer_id=customer_data).exists():
         day_visits = Staff_Day_of_Visit.objects.get(customer_id=customer_data)

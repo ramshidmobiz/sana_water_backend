@@ -26,64 +26,54 @@
                     <div class="" >
                         <form method="post">
                             {% csrf_token %}
-                            <div class="row mt-3 ">
-                                <div class="row col-md-8" style="">
-                                    <button id="selectByDateBtn" class="col-2" style="margin-left: 15px; background-color: white; border: 0;">Select by Date</button>
-                                    <button id="selectByPeriodBtn" class="col-3" style="background-color: white; border: 0;">Select by Period</button>
-                                    <div id="datePeriodDiv" class="row col-12" style="  visibility: hidden;;">
-                                        <div class="col-md-2 col-form-label text-end">
-                                            <h6>Start Date</h6>
+                            <div class="row mt-3">
+                                <div class="row col-md-6">
+                                    <div id="datePeriodDiv" class="row col-12">
+                                        <div class="col-md-3 col-form-label text-end" >
+                                            <p>Start and <br> End Date</p>
                                         </div>
-                                        <div class="col-md-3">
-                                            <input name="start_date" type="date" class="form-select" style="width: min-content;" value="">
-                                        </div>
-                                        <div class="col-md-2 col-form-label text-end">
-                                            <h6>End Date</h6>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <input name="end_date" type="date" class="form-select" style="width: min-content;" value="">
-                                        </div>
-                                    </div>
-                                    <div id="dateDiv" class="row col-12" style=" visibility: hidden;">
-                                        <div class="col-2 col-form-label text-end">
-                                            <h6>Date</h6>
-                                        </div>
-                                        <div class="col-3">
-                                            <input name="date" type="date" class="form-select" style="width: min-content;" value="{{def_date}}">
+                                        
+                                            <div class="col-md-5" >
+                                                <input name="start_date" type="date" class="form-select" style="width: min-content;" value="{% if start_date and end_date %}{{ start_date }}{% endif %}">
+                                            </div>
+                                            
+                                            <div class="col-md-4" >
+                                                <input name="end_date" type="date" class="form-select" style="width: min-content;" value="{% if start_date and end_date %}{{ end_date }}{% endif %}">
+                                            
                                         </div>
                                     </div>
                                 </div>
-                                <div class="row col-md-4" style="">
-                                    <div class="col-md-4 col-form-label text-end">
-                                        <h6>Product</h6>
+                                <div class="row col-md-6" style="">
+                                    <div class="col-md-3 col-form-label text-end">
+                                        <p>Product</p>
                                     </div>
-                                    <div class="col-md-8">
+                                    <div class="col-md-4">
                                         <select name="product" id="product" class="form-select" style="width:100%">
+                                            <option value="" disabled {% if not selected_product %}selected{% endif %}>-----------------------------</option>
                                             {% if selected_product %}
-                                            <option value="{{selected_product_id}}" disabled selected>{{selected_product}}</option>
-                                            {% else %}
-                                            <option value="" disabled selected>-------------</option>
+                                                <option value="{{ selected_product_id }}" selected>{{ selected_product }}</option>
                                             {% endif %}
                                             {% for product in products %}
                                                 <option value="{{ product.product_id }}">{{ product }}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
-                                    <div class="col-md-12 text-end">
-                                        <input type="submit" class="btn btn-primary btn-sm">
+                                    <div class="col-md-5 text-end">
+                                        <input type="submit" class="btn btn-primary btn-sm" value="Apply Filter">
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick="resetFilters()">Reset Filter</button>
                                     </div>
                                 </div>
                             </div>
-                            
                         </form>
+                        
                     </div>
                     <div class="row" style=" align-items: center;">
                         <div class="col-md-6 text-center"> <!-- Column for the text, taking half the width -->
                             <!-- Add your text here -->
-                            <h6>Date: {% if start_date and end_date %}{{ start_date }} -> {{ end_date }}{% elif selected_date %}{{ selected_date }}{% else %}{{ today|date:"Y-m-d" }}{% endif %}</h6>
+                            <!-- <h6>Date: {% if start_date and end_date %}{{ start_date }} -> {{ end_date }}{% elif selected_date %}{{ selected_date }}{% else %}{{ today|date:"Y-m-d" }}{% endif %}</h6> -->
                         </div>
                         <div class="col-4"></div>
-                        <div class="col-md-2"> <!-- Column for the button, taking half the width -->
+                        <!-- <div class="col-md-2"> 
                             <div class="ms-auto">
                                 <a href="{% url 'filter_route' action="change" %}">
                                     <button type="button" class="btn btn-success btn-wave text-end d-flex me-4 my-auto">
@@ -91,7 +81,7 @@
                                     </button>
                                 </a>
                             </div>
-                        </div>
+                        </div> -->
                     </div>
                     <div class="card-body">
                         <table id="datatable-basic" class="table table-bordered text-wrap " style="width: 100%">
@@ -130,39 +120,26 @@
 </div>
 
 
+<!-- <script>
+    function resetFilters(event) {
+        // Reset start and end date inputs
+        event.preventDefault();
+        document.getElementsByName("start_date")[0].value = "";
+        document.getElementsByName("end_date")[0].value = "";
+
+        // Reset selected product
+        var productSelect = document.getElementById("product");
+        productSelect.selectedIndex = 0; // Set the first option as selected
+
+        location.reload();
+    }
+</script> -->
+
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Get all elements with class 'clients-column'
-        var clientsColumns = document.querySelectorAll('.clients-column');
-
-        clientsColumns.forEach(function (column) {
-            // Check if the column is empty
-            if (column.innerText.trim() === '') {
-                column.innerHTML = '<p style="font-style: italic;  ">No clients today in this route.</p>';
-            }
-        });
-    });
-</script>
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const selectByDateBtn = document.getElementById("selectByDateBtn");
-        const selectByPeriodBtn = document.getElementById("selectByPeriodBtn");
-        const dateDiv = document.getElementById("dateDiv");
-        const datePeriodDiv = document.getElementById("datePeriodDiv");
-
-        // Add event listeners to the buttons
-        selectByDateBtn.addEventListener("click", function() {
-            event.preventDefault();
-            dateDiv.style.visibility  = "visible";
-            datePeriodDiv.style.visibility  = "hidden";
-        });
-
-        selectByPeriodBtn.addEventListener("click", function() {
-            event.preventDefault();
-            dateDiv.style.visibility  = "hidden";
-            datePeriodDiv.style.visibility  = "visible";
-        });
-    });
+    function resetFilters() {
+        // Redirect to the same page
+        location.href = "{% url 'order_change' %}";
+    }
 </script>
 
 {% endblock %}

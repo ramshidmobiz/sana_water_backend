@@ -881,3 +881,13 @@ class DetailsView(View):
                 # Add other context data as needed
             }
             return render(request, self.template_name, context)
+        
+# def sales_report(request):
+#     instances = ProductStock.objects.order_by('-created_date')  
+
+#     return render(request, 'products/product_report.html', {'instances': instances})
+       
+        
+        
+        
+        

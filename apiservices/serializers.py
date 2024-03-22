@@ -1,7 +1,9 @@
 
 from rest_framework import serializers
 #from . models import *
-from master.models  import * 
+from rest_framework.views import APIView
+
+from master.models  import *
 from product.models  import * 
 from client_management.models  import * 
 from accounts.serializers import *
@@ -132,21 +134,10 @@ class CustodyCustomerSerializer(serializers.ModelSerializer):
         fields = ['customer_id','customer_name'] 
 
 class CustodyCustomItemsSerializer(serializers.ModelSerializer):
-    # customer = CustodyCustomerSerializer()
-    # product_name = serializers.SerializerMethodField()
-
     
     class Meta:
         model = CustodyCustomItems
         fields = ['id', 'custody_custom', 'product', 'quantity', 'serialnumber', 'amount']
-    
-    # def get_product_name(self, obj):
-    #     try:
-    #         product_name = obj.product.product_name
-    #     except:
-    #         product_name = ""
-
-    #     return product_name
 
 class CustomersSerializer(serializers.ModelSerializer):
     class Meta:
@@ -160,16 +151,21 @@ class LowerCouponCustomersSerializer(serializers.ModelSerializer):
     last_coupon_rate = serializers.SerializerMethodField()
 
     class Meta:
-        model = CustodyCustomItems
+        model = Customers
         fields = '__all__'
-    
-# class CustodyCustomItemSerializer(serializers.ModelSerializer):
-#     customer_id = serializers.PrimaryKeyRelatedField(queryset=Customers.objects.all(), source='customer', write_only=True)
-    
-#     class Meta:
-#         model = CustodyCustomItems
-#         fields = ['id', 'product', 'rate', 'count', 'serialnumber', 'deposit_type', 'deposit_form_number', 'category', 'customer_id']
         read_only_fields = ['id']
+        
+    def get_last_coupon_type(self, obj):
+        coupon_type = ""
+        if (coupon_type:=CustomerCoupon.objects.filter(customer=obj)).exists():
+            coupon_type = coupon_type.latest('created_date').coupon.coupon_type.coupon_type_name
+        return coupon_type
+    
+    def get_last_coupon_rate(self, obj):
+        coupon_rate = ""
+        if (coupon_rate:=CustomerCoupon.objects.filter(customer=obj)).exists():
+            coupon_rate = coupon_rate.latest('created_date').rate
+        return coupon_rate
 
 
 class RechargeCustomerCouponSerializer(serializers.ModelSerializer):
@@ -242,7 +238,6 @@ class SupplyItemFiveCanWaterProductGetSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['product_id', 'product_name','rate','return_for_today','total_to_return']
         fields = ['product_id', 'product_name', 'rate', 'quantity', 'return_for_today', 'total_to_return']
         read_only_fields = ['product_id', 'product_name', 'rate', 'quantity', 'return_for_today', 'total_to_return']
 
@@ -326,11 +321,75 @@ class OutstandingAmountSerializer(serializers.ModelSerializer):
 
 
 class VanCouponStockSerializer(serializers.ModelSerializer):
+    book_no = serializers.SerializerMethodField()
+    number_of_coupons = serializers.SerializerMethodField()
+    number_of_free_coupons = serializers.SerializerMethodField()
+    total_number_of_coupons = serializers.SerializerMethodField()
+    coupon_method = serializers.SerializerMethodField()
+    coupon_type = serializers.SerializerMethodField()
+    rate = serializers.SerializerMethodField()
+    
     class Meta:
         model = VanCouponStock
         fields = '__all__'
-
+        
+    def get_book_no(self, obj):
+        return obj.coupon.book_num
+    
+    def get_number_of_coupons(self, obj):
+        return obj.coupon.no_of_leaflets
+    
+    def get_number_of_free_coupons(self, obj):
+        return obj.coupon.free_leaflets
+    
+    def get_total_number_of_coupons(self, obj):
+        return int(obj.coupon.no_of_leaflets) + int(obj.coupon.free_leaflets)
+    
+    def get_coupon_method(self, obj):
+        return obj.coupon.coupon_method
+    
+    def get_coupon_type(self, obj):
+        coupon_type = CouponType.objects.get(pk=obj.coupon.coupon_type_id).coupon_type_name
+        return coupon_type
+    
+    def get_rate(self, obj):
+        product_item = ProdutItemMaster.objects.get(product_name=obj.coupon.coupon_type.coupon_type_name)
+        rate = Product.objects.filter(product_name=product_item).latest("created_date").rate
+        return rate
+        
 class VanProductStockSerializer(serializers.ModelSerializer):
+    product_name = serializers.SerializerMethodField()
     class Meta:
         model = VanProductStock
         fields = '__all__'
+        
+    def get_product_name(self, obj):
+        return obj.product.product_name
+    
+
+
+class CustomerCouponStockSerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source='customer.customer_name', read_only=True)
+    coupon_type_name = serializers.CharField(source='coupon_type_id.coupon_type_name', read_only=True)
+
+    class Meta:
+        model = CustomerCouponStock
+        fields = ['customer_name', 'count', 'coupon_type_id', 'coupon_type_name']
+
+# class CustomerCouponStockSerializer(serializers.ModelSerializer):
+#     customer_name = serializers.CharField(source='customer.customer_name', read_only=True)
+#     coupon_type_name = serializers.CharField(source='coupon_type_id.coupon_type_name', read_only=True)
+#
+#     class Meta:
+#         model = CustomerCouponStock
+#         fields = ['customer', 'count', 'coupon_type_id']
+
+class CustomerOutstandingSerializer(serializers.Serializer):
+    customer = serializers.UUIDField()
+    building_name = serializers.CharField(max_length=200)
+    route_name = serializers.CharField(max_length=200)
+    route_id = serializers.UUIDField()
+    door_house_no = serializers.CharField(max_length=200)
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    empty_can = serializers.DecimalField(max_digits=10, decimal_places=2)
+    coupons = serializers.DecimalField(max_digits=10, decimal_places=2)

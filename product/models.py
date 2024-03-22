@@ -129,6 +129,7 @@ class Staff_IssueOrders(models.Model):
     coupon_book= models.ForeignKey('coupon_management.NewCoupon',on_delete=models.SET_NULL, null=True, blank=True, related_name='couponsales')
     quantity_issued = models.CharField(max_length=50,null=True, blank=True)
     stock_quantity = models.CharField(max_length=50,null=True, blank=True)
+    van = models.ForeignKey('van_management.Van', null=True, blank=True, on_delete=models.SET_NULL)
 
     STATUS_CHOICES = (
         ('Order Issued','Order Issued'),

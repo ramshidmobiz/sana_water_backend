@@ -70,13 +70,13 @@ class StaffIssueOrdersForm(forms.ModelForm):
     class Meta:
         model = Staff_IssueOrders
         # fields = ['order_number', 'salesman_id', 'staff_Orders_details_id', 'van_route_id', 'product_id', 'quantity_issued', 'status']
-        fields = ['quantity_issued','van_route_id','salesman_id']
+        fields = ['quantity_issued']
 
         widgets = {
             # 'order_number': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'salesman_id': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+            # 'salesman_id': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
             # 'staff_Orders_details_id': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'van_route_id': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+            # 'van_route_id': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
             # 'product_id': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
             'quantity_issued': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
             # 'status': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
@@ -86,10 +86,10 @@ class StaffIssue_CouponsOrdersForm(forms.ModelForm):
     
     class Meta:
         model = Staff_IssueOrders
-        fields = ['quantity_issued', 'van_route_id', 'salesman_id','coupo_no']
+        fields = ['quantity_issued',]
 
         widgets = {
-            'salesman_id': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'van_route_id': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+            # 'salesman_id': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+            # 'van_route_id': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
             'quantity_issued': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
         }

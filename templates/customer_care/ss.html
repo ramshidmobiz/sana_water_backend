@@ -31,73 +31,36 @@
                                 </div>
 
                                 <div class="ms-auto">
-                                    <a href="{% url 'customer_create' %}">
+                                    <a href="{% url 'createcustomer' %}">
                                     <button type="button" class="btn btn-success btn-wave text-end d-flex me-4 my-auto"><i class="bi bi-plus-circle me-1"></i>Create</button>
                                 </a>
                                 </div>
                             </div>
                             
                             <div class="card-body">
-                                
-                                <div style="float:right;padding:10px 10px">
-                                    <form method="GET">
-                                        <div class="input-group">
-                                            <select name="route_name" class="form-select">
-                                                <option value="">All Routes</option>
-                                                {% for route in route_li %}
-                                                    <option value="{{ route.route_name }}">{{ route.route_name }}</option>
-                                                {% endfor %}
-                                            </select>
-                                            <button type="submit" class="btn btn-primary">
-                                                <i class="bi bi-search"></i> Search
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                                <div style="float:right;padding:10px 0px">
-                                    <form >
-                                        <div class="input-group">
-                                            <input type="text" name="q" class="form-control" placeholder="Search ...">
-                                            <button type="submit" class="btn btn-primary">
-                                                <i class="bi bi-search"></i> Search
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                                <table class="table table-bordered text-nowrap" style="width:100%">
+                                <table id="responsiveDataTable" class="table table-bordered text-nowrap" style="width:100%">
                                     <thead>
                                         <tr>
                                         <th scope="col">Sl.No</th>
                                         <th scope="col">Customer Name</th>
                                         <th scope="col">Route</th>
                                         <th scope="col">Location</th>
-                                        <th scope="col">Mobile No</th>
-                                        <th scope="col">Building Name/<br>House No</th>
-                                        <th scope="col">Sales Type</th>
+                                        <th scope="col">Mobile No:</th>
                                         <th scope="col">Actions</th>
                                     </tr>
                                     </thead>
                                     <tbody>
-                                        
-                                        {% load el_pagination_tags %}
-                                        {% paginate 20 user_li %}
-                                        {% for data in user_li %}
+                                        {% for data in all_requestType %}
                                         <tr>
                                             <td style="text-align:center;">{{forloop.counter}}</td>
-                                            <td style="text-align:left;">{{data.customer_name}}</td>
-                                            <td style="text-align:left;">{{data.routes.route_name}}</td>
-                                            <td style="text-align:left;">{{data.location.location_name}}</td>
-                                            <td style="text-align:left;">{{data.mobile_no}}</td>
-                                            <td style="text-align:left;">{{data.building_name}},<br> {{data.door_house_no}}</td>
-                                            <td style="text-align:left;">{{data.sales_type}}</td>
-                                           
+                                            <td style="text-align:center;">{{data.customer_name}}</td>
+                                            <td style="text-align:center;">{{data.routes.route_name}}</td>
+                                            <td style="text-align:center;">{{data.location.location_name}}</td>
+                                            <td style="text-align:center;">{{data.mobile_no}}</td>
                                             <td>
                                                 <div class="g-2">
                                                     <a href="{% url 'customer_details' data.customer_id %}" aria-label="anchor" class="btn  btn-warning-light btn-sm" data-bs-toggle="tooltip" data-bs-original-title="View">
                                                         <span class="bi bi-eye fs-14"></span>
-                                                    </a>
-                                                    <a href="{% url 'new_request_home' data.customer_id %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="New Order">
-                                                        <span class="bi bi-basket fs-14"></span>
                                                     </a>
                                                     <a href="{% url 'change_of_address' data.customer_id %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Change Of Address">
                                                         <span class="bi bi-envelope fs-14"></span>
@@ -108,7 +71,9 @@
                                                     <a href="{% url 'default_bottle_qty' data.customer_id %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Default Bottle Quantity">
                                                         <span class="bi bi-water fs-14"></span>
                                                     </a>
-                                                    
+                                                    <a href="{% url 'bottle_list' data.customer_id %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Dispenser/Filled/Empty Bottles">
+                                                        <span class="bi bi-basket fs-14"></span>
+                                                    </a>
                                                     <a href="{% url 'coupon_purchase_list' data.customer_id %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Coupons">
                                                         <span class="bi bi-ticket-fill fs-14"></span>
                                                     </a>
@@ -121,19 +86,6 @@
                                     {%endfor%}
                                     </tbody>
                                 </table>
-                                {% get_pages %}
-                                <div class="clearfix"></div>
-                                <div class="row pagi my-3">
-                                    <div class="col-sm-6 col-xs-6 tot my-pagination">
-                                        <div class="m-t-10 text-start">
-                                            Showing {{title}}
-                                            <span class="current_page_index">{{ pages.current_start_index }}</span> - <span
-                                            class="current_end_status">{{ pages.current_end_index }}</span> of <span
-                                            class="total_count">{{ pages.total_count }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-6 col-xs-6 text-end pagination-btn-div">{% show_pages %}</div>
-                                </div>
                             </div>
                         </div>
                     </div>

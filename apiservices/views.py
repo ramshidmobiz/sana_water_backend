@@ -6,6 +6,7 @@ from datetime import datetime, date, time
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from rest_framework.generics import DestroyAPIView
 from rest_framework.utils import serializer_helpers
 from accounts.models import *
 from django.db.models import Q
@@ -32,6 +33,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import BasicAuthentication 
 from rest_framework.permissions import BasePermission, IsAuthenticated,IsAuthenticatedOrReadOnly
 
+from client_management.forms import CoupenEditForm
 from master.serializers import *
 from master.functions import generate_serializer_errors
 from master.models import *
@@ -2039,7 +2041,7 @@ class GetCustodyItem_API(APIView):
 # @renderer_classes((JSONRenderer,))
 def get_lower_coupon_customers(request):
     if (inhand_instances:=CustomerCouponStock.objects.filter(count__lte=5)).exists():
-        customers_ids = inhand_instances.values_list('customer__id', flat=True)
+        customers_ids = inhand_instances.values_list('customer__customer_id', flat=True)
         instances = Customers.objects.filter(pk__in=customers_ids)
         
         serialized = LowerCouponCustomersSerializer(instances, many=True, context={"request": request})
@@ -2069,7 +2071,6 @@ def fetch_coupon(request):
     
     van_stocks = VanCouponStock.objects.filter(coupon__coupon_type_id__coupon_type_name=coupon_type,coupon__book_num=book_no)
 
-
     if van_stocks.exists():
         coupons = van_stocks.first().coupon.all()
         
@@ -2092,81 +2093,83 @@ def fetch_coupon(request):
     return Response(response_data, status_code)
 
 
-@api_view(['POST'])
-# @permission_classes((IsAuthenticated,))
-# @renderer_classes((JSONRenderer,))
-def customer_coupon_recharge(request):
-    serializer_varified = False
-    
-    recharge_customer_coupon_serializer = RechargeCustomerCouponSerializer(data=request.data)
-    customer_coupon_payment_serializer = CustomerCouponPaymentSerializer(data=request.data)
-    cash_coupon_payment_perializer = CashCouponPaymentSerializer(data=request.data)
-    cheque_coupon_payment_serializer = ChequeCouponPaymentSerializer(data=request.data)
-    
-    if recharge_customer_coupon_serializer.is_valid() and customer_coupon_payment_serializer.is_valid():
-        if customer_coupon_payment_serializer.validated_data.get('coupon_type') == "credit_coupon" :
-            serializer_varified = True
+class customer_coupon_recharge(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def post(self, request, *args, **kwargs):
+        serializer_verified = False
+        
+        recharge_customer_coupon_serializer = RechargeCustomerCouponSerializer(data=request.data)
+        customer_coupon_payment_serializer = CustomerCouponPaymentSerializer(data=request.data)
+        cash_coupon_payment_serializer = CashCouponPaymentSerializer(data=request.data)
+        cheque_coupon_payment_serializer = ChequeCouponPaymentSerializer(data=request.data)
+        
+        # Validate serializers before accessing errors
+        if (recharge_customer_coupon_serializer.is_valid() and
+                customer_coupon_payment_serializer.is_valid()):
+            if customer_coupon_payment_serializer.validated_data.get('coupon_type') == "credit_coupon":
+                serializer_verified = True
+            else:
+                if customer_coupon_payment_serializer.validated_data.get('payment_type') == "cash":
+                    if cash_coupon_payment_serializer.is_valid():
+                        serializer_verified = True
+                else:
+                    if customer_coupon_payment_serializer.validated_data.get('payment_type') == "cheque":
+                        if cheque_coupon_payment_serializer.is_valid():
+                            serializer_verified = True
+        
+        if serializer_verified:
+            customer_coupon = recharge_customer_coupon_serializer.save(created_by=request.user.id,salesman=request.user)
+            customer_coupon_payment = customer_coupon_payment_serializer.save(customer_coupon=customer_coupon)
+            
+            if not customer_coupon_payment_serializer.validated_data.get('coupon_type') == "credit_coupon":
+                if customer_coupon_payment_serializer.validated_data.get('payment_type') == "cash":
+                    cash_coupon_payment_serializer.save(customer_coupon_payment=customer_coupon_payment)
+                elif customer_coupon_payment_serializer.validated_data.get('payment_type') == "cheque":
+                    cheque_coupon_payment_serializer.save(customer_coupon_payment=customer_coupon_payment)
+                    
+            if (update_customer_coupon_stock:=CustomerCouponStock.objects.filter(
+                    coupon_type_id=customer_coupon.coupon.coupon_type).exists()):
+                stock = CustomerCouponStock.objects.filter(coupon_type_id=customer_coupon.coupon.coupon_type).latest('id')
+                stock.count += 1
+                stock.save()
+            else:
+                CustomerCouponStock.objects.create(
+                    coupon_type_id=customer_coupon.coupon.coupon_type,
+                    customer=customer_coupon.customer,
+                    count=1,
+                )
+            
+            status_code = status.HTTP_200_OK
+            response_data = {
+                "status": status_code,
+                "StatusCode": 6000,
+                "message": "recharge successful"
+            }
         else:
-            if customer_coupon_payment_serializer.validated_data.get('payment_type') == "cash" :
-                if cash_coupon_payment_perializer.is_valid():
-                    serializer_varified = True
-            else :
-                if customer_coupon_payment_serializer.validated_data.get('payment_type') == "cheque" :
-                    if cheque_coupon_payment_serializer.is_valid():
-                        serializer_varified = True
-    
-    if serializer_varified:
-        
-        customer_coupon = recharge_customer_coupon_serializer.save(
-            created_by=request.user,
-        )
-        
-        customer_coupon_payment = customer_coupon_payment_serializer.save(
-            customer_coupon=customer_coupon,
-        )
-        if not customer_coupon_payment_serializer.validated_data.get('coupon_type') == "credit_coupon" :
-            if customer_coupon_payment_serializer.validated_data.get('payment_type') == "cash" :
-                cash_coupon_payment_perializer.save(
-                    customer_coupon_payment=customer_coupon_payment
-                    )
-            elif customer_coupon_payment_serializer.validated_data.get('payment_type') == "cheque" :
-                cheque_coupon_payment_serializer.save(
-                    customer_coupon_payment=customer_coupon_payment
-                    )
-                
-        if (update_customer_coupon_stock:=CustomerCouponStock.objects.filter(coupon_type_id=customer_coupon.coupon.coupon_type,is_deleted=False)).exists():
-            stock = CustomerCouponStock.objects.get(coupon_type_id=customer_coupon.coupon.coupon_type,is_deleted=False)
-            stock.count += 1
-            stock.save()
-        else:
-            CustomerCouponStock.objects.create(
-                coupon_type_id = customer_coupon.coupon.coupon_type,
-                customer = customer_coupon.customer,
-                count = 1,
-            )
-        
-        status_code = status.HTTP_200_OK
-        response_data = {
-            "status": status_code,
-            "StatusCode": 6000,
-            "message": "recharge successfull"
-        }
-    else:
-        recharge_customer_coupon_error = generate_serializer_errors(recharge_customer_coupon_serializer.errors)
-        customer_coupon_payment_error = generate_serializer_errors(customer_coupon_payment_serializer.errors)
-        cash_coupon_payment_error = generate_serializer_errors(cash_coupon_payment_perializer.errors)
-        cheque_coupon_payment_error = generate_serializer_errors(cheque_coupon_payment_serializer.errors)
+            recharge_customer_coupon_serializer.is_valid()
+            customer_coupon_payment_serializer.is_valid()
+            cash_coupon_payment_serializer.is_valid()
+            cheque_coupon_payment_serializer.is_valid()
+            
+            recharge_customer_coupon_error = generate_serializer_errors(recharge_customer_coupon_serializer.errors)
+            customer_coupon_payment_error = generate_serializer_errors(customer_coupon_payment_serializer.errors)
+            cash_coupon_payment_error = generate_serializer_errors(cash_coupon_payment_serializer.errors)
+            cheque_coupon_payment_error = generate_serializer_errors(cheque_coupon_payment_serializer.errors)
 
-        combined_errors = "\n".join([recharge_customer_coupon_error,customer_coupon_payment_error,cash_coupon_payment_error,cheque_coupon_payment_error])
-        
-        status_code = status.HTTP_400_BAD_REQUEST
-        response_data = {
-            "status": status_code,
-            "StatusCode": 6001,
-            "message": combined_errors,
-        }
+            combined_errors = "\n".join([recharge_customer_coupon_error, customer_coupon_payment_error,
+                                        cash_coupon_payment_error, cheque_coupon_payment_error])
 
-    return Response(response_data, status=status_code)
+            status_code = status.HTTP_400_BAD_REQUEST
+            response_data = {
+                "status": status_code,
+                "StatusCode": 6001,
+                "message": combined_errors,
+            }
+
+        return Response(response_data, status=status_code)
+
+
     
 from django.shortcuts import get_object_or_404
 
@@ -2488,19 +2491,48 @@ class OutstandingAmountAPI(APIView):
         
 
 class VanStockAPI(APIView):
+    
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
-    def get(self, request):
+
+    def get(self, request, *args, **kwargs):
+        salesman_id = request.user.id 
         coupon_stock = VanCouponStock.objects.all()
         product_stock = VanProductStock.objects.all()
+
+        if salesman_id:
+            coupon_stock = coupon_stock.filter(van__salesman_id=salesman_id)
+            product_stock = product_stock.filter(van__salesman_id=salesman_id)
+
         coupon_serializer = VanCouponStockSerializer(coupon_stock, many=True)
         product_serializer = VanProductStockSerializer(product_stock, many=True)
-        print("coupon_serializer",coupon_serializer)
-        print("product_serializer",product_serializer)
+
         return Response({
             'coupon_stock': coupon_serializer.data,
             'product_stock': product_serializer.data
         }, status=status.HTTP_200_OK)
+    # authentication_classes = [BasicAuthentication]
+    # permission_classes = [IsAuthenticated]
+    
+    # def get(self, request, *args, **kwargs):
+    #     # id = request.user.id
+    #     # print("id",id)
+    #     # customer=Customers.objects.filter(sales_staff__id = id)
+    #     # print("customer",customer)
+    #     coupon_stock = VanCouponStock.objects.all()
+    #     product_stock = VanProductStock.objects.all()
+    #     # if product_stock:
+    #     #     salesman=product_stock.van.salesman
+    #     #     print("salesman",salesman)
+    #     coupon_serializer = VanCouponStockSerializer(coupon_stock, many=True)
+    #     product_serializer = VanProductStockSerializer(product_stock, many=True)
+    #     print("coupon_serializer",coupon_serializer)
+    #     print("product_serializer",product_serializer)
+    #     return Response({
+    #         # 'customer':customer,
+    #         'coupon_stock': coupon_serializer.data,
+    #         'product_stock': product_serializer.data
+    #     }, status=status.HTTP_200_OK)
 
 class OutstandingAmountListAPI(APIView):
     authentication_classes = [BasicAuthentication]
@@ -2517,16 +2549,168 @@ class OutstandingAmountListAPI(APIView):
         serializer =CustodyCustomItemListSerializer(custody_items, many=True)
         return Response(serializer.data)
     
-class VanStockAPI(APIView):
-    def get(self, request):
-        coupon_stock = VanCouponStock.objects.all()
-        product_stock = VanProductStock.objects.all()
-        coupon_serializer = VanCouponStockSerializer(coupon_stock, many=True)
-        product_serializer = VanProductStockSerializer(product_stock, many=True)
-        print("coupon_serializer",coupon_serializer)
-        print("product_serializer",product_serializer)
-        return Response({
-            'coupon_stock': coupon_serializer.data,
-            'product_stock': product_serializer.data
-        }, status=status.HTTP_200_OK)
-    
+# class CouponCountListAPI(APIView):
+#     def get(self, request, pk, format=None):
+#         try:
+#             customer = Customers.objects.get(customer_id=pk)
+#         except Customers.DoesNotExist:
+#             return Response({"message": "Customer not found"}, status=status.HTTP_404_NOT_FOUND)
+#
+#         customers = CustomerCouponStock.objects.filter(customer=customer)
+#         serializer = CustomerCouponStockSerializer(customers, many=True)
+#         return Response(serializer.data)
+
+
+
+#
+# class CouponCountList(APIView):
+#
+#     def get(self, request, pk, format=None):
+#         try:
+#             customer = Customers.objects.get(customer_id=pk)
+#             customers = CustomerCouponStock.objects.filter(customer=customer)
+#
+#             data = []
+#             for customer_stock in customers:
+#                 data.append({
+#                     'customer_name': customer_stock.customer.customer_name,
+#                     'coupon_count': customer_stock.count
+#                 })
+#
+#             return Response(data, status=status.HTTP_200_OK)
+#         except Customers.DoesNotExist:
+#             return Response({'error': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
+#         except Exception as e:
+#             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CouponCountList(APIView):
+
+    def get(self, request, pk, format=None):
+        print("View accessed with customer_id:ssssssssssssssssssssssssssss", pk)  # Print statement for debugging
+        try:
+            customer = Customers.objects.get(customer_id=pk)
+            customers = CustomerCouponStock.objects.filter(customer=customer)
+
+            data = []
+            for customer_stock in customers:
+                data.append({
+                    'customer_name': customer_stock.customer.customer_name,
+                    'coupon_count': customer_stock.count,
+                    'coupon_type':customer.coupon_type_id.coupon_type_name
+                })
+
+            return Response(data, status=status.HTTP_200_OK)
+        except Customers.DoesNotExist:
+            return Response({'error': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CouponCountListAPI(APIView):
+    def get(self, request, pk, format=None):
+        try:
+            customer = Customers.objects.get(customer_id=pk)
+            customers = CustomerCouponStock.objects.filter(customer=customer)
+            serializer = CustomerCouponStockSerializer(customers, many=True)
+            return Response(serializer.data)
+        except Customers.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+    def post(self, request, pk, format=None):
+        try:
+            customer = Customers.objects.get(customer_id=pk)
+            serializer = CustomerCouponStockSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(customer=customer)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Customers.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+class NewCouponCreateAPI(APIView):
+    def post(self, request, format=None):
+        serializer = CustomerCouponStockSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class NewCouponCountAPI(APIView):
+    def post(self, request, pk):
+        form = CoupenEditForm(request.data)
+        if form.is_valid():
+            data = form.save(commit=False)
+            try:
+                data.customer = Customers.objects.get(pk=pk)
+                data.save()
+                return Response({'message': 'New coupon count added successfully!'}, status=status.HTTP_201_CREATED)
+            except Customers.DoesNotExist:
+                return Response({'message': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# class DeleteCouponCountAPI(DestroyAPIView):
+#     queryset = CustomerCouponStock.objects.all()
+#     serializer_class = CoupenEditForm
+#     lookup_field = 'pk'
+
+
+#
+# class DeleteCouponCountAPI(DestroyAPIView):
+#     queryset = CustomerCouponStock.objects.all()
+#
+#     def delete(self, request, pk):
+#         customer_coupon_stock = get_object_or_404(CustomerCouponStock, pk=pk)
+#         customer_pk = customer_coupon_stock.customer.pk
+#         customer_coupon_stock.delete()
+#         return Response({'message': 'Coupon count deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
+
+class DeleteCouponCount(APIView):
+    def delete(self, request, pk):
+        customer_coupon_stock = get_object_or_404(CustomerCouponStock, pk=pk)
+        customer_pk = customer_coupon_stock.customer.pk
+        customer_coupon_stock.delete()
+        return Response({'message': 'Coupon count deleted successfully!', 'customer_pk': str(customer_pk)}, status=status.HTTP_200_OK)
+
+
+class customer_outstanding(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get(self, request, *args, **kwargs):
+            reports = CustomerOutstandingReport.objects.all()
+            
+            # if request.user and request.user.user_type=="Salesman":
+            customer_data = {}
+            for report in reports:
+                customer_id = report.customer.pk
+                if customer_id not in customer_data:
+                    customer_data[customer_id] = {
+                        'customer': report.customer.pk,
+                        'building_name': report.customer.building_name,
+                        'route_name': report.customer.routes.route_name,
+                        'route_id': report.customer.routes.pk,
+                        'door_house_no': report.customer.door_house_no,
+                        'floor_no': report.customer.floor_no,
+                        'amount': 0,
+                        'empty_can': 0,
+                        'coupons': 0
+                    }
+                
+                # Add product values based on product type
+                if report.product_type == 'amount':
+                    customer_data[customer_id]['amount'] += report.value
+                elif report.product_type == 'emptycan':
+                    customer_data[customer_id]['empty_can'] += report.value
+                elif report.product_type == 'coupons':
+                    customer_data[customer_id]['coupons'] += report.value
+                    
+            # print(customer_data)
+            
+            serialized_data = CustomerOutstandingSerializer(data=list(customer_data.values()), many=True)
+            serialized_data.is_valid()  # Ensure data is valid
+            return Response({
+                'status': True, 
+                'data': serialized_data.data,  # Access serialized data
+                'message': 'success'
+            })

@@ -3,7 +3,7 @@ import json
 import datetime
 
 from django.views import View
-from django.db.models import Q
+from django.db.models import Q, Sum, Count
 from django.urls import reverse
 from django.contrib import messages
 from django.db import transaction, IntegrityError
@@ -18,6 +18,7 @@ from product.models import *
 from accounts.models import *
 from master.functions import generate_form_errors
 from master.models import RouteMaster, LocationMaster
+from van_management.models import Van, Van_Routes
 # from sales_management.forms import CustomerCustodyForm, ProductForm
 
 from django.template.loader import get_template
@@ -715,98 +716,8 @@ def custody_items_list_report(request):
         # else:
         
         return render(request, 'client_management/custody_items_list_report.html', {'instances': instances})
-    
-
-# def custody_issue(request):
-#     if request.method == 'GET':
-#         instances = CustodyCustom.objects.all()
-#         gallon_deposit_counter = 0
-#         gallon_non_deposit_counter = 0
-#         dispenser_deposit_counter = 0
-#         dispenser_non_deposit_counter = 0
-#         cooler_deposit_counter = 0
-#         cooler_non_deposit_counter = 0
-
-#         for item in instances:
-#             for custody_item in item.custodycustomitems_set.all():
-#                 customer=custody_item.custody_custom.customer_id
-#                 print("customer",customer)
-#                 product = custody_item.product
-#                 print("product",product)
-#                 if product:
-#                     if product.product_name == '5 Gallon':
-#                         if custody_item.custody_custom.deposit_type == 'deposit':
-#                             gallon_deposit_counter += 1
-#                         else:
-#                             gallon_non_deposit_counter += 1
-#                     elif product.product_name == 'Dispenser':
-#                         if custody_item.custody_custom.deposit_type == 'deposit':
-#                             dispenser_deposit_counter += 1
-#                         else:
-#                             dispenser_non_deposit_counter += 1
-#                     elif product.product_name == 'Cooler':
-#                         if custody_item.custody_custom.deposit_type == 'deposit':
-#                             cooler_deposit_counter += 1
-#                         else:
-#                             cooler_non_deposit_counter += 1
-
-#         return render(request, 'client_management/custody_issue.html', {
-#             'instances': instances,
-#             'gallon_deposit_counter': gallon_deposit_counter,
-#             'gallon_non_deposit_counter': gallon_non_deposit_counter,
-#             'dispenser_deposit_counter': dispenser_deposit_counter,
-#             'dispenser_non_deposit_counter': dispenser_non_deposit_counter,
-#             'cooler_deposit_counter': cooler_deposit_counter,
-#             'cooler_non_deposit_counter': cooler_non_deposit_counter,
-#         })
 
 
-
-
-# def custody_issue(request):
-#     if request.method == 'GET':
-#         instances = CustodyCustom.objects.all()
-        
-#         # Create a dictionary to store counts for each customer
-#         customer_product_counts = {}
-
-#         for instance in instances:
-#             customer = instance.customer
-#             customer_product_counts[customer] = {
-#                 '5_gallon_deposit': 0,
-#                 '5_gallon_non_deposit': 0,
-#                 'dispenser_deposit': 0,
-#                 'dispenser_non_deposit': 0,
-#                 'cooler_deposit': 0,
-#                 'cooler_non_deposit': 0,
-#             }
-
-#             # Filter CustodyCustomItems for the current customer
-#             custody_items = instance.custodycustomitems_set.all()
-
-#             # Count products for the current customer
-#             for custody_item in custody_items:
-#                 product = custody_item.product
-#                 if product:
-#                     if product.product_name == '5 Gallon':
-#                         if custody_item.custody_custom.deposit_type == 'deposit':
-#                             customer_product_counts[customer]['5_gallon_deposit'] += 1
-#                         else:
-#                             customer_product_counts[customer]['5_gallon_non_deposit'] += 1
-#                     elif product.product_name == 'Dispenser':
-#                         if custody_item.custody_custom.deposit_type == 'deposit':
-#                             customer_product_counts[customer]['dispenser_deposit'] += 1
-#                         else:
-#                             customer_product_counts[customer]['dispenser_non_deposit'] += 1
-#                     elif product.product_name == 'Cooler':
-#                         if custody_item.custody_custom.deposit_type == 'deposit':
-#                             customer_product_counts[customer]['cooler_deposit'] += 1
-#                         else:
-#                             customer_product_counts[customer]['cooler_non_deposit'] += 1
-
-#         return render(request, 'client_management/custody_issue.html', {
-#             'customer_product_counts': customer_product_counts,
-#         })
 def custody_issue(request):
     instances = CustodyCustom.objects.all()
 
@@ -819,7 +730,6 @@ def custody_issue(request):
         instances = instances.filter(created_date__range=[start_date, end_date])
     
 
-    # Create a dictionary to store counts for each customer
     customer_product_counts = {}
 
     for instance in instances:
@@ -835,10 +745,8 @@ def custody_issue(request):
                 'cooler_non_deposit': 0,
             }
 
-        # Filter CustodyCustomItems for the current instance
         custody_items = instance.custodycustomitems_set.all()
 
-        # Count products for the current customer
         for custody_item in custody_items:
             product = custody_item.product
             if product:
@@ -858,6 +766,406 @@ def custody_issue(request):
                     else:
                         customer_product_counts[customer]['cooler_non_deposit'] += 1
 
-    return render(request, 'client_management/custody_issue.html', {
-        'customer_product_counts': customer_product_counts,'customer':customer
-    })
+    return render(request, 'client_management/custody_issue.html', {'customer_product_counts': customer_product_counts})
+
+
+def get_customercustody(request, customer_id):
+    customer = Customers.objects.get(customer_id=customer_id)  # Use get() if customer_id is unique
+    print(customer, "customer")
+    
+    custody_items = CustodyCustom.objects.filter(customer=customer)
+    print("custody_items", custody_items)
+    
+    custody_items_with_products = []
+    
+    for custody_item in custody_items:
+        custody_custom_items = CustodyCustomItems.objects.filter(custody_custom=custody_item)
+        custody_item_data = {
+            'custody_custom': custody_item,
+            'custody_custom_items': custody_custom_items,
+            'products': [item.product for item in custody_custom_items]  
+        }
+        custody_items_with_products.append(custody_item_data)
+
+    context = {'custody_items_with_products': custody_items_with_products,'customer':customer}
+    return render(request, 'client_management/customer_custody_items.html', context)
+
+def custody_report(request):
+    instances = CustodyCustom.objects.all()
+
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    if start_date_str and end_date_str:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        instances = instances.filter(created_date__range=[start_date, end_date])
+        # custody_items = instance.custodycustomitems_set.all()
+
+    custody_items_with_products = []
+    
+    for custody_item in instances:
+        custody_custom_items = CustodyCustomItems.objects.filter(custody_custom=custody_item)
+        custody_item_data = {
+            'custody_custom': custody_item,
+            'custody_custom_items': custody_custom_items,
+            'products': [item.product for item in custody_custom_items]  
+        }
+        custody_items_with_products.append(custody_item_data)
+
+    context = {'custody_items_with_products': custody_items_with_products,'instances':instances}
+    return render(request, 'client_management/custody_report.html', context)
+        # return render(request, self.template_name, context)
+
+
+
+class CouponCountList(View):
+    template_name = 'client_management/coupon_count_list.html'
+
+    def get(self, request, pk, *args, **kwargs):
+        customer = Customers.objects.get(customer_id=pk)
+        customers = CustomerCouponStock.objects.filter(customer=customer)
+
+        context = {
+            'customers': customers,
+            'pk': pk,  # Pass pk to the template context
+        }
+
+        return render(request, self.template_name, context)
+
+    def post(self, request, pk, *args, **kwargs):
+        customer = Customers.objects.get(customer_id=pk)
+        coupon_code = request.POST.get('coupon_code')
+        CustomerCouponStock.objects.create(customer=customer, coupon_code=coupon_code)
+        return redirect('coupon_count_list', pk=pk)
+
+
+
+#
+# def edit_coupon_count(request, pk):
+#     customer_coupon_stock = get_object_or_404(CustomerCouponStock, customer_id=pk)
+#     form = CoupenEditForm(instance=customer_coupon_stock)
+#
+#     if request.method == 'POST':
+#         form = CoupenEditForm(request.POST, instance=customer_coupon_stock)
+#         if form.is_valid():
+#             form.save()
+#             messages.success(request, 'Customer Coupon Stock Updated successfully!')
+#             return redirect('customers')
+#         else:
+#             messages.error(request, 'Invalid form data. Please check the input.')
+#
+#     return render(request, 'client_management/edit_coupon_count.html', {'form': form})
+
+def new_coupon_count(request,pk):
+    if request.method == 'POST':
+        form = CoupenEditForm(request.POST)
+        if form.is_valid():
+            data = form.save(commit=False)
+            data.customer = Customers.objects.get(pk=pk)
+            data.save()
+
+            messages.success(request, 'New coupon count added successfully!')
+            return redirect('coupon_count_list' ,data.customer_id)
+        else:
+            messages.error(request, 'Invalid form data. Please check the input.')
+    else:
+        form = CoupenEditForm()
+
+    return render(request, 'client_management/edit_coupon_count.html', {'form': form})
+
+def delete_coupon_count(request, pk):
+    customer_coupon_stock = get_object_or_404(CustomerCouponStock, pk=pk)
+
+    if request.method == 'POST':
+        customer_pk = customer_coupon_stock.customer.pk
+        customer_coupon_stock.delete()
+        messages.success(request, 'Coupon count deleted successfully!')
+        return redirect('coupon_count_list', pk=customer_pk)
+
+    return redirect('coupon_count_list')
+
+@login_required
+def customer_outstanding_list(request):
+    """
+    Customer Outstanding List
+    :param request:
+    :return: Customer Outstanding list view
+    """
+    reports = CustomerOutstandingReport.objects.all()
+    
+    if request.GET.get("customer_pk"):
+        reports = reports.filter(customer__pk=request.GET.get("customer_pk"))
+
+    # Organize data for rendering in the template
+    customer_data = {}
+    for report in reports:
+        customer_id = report.customer.pk
+        if customer_id not in customer_data:
+            customer_data[customer_id] = {
+                'customer': report.customer,
+                'amount': 0,
+                'empty_can': 0,
+                'coupons': 0
+            }
+        
+        # Add product values based on product type
+        if report.product_type == 'amount':
+            customer_data[customer_id]['amount'] += report.value
+        elif report.product_type == 'emptycan':
+            customer_data[customer_id]['empty_can'] += report.value
+        elif report.product_type == 'coupons':
+            customer_data[customer_id]['coupons'] += report.value
+            
+    context = {
+        'customer_data': customer_data.values(),
+        'page_name' : 'Customer Outstanding List',
+        'page_title' : 'Customer Outstanding List',
+        'customer_pk': request.GET.get("customer_pk"),
+        
+        'is_customer_outstanding': True,
+        'is_need_datetime_picker': True,
+    }
+
+    return render(request, 'client_management/customer_outstanding/list.html', context)
+
+@login_required
+def create_customer_outstanding(request):
+    customer_pk = request.GET.get("customer_pk")
+    
+    message = ''
+    if request.method == 'POST':
+        if not customer_pk :
+            customer_outstanding_form = CustomerOutstandingForm(request.POST)
+        else:
+            customer_outstanding_form = CustomerOutstandingSingleForm(request.POST)
+            
+        customer_outstanding_amount_form = CustomerOutstandingAmountForm(request.POST)
+        customer_outstanding_bottles_form = CustomerOutstandingBottleForm(request.POST)
+        customer_outstanding_coupon_form = CustomerOutstandingCouponsForm(request.POST)
+        
+        is_form_valid = False
+        if request.POST.get('product_type') == "amount":
+            if customer_outstanding_form.is_valid() and customer_outstanding_amount_form.is_valid():
+                is_form_valid = True
+            else:
+                message = generate_form_errors(customer_outstanding_form,formset=False)
+                message += generate_form_errors(customer_outstanding_amount_form,formset=False)
+                
+        if request.POST.get('product_type') == "emptycan":
+            if customer_outstanding_form.is_valid() and customer_outstanding_bottles_form.is_valid():
+                is_form_valid = True
+            else:
+                message = generate_form_errors(customer_outstanding_form,formset=False)
+                message += generate_form_errors(customer_outstanding_bottles_form,formset=False)
+                
+        if request.POST.get('product_type') == "coupons":
+            if customer_outstanding_form.is_valid() and customer_outstanding_coupon_form.is_valid():
+                is_form_valid = True
+            else:
+                message = generate_form_errors(customer_outstanding_form,formset=False)
+                message += generate_form_errors(customer_outstanding_coupon_form,formset=False)
+            
+        if is_form_valid :
+            try:
+                with transaction.atomic():
+                    # Save customer_outstanding_form data
+                    outstanding_data = customer_outstanding_form.save(commit=False)
+                    outstanding_data.created_by = request.user.id
+                    outstanding_data.created_date = datetime.today()
+                    if customer_pk :
+                        print("custo_pk")
+                        outstanding_data.customer = Customers.objects.get(pk=customer_pk)
+                    outstanding_data.save()
+                    
+                    # Save data based on product type
+                    if outstanding_data.product_type == "amount":
+                        outstanding_amount = customer_outstanding_amount_form.save(commit=False)
+                        outstanding_amount.customer_outstanding = outstanding_data
+                        outstanding_amount.save()
+                        
+                        # Check if there is an existing report entry
+                        existing_report = CustomerOutstandingReport.objects.filter(
+                            customer=outstanding_data.customer,
+                            product_type='amount'
+                        ).first()
+                        
+                        if existing_report:
+                            existing_report.value += outstanding_amount.amount
+                            existing_report.save()
+                        else:
+                            CustomerOutstandingReport.objects.create(
+                                product_type='amount',
+                                value=outstanding_amount.amount,
+                                customer=outstanding_data.customer
+                            )
+                    
+                    elif outstanding_data.product_type == "emptycan":
+                        outstanding_bottle = customer_outstanding_bottles_form.save(commit=False)
+                        outstanding_bottle.customer_outstanding = outstanding_data
+                        outstanding_bottle.save()
+                        
+                        # Similar logic for empty can
+                        # Check if there is an existing report entry
+                        existing_report = CustomerOutstandingReport.objects.filter(
+                            customer=outstanding_data.customer,
+                            product_type='emptycan'
+                        ).first()
+                        
+                        if existing_report:
+                            existing_report.value += outstanding_bottle.empty_bottle
+                            existing_report.save()
+                        else:
+                            CustomerOutstandingReport.objects.create(
+                                product_type='emptycan',
+                                value=outstanding_bottle.empty_bottle,
+                                customer=outstanding_data.customer
+                            )
+                        
+                    elif outstanding_data.product_type == "coupons":
+                        outstanding_coupon = customer_outstanding_coupon_form.save(commit=False)
+                        outstanding_coupon.customer_outstanding = outstanding_data
+                        outstanding_coupon.save()
+                        
+                        # Similar logic for coupons
+                        # Check if there is an existing report entry
+                        existing_report = CustomerOutstandingReport.objects.filter(
+                            customer=outstanding_data.customer,
+                            product_type='coupons'
+                        ).first()
+                        
+                        if existing_report:
+                            existing_report.value += outstanding_coupon.count
+                            existing_report.save()
+                        else:
+                            CustomerOutstandingReport.objects.create(
+                                product_type='coupons',
+                                value=outstanding_coupon.count,
+                                customer=outstanding_data.customer
+                            ) 
+                                        
+                    if not customer_pk:
+                        redirect_url = reverse('customer_outstanding_list')
+                    else:
+                        redirect_url = reverse('customer_outstanding_list') + f'?customer_pk={customer_pk}'
+                        
+                    response_data = {
+                        "status": "true",
+                        "title": "Successfully Created",
+                        "message": "Customer Supply created successfully.",
+                        'redirect': 'true',
+                        'redirect_url': redirect_url,
+                    }
+                    
+            except IntegrityError as e:
+                # Handle database integrity error
+                response_data = {
+                    "status": "false",
+                    "title": "Failed",
+                    "message": str(e),
+                }
+
+            except Exception as e:
+                # Handle other exceptions
+                response_data = {
+                    "status": "false",
+                    "title": "Failed",
+                    "message": str(e),
+                }
+        else:
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": message,
+            }
+
+        return HttpResponse(json.dumps(response_data), content_type='application/javascript')
+    
+    else:
+        if not customer_pk :
+            customer_outstanding_form = CustomerOutstandingForm()
+        else:
+            customer_outstanding_form = CustomerOutstandingSingleForm()
+        
+        customer_outstanding_amount_form = CustomerOutstandingAmountForm()
+        customer_outstanding_bottles_form = CustomerOutstandingBottleForm()
+        customer_outstanding_coupon_form = CustomerOutstandingCouponsForm()
+        
+        context = {
+            'customer_outstanding_form': customer_outstanding_form,
+            'customer_outstanding_amount_form': customer_outstanding_amount_form,
+            'customer_outstanding_bottles_form': customer_outstanding_bottles_form,
+            'customer_outstanding_coupon_form': customer_outstanding_coupon_form,
+            'customer_pk': customer_pk,
+            "url": reverse('create_customer_outstanding'),
+            
+            'page_title': 'Create customer supply',
+            'customer_outstanding_page': True,
+            'is_need_datetime_picker': True
+        }
+        
+        return render(request,'client_management/customer_outstanding/create.html',context)
+
+
+# customer count
+def customer_count(request):
+    routes = RouteMaster.objects.all()
+    total_cash = 0
+    total_credit = 0
+    total_coupon = 0
+    total_customers = 0
+    customer_counts = []
+    customer = Customers.objects.all().count()
+    for route in routes:
+        sales_man = ''
+        van_route = Van_Routes.objects.filter(routes=route).first()
+        if van_route and van_route.van:
+            sales_man = van_route.van.salesman
+        
+        cash_count = Customers.objects.filter(routes=route, sales_type='CASH').count()
+        credit_count = Customers.objects.filter(routes=route, sales_type='CREDIT').count()
+        coupon_count = Customers.objects.filter(routes=route, sales_type__in=['CASH COUPON', 'CREDIT COUPON']).count()
+
+        total_cash += cash_count
+        total_credit += credit_count
+        total_coupon += coupon_count
+        total_customers += cash_count + credit_count + coupon_count
+
+        if cash_count+credit_count+coupon_count != 0:
+            customer_counts.append({
+                'route_name': route.route_name,
+                'sales_man': sales_man,
+                'cash_count': cash_count,
+                'credit_count': credit_count,
+                'coupon_count': coupon_count,
+                'total_customer': cash_count + credit_count + coupon_count
+            })
+
+    # customers with no route specified
+    cash_count = Customers.objects.filter(routes=None, sales_type='CASH').count()
+    credit_count = Customers.objects.filter(routes=None, sales_type='CREDIT').count()
+    coupon_count = Customers.objects.filter(routes=None, sales_type__in=['CASH COUPON', 'CREDIT COUPON']).count()
+
+    total_cash += cash_count
+    total_credit += credit_count
+    total_coupon += coupon_count
+    total_customers += cash_count + credit_count + coupon_count
+    
+    customer_counts.append({
+            'route_name': 'Not Specified',
+            'sales_man': sales_man,
+            'cash_count': cash_count,
+            'credit_count': credit_count,
+            'coupon_count': coupon_count,
+            'total_customer': cash_count + credit_count + coupon_count
+        })
+
+    context = {
+        'customer_counts': customer_counts,
+        'total_cash': total_cash,
+        'total_credit': total_credit,
+        'total_coupon': total_coupon,
+        'total_customers': total_customers,
+    }
+    # print('total customers:', total_customers)
+    return render(request, 'client_management/customer_count.html', context)

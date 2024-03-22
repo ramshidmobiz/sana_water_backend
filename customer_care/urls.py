@@ -20,12 +20,18 @@ path('custody_pullout_list/<str:pk>', Custody_Pullout_List.as_view(), name='cust
 path('custody_pullout_create/<str:pk>', Custody_Pullout_Create.as_view(), name='custody_pullout_create'),
 path('get_item_quantity',get_item_quantity, name='get_item_quantity'),
 
-path('requestType',requestType, name='requestType'),
+# path('requestType',requestType, name='requestType'),
+path('requestType', requestType.as_view(), name='requestType'),
+
 path('custody_pullout/<str:pk>',custody_pullout, name='custody_pullout'),
 path('change_of_address/<str:pk>',change_of_address, name='change_of_address'),
 path('default_bottle_qty/<str:pk>',default_bottle_qty, name='default_bottle_qty'),
 
 #create customer
 path('createcustomer',createcustomer, name='createcustomer'),
+path('new_request_home/<str:customer_id>', NewRequestHome.as_view(), name='new_request_home'),
+path('water_delivery_status', WaterDeliveryStatus.as_view(), name='water_delivery_status'),
+
+path('next_delivery_date', get_weeks_in_month, name = 'nexr_delivery_date'),
 
 ]

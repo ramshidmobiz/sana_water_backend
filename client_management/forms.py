@@ -291,3 +291,77 @@ class CustomerSupplyItemsForm(forms.ModelForm):
             'quantity': forms.TextInput(attrs={'class': 'form-control'}),
             'amount': forms.TextInput(attrs={'class': 'form-control'}),
         }
+#
+class CoupenEditForm(forms.ModelForm):
+    class Meta:
+        model = CustomerCouponStock
+        fields = ['coupon_type_id', 'count']  # Include the 'coupon_type_id' field
+        widgets = {
+            'count': forms.NumberInput(attrs={'class': 'form-control', 'required': True}),
+            'coupon_type_id': forms.Select(attrs={'class': 'form-control', 'required': True}),
+        }
+
+    def clean_count(self):
+        count = self.cleaned_data['count']
+        if count <= 0:
+            raise forms.ValidationError("Count must be a positive integer.")
+        return count
+
+    def save(self, commit=True):
+        instance = super(CoupenEditForm, self).save(commit=False)
+        instance.count = self.cleaned_data['count']
+        if commit:
+            instance.save()
+        return instance
+    
+class CustomerOutstandingForm(forms.ModelForm):
+
+    class Meta:
+        model = CustomerOutstanding
+        fields = ['customer','product_type']
+
+        widgets = {
+            'customer': forms.Select(attrs={'class': 'form-control selectpicker', 'data-live-searc':'true'}),
+            'product_type': forms.Select(attrs={'class': 'form-control'}),
+        }
+        
+class CustomerOutstandingSingleForm(forms.ModelForm):
+
+    class Meta:
+        model = CustomerOutstanding
+        fields = ['product_type']
+
+        widgets = {
+            'product_type': forms.Select(attrs={'class': 'form-control'}),
+        }
+        
+class CustomerOutstandingAmountForm(forms.ModelForm):
+
+    class Meta:
+        model = OutstandingAmount
+        fields = ['amount']
+
+        widgets = {
+            'amount': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
+        
+class CustomerOutstandingBottleForm(forms.ModelForm):
+
+    class Meta:
+        model = OutstandingProduct
+        fields = ['empty_bottle']
+
+        widgets = {
+            'empty_bottle': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
+        
+class CustomerOutstandingCouponsForm(forms.ModelForm):
+
+    class Meta:
+        model = OutstandingCoupon
+        fields = ['coupon_type','count']
+
+        widgets = {
+            'coupon_type': forms.Select(attrs={'class': 'form-control'}),
+            'count': forms.NumberInput(attrs={'class': 'form-control'}),
+        }

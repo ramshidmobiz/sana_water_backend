@@ -216,33 +216,43 @@ def order_change_list_excel(request, route_id):
         selected_product=None
 
     data = []
-    data = list(order_changes.values_list('customer__customer_name', 'product__product_name__product_name', 'changed_quantity', 'reason__reason_name'))
-    df = pd.DataFrame(data, columns=['Customer Name', 'Product Name', 'Returned Quantity', 'Reason'])
+    data = list(order_changes.values_list('customer__customer_name', 'customer__mobile_no', 
+                                          'customer__location__location_name', 
+                                          'customer__building_name', 'customer__floor_no', 'customer__door_house_no', 
+                                          'product__product_name__product_name', 
+                                          'changed_quantity', 'reason__reason_name'
+                                        ))
+    df = pd.DataFrame(data, columns=['Customer ', 'Mobile no', 'Location', ' Building', 'Floor no', 'Door no', 'Product Name', 'Quantity ', 'Reason'])
 
     # Create a new Excel workbook
     wb = Workbook()
     ws = wb.active
 
     # Add information above the table by merging cells
-    ws.merge_cells('A1:D2')  # Merge cells for the title
+    
+    ws.merge_cells('A1:J2')  # Merge cells for the title
     ws['A1'] = 'National Water'
     ws['A1'].font = Font(size=14, bold=True)
     ws['A1'].alignment = Alignment(horizontal='center')
-    ws['A3'] = 'Order Return Information'  
-    ws['A4'] = f'Route: {route.route_name}'  
-    ws['A5'] = f'Date: {date}'  
+    ws.merge_cells('A3:J3')
+    ws['A3'] = 'Changed products Information' 
+    ws['A3'].alignment = Alignment(horizontal='center') 
+    ws.merge_cells('A4:B4')
+    ws['A4'] = f'Route: {route.route_name}' 
+    ws.merge_cells('C4:F4') 
+    ws['C4'] = f'Date: {date}' 
+    ws.merge_cells('G4:J4') 
     if selected_product:
-        ws['A6'] = f'Selected Product: {selected_product}'  
-    headers =['SiNo']+ ['Customer Name', 'Product Name', 'Returned Quantity', 'Reason']
+        ws['G4'] = f'Selected Product: {selected_product}'  
+    headers =['SiNo']+ ['Customer ', 'Mobile no', 'Location', ' Building', 'Floor no', 'Door no', 'Product Name', 'Quantity ', 'Reason']
     for col_idx, header in enumerate(headers, start=1):
-        cell = ws.cell(row=7, column=col_idx, value=header)
+        cell = ws.cell(row=6, column=col_idx, value=header)
         cell.font = Font(bold=True) 
     # Write DataFrame to the Excel file starting from row 6
-    for r_idx, row in enumerate(df.values, start=8):  # Start from index 7
-        ws.cell(row=r_idx, column=1, value=r_idx - 7)  # Add serial number starting from 1
+    for r_idx, row in enumerate(df.values, start=7):  # Start from index 7
+        ws.cell(row=r_idx, column=1, value=r_idx - 6)  # Add serial number starting from 1
         for c_idx, value in enumerate(row, start=2):  # Start from column 2 to avoid overwriting serial number
             ws.cell(row=r_idx, column=c_idx, value=value)
-
     # Save the workbook to a BytesIO object
     from io import BytesIO
     excel_file = BytesIO()
@@ -251,7 +261,7 @@ def order_change_list_excel(request, route_id):
 
     # Serve the Excel file as an HTTP response
     response = HttpResponse(excel_file.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename=order_returns.xlsx'
+    response['Content-Disposition'] = 'attachment; filename=changed-products.xlsx'
     return response
 
     
@@ -413,8 +423,7 @@ def order_return_list_excel(request, route_id):
     selected_product_id = request.GET.get('selected_product_id', None)
     # date = ''
     order_returns = Order_return.objects.filter(customer__routes=route)
-   
-    if start_date and end_date and selected_date != 'None' and end_date != 'None':
+    if start_date and end_date and start_date != 'None' and end_date != 'None':
         order_returns = order_returns.filter(return_date__range=[start_date, end_date])
         date=f" {start_date} --> { end_date }"
     elif selected_date and selected_date != 'None':
@@ -431,33 +440,42 @@ def order_return_list_excel(request, route_id):
     else:
         selected_product=None
     data = []
-    data = list(order_returns.values_list('customer__customer_name', 'product__product_name__product_name', 'returned_quantity', 'reason__reason_name'))
-    df = pd.DataFrame(data, columns=['Customer Name', 'Product Name', 'Returned Quantity', 'Reason'])
-
+    data = list(order_returns.values_list('customer__customer_name', 'customer__mobile_no', 
+                                          'customer__location__location_name', 
+                                          'customer__building_name', 'customer__floor_no', 'customer__door_house_no', 
+                                          'product__product_name__product_name', 
+                                          'returned_quantity', 'reason__reason_name'
+                                        ))
+    df = pd.DataFrame(data, columns=['Customer ', 'Mobile no', 'Location', ' Building', 'Floor no', 'Door no',  'Product Name', 'Quantity ', 'Reason'])
+    print(data)
     # Create a new Excel workbook
     wb = Workbook()
     ws = wb.active
 
     # Add information above the table by merging cells
-    ws.merge_cells('A1:D2')  # Merge cells for the title
+    # Add information above the table by merging cells
+    
+    ws.merge_cells('A1:J2')  # Merge cells for the title
     ws['A1'] = 'National Water'
     ws['A1'].font = Font(size=14, bold=True)
     ws['A1'].alignment = Alignment(horizontal='center')
-    ws['A3'] = 'Order Return Information'  
-    ws['A4'] = f'Route: {route.route_name}'  # Route information
-    ws['A5'] = f'Date: {date}'  # Date information
+    ws.merge_cells('A3:J3')
+    ws['A3'] = 'Returned products Information' 
+    ws['A3'].alignment = Alignment(horizontal='center') 
+    ws.merge_cells('A4:B4')
+    ws['A4'] = f'Route: {route.route_name}' 
+    ws.merge_cells('C4:F4') 
+    ws['C4'] = f'Date: {date}' 
+    ws.merge_cells('G4:J4') 
     if selected_product:
-        ws['A6'] = f'Selected Product: {selected_product}'  
-    headers = ['Sino'] +  ['Customer Name', 'Product Name', 'Returned Quantity', 'Reason']
+        ws['G4'] = f'Selected Product: {selected_product}'  
+    headers =['SiNo']+ ['Customer ', 'Mobile no', 'Location', ' Building', 'Floor no', 'Door no', 'Product Name', 'Quantity ', 'Reason']
     for col_idx, header in enumerate(headers, start=1):
-        cell = ws.cell(row=7, column=col_idx, value=header)
+        cell = ws.cell(row=6, column=col_idx, value=header)
         cell.font = Font(bold=True) 
     # Write DataFrame to the Excel file starting from row 6
-    # for r_idx, row in enumerate(df.values, start=8):
-    #     for c_idx, value in enumerate(row, start=1):
-    #         ws.cell(row=r_idx, column=c_idx, value=value)
-    for r_idx, row in enumerate(df.values, start=8):
-        ws.cell(row=r_idx, column=1, value=r_idx - 7)  # Add serial number
+    for r_idx, row in enumerate(df.values, start=7):  # Start from index 7
+        ws.cell(row=r_idx, column=1, value=r_idx - 6)  # Add serial number starting from 1
         for c_idx, value in enumerate(row, start=2):  # Start from column 2 to avoid overwriting serial number
             ws.cell(row=r_idx, column=c_idx, value=value)
 
@@ -469,7 +487,7 @@ def order_return_list_excel(request, route_id):
 
     # Serve the Excel file as an HTTP response
     response = HttpResponse(excel_file.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename=order_returns.xlsx'
+    response['Content-Disposition'] = 'attachment; filename=returned-products.xlsx'
     return response
 
     
