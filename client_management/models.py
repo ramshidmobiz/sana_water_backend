@@ -162,77 +162,77 @@ def delete_expired_vacations(sender, instance, created, **kwargs):
         if instance.end_date < today:
             instance.delete()
                    
-# class CustomerCoupon(models.Model):
-#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-#     customer = models.ForeignKey('accounts.Customers',on_delete = models.CASCADE)
-#     coupon = models.ForeignKey(NewCoupon,on_delete = models.CASCADE)
-#     salesman = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE)
-#     rate = models.DecimalField(max_digits=10, decimal_places=2)
+class CustomerCoupon(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    customer = models.ForeignKey('accounts.Customers',on_delete = models.CASCADE)
+    coupon = models.ForeignKey(NewCoupon,on_delete = models.CASCADE)
+    salesman = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE)
+    rate = models.DecimalField(max_digits=10, decimal_places=2)
     
-#     created_by = models.CharField(max_length=30, blank=True)
-#     created_date = models.DateTimeField(auto_now_add=True)
-#     modified_by = models.CharField(max_length=20, null=True, blank=True)
-#     modified_date = models.DateTimeField(auto_now=True ,blank=True, null=True)
-#     class Meta:
-#         ordering = ('-created_date',)
-#     def __str__(self):
-#         return self.customer
+    created_by = models.CharField(max_length=30, blank=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_by = models.CharField(max_length=20, null=True, blank=True)
+    modified_date = models.DateTimeField(auto_now=True ,blank=True, null=True)
+    class Meta:
+        ordering = ('-created_date',)
+    def __str__(self):
+        return self.customer
     
-# class CustomerCouponStock(models.Model):
-#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-#     coupon_type_id = models.ForeignKey(CouponType, on_delete=models.CASCADE)
-#     customer = models.ForeignKey('accounts.Customers',on_delete = models.CASCADE)
-#     count = models.PositiveIntegerField()
+class CustomerCouponStock(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    coupon_type_id = models.ForeignKey(CouponType, on_delete=models.CASCADE)
+    customer = models.ForeignKey('accounts.Customers',on_delete = models.CASCADE)
+    count = models.PositiveIntegerField()
    
-#     class Meta:
-#         ordering = ('-id',)
+    class Meta:
+        ordering = ('-id',)
         
-#     def __str__(self):
-#         return self.customer.customer_name
+    def __str__(self):
+        return self.customer.customer_name
     
-# class CustomerCouponPayment(models.Model):
-#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-#     customer = models.ForeignKey('accounts.Customers',on_delete = models.CASCADE)
-#     customer_coupon = models.ForeignKey(CustomerCoupon, on_delete=models.CASCADE)
-#     coupon_type = models.CharField(max_length=100,choices=COUPON_TYPE)
-#     payment_type = models.CharField(max_length=100,choices=PAYMENT_METHOD,null=True,blank=True)
+class CustomerCouponPayment(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    customer = models.ForeignKey('accounts.Customers',on_delete = models.CASCADE)
+    customer_coupon = models.ForeignKey(CustomerCoupon, on_delete=models.CASCADE)
+    coupon_type = models.CharField(max_length=100,choices=COUPON_TYPE)
+    payment_type = models.CharField(max_length=100,choices=PAYMENT_METHOD,null=True,blank=True)
     
-#     grand_total = models.DecimalField(default=0, max_digits=10, decimal_places=2)
-#     discount = models.DecimalField(default=0, max_digits=10, decimal_places=2)
-#     net_amount = models.DecimalField(default=0, max_digits=10, decimal_places=2)
-#     total_payeble = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+    grand_total = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+    discount = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+    net_amount = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+    total_payeble = models.DecimalField(default=0, max_digits=10, decimal_places=2)
    
-#     class Meta:
-#         ordering = ('-id',)
+    class Meta:
+        ordering = ('-id',)
         
-#     def __str__(self):
-#         return self.customer
+    def __str__(self):
+        return self.customer
     
-# class CashCouponPayment(models.Model):
-#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-#     customer_coupon_payment = models.ForeignKey(CustomerCouponPayment,on_delete = models.CASCADE)
-#     amount_recieved = models.DecimalField(default=0, max_digits=10, decimal_places=2)
-#     balance = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+class CashCouponPayment(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    customer_coupon_payment = models.ForeignKey(CustomerCouponPayment,on_delete = models.CASCADE)
+    amount_recieved = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+    balance = models.DecimalField(default=0, max_digits=10, decimal_places=2)
    
-#     class Meta:
-#         ordering = ('-id',)
+    class Meta:
+        ordering = ('-id',)
         
-#     def __str__(self):
-#         return self.customer_coupon_payment
+    def __str__(self):
+        return self.customer_coupon_payment
     
-# class ChequeCouponPayment(models.Model):
-#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-#     customer_coupon_payment = models.ForeignKey(CustomerCouponPayment,on_delete = models.CASCADE)
-#     bank = models.CharField(max_length=200)
-#     cheque = models.CharField(max_length=200)
-#     cheque_no = models.CharField(max_length=200)
-#     date = models.DateField()
+class ChequeCouponPayment(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    customer_coupon_payment = models.ForeignKey(CustomerCouponPayment,on_delete = models.CASCADE)
+    bank = models.CharField(max_length=200)
+    cheque = models.CharField(max_length=200)
+    cheque_no = models.CharField(max_length=200)
+    date = models.DateField()
    
-#     class Meta:
-#         ordering = ('-id',)
+    class Meta:
+        ordering = ('-id',)
         
-#     def __str__(self):
-#         return self.customer_coupon_payment
+    def __str__(self):
+        return self.customer_coupon_payment
     
 class CustomerOutstanding(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
