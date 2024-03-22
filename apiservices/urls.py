@@ -127,7 +127,7 @@ urlpatterns = [
     path('custody_item_list/' ,CustodyCustomItemListAPI.as_view(), name='custody_item_list'),
     path('custody_item_return/', CustodyItemReturnAPI.as_view(), name='custody_item_return'),
 
-    path('outstanding_amount/',OutstandingAmountAPI.as_view(), name = 'outstanding_amount'),
+    # path('outstanding_amount/',OutstandingAmountAPI.as_view(), name = 'outstanding_amount'),
     path('outstanding_amount_list/',OutstandingAmountListAPI.as_view(), name = 'outstanding_amount_list'),
     # path('outstanding_coupon/',OutstandingCouponAPI.as_view(), name = 'outstanding_coupon'),
 

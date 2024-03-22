@@ -314,54 +314,54 @@ class CoupenEditForm(forms.ModelForm):
             instance.save()
         return instance
     
-class CustomerOutstandingForm(forms.ModelForm):
+# class CustomerOutstandingForm(forms.ModelForm):
 
-    class Meta:
-        model = CustomerOutstanding
-        fields = ['customer','product_type']
+#     class Meta:
+#         model = CustomerOutstanding
+#         fields = ['customer','product_type']
 
-        widgets = {
-            'customer': forms.Select(attrs={'class': 'form-control selectpicker', 'data-live-searc':'true'}),
-            'product_type': forms.Select(attrs={'class': 'form-control'}),
-        }
+#         widgets = {
+#             'customer': forms.Select(attrs={'class': 'form-control selectpicker', 'data-live-searc':'true'}),
+#             'product_type': forms.Select(attrs={'class': 'form-control'}),
+#         }
         
-class CustomerOutstandingSingleForm(forms.ModelForm):
+# class CustomerOutstandingSingleForm(forms.ModelForm):
 
-    class Meta:
-        model = CustomerOutstanding
-        fields = ['product_type']
+#     class Meta:
+#         model = CustomerOutstanding
+#         fields = ['product_type']
 
-        widgets = {
-            'product_type': forms.Select(attrs={'class': 'form-control'}),
-        }
+#         widgets = {
+#             'product_type': forms.Select(attrs={'class': 'form-control'}),
+#         }
         
-class CustomerOutstandingAmountForm(forms.ModelForm):
+# class CustomerOutstandingAmountForm(forms.ModelForm):
 
-    class Meta:
-        model = OutstandingAmount
-        fields = ['amount']
+#     class Meta:
+#         model = OutstandingAmount
+#         fields = ['amount']
 
-        widgets = {
-            'amount': forms.NumberInput(attrs={'class': 'form-control'}),
-        }
+#         widgets = {
+#             'amount': forms.NumberInput(attrs={'class': 'form-control'}),
+#         }
         
-class CustomerOutstandingBottleForm(forms.ModelForm):
+# class CustomerOutstandingBottleForm(forms.ModelForm):
 
-    class Meta:
-        model = OutstandingProduct
-        fields = ['empty_bottle']
+#     class Meta:
+#         model = OutstandingProduct
+#         fields = ['empty_bottle']
 
-        widgets = {
-            'empty_bottle': forms.NumberInput(attrs={'class': 'form-control'}),
-        }
+#         widgets = {
+#             'empty_bottle': forms.NumberInput(attrs={'class': 'form-control'}),
+#         }
         
-class CustomerOutstandingCouponsForm(forms.ModelForm):
+# class CustomerOutstandingCouponsForm(forms.ModelForm):
 
-    class Meta:
-        model = OutstandingCoupon
-        fields = ['coupon_type','count']
+#     class Meta:
+#         model = OutstandingCoupon
+#         fields = ['coupon_type','count']
 
-        widgets = {
-            'coupon_type': forms.Select(attrs={'class': 'form-control'}),
-            'count': forms.NumberInput(attrs={'class': 'form-control'}),
-        }
+#         widgets = {
+#             'coupon_type': forms.Select(attrs={'class': 'form-control'}),
+#             'count': forms.NumberInput(attrs={'class': 'form-control'}),
+#         }
