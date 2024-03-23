@@ -2301,41 +2301,39 @@ class supply_product(APIView):
 
 #     return Response(response_data, status_code)
 
-@api_view(['POST'])
-def create_customer_supply(request):
-    if request.method == 'POST':
-        customer_supply_serializer = CustomerSupplySerializer(data=request.data)
+# @api_view(['POST'])
+# def create_customer_supply(request):
+class create_customer_supply(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        customer_supply_serializer = CustomerSupplySerializer(data=request.data.get('customer_supply'))
         customer_supply_items_serializer = CustomerSupplyItemsSerializer(data=request.data.get('items'), many=True)
 
         if customer_supply_serializer.is_valid() and customer_supply_items_serializer.is_valid():
-            with transaction.atomic():
-                customer_supply = customer_supply_serializer.save(created_by=str(request.user.id))
+            # with transaction.atomic():
+            customer_supply = customer_supply_serializer.save(created_by=request.user.id)
+            items_data = customer_supply_items_serializer.validated_data
 
-                items_data = customer_supply_items_serializer.validated_data
-                for item_data in items_data:
-                    # If product name is "5 Gallon", add additional fields
-                    if item_data['product'].name == "5 Gallon":
-                        item_data['collected_empty_bottle'] = request.data.get('collected_empty_bottle')
-                        item_data['allocate_bottle_to_pending'] = request.data.get('allocate_bottle_to_pending')
-                        item_data['allocate_bottle_to_custody'] = request.data.get('allocate_bottle_to_custody')
-                        item_data['allocate_bottle_to_paid'] = request.data.get('allocate_bottle_to_paid')
+            for item_data in items_data:
+                if item_data['product'].name == "5 Gallon":
+                    item_data['collected_empty_bottle'] = request.data.get('collected_empty_bottle')
+                    item_data['allocate_bottle_to_pending'] = request.data.get('allocate_bottle_to_pending')
+                    item_data['allocate_bottle_to_custody'] = request.data.get('allocate_bottle_to_custody')
+                    item_data['allocate_bottle_to_paid'] = request.data.get('allocate_bottle_to_paid')
+                item_data['customer_supply'] = customer_supply.id
 
-                    item_data['customer_supply'] = customer_supply.id
+            customer_supply_items_serializer.save()
 
-                customer_supply_items_serializer.save()
-
-                # Update customer supply stock
-                for item_data in items_data:
-                    product = item_data['product']
-                    quantity = item_data['quantity']
-                    customer = customer_supply.customer
-
-                    try:
-                        customer_supply_stock = CustomerSupplyStock.objects.get(customer=customer, product=product)
-                        customer_supply_stock.stock_quantity += quantity
-                        customer_supply_stock.save()
-                    except CustomerSupplyStock.DoesNotExist:
-                        CustomerSupplyStock.objects.create(customer=customer, product=product, stock_quantity=quantity)
+            # Update customer supply stock
+            for item_data in items_data:
+                product = item_data['product']
+                quantity = item_data['quantity']
+                customer = customer_supply.customer
+                customer_supply_stock, _ = CustomerSupplyStock.objects.get_or_create(customer=customer, product=product)
+                customer_supply_stock.stock_quantity += quantity
+                customer_supply_stock.save()
 
             response_data = {
                 "status": "true",
@@ -2691,17 +2689,19 @@ class customer_outstanding(APIView):
         
         serialized_data = CustomerOutstandingSerializer(data=list(customer_data.values()), many=True)
         serialized_data.is_valid()  # Ensure data is valid
+        
         return Response({
             'status': True, 
             'data': serialized_data.data,  # Access serialized data
             'message': 'success'
-        })
+        },)
+        
 class CustomerCouponListAPI(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get(self, request, format=None):
-        customers = Customers.objects.all()
+        customers = Customers.objects.all()[:2]
         serializer = CustomerDetailSerializer(customers, many=True, context={'request': request})
         
         return Response(serializer.data)

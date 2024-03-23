@@ -471,15 +471,15 @@ class RouteMasterSerializer(serializers.ModelSerializer):
 #     return None
 
 class CustomerCouponCountSerializer(serializers.ModelSerializer):
-    # total_count = serializers.SerializerMethodField()
+    coupon_type_name = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomerCouponStock
-        fields = ['id', 'coupon_type_id', 'count']
+        fields = ['id', 'coupon_type_id', 'coupon_type_name','count']
         read_only_fields = ['id']
 
-    # def get_total_count(self, obj):
-    #     request = self.context.get('request')
+    def get_coupon_type_name(self, obj):
+        return obj.coupon_type_id.coupon_type_name
     
     
 class CustomerDetailSerializer(serializers.ModelSerializer):
@@ -490,7 +490,7 @@ class CustomerDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Customers
-        fields = ['customer_id','customer_name', 'route_name','user_id','coupon_count','total_count']
+        fields = ['customer_id','customer_name', 'route_name','user_id','total_count','coupon_count']
         
     def get_user_id(self, obj):
         request = self.context.get('request')

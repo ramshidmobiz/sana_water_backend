@@ -89,7 +89,7 @@ urlpatterns = [
     
     # supply
     re_path(r'^supply-product/', supply_product.as_view()),
-    re_path(r'^create-customer-supply/$', views.create_customer_supply),
+    re_path(r'^create-customer-supply/$', create_customer_supply.as_view()),
     re_path(r'^customer-outstanding/$', customer_outstanding.as_view()),
    
     ################### COUPON MANAGEMENT URL ######################
