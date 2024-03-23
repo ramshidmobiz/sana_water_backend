@@ -328,29 +328,29 @@ class SupplyItemCustomersSerializer(serializers.ModelSerializer):
         
         return [five_gallon_data] + supply_product_data
 
-class CustomerSupplySerializer(serializers.ModelSerializer):
+# class CustomerSupplySerializer(serializers.ModelSerializer):
     
-    class Meta:
-        model = CustomerSupply
-        fields = ['id', 'customer', 'salesman', 'grand_total', 'discount', 'net_payable', 'vat', 'subtotal', 'amount_recieved', 'created_by', 'created_date', 'modified_by', 'modified_date']
-        read_only_fields = ['id', 'created_by', 'created_date', 'modified_by', 'modified_date']
+#     class Meta:
+#         model = CustomerSupply
+#         fields = ['id', 'customer', 'salesman', 'grand_total', 'discount', 'net_payable', 'vat', 'subtotal', 'amount_recieved', 'created_by', 'created_date', 'modified_by', 'modified_date']
+#         read_only_fields = ['id', 'created_by', 'created_date', 'modified_by', 'modified_date']
 
-class CustomerSupplyItemsSerializer(serializers.ModelSerializer):
-    product = ProductSerializer()  # Assuming you have a serializer for the Product model
+# class CustomerSupplyItemsSerializer(serializers.ModelSerializer):
+#     product = ProductSerializer()  # Assuming you have a serializer for the Product model
 
-    class Meta:
-        model = CustomerSupplyItems
-        fields = ['id', 'customer_supply', 'product', 'quantity', 'amount']
-        read_only_fields = ['id']
+#     class Meta:
+#         model = CustomerSupplyItems
+#         fields = ['id', 'customer_supply', 'product', 'quantity', 'amount']
+#         read_only_fields = ['id']
 
-class CustomerSupplyStockSerializer(serializers.ModelSerializer):
-    product = ProductSerializer()  # Assuming you have a serializer for the Product model
-    customer = CustomersSerializer()  # Assuming you have a serializer for the Customers model
+# class CustomerSupplyStockSerializer(serializers.ModelSerializer):
+#     product = ProductSerializer()  # Assuming you have a serializer for the Product model
+#     customer = CustomersSerializer()  # Assuming you have a serializer for the Customers model
 
-    class Meta:
-        model = CustomerSupplyStock
-        fields = ['id', 'product', 'customer', 'stock_quantity']
-        read_only_fields = ['id']
+#     class Meta:
+#         model = CustomerSupplyStock
+#         fields = ['id', 'product', 'customer', 'stock_quantity']
+#         read_only_fields = ['id']
 
 
 class CustomerCouponStockSerializer(serializers.ModelSerializer):
