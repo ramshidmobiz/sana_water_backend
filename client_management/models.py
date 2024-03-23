@@ -295,51 +295,51 @@ class CustomerOutstandingReport(models.Model):
     def __str__(self):
         return str(self.id)
 
-# class CustomerSupply(models.Model):
-#         id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-#         customer = models.ForeignKey('accounts.Customers',on_delete = models.CASCADE)
-#         salesman = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE)
-#         grand_total = models.DecimalField(default=0, max_digits=10, decimal_places=2)
-#         discount = models.DecimalField(default=0, max_digits=10, decimal_places=2)
-#         net_payable = models.DecimalField(default=0, max_digits=10, decimal_places=2)
-#         vat = models.DecimalField(default=0, max_digits=10, decimal_places=2)
-#         subtotal = models.DecimalField(default=0, max_digits=10, decimal_places=2)
-#         amount_recieved = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+class CustomerSupply(models.Model):
+        id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+        customer = models.ForeignKey('accounts.Customers',on_delete = models.CASCADE)
+        salesman = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE)
+        grand_total = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+        discount = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+        net_payable = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+        vat = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+        subtotal = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+        amount_recieved = models.DecimalField(default=0, max_digits=10, decimal_places=2)
         
-#         created_by = models.CharField(max_length=30, blank=True)
-#         created_date = models.DateTimeField(auto_now_add=True)
-#         modified_by = models.CharField(max_length=20, null=True, blank=True)
-#         modified_date = models.DateTimeField(auto_now=True ,blank=True, null=True)
-#         class Meta:
-#             ordering = ('-created_date',)
-#         def __str__(self):
-#             return self.customer
+        created_by = models.CharField(max_length=30, blank=True)
+        created_date = models.DateTimeField(auto_now_add=True)
+        modified_by = models.CharField(max_length=20, null=True, blank=True)
+        modified_date = models.DateTimeField(auto_now=True ,blank=True, null=True)
+        class Meta:
+            ordering = ('-created_date',)
+        def __str__(self):
+            return self.customer
 
-# class CustomerSupplyItems(models.Model):
-#         id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-#         customer_supply = models.ForeignKey(CustomerSupply,on_delete = models.CASCADE)
-#         product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True,blank=True)
-#         quantity = models.PositiveIntegerField()
-#         amount = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+class CustomerSupplyItems(models.Model):
+        id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+        customer_supply = models.ForeignKey(CustomerSupply,on_delete = models.CASCADE)
+        product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True,blank=True)
+        quantity = models.PositiveIntegerField()
+        amount = models.DecimalField(default=0, max_digits=10, decimal_places=2)
 
-#         class Meta:
-#             ordering = ('-id',)
+        class Meta:
+            ordering = ('-id',)
             
-#         def __str__(self):
-#             return self.customer_supply
+        def __str__(self):
+            return self.customer_supply
         
 
-# class CustomerSupplyStock(models.Model):
-#         id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-#         product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True,blank=True)
-#         customer = models.ForeignKey('accounts.Customers',on_delete = models.CASCADE)
-#         stock_quantity = models.PositiveIntegerField()  
+class CustomerSupplyStock(models.Model):
+        id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+        product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True,blank=True)
+        customer = models.ForeignKey('accounts.Customers',on_delete = models.CASCADE)
+        stock_quantity = models.PositiveIntegerField()  
 
-#         class Meta:
-#             ordering = ('-id',)
+        class Meta:
+            ordering = ('-id',)
             
-#         def __str__(self):
-#             return self.product
+        def __str__(self):
+            return self.product
         
 
 

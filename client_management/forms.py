@@ -270,27 +270,27 @@ class CustodyCustomItemForm(forms.ModelForm):
 
 
 #------------------- Customer Supply
-# class CustomerSupplyForm(forms.ModelForm):
+class CustomerSupplyForm(forms.ModelForm):
 
-#     class Meta:
-#         model = CustomerSupply
-#         fields = ['customer']
+    class Meta:
+        model = CustomerSupply
+        fields = ['customer']
 
-#         widgets = {
-#             'customer': forms.Select(attrs={'class': 'form-control', 'required': True}),
-#         }
+        widgets = {
+            'customer': forms.Select(attrs={'class': 'form-control', 'required': True}),
+        }
 
-# class CustomerSupplyItemsForm(forms.ModelForm):
+class CustomerSupplyItemsForm(forms.ModelForm):
 
-#     class Meta:
-#         model = CustomerSupplyItems
-#         fields = ['product','quantity','amount']
+    class Meta:
+        model = CustomerSupplyItems
+        fields = ['product','quantity','amount']
 
-#         widgets = {
-#             'product': forms.Select(attrs={'class': 'form-control'}),
-#             'quantity': forms.TextInput(attrs={'class': 'form-control'}),
-#             'amount': forms.TextInput(attrs={'class': 'form-control'}),
-#         }
+        widgets = {
+            'product': forms.Select(attrs={'class': 'form-control'}),
+            'quantity': forms.TextInput(attrs={'class': 'form-control'}),
+            'amount': forms.TextInput(attrs={'class': 'form-control'}),
+        }
 #
 class CoupenEditForm(forms.ModelForm):
     class Meta:
