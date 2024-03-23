@@ -2699,8 +2699,10 @@ class customer_outstanding(APIView):
 class CustomerCouponListAPI(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
+    
     def get(self, request, format=None):
         customers = Customers.objects.all()
         serializer = CustomerDetailSerializer(customers, many=True, context={'request': request})
+        
         return Response(serializer.data)
 
