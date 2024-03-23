@@ -1,4 +1,5 @@
 
+from customer_care.models import DiffBottlesModel
 from rest_framework import serializers
 #from . models import *
 from rest_framework.views import APIView
@@ -250,13 +251,14 @@ class SupplyItemFiveCanWaterProductGetSerializer(serializers.ModelSerializer):
             rate = obj.rate
         return rate
 
-class SupplyItemProductGetSerializer(serializers.ModelSerializer):
+class SupplyItemFiveGallonWaterGetSerializer(serializers.ModelSerializer):
     rate = serializers.SerializerMethodField()
+    quantity = serializers.SerializerMethodField()
 
     class Meta:
-        model = Product
-        fields = ['product_id', 'product_name', 'rate']
-        read_only_fields = ['product_id', 'product_name', 'rate']
+        model = ProdutItemMaster
+        fields = ['id', 'product_name','category','unit','rate','quantity']
+        read_only_fields = ['id', 'product_name']
 
     def get_rate(self, obj):
         customer_id = self.context.get('customer_id')
@@ -264,10 +266,70 @@ class SupplyItemProductGetSerializer(serializers.ModelSerializer):
             customer = Customers.objects.get(pk=customer_id)
             rate = customer.rate
         except Customers.DoesNotExist:
-            rate = obj.rate
+            rate = Product.objects.filter(product_name=obj).latest('created_date').rate
         return rate
+    
+    def get_quantity(self, obj):
+        customer_id = self.context.get('customer_id')
+        try:
+            customer = Customers.objects.get(pk=customer_id)
+            qty = customer.no_of_bottles_required
+        except Customers.DoesNotExist:
+            qty = 1
+        
+        if (reuests:=DiffBottlesModel.objects.filter(delivery_date__date=date.today(), customer__pk=customer_id)).exists():
+            for r in reuests :
+                if r.request_type.request_name == "5 Gallon":
+                    qty = qty + r.quantity_required
+        return qty
+    
+class SupplyItemProductGetSerializer(serializers.ModelSerializer):
+    rate = serializers.SerializerMethodField()
+    quantity = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProdutItemMaster
+        fields = ['id', 'product_name','category','unit','rate','quantity']
+        read_only_fields = ['id', 'product_name']
+
+    def get_rate(self, obj):
+        rate = Product.objects.filter(product_name=obj).latest('created_date').rate
+        return rate
+    
+    def get_quantity(self, obj):
+        customer_id = self.context.get('customer_id')
+        qty = 1
+        if (reuests:=DiffBottlesModel.objects.filter(delivery_date__date=date.today(), customer__pk=customer_id)).exists():
+            for r in reuests :
+                if r.request_type.request_name == "5 Gallon":
+                    qty = r.quantity_required
+        return qty
+
+class SupplyItemCustomersSerializer(serializers.ModelSerializer):
+    products = serializers.SerializerMethodField()
+    class Meta:
+        model = Customers
+        fields = '__all__'
+        
+    def get_products(self, obj):
+        fivegallon = ProdutItemMaster.objects.get(product_name="5 Gallon")
+        five_gallon_serializer = SupplyItemFiveGallonWaterGetSerializer(fivegallon, context={"customer": obj.pk})
+        five_gallon_data = five_gallon_serializer.data
+        
+        supply_product_data = []
+        
+        c_requests = DiffBottlesModel.objects.filter(delivery_date__date=date.today(), customer__pk=obj.pk, request_type__request_name__in=['1L Pet Bottle','Coolers','Water Cooler','Dispenser'])
+        if c_requests.exists():
+            for r in c_requests:
+                items = ProdutItemMaster.objects.filter(product_name=r.request_type.request_name)
+                if items.exists():
+                    supply_product_serializer = SupplyItemProductGetSerializer(items.first(), many=False)
+                    supply_product_data.append(supply_product_serializer.data)
+        
+        return [five_gallon_data] + supply_product_data
 
 class CustomerSupplySerializer(serializers.ModelSerializer):
+    
     class Meta:
         model = CustomerSupply
         fields = ['id', 'customer', 'salesman', 'grand_total', 'discount', 'net_payable', 'vat', 'subtotal', 'amount_recieved', 'created_by', 'created_date', 'modified_by', 'modified_date']
@@ -368,13 +430,9 @@ class VanProductStockSerializer(serializers.ModelSerializer):
     
 
 
-class CustomerCouponStockSerializer(serializers.ModelSerializer):
-    customer_name = serializers.CharField(source='customer.customer_name', read_only=True)
-    coupon_type_name = serializers.CharField(source='coupon_type_id.coupon_type_name', read_only=True)
 
-    class Meta:
-        model = CustomerCouponStock
-        fields = ['customer_name', 'count', 'coupon_type_id', 'coupon_type_name']
+
+
 
 # class CustomerCouponStockSerializer(serializers.ModelSerializer):
 #     customer_name = serializers.CharField(source='customer.customer_name', read_only=True)
@@ -394,3 +452,57 @@ class CustomerOutstandingSerializer(serializers.Serializer):
     amount = serializers.DecimalField(max_digits=10, decimal_places=2)
     empty_can = serializers.DecimalField(max_digits=10, decimal_places=2)
     coupons = serializers.DecimalField(max_digits=10, decimal_places=2)
+#         fields = ['customer_name', 'count', 'coupon_type_id', 'coupon_type_name']
+
+
+class CouponTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CouponType
+        fields = '__all__'
+        read_only_fields = ['id', 'coupon_type_name']
+class RouteMasterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RouteMaster
+        fields = ['route_name']
+# def get_user_id(self, obj):
+#     user = self.context.get('request').user
+#     if user.user_type == 'Salesman':
+#         return user.id
+#     return None
+
+class CustomerCouponCountSerializer(serializers.ModelSerializer):
+    # customer_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CustomerCouponStock
+        fields = ['id', 'coupon_type_id', 'count']
+        read_only_fields = ['id']
+
+    def get_customer_name(self, obj):
+        return obj.customer.customer_name
+class CustomerDetailSerializer(serializers.ModelSerializer):
+    coupon_count = serializers.SerializerMethodField()
+    route_name = serializers.SerializerMethodField()
+    user_id = serializers.SerializerMethodField()
+
+    def get_user_id(self, obj):
+        request = self.context.get('request')
+
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            if request.user.user_type == 'Salesman':
+                # If the user is a salesman, return the user ID
+                return request.user.id
+        return None
+
+    def get_route_name(self, obj):
+        if obj.routes:
+            return obj.routes.route_name
+        return None
+
+    def get_coupon_count(self, obj):
+        counts = CustomerCouponStock.objects.filter(customer=obj)
+        return CustomerCouponCountSerializer(counts, many=True).data
+
+    class Meta:
+        model = Customers
+        fields = ['customer_id','customer_name', 'coupon_count', 'route_name', 'user_id']

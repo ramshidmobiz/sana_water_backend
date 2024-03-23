@@ -28,6 +28,8 @@ from openpyxl.styles import Alignment
 from competitor_analysis.forms import CompetitorAnalysisFilterForm
 from django.db.models import Q
 
+from van_management.models import Van, Van_Routes
+
 
 def customer_custody_item(request,customer_id):
     customer_instance = Customers.objects.get(customer_id=customer_id)
@@ -1108,6 +1110,7 @@ def create_customer_outstanding(request):
 
 
 # customer count
+
 def customer_count(request):
     routes = RouteMaster.objects.all()
     total_cash = 0
@@ -1130,7 +1133,6 @@ def customer_count(request):
         total_credit += credit_count
         total_coupon += coupon_count
         total_customers += cash_count + credit_count + coupon_count
-
         if cash_count+credit_count+coupon_count != 0:
             customer_counts.append({
                 'route_name': route.route_name,
@@ -1169,3 +1171,4 @@ def customer_count(request):
     }
     # print('total customers:', total_customers)
     return render(request, 'client_management/customer_count.html', context)
+            

@@ -149,20 +149,20 @@
         <tbody>
             {% for todays_customer in todays_customers %}
                 <tr style="font-weight: bold;">
-                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %}>{{ forloop.counter }}</td>
-                    <td  {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %} style="max-width: 15em; min-width: 12em; text-transform: capitalize;">
+                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold; border-left: solid 1px; border-bottom: solid 1px; " {% endif %}>{{ forloop.counter }}</td>
+                    <td  {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;border-bottom: solid 1px;" {% endif %} style="max-width: 15em; min-width: 12em; text-transform: capitalize;">
                         <b>{{ todays_customer.customer_name }}</b><br>{{ todays_customer.mobile }}
                     </td>
-                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %} >{{ todays_customer.location }}</td>
-                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %} >{{ todays_customer.building }}</td>
-                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %}  style="max-width: 9em; min-width: 8em;">floor: {{ todays_customer.floor_no }} <br> Door: {{ todays_customer.door_house_no }}</td>
+                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;border-bottom: solid 1px rgba(0, 0, 0, 0.719);" {% endif %} >{{ todays_customer.location }}</td>
+                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;border-bottom: solid 1px;" {% endif %} >{{ todays_customer.building }}</td>
+                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;border-bottom: solid 1px;" {% endif %}  style="max-width: 9em; min-width: 8em;">floor: {{ todays_customer.floor_no }} <br> Door: {{ todays_customer.door_house_no }}</td>
                     
-                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %} >{{ todays_customer.no_of_bottles   }}</td>
-                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %} ></td>
-                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %} ></td>
-                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %} ></td>
-                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %} >{{ todays_customer.customer_type   }}</td>
-                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;" {% endif %} >{{todays_customer.type}}</td>
+                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;border-bottom: solid 1px;" {% endif %} >{{ todays_customer.no_of_bottles   }}</td>
+                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;border-bottom: solid 1px;" {% endif %} ></td>
+                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;border-bottom: solid 1px;" {% endif %} ></td>
+                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;border-bottom: solid 1px;" {% endif %} ></td>
+                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;border-bottom: solid 1px;" {% endif %} >{{ todays_customer.customer_type   }}</td>
+                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;border-bottom: solid 1px; border-right: solid 1px;" {% endif %} >{{todays_customer.type}}</td>
 
                     
                 </tr>

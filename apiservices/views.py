@@ -728,14 +728,35 @@ def find_customers(request, def_date, route_id):
                 if building_data[0]==building:
                     building = building_data[0]
                     bottle_count = building_data[3]
-                    if current_trip_bottle_count + bottle_count > 200:
+                    if current_trip_bottle_count + bottle_count > 232:
                         trip_buildings = [building]
-                        trips[f"Trip{trip_count+1}"] = trip_buildings
+                        trip_count+=1
+                        trips[f"Trip{trip_count}"] = trip_buildings
+                        # print(route,"trip",trip_count)
                         current_trip_bottle_count = bottle_count
                     else:
+                        
                         trip_buildings.append(building)
                         trips[f"Trip{trip_count}"] = trip_buildings
                         current_trip_bottle_count += bottle_count
+            
+        
+
+        # Merge trips if possible to optimize
+        merging_occurred = False
+        for trip_num in range(1, trip_count + 1):
+            for other_trip_num in range(trip_num + 1, trip_count + 1):
+                trip_key = f"Trip{trip_num}"
+                other_trip_key = f"Trip{other_trip_num}"
+                combined_buildings = trips.get(trip_key, []) + trips.get(other_trip_key, [])
+                total_bottles = sum(sorted_building_count.get(building, 0) for building in combined_buildings)
+                if total_bottles <= 232:
+                    trips[trip_key] = combined_buildings
+                    del trips[other_trip_key]
+                    merging_occurred = True
+                    break
+            if merging_occurred:  
+                break
             
         # List to store trip-wise customer details
         trip_customers = []
@@ -765,8 +786,12 @@ def find_customers(request, def_date, route_id):
                         }
                         if customer in emergency_customers:
                             trip_customer['type'] = 'Emergency'
+                            trip_customer['emergency'] = 1
+                            dif = DiffBottlesModel.objects.filter(customer=customer, delivery_date=date).latest('created_date')
+                            trip_customer['no_of_bottles'] = dif.quantity_required
                         else:
                             trip_customer['type'] = 'Default'
+                            trip_customer['emergency'] = 0
                         trip_customers.append(trip_customer)
         return trip_customers
 
@@ -2229,34 +2254,52 @@ class CustodyCustomItemAPI(APIView):
         except Exception as e:
             print(e)
             return Response({"status": False, "message": str(e)})
-        
-        
-@api_view(['GET'])
-def supply_product(request,customer_id,product_id):
-    if (instances:=VanProductStock.objects.filter(product__pk=product_id)).exists():
-        product = instances.first().product
-        customer = Customers.objects.get(pk=customer_id)
 
-        if product.product_name.product_name=="5 Gallon":
-            serializer = SupplyItemFiveCanWaterProductGetSerializer(product, many=False, context={"request": request,"customer":customer.pk})
-        else:
-            serializer = SupplyItemProductGetSerializer(product, many=False, context={"request": request,"customer":customer.pk})
-
+class supply_product(APIView):
+    def get(self, request, *args, **kwargs):
+        route_id = request.GET.get("route_id")
+        customers = Customers.objects.all()
+        
+        if route_id:
+            customers = customers.filter(routes__pk=route_id)
+        
+        serializer = SupplyItemCustomersSerializer(customers, many=True, context={"request": request})
+        
         status_code = status.HTTP_200_OK  
         response_data = {
             "status": status_code,
             "StatusCode": 6000,
             "data": serializer.data,
         }
-    else:
-        status_code = status.HTTP_400_BAD_REQUEST 
-        response_data = {
-            "status": status_code,
-            "StatusCode": 6001,
-            "message": "No data",
-        }
+        
+        return Response(response_data, status_code)
+        
+# @api_view(['GET'])
+# def supply_product(request):
+#     if (instances:=VanProductStock.objects.filter(product__pk=product_id)).exists():
+#         product = instances.first().product
+#         customer = Customers.objects.get(pk=customer_id)
 
-    return Response(response_data, status_code)
+#         if product.product_name.product_name=="5 Gallon":
+#             serializer = SupplyItemFiveCanWaterProductGetSerializer(product, many=False, context={"request": request,"customer":customer.pk})
+#         else:
+#             serializer = SupplyItemProductGetSerializer(product, many=False, context={"request": request,"customer":customer.pk})
+
+#         status_code = status.HTTP_200_OK  
+#         response_data = {
+#             "status": status_code,
+#             "StatusCode": 6000,
+#             "data": serializer.data,
+#         }
+#     else:
+#         status_code = status.HTTP_400_BAD_REQUEST 
+#         response_data = {
+#             "status": status_code,
+#             "StatusCode": 6001,
+#             "message": "No data",
+#         }
+
+#     return Response(response_data, status_code)
 
 @api_view(['POST'])
 def create_customer_supply(request):
@@ -2548,40 +2591,11 @@ class OutstandingAmountListAPI(APIView):
 
         serializer =CustodyCustomItemListSerializer(custody_items, many=True)
         return Response(serializer.data)
-    
-# class CouponCountListAPI(APIView):
-#     def get(self, request, pk, format=None):
-#         try:
-#             customer = Customers.objects.get(customer_id=pk)
-#         except Customers.DoesNotExist:
-#             return Response({"message": "Customer not found"}, status=status.HTTP_404_NOT_FOUND)
-#
-#         customers = CustomerCouponStock.objects.filter(customer=customer)
-#         serializer = CustomerCouponStockSerializer(customers, many=True)
-#         return Response(serializer.data)
 
 
 
-#
-# class CouponCountList(APIView):
-#
-#     def get(self, request, pk, format=None):
-#         try:
-#             customer = Customers.objects.get(customer_id=pk)
-#             customers = CustomerCouponStock.objects.filter(customer=customer)
-#
-#             data = []
-#             for customer_stock in customers:
-#                 data.append({
-#                     'customer_name': customer_stock.customer.customer_name,
-#                     'coupon_count': customer_stock.count
-#                 })
-#
-#             return Response(data, status=status.HTTP_200_OK)
-#         except Customers.DoesNotExist:
-#             return Response({'error': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
-#         except Exception as e:
-#             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
 
 class CouponCountList(APIView):
@@ -2606,27 +2620,6 @@ class CouponCountList(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class CouponCountListAPI(APIView):
-    def get(self, request, pk, format=None):
-        try:
-            customer = Customers.objects.get(customer_id=pk)
-            customers = CustomerCouponStock.objects.filter(customer=customer)
-            serializer = CustomerCouponStockSerializer(customers, many=True)
-            return Response(serializer.data)
-        except Customers.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-    def post(self, request, pk, format=None):
-        try:
-            customer = Customers.objects.get(customer_id=pk)
-            serializer = CustomerCouponStockSerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save(customer=customer)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Customers.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
 class NewCouponCreateAPI(APIView):
     def post(self, request, format=None):
         serializer = CustomerCouponStockSerializer(data=request.data)
@@ -2649,22 +2642,6 @@ class NewCouponCountAPI(APIView):
                 return Response({'message': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
         else:
             return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
-
-# class DeleteCouponCountAPI(DestroyAPIView):
-#     queryset = CustomerCouponStock.objects.all()
-#     serializer_class = CoupenEditForm
-#     lookup_field = 'pk'
-
-
-#
-# class DeleteCouponCountAPI(DestroyAPIView):
-#     queryset = CustomerCouponStock.objects.all()
-#
-#     def delete(self, request, pk):
-#         customer_coupon_stock = get_object_or_404(CustomerCouponStock, pk=pk)
-#         customer_pk = customer_coupon_stock.customer.pk
-#         customer_coupon_stock.delete()
-#         return Response({'message': 'Coupon count deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
 
 class DeleteCouponCount(APIView):
     def delete(self, request, pk):
@@ -2715,3 +2692,11 @@ class customer_outstanding(APIView):
                 'data': serialized_data.data,  # Access serialized data
                 'message': 'success'
             })
+class CustomerCouponListAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get(self, request, format=None):
+        customers = Customers.objects.all()
+        serializer = CustomerDetailSerializer(customers, many=True, context={'request': request})
+        return Response(serializer.data)
+

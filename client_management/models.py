@@ -318,7 +318,7 @@ class CustomerSupply(models.Model):
 class CustomerSupplyItems(models.Model):
         id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
         customer_supply = models.ForeignKey(CustomerSupply,on_delete = models.CASCADE)
-        product = models.ForeignKey(Product, on_delete=models.CASCADE,null=True,blank=True)
+        product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True,blank=True)
         quantity = models.PositiveIntegerField()
         amount = models.DecimalField(default=0, max_digits=10, decimal_places=2)
 
@@ -331,7 +331,7 @@ class CustomerSupplyItems(models.Model):
 
 class CustomerSupplyStock(models.Model):
         id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-        product = models.ForeignKey(Product, on_delete=models.CASCADE,null=True,blank=True)
+        product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True,blank=True)
         customer = models.ForeignKey('accounts.Customers',on_delete = models.CASCADE)
         stock_quantity = models.PositiveIntegerField()  
 

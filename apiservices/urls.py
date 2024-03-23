@@ -88,7 +88,7 @@ urlpatterns = [
     path('add_no_of_coupons/<str:id>/', Add_No_Coupons.as_view()),
     
     # supply
-    re_path(r'^supply-product/(?P<customer_id>.*)/(?P<product_id>.*)/$', views.supply_product),
+    re_path(r'^supply-product/', supply_product.as_view()),
     re_path(r'^create-customer-supply/$', views.create_customer_supply),
     re_path(r'^customer-outstanding/$', customer_outstanding.as_view()),
    
@@ -136,8 +136,12 @@ urlpatterns = [
     # path('api/coupon_count/<uuid:pk>/', CouponCountListAPI.as_view(), name='coupon_count_list_api'),
     # path('check_customer_existence/', check_customer_existence, name='check_customer_existence'),
     # path('coupon_count/<uuid:pk>/', CouponCountList.as_view(), name='coupon_count_list_api'),
-    path('coupon_count/<uuid:pk>/', CouponCountListAPI.as_view(), name='coupon_count_list_api'),
+    # path('coupon_count/<uuid:pk>/', CouponCountListAPI.as_view(), name='coupon_count_list_api'),
     path('add_new_coupon/<uuid:pk>/', NewCouponCountAPI.as_view(), name='api_new_coupon_count'),
     path('delete_coupon_count/<uuid:pk>/', DeleteCouponCount.as_view(), name='delete_coupon_count'),
+    path('customers_coupon/', CustomerCouponListAPI.as_view(), name='customer_list_api'),
+
+
+
 
 ]

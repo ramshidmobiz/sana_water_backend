@@ -427,7 +427,7 @@ def find_customers(request, def_date, route_id):
                 if building_data[0]==building:
                     building = building_data[0]
                     bottle_count = building_data[3]
-                    if current_trip_bottle_count + bottle_count > 200:
+                    if current_trip_bottle_count + bottle_count > 232:
                         trip_buildings = [building]
                         trip_count+=1
                         trips[f"Trip{trip_count}"] = trip_buildings
@@ -449,7 +449,7 @@ def find_customers(request, def_date, route_id):
                 other_trip_key = f"Trip{other_trip_num}"
                 combined_buildings = trips.get(trip_key, []) + trips.get(other_trip_key, [])
                 total_bottles = sum(sorted_building_count.get(building, 0) for building in combined_buildings)
-                if total_bottles <= 200:
+                if total_bottles <= 232:
                     trips[trip_key] = combined_buildings
                     del trips[other_trip_key]
                     merging_occurred = True
@@ -480,12 +480,13 @@ def find_customers(request, def_date, route_id):
                         }
                         if customer in emergency_customers:
                             trip_customer['type'] = 'Emergency'
+                            dif = DiffBottlesModel.objects.filter(customer=customer, delivery_date=date).latest('created_date')
+                            trip_customer['no_of_bottles'] = dif.quantity_required
                         else:
                             trip_customer['type'] = 'Default'
                         trip_customers.append(trip_customer)
         return trip_customers
-
-
+        
 import math
 
 def pdf_download(request, route_id, def_date, trip):
@@ -670,6 +671,8 @@ def excel_download(request, route_id, def_date, trip):
     response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'inline; filename="{filename}"'
     return response
+    
+
 
 
 #Expence
