@@ -2702,6 +2702,10 @@ class CustomerCouponListAPI(APIView):
     
     def get(self, request, format=None):
         customers = Customers.objects.all()
+        
+        route_id = request.GET.get("route_id")
+        if route_id:
+            customers = customers.filter(routes__pk=route_id)
         serializer = CustomerDetailSerializer(customers, many=True, context={'request': request})
         
         return Response(serializer.data)
