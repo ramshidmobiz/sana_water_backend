@@ -2308,46 +2308,100 @@ class create_customer_supply(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        customer_supply_serializer = CustomerSupplySerializer(data=request.data.get('customer_supply'))
-        customer_supply_items_serializer = CustomerSupplyItemsSerializer(data=request.data.get('items'), many=True)
+        # Extract data from the request
+        customer_supply_data = request.data.get('customer_supply')
+        items_data = request.data.get('items')
+        collected_empty_bottle = request.data.get('collected_empty_bottle')
+        allocate_bottle_to_pending = request.data.get('allocate_bottle_to_pending')
+        allocate_bottle_to_custody = request.data.get('allocate_bottle_to_custody')
+        allocate_bottle_to_paid = request.data.get('allocate_bottle_to_paid')
 
-        if customer_supply_serializer.is_valid() and customer_supply_items_serializer.is_valid():
-            # with transaction.atomic():
-            customer_supply = customer_supply_serializer.save(created_by=request.user.id)
-            items_data = customer_supply_items_serializer.validated_data
+        # Create CustomerSupply instance
+        customer_supply = CustomerSupply.objects.create(
+            customer_id=customer_supply_data['customer'],
+            salesman_id=customer_supply_data['salesman'],
+            grand_total=customer_supply_data['grand_total'],
+            discount=customer_supply_data['discount'],
+            net_payable=customer_supply_data['net_payable'],
+            vat=customer_supply_data['vat'],
+            subtotal=customer_supply_data['subtotal'],
+            amount_recieved=customer_supply_data['amount_recieved'],
+            collected_empty_bottle=collected_empty_bottle,
+            allocate_bottle_to_pending=allocate_bottle_to_pending,
+            allocate_bottle_to_custody=allocate_bottle_to_custody,
+            allocate_bottle_to_paid=allocate_bottle_to_paid,
+            created_by=request.user.id,  # Provide the appropriate user ID here
+            created_date=timezone.now()
+        )
 
-            for item_data in items_data:
-                if item_data['product'].name == "5 Gallon":
-                    item_data['collected_empty_bottle'] = request.data.get('collected_empty_bottle')
-                    item_data['allocate_bottle_to_pending'] = request.data.get('allocate_bottle_to_pending')
-                    item_data['allocate_bottle_to_custody'] = request.data.get('allocate_bottle_to_custody')
-                    item_data['allocate_bottle_to_paid'] = request.data.get('allocate_bottle_to_paid')
-                item_data['customer_supply'] = customer_supply.id
+        # Create CustomerSupplyItems instances
+        for item_data in items_data:
+            CustomerSupplyItems.objects.create(
+                customer_supply=customer_supply,
+                product_id=item_data['product'],
+                quantity=item_data['quantity'],
+                amount=item_data['amount']
+            )
 
-            customer_supply_items_serializer.save()
+        # Update CustomerSupplyStock
+        for item_data in items_data:
+            product_id = item_data['product']
+            quantity = item_data['quantity']
+            customer_id = customer_supply_data['customer']
 
-            # Update customer supply stock
-            for item_data in items_data:
-                product = item_data['product']
-                quantity = item_data['quantity']
-                customer = customer_supply.customer
-                customer_supply_stock, _ = CustomerSupplyStock.objects.get_or_create(customer=customer, product=product)
-                customer_supply_stock.stock_quantity += quantity
-                customer_supply_stock.save()
+            customer_supply_stock, _ = CustomerSupplyStock.objects.get_or_create(
+                customer_id=customer_id,
+                product_id=product_id
+            )
+            customer_supply_stock.stock_quantity += quantity
+            customer_supply_stock.save()
 
-            response_data = {
-                "status": "true",
-                "title": "Successfully Created",
-                "message": "Customer Supply created successfully.",
-                'redirect': 'true',
-                "redirect_url": reverse('customer_supply:customer_supply_list')
-            }
-            return Response(response_data, status=status.HTTP_201_CREATED)
-        else:
-            errors = {}
-            errors.update(customer_supply_serializer.errors)
-            errors.update(customer_supply_items_serializer.errors)
-            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        response_data = {
+            "status": "true",
+            "title": "Successfully Created",
+            "message": "Customer Supply created successfully.",
+        }
+        return Response(response_data, status=status.HTTP_201_CREATED)
+        # customer_supply_serializer = CustomerSupplySerializer(data=request.data.get('customer_supply'))
+        # customer_supply_items_serializer = CustomerSupplyItemsSerializer(data=request.data.get('items'), many=True)
+
+        # if customer_supply_serializer.is_valid() and customer_supply_items_serializer.is_valid():
+        #     # with transaction.atomic():
+        #     customer_supply = customer_supply_serializer.save(created_by=request.user.id)
+        #     items_data = customer_supply_items_serializer.validated_data
+
+        #     for item_data in items_data:
+        #         if item_data['product'].name == "5 Gallon":
+        #             item_data['collected_empty_bottle'] = request.data.get('collected_empty_bottle')
+        #             item_data['allocate_bottle_to_pending'] = request.data.get('allocate_bottle_to_pending')
+        #             item_data['allocate_bottle_to_custody'] = request.data.get('allocate_bottle_to_custody')
+        #             item_data['allocate_bottle_to_paid'] = request.data.get('allocate_bottle_to_paid')
+        #         item_data['customer_supply'] = customer_supply.id
+
+        #     customer_supply_items_serializer.save()
+
+        #     # Update customer supply stock
+        #     for item_data in items_data:
+        #         product = item_data['product']
+        #         quantity = item_data['quantity']
+        #         customer = customer_supply.customer
+        #         customer_supply_stock, _ = CustomerSupplyStock.objects.get_or_create(customer=customer, product=product)
+        #         customer_supply_stock.stock_quantity += quantity
+        #         customer_supply_stock.save()
+
+        #     response_data = {
+        #         "status": "true",
+        #         "title": "Successfully Created",
+        #         "message": "Customer Supply created successfully.",
+        #         'redirect': 'true',
+        #         "redirect_url": reverse('customer_supply:customer_supply_list')
+        #     }
+        #     return Response(response_data, status=status.HTTP_201_CREATED)
+        # else:
+        #     errors = {}
+        #     errors.update(customer_supply_serializer.errors)
+        #     errors.update(customer_supply_items_serializer.errors)
+        #     return Response(errors, status=status.HTTP_400_BAD_REQUEST)
         
 @api_view(['GET'])
 def customer_coupon_stock(request):

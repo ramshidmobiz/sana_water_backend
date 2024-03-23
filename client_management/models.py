@@ -305,6 +305,10 @@ class CustomerSupply(models.Model):
         vat = models.DecimalField(default=0, max_digits=10, decimal_places=2)
         subtotal = models.DecimalField(default=0, max_digits=10, decimal_places=2)
         amount_recieved = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+        collected_empty_bottle = models.PositiveIntegerField(default=0)
+        allocate_bottle_to_pending = models.PositiveIntegerField(default=0)
+        allocate_bottle_to_custody = models.PositiveIntegerField(default=0)
+        allocate_bottle_to_paid = models.PositiveIntegerField(default=0)
         
         created_by = models.CharField(max_length=30, blank=True)
         created_date = models.DateTimeField(auto_now_add=True)
@@ -333,16 +337,10 @@ class CustomerSupplyStock(models.Model):
         id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
         product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True,blank=True)
         customer = models.ForeignKey('accounts.Customers',on_delete = models.CASCADE)
-        stock_quantity = models.PositiveIntegerField()  
+        stock_quantity = models.PositiveIntegerField(default=0)  
 
         class Meta:
             ordering = ('-id',)
             
         def __str__(self):
             return self.product
-        
-
-
-
-
-
