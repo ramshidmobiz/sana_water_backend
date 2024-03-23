@@ -2655,43 +2655,47 @@ class customer_outstanding(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
     def get(self, request, *args, **kwargs):
-            reports = CustomerOutstandingReport.objects.all()
+        reports = CustomerOutstandingReport.objects.all()
+        
+        route_id = request.GET.get("route_id")
+        if route_id :
+            reports = reports.filter(customer__routes__pk=route_id)
+        
+        # if request.user and request.user.user_type=="Salesman":
+        customer_data = {}
+        for report in reports:
+            customer_id = report.customer.pk
+            if customer_id not in customer_data:
+                customer_data[customer_id] = {
+                    'customer': report.customer.pk,
+                    'customer_name': report.customer.customer_name,
+                    'building_name': report.customer.building_name,
+                    'route_name': report.customer.routes.route_name,
+                    'route_id': report.customer.routes.pk,
+                    'door_house_no': report.customer.door_house_no,
+                    'floor_no': report.customer.floor_no,
+                    'amount': 0,
+                    'empty_can': 0,
+                    'coupons': 0
+                }
             
-            # if request.user and request.user.user_type=="Salesman":
-            customer_data = {}
-            for report in reports:
-                customer_id = report.customer.pk
-                if customer_id not in customer_data:
-                    customer_data[customer_id] = {
-                        'customer': report.customer.pk,
-                        'customer_name': report.customer.customer_name,
-                        'building_name': report.customer.building_name,
-                        'route_name': report.customer.routes.route_name,
-                        'route_id': report.customer.routes.pk,
-                        'door_house_no': report.customer.door_house_no,
-                        'floor_no': report.customer.floor_no,
-                        'amount': 0,
-                        'empty_can': 0,
-                        'coupons': 0
-                    }
+            # Add product values based on product type
+            if report.product_type == 'amount':
+                customer_data[customer_id]['amount'] += report.value
+            elif report.product_type == 'emptycan':
+                customer_data[customer_id]['empty_can'] += report.value
+            elif report.product_type == 'coupons':
+                customer_data[customer_id]['coupons'] += report.value
                 
-                # Add product values based on product type
-                if report.product_type == 'amount':
-                    customer_data[customer_id]['amount'] += report.value
-                elif report.product_type == 'emptycan':
-                    customer_data[customer_id]['empty_can'] += report.value
-                elif report.product_type == 'coupons':
-                    customer_data[customer_id]['coupons'] += report.value
-                    
-            # print(customer_data)
-            
-            serialized_data = CustomerOutstandingSerializer(data=list(customer_data.values()), many=True)
-            serialized_data.is_valid()  # Ensure data is valid
-            return Response({
-                'status': True, 
-                'data': serialized_data.data,  # Access serialized data
-                'message': 'success'
-            })
+        # print(customer_data)
+        
+        serialized_data = CustomerOutstandingSerializer(data=list(customer_data.values()), many=True)
+        serialized_data.is_valid()  # Ensure data is valid
+        return Response({
+            'status': True, 
+            'data': serialized_data.data,  # Access serialized data
+            'message': 'success'
+        })
 class CustomerCouponListAPI(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
