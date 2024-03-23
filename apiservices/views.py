@@ -2701,7 +2701,7 @@ class CustomerCouponListAPI(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request, format=None):
-        customers = Customers.objects.all()[:2]
+        customers = Customers.objects.all()
         serializer = CustomerDetailSerializer(customers, many=True, context={'request': request})
         
         return Response(serializer.data)
