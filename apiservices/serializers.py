@@ -1,15 +1,15 @@
-
-from customer_care.models import DiffBottlesModel
+from django.db.models import Sum
 from rest_framework import serializers
 #from . models import *
 from rest_framework.views import APIView
 
+from order.models import *
 from master.models  import *
 from product.models  import * 
-from client_management.models  import * 
 from accounts.serializers import *
+from client_management.models  import * 
 from van_management.serializers import *
-from order.models import *
+from customer_care.models import DiffBottlesModel
 
 class CustomerCustodyItemSerializers(serializers.ModelSerializer):
     class Meta:
@@ -471,20 +471,27 @@ class RouteMasterSerializer(serializers.ModelSerializer):
 #     return None
 
 class CustomerCouponCountSerializer(serializers.ModelSerializer):
-    # customer_name = serializers.SerializerMethodField()
+    # total_count = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomerCouponStock
         fields = ['id', 'coupon_type_id', 'count']
         read_only_fields = ['id']
 
-    def get_customer_name(self, obj):
-        return obj.customer.customer_name
+    # def get_total_count(self, obj):
+    #     request = self.context.get('request')
+    
+    
 class CustomerDetailSerializer(serializers.ModelSerializer):
+    user_id = serializers.SerializerMethodField()
     coupon_count = serializers.SerializerMethodField()
     route_name = serializers.SerializerMethodField()
-    user_id = serializers.SerializerMethodField()
+    total_count = serializers.SerializerMethodField()
 
+    class Meta:
+        model = Customers
+        fields = ['customer_id','customer_name', 'route_name','user_id','coupon_count','total_count']
+        
     def get_user_id(self, obj):
         request = self.context.get('request')
 
@@ -501,8 +508,8 @@ class CustomerDetailSerializer(serializers.ModelSerializer):
 
     def get_coupon_count(self, obj):
         counts = CustomerCouponStock.objects.filter(customer=obj)
-        return CustomerCouponCountSerializer(counts, many=True).data
-
-    class Meta:
-        model = Customers
-        fields = ['customer_id','customer_name', 'coupon_count', 'route_name', 'user_id']
+        return CustomerCouponCountSerializer(counts, many=True,context={"customer_id": obj.pk}).data
+    
+    def get_total_count(self, obj):
+        total_count = CustomerCouponStock.objects.filter(customer=obj).aggregate(total_count=Sum('count'))['total_count']
+        return total_count
