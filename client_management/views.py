@@ -438,6 +438,51 @@ def customer_supply_list(request):
     return render(request, 'client_management/customer_supply/list.html', context)
 
 @login_required
+def customer_supply_info(request,pk):
+    """
+    Customer Supply Info
+    :param request:
+    :return: CustomerSupplys Info view
+    """
+    
+    instances = CustomerSupplyItems.objects.filter(customer_supply=pk).order_by("-customer_supply__created_date")
+         
+    # date_range = ""
+    # date_range = request.GET.get('date_range')
+    # # print(date_range)
+
+    # if date_range:
+    #     start_date_str, end_date_str = date_range.split(' - ')
+    #     start_date = datetime.strptime(start_date_str, '%m/%d/%Y').date()
+    #     end_date = datetime.strptime(end_date_str, '%m/%d/%Y').date()
+    #     instances = instances.filter(date__range=[start_date, end_date])
+    
+    # filter_data = {}
+    # query = request.GET.get("q")
+    
+    # if query:
+
+    #     instances = instances.filter(
+    #         Q(customer_supply_no__icontains=query) |
+    #         Q(product__customer_supply_id__icontains=query) 
+    #     )
+    #     title = "Customer Supply List - %s" % query
+    #     filter_data['q'] = query
+    
+    context = {
+        'instances': instances,
+        'page_name' : 'Customer Supply List',
+        'page_title' : 'Customer Supply List',
+        # 'filter_data' :filter_data,
+        # 'date_range': date_range,
+        
+        'is_customer_supply': True,
+        'is_need_datetime_picker': True,
+    }
+
+    return render(request, 'client_management/customer_supply/info.html', context)
+
+@login_required
 def customer_supply_customers(request,pk):
     filter_data = {}
     
