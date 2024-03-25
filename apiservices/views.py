@@ -2315,6 +2315,10 @@ class create_customer_supply(APIView):
         allocate_bottle_to_pending = request.data.get('allocate_bottle_to_pending')
         allocate_bottle_to_custody = request.data.get('allocate_bottle_to_custody')
         allocate_bottle_to_paid = request.data.get('allocate_bottle_to_paid')
+        
+        if Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CASH COUPON" :
+            total_coupon_collected = request.data.get('total_coupon_collected')
+            collected_coupon_ids = request.data.get('collected_coupon_ids')
 
         # Create CustomerSupply instance
         customer_supply = CustomerSupply.objects.create(
@@ -2355,6 +2359,21 @@ class create_customer_supply(APIView):
             )
             customer_supply_stock.stock_quantity += quantity
             customer_supply_stock.save()
+            
+            if Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CASH COUPON" and customer_supply_stock.product.product_name.lower() == "5 gallon" :
+                for c_id in collected_coupon_ids:
+                    customer_supply_coupon = CustomerSupplyCoupon.objects.create(
+                        customer_supply=customer_supply,
+                    )
+                    leaflet_instance = CouponLeaflet.objects.get(pk=c_id)
+                    customer_supply_coupon.leaf.add(leaflet_instance)
+                    leaflet_instance.used=True
+                    leaflet_instance.save()
+                    
+                    if CustomerCouponStock.objects.filter(customer__pk=customer_supply_data['customer']).exists() :
+                        customer_stock = CustomerCouponStock.objects.get(customer__pk=customer_supply_data['customer'])
+                        customer_stock.count -= int(total_coupon_collected)
+                        customer_stock.save()                    
 
         response_data = {
             "status": "true",
@@ -2362,46 +2381,6 @@ class create_customer_supply(APIView):
             "message": "Customer Supply created successfully.",
         }
         return Response(response_data, status=status.HTTP_201_CREATED)
-        # customer_supply_serializer = CustomerSupplySerializer(data=request.data.get('customer_supply'))
-        # customer_supply_items_serializer = CustomerSupplyItemsSerializer(data=request.data.get('items'), many=True)
-
-        # if customer_supply_serializer.is_valid() and customer_supply_items_serializer.is_valid():
-        #     # with transaction.atomic():
-        #     customer_supply = customer_supply_serializer.save(created_by=request.user.id)
-        #     items_data = customer_supply_items_serializer.validated_data
-
-        #     for item_data in items_data:
-        #         if item_data['product'].name == "5 Gallon":
-        #             item_data['collected_empty_bottle'] = request.data.get('collected_empty_bottle')
-        #             item_data['allocate_bottle_to_pending'] = request.data.get('allocate_bottle_to_pending')
-        #             item_data['allocate_bottle_to_custody'] = request.data.get('allocate_bottle_to_custody')
-        #             item_data['allocate_bottle_to_paid'] = request.data.get('allocate_bottle_to_paid')
-        #         item_data['customer_supply'] = customer_supply.id
-
-        #     customer_supply_items_serializer.save()
-
-        #     # Update customer supply stock
-        #     for item_data in items_data:
-        #         product = item_data['product']
-        #         quantity = item_data['quantity']
-        #         customer = customer_supply.customer
-        #         customer_supply_stock, _ = CustomerSupplyStock.objects.get_or_create(customer=customer, product=product)
-        #         customer_supply_stock.stock_quantity += quantity
-        #         customer_supply_stock.save()
-
-        #     response_data = {
-        #         "status": "true",
-        #         "title": "Successfully Created",
-        #         "message": "Customer Supply created successfully.",
-        #         'redirect': 'true',
-        #         "redirect_url": reverse('customer_supply:customer_supply_list')
-        #     }
-        #     return Response(response_data, status=status.HTTP_201_CREATED)
-        # else:
-        #     errors = {}
-        #     errors.update(customer_supply_serializer.errors)
-        #     errors.update(customer_supply_items_serializer.errors)
-        #     return Response(errors, status=status.HTTP_400_BAD_REQUEST)
         
 @api_view(['GET'])
 def customer_coupon_stock(request):
@@ -2424,8 +2403,6 @@ def customer_coupon_stock(request):
         }
 
     return Response(response_data, status_code)
-
-    
 
 # class CustodyCustomItemListAPI(APIView):
     
@@ -2478,31 +2455,21 @@ class CustodyCustomItemListAPI(APIView):
     def get(self, request, *args, **kwargs):
         try:
             user_id = request.user.id
-            # Fetch all CustodyCustom objects for the current user
             custody_custom_objects = CustodyCustom.objects.filter(customer__sales_staff=user_id)
             
-            # Initialize a dictionary to store grouped data
             grouped_data = {}
             
-            # Iterate over each CustodyCustom object
             for custody_custom_obj in custody_custom_objects:
-                # Fetch CustodyCustomItems related to the CustodyCustom object
                 custody_items = CustodyCustomItems.objects.filter(custody_custom=custody_custom_obj)
-                
-                # Serialize CustodyCustomItems data
                 serialized_items = self.serializer_class(custody_items, many=True).data
-                
-                # Get customer_id
                 customer_id = custody_custom_obj.customer.customer_id
                 
-                # Add customer_id and serialized items to grouped_data
                 grouped_data[customer_id] = {
                     'customer_id': customer_id,
                     'customer_name': custody_custom_obj.customer.customer_name,
                     'products': serialized_items
                 }
             
-            # Convert dictionary values to a list
             final_response = list(grouped_data.values())
             
             return Response({'status': True, 'data': final_response, 'message': 'Custody items list passed!'})
@@ -2643,6 +2610,47 @@ class OutstandingAmountListAPI(APIView):
 
         serializer =CustodyCustomItemListSerializer(custody_items, many=True)
         return Response(serializer.data)
+    
+class VanStockAPI(APIView):
+    def get(self, request):
+        coupon_stock = VanCouponStock.objects.all()
+        product_stock = VanProductStock.objects.all()
+        coupon_serializer = VanCouponStockSerializer(coupon_stock, many=True)
+        product_serializer = VanProductStockSerializer(product_stock, many=True)
+        print("coupon_serializer",coupon_serializer)
+        print("product_serializer",product_serializer)
+        return Response({
+            'coupon_stock': coupon_serializer.data,
+            'product_stock': product_serializer.data
+        }, status=status.HTTP_200_OK)
+    
+# class VanStockAPI(APIView):
+#     def get(self, request, *args, **kwargs):
+#         id = request.user.id
+#         print("id",id)
+#         customer=Customers.objects.filter(sales_staff__id = id)
+#         print("customer",customer)
+#         coupon_stock = VanCouponStock.objects.filter(van__driver=customer)
+#         print("coupon_stock",coupon_stock)
+#         product_stock = VanProductStock.objects.all()
+#         coupon_serializer = VanCouponStockSerializer(coupon_stock, many=True)
+#         product_serializer = VanProductStockSerializer(product_stock, many=True)
+#         print("coupon_serializer",coupon_serializer)
+#         print("product_serializer",product_serializer)
+#         return Response({
+#             'coupon_stock': coupon_serializer.data,
+#             'product_stock': product_serializer.data
+#         }, status=status.HTTP_200_OK)
+# class CouponCountListAPI(APIView):
+#     def get(self, request, pk, format=None):
+#         try:
+#             customer = Customers.objects.get(customer_id=pk)
+#         except Customers.DoesNotExist:
+#             return Response({"message": "Customer not found"}, status=status.HTTP_404_NOT_FOUND)
+#
+#         customers = CustomerCouponStock.objects.filter(customer=customer)
+#         serializer = CustomerCouponStockSerializer(customers, many=True)
+#         return Response(serializer.data)
 
 
 
@@ -2763,4 +2771,95 @@ class CustomerCouponListAPI(APIView):
         serializer = CustomerDetailSerializer(customers, many=True, context={'request': request})
         
         return Response(serializer.data)
+# class CustomerCouponListAPI(APIView):
+#     authentication_classes = [BasicAuthentication]
+#     permission_classes = [IsAuthenticated]
+#     def get(self, request, format=None):
+#         customers = Customers.objects.all()
+#         serializer = CustomerDetailSerializer(customers, many=True, context={'request': request})
+#         return Response(serializer.data)
 
+
+
+
+# class CustomerCouponListAPI(APIView):
+#     authentication_classes = [BasicAuthentication]
+#     permission_classes = [IsAuthenticated]
+#
+#     def get(self, request, format=None):
+#         customers = Customers.objects.all()
+#         route_id = request.GET.get("route_id")
+#
+#         if route_id:
+#             customers = customers.filter(customer__routes__pk=route_id)
+
+
+# class CustomerCouponListAPI(APIView):
+#     authentication_classes = [BasicAuthentication]
+#     permission_classes = [IsAuthenticated]
+#
+#     def get(self, request, format=None):
+#         # Get the current user
+#         user = request.user
+#
+#         if user.is_authenticated:
+#             if user.user_type == 'Salesman':
+#                 # For Salesman, filter customers based on the salesman's routes
+#                 route_ids = user.customer_staff.values_list('routes__pk', flat=True)
+#                 customers = Customers.objects.filter(routes__pk__in=route_ids)
+#             elif user.user_type == 'Supervisor':
+#                 # For Supervisor, filter customers based on the supervisor's routes
+#                 route_ids = user.supervisor_routes.values_list('pk', flat=True)
+#                 customers = Customers.objects.filter(routes__pk__in=route_ids)
+#             elif user.user_type == 'Driver':
+#                 # For Driver, filter customers based on the driver's assigned routes
+#                 route_ids = user.driver_routes.values_list('pk', flat=True)
+#                 customers = Customers.objects.filter(routes__pk__in=route_ids)
+#             else:
+#                 # For other user types, return an empty queryset
+#                 customers = Customers.objects.none()
+#
+#             # Serialize the filtered customers
+#             serializer = CustomerDetailSerializer(customers, many=True, context={'request': request})
+#             return Response(serializer.data)
+#
+#         return Response({'error': 'User is not authenticated'}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+# class CustomerCouponListAPI(APIView):
+#     authentication_classes = [BasicAuthentication]
+#     permission_classes = [IsAuthenticated]
+#
+#     def get(self, request, format=None):
+#         customers = Customers.objects.all()
+#         route_id = request.GET.get("route_id")
+#
+#         if route_id:
+#             customers = customers.filter(customer__routes__pk=route_id)
+#
+#         serializer = CustomerDetailSerializer(customers, many=True, context={'request': request})
+#         return Response(serializer.data)
+
+class CustomerCouponListAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, format=None):
+        user = request.user
+
+        # Filter customers based on user's role
+        if user.user_type == 'Salesman':
+            route_ids = user.customer_staff.values_list('routes__pk', flat=True)
+            customers = Customers.objects.filter(routes__pk__in=route_ids)
+        elif user.user_type == 'Supervisor':
+            # If user is a supervisor, get all customers under their supervision
+            subordinate_salesmen_ids = user.subordinates.values_list('id', flat=True)
+            subordinate_route_ids = Customers.objects.filter(sales_staff__id__in=subordinate_salesmen_ids).values_list('routes__pk', flat=True)
+            customers = Customers.objects.filter(routes__pk__in=subordinate_route_ids)
+        else:
+            # For other user types, return an empty queryset
+            customers = Customers.objects.none()
+
+        # Serialize the filtered customers
+        serializer = CustomerDetailSerializer(customers, many=True, context={'request': request})
+        return Response(serializer.data)

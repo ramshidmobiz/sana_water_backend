@@ -29,6 +29,21 @@
                     </div>
                     <div id="table-container">
                         <div class="card-body">
+                            <div style="float:right;padding:10px 10px">
+                                <form method="GET">
+                                    <div class="input-group">
+                                        <select name="route_name" class="form-select">
+                                            <option value="">All Routes</option>
+                                            {% for route in route_li %}
+                                                <option value="{{ route.route_name }}">{{ route.route_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-search"></i> Search
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                             <table  class="table table-bordered text-wrap" style="width: 100%">
                                 <thead>
                                     <tr>
@@ -36,6 +51,7 @@
                                         <th>Customer</th>
                                         <th>Building No</th>
                                         <th>Room No/Floor No</th>
+                                        <th>Route</th>
                                         <th>Amount</th>
                                         <th>Empty Can</th>
                                         <th>Coupon</th>
@@ -48,6 +64,7 @@
                                         <td>{{ item.customer.customer_name }}</td>
                                         <td>{{ item.customer.building_name }}</td>
                                         <td>{{ item.customer.door_house_no }}</td>
+                                        <td>{{ item.customer.routes.route_name}}</td>
                                         <td>{{ item.amount }}</td>
                                         <td>{{ item.empty_can }}</td>
                                         <td>{{ item.coupons }}</td>

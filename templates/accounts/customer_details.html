@@ -86,12 +86,13 @@
                                 <td class="text-secondary">Maximum Credit Limit</td>
                                 <td>{{user_det.max_credit_limit}}</td>
                               </tr>
-                              <tr>
+                              <tr >
                                 <td class="text-secondary">Credit Days</td>
                                 <td>{{user_det.credit_days}}</td>
                                 <td class="text-secondary">No Of Permitted Invoices</td>
                                 <td>{{user_det.no_of_permitted_invoices}}</td>
                               </tr>
+                              
                               <tr>
                                 <td class="text-secondary">Status</td>
                                 {% if user_det.is_active == 1 %}
@@ -99,6 +100,11 @@
                                 {% else %}
                                 <td>Inactive</td>
                                 {% endif %}
+                              </tr>
+                              <tr >
+                                <td colspan="1" class="text-secondary">Visit schedule</td>
+                                <td>{{user_det.visit_schedule}}</td>
+                              
                               </tr>
                             </tbody>
                       

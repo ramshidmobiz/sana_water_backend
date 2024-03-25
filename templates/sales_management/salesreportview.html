@@ -28,30 +28,36 @@
                             <thead>
                                 <tr>
                                     <th scope="col">Sl No</th>
-                                    <th scope="col">Sales Man</th>
-                                    <th scope="col">Actions</th>
+                                    <th scope="col">Customer</th>
+                                    <th scope="col">Customer Address</th>
+                                    <th scope="col">Product</th>
+                                    <th scope="col">Quantity</th>
+                                    <th scope="col">Amount</th>
+
+
 
                                     
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for instance in instances %}
+                                {% for supply in customer_supplies %}
+                                {% for item in supply.customersupplyitems_set.all %}
                                 <tr>
-                                    <td >{{forloop.counter}}</td>
-                                    <td>{{instance.username}}</td>
-
-                                    <td>
-                                        <div class="g-2">
-                                            <a href="{% url 'salesreportview' instance.id %}" aria-label="anchor" class="btn  btn-warning-light btn-sm" data-bs-toggle="tooltip" data-bs-original-title="View">
-                                                <span class="bi bi-eye fs-14"></span>
-                                            </a>
-                                            
-                                        </div>
-                                    </td>
+                                    <td>{{ forloop.parentloop.counter }}</td>
+                                    <td>{{ supply.customer }}</td>
+                                    <td>{{ supply.customer.building_name }} {{ supply.customer.door_house_no }}</td>
+                                    <td>{{ item.product }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>{{ item.amount }}</td>
                                 </tr>
+                                {% endfor %}
                                 {% endfor %}
                             </tbody>
                         </table>
+                        <div class="col-12 text-end mt-5">
+                            <a href="{% url 'download_salesreport_pdf' %}" class="btn btn-primary me-2 mb-2">Download PDF</a>
+                            <a href="{% url 'download_salesreport_excel' %}" class="btn btn-success me-md-2 mb-2">Export to CSV</a>
+                        </div>
                         
                     </div>
                 </div>

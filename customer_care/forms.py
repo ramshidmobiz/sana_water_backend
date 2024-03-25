@@ -124,19 +124,19 @@ class CustodyPullOutForm(forms.ModelForm):
         }
 
 class DiffBottles_Create_Form(forms.ModelForm):
-    # def __init__(self, customer=None, *args, **kwargs):
+    # def __init__(self,customer_id, *args, **kwargs):
     #     super().__init__(*args, **kwargs)
-    #     self.fields['request_type'].queryset = RequestTypeMaster.objects.exclude(request_name__in=['Coupons', 'Others'])
+    #     self.fields['request_type'].queryset = RequestTypeMaster.objects.filter(request_name__in = [])
     class Meta:
         model = DiffBottlesModel
-        fields = ['quantity_required', 'delivery_date', 'assign_this_to', 'mode', 'request_type']
+        fields = ['request_type','quantity_required', 'delivery_date', 'assign_this_to', 'mode' ]
 
         widgets = {
+            'request_type': forms.Select(attrs={'class': 'form-control', 'required': True}),  # Add widget for request_type
             'quantity_required': forms.TextInput(attrs={'class': 'form-control','required': False}),
             'delivery_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'assign_this_to': forms.TextInput(attrs={'class': 'form-control'}),
             'mode': forms.Select(attrs={'class': 'form-control'}),
-            'request_type': forms.Select(attrs={'class': 'form-control'}),
         }
 
 
@@ -183,4 +183,21 @@ class Coupon_Create_Form(forms.ModelForm):
             'request_type': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
 
         }
-      
+
+class DiffBottlesFilterForm(forms.Form):
+    request_type = forms.CharField(max_length=100, required=False)
+
+    def filter_data(self):
+        request_type = self.cleaned_data.get('request_type')
+        queryset = DiffBottlesModel.objects.all()
+        if request_type:
+            queryset = queryset.filter(request_type__request_name=request_type)
+        return queryset
+
+class ReassignRequestForm(forms.ModelForm):
+    new_assignee = forms.CharField(max_length=100, required=True)
+    new_delivery_date = forms.DateField(required=True)
+
+    class Meta:
+        model = DiffBottlesModel
+        fields =  ['request_type','quantity_required', 'delivery_date', 'assign_this_to', 'mode' ]

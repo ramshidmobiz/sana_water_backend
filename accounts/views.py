@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.shortcuts import render, redirect,HttpResponse
+from django.shortcuts import render, redirect,HttpResponse,get_object_or_404
 from django.views import View
 from django.contrib.auth.models import User
 from django.utils.decorators import method_decorator
@@ -317,3 +317,4 @@ def visit_days_assign(request, customer_id):
     }
     
     return render(request, template_name, context)
+

@@ -4,7 +4,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from datetime import date
 from accounts.models import *
-from coupon_management.models import Coupon, CouponType, NewCoupon
+from coupon_management.models import COUPON_METHOD_CHOICES, Coupon, CouponLeaflet, CouponType, NewCoupon
 from product.models import *
 from django.http import HttpResponse
 
@@ -178,9 +178,13 @@ class CustomerCoupon(models.Model):
     def __str__(self):
         return self.customer
     
+    def get_available_coupon_count(self):
+        return CouponLeaflet.objects.filter(coupon=self.coupon,used=False).count()
+    
 class CustomerCouponStock(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     coupon_type_id = models.ForeignKey(CouponType, on_delete=models.CASCADE)
+    coupon_method = models.CharField(max_length=10,choices=COUPON_METHOD_CHOICES,default='manual')
     customer = models.ForeignKey('accounts.Customers',on_delete = models.CASCADE)
     count = models.PositiveIntegerField()
    
@@ -332,7 +336,17 @@ class CustomerSupplyItems(models.Model):
         def __str__(self):
             return self.customer_supply
         
+class CustomerSupplyCoupon(models.Model):
+        id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+        customer_supply = models.ForeignKey(CustomerSupply,on_delete = models.CASCADE)
+        leaf = models.ManyToManyField(CouponLeaflet)
 
+        class Meta:
+            ordering = ('-id',)
+            
+        def __str__(self):
+            return self.customer_supply
+        
 class CustomerSupplyStock(models.Model):
         id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
         product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True,blank=True)
@@ -344,3 +358,9 @@ class CustomerSupplyStock(models.Model):
             
         def __str__(self):
             return self.product
+        
+
+
+
+
+

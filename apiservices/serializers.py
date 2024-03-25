@@ -307,9 +307,11 @@ class SupplyItemProductGetSerializer(serializers.ModelSerializer):
 
 class SupplyItemCustomersSerializer(serializers.ModelSerializer):
     products = serializers.SerializerMethodField()
+    pending_to_return = serializers.SerializerMethodField()
+    coupon_details = serializers.SerializerMethodField()
     class Meta:
         model = Customers
-        fields = '__all__'
+        fields = ['customer_id','customer_name','routes','sales_type','products','pending_to_return','coupon_details']
         
     def get_products(self, obj):
         fivegallon = ProdutItemMaster.objects.get(product_name="5 Gallon")
@@ -327,6 +329,33 @@ class SupplyItemCustomersSerializer(serializers.ModelSerializer):
                     supply_product_data.append(supply_product_serializer.data)
         
         return [five_gallon_data] + supply_product_data
+    
+    def get_pending_to_return(self, obj):
+        total_quantity = CustodyCustomItems.objects.filter(
+            product__product_name="5 Gallon",
+            custody_custom__customer=obj
+        ).aggregate(total_quantity=Sum('quantity'))['total_quantity']
+        
+        return total_quantity
+    
+    def get_coupon_details(self, obj):
+        pending_coupons = 0
+        digital_coupons = 0
+        manual_coupons = 0
+        
+        if CustomerOutstandingReport.objects.filter(product_type="coupons",customer=obj).exists() :
+            pending_coupons = CustomerOutstandingReport.objects.get(product_type="coupons",customer=obj).value
+            
+        if CustomerCouponStock.objects.filter(customer=obj).exists() :
+            digital_coupons = 0
+            manual_coupons = CustomerCouponStock.objects.filter(customer=obj).aggregate(total_count=Sum('count'))['total_count']
+            
+        return {
+            'pending_coupons': pending_coupons,
+            'digital_coupons': digital_coupons,
+            'manual_coupons': manual_coupons,
+            
+        }
 
 class CustomerSupplySerializer(serializers.ModelSerializer):
     
@@ -344,8 +373,8 @@ class CustomerSupplyItemsSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 class CustomerSupplyStockSerializer(serializers.ModelSerializer):
-    product = ProductSerializer()  # Assuming you have a serializer for the Product model
-    customer = CustomersSerializer()  # Assuming you have a serializer for the Customers model
+    product = ProductSerializer()  
+    customer = CustomersSerializer()  
 
     class Meta:
         model = CustomerSupplyStock
@@ -355,14 +384,28 @@ class CustomerSupplyStockSerializer(serializers.ModelSerializer):
 
 class CustomerCouponStockSerializer(serializers.ModelSerializer):
     customer_name = serializers.SerializerMethodField()
+    manual_count = serializers.SerializerMethodField()
+    digital_count = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomerCouponStock
-        fields = ['id', 'coupon_type_id', 'count', 'customer_name']
+        fields = ['id', 'coupon_type_id', 'count', 'customer_name', 'manual_count', 'digital_count']
         read_only_fields = ['id']
         
     def get_customer_name(self, obj):
         return obj.customer.customer_name
+    
+    def get_manual_count(self, obj):
+        if obj.coupon_method == 'manual':
+            return obj.count
+        else:
+            return 0
+    
+    def get_digital_count(self, obj):
+        if obj.coupon_method == 'digital':
+            return obj.count
+        else:
+            return 0
 
 class VanCouponStockSerializer(serializers.ModelSerializer):
     class Meta:

@@ -7,17 +7,9 @@ from client_management.models import *
 
 
 class RequestTypeMaster(models.Model):
-    TYPE_CHOICES = [
-        ('1', 'Filled Bottles'),
-        ('2', 'Empty Bottles'),
-        ('3', 'Coupons'),
-        ('4', 'Dispenser'),
-        ('5', 'Custody Pull Out'),
-        ('6', 'other'),
-        
-    ]
+    
     request_id   = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    request_type = models.CharField(max_length=50, choices=TYPE_CHOICES ,null=True ,blank= True)
+    request_type = models.CharField(max_length=50,null=True ,blank= True)
     request_name = models.CharField(max_length=50,unique=True)
     created_by = models.CharField(max_length=20,  blank=True)
     created_date = models.DateTimeField(auto_now_add=True,blank=True, null=True)
@@ -30,6 +22,7 @@ class RequestTypeMaster(models.Model):
         return str(self.request_name)
     
 class DiffBottlesModel(models.Model):
+
     diffbottles_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     request_type = models.ForeignKey(RequestTypeMaster,on_delete=models.SET_NULL, null=True, blank=True)
     quantity_required = models.IntegerField(null=True, blank=True)
@@ -43,12 +36,12 @@ class DiffBottlesModel(models.Model):
     modified_by = models.CharField(max_length=20, null=True, blank=True)
     modified_date = models.DateTimeField(blank=True, null=True)
     customer = models.ForeignKey('accounts.Customers', on_delete=models.SET_NULL, null=True, blank=True,related_name='customer_bottles')
-
+    status = models.CharField(max_length=20, default='Pending')  
     class Meta:
         ordering = ('request_type',)
 
     def __str__(self):
-        return str(self.request_type)
+        return str(self.customer)
 class OtherRequirementModel(models.Model):
     requirement_id   = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     request_type = models.ForeignKey(RequestTypeMaster,on_delete=models.SET_NULL, null=True, blank=True)

@@ -665,7 +665,7 @@ def excel_download(request, route_id, def_date, trip):
         worksheet.merge_range('E3:H3', f'Date: {def_date}', merge_format)
         worksheet.merge_range('I3:M3', f'Total bottle: {total_bottle}', merge_format)
         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
-        worksheet.merge_range('A4:LM', '', merge_format)
+        worksheet.merge_range('A4:L4', '', merge_format)
 
     filename = f"{route.route_name}_{def_date}_{trip}.xlsx"
     response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')

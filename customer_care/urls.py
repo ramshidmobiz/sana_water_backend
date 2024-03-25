@@ -31,7 +31,9 @@ path('default_bottle_qty/<str:pk>',default_bottle_qty, name='default_bottle_qty'
 path('createcustomer',createcustomer, name='createcustomer'),
 path('new_request_home/<str:customer_id>', NewRequestHome.as_view(), name='new_request_home'),
 path('water_delivery_status', WaterDeliveryStatus.as_view(), name='water_delivery_status'),
-
-path('next_delivery_date', get_weeks_in_month, name = 'nexr_delivery_date'),
+path('edit_quantity/<uuid:diffbottles_id>/', EditQuantityView.as_view(), name='edit_quantity'),
+path('cancel_request/<uuid:diffbottles_id>/', CancelRequestView.as_view(), name='cancel_request'),
+path('reassign_request/<uuid:diffbottles_id>/', ReassignRequestView.as_view(), name='reassign_request'),
+path('next_delivery_date', find_next_delivery_date, name = 'nexr_delivery_date'),
 
 ]

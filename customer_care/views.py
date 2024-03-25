@@ -23,6 +23,12 @@ from django.contrib.auth.decorators import login_required
 from rest_framework.generics import ListAPIView
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+import calendar
+from datetime import date, timedelta
+from django.db.models import Max
+
 
 
 class RequestType_List(View):
@@ -504,47 +510,59 @@ class Coupon_Purchse_Create(View):
             print(e)
             return render(request,'customer_care/coupon_create.html')
         
-import calendar
-from datetime import date, timedelta
-# from .utils import find_next_schedule_date 
 
-def get_weeks_in_month(year, month):
-    _, last_day = calendar.monthrange(year, month)
-    cal = calendar.Calendar()
-    days_in_month = cal.itermonthdays(year, month)
-    weeks = []
-    current_week = []
-    current_week_number = 1
-    for day in days_in_month:
-        if day != 0:
-            current_week.append(day)
-            if len(current_week) == 7 or day == last_day:
-                weeks.append((current_week_number, current_week))
-                current_week_number += 1
-                current_week = []
-    return weeks
 
-def find_next_schedule_date(current_year, current_month):
-    # Get the weeks in the current month
-    weeks_in_month = get_weeks_in_month(current_year, current_month)
+# def get_weeks_in_month(year, month):
+#     _, last_day = calendar.monthrange(year, month)
+#     cal = calendar.Calendar()
+#     days_in_month = cal.itermonthdays(year, month)
+#     weeks = []
+#     current_week = []
+#     current_week_number = 1
+#     for day in days_in_month:
+#         if day != 0:
+#             current_week.append(day)
+#             if len(current_week) == 7 or day == last_day:
+#                 weeks.append((current_week_number, current_week))
+#                 current_week_number += 1
+#                 current_week = []
+#     return weeks
+
+# def find_next_schedule_date(current_year, current_month):
+#     # Get the weeks in the current month
+#     weeks_in_month = get_weeks_in_month(current_year, current_month)
     
-    # Get the current date
-    today = date.today()
+#     # Get the current date
+#     today = date.today()
     
-    # Initialize variables to store the next schedule date
-    next_schedule_date = ''
+#     # Initialize variables to store the next schedule date
+#     next_schedule_date = ''
     
-    # Iterate over the weeks to find the next schedule date
-    for week_number, week_days in weeks_in_month:
-        for day in week_days:
-            # Check if the day is greater than or equal to today's date
-            if date(current_year, current_month, day) >= today:
-                next_schedule_date = date(current_year, current_month, day)
-                break
-        if next_schedule_date:
-            break
+#     # Iterate over the weeks to find the next schedule date
+#     for week_number, week_days in weeks_in_month:
+#         for day in week_days:
+#             # Check if the day is greater than or equal to today's date
+#             if date(current_year, current_month, day) >= today:
+#                 next_schedule_date = date(current_year, current_month, day)
+#                 break
+#         if next_schedule_date:
+#             break
     
-    return next_schedule_date
+#     return next_schedule_date
+        
+
+def find_next_delivery_date(customer):
+    # Retrieve the last delivery date for the customer
+    last_delivery_date = DiffBottlesModel.objects.filter(customer=customer).aggregate(Max('delivery_date'))['delivery_date__max']
+
+    if last_delivery_date:
+        # Calculate the next delivery date
+        next_delivery_date = last_delivery_date + timedelta(days=7)  # Assuming a weekly delivery schedule
+    else:
+        # If there are no previous delivery dates, start from today
+        next_delivery_date = datetime.now().date()
+
+    return next_delivery_date
 
 
 class NewRequestHome(View):
@@ -554,24 +572,20 @@ class NewRequestHome(View):
     current_month = date.today().month
     
     # Find the next schedule date
-    next_schedule_date = find_next_schedule_date(current_year, current_month)
+    # next_schedule_date = find_next_schedule_date(current_year, current_month)
 
     # @method_decorator(login_required)
     def get(self, request, customer_id, *args, **kwargs):
         try:
             customer = Customers.objects.get(customer_id=customer_id)
-            
-            
-            initial_data = {'delivery_date': self.next_schedule_date}
-
-            initial_data['mode'] = 'paid'
+            next_delivery_date = find_next_delivery_date(customer)
+            initial_data = {'delivery_date': next_delivery_date, 'mode': 'paid'}
             if customer and customer.sales_staff:
                 initial_data['assign_this_to'] = customer.sales_staff.get_fullname()
             else:
                 initial_data['assign_this_to'] = "Driver"  # Default to "Driver" if no salesman is assigned
             form = self.form_class(initial=initial_data)
 
-            
             context = {
                 'customer': customer,
                 'username': customer.customer_name,
@@ -580,13 +594,12 @@ class NewRequestHome(View):
                 'customer_type': customer.customer_type,
                 'door_house_no': customer.door_house_no,
                 'email_id': customer.email_id,
-                'sales_man_name': customer.sales_staff.username,
-                'route': customer.routes.route_name,
-                'form':form
-                # 'next_schedule_date': next_schedule_date
+                'sales_man_name': customer.sales_staff.username if customer.sales_staff else "",
+                'route': customer.routes.route_name if customer.routes else "",
+                'next_delivery_date': next_delivery_date,
+                'form': form,
             }
-          
-            return render(request, self.template_name,context)
+            return render(request, self.template_name, context)
         except Exception as e:
             print(e)
             return render(request, self.template_name)
@@ -594,19 +607,27 @@ class NewRequestHome(View):
 
     def post(self, request, customer_id, *args, **kwargs):
         try:
-            # form = self.form_class()
             customer = Customers.objects.get(customer_id=customer_id)
 
-            initial_data = {'delivery_date': self.next_schedule_date}
-            if customer and customer.sales_staff:
-                initial_data['assign_this_to'] = customer.sales_staff.get_fullname()
-            else:
-                initial_data['assign_this_to'] = "Driver"  # Default to "Driver" if no salesman is assigned
-            form = self.form_class(request.POST, request.FILES,initial=initial_data)
+            # initial_data = {'delivery_date': self.next_schedule_date}
+
+            # if customer and customer.sales_staff:
+            #     initial_data['assign_this_to'] = customer.sales_staff.get_fullname()
+            # else:
+            #     initial_data['assign_this_to'] = "Driver"  
+            next_delivery_date = find_next_delivery_date(customer)
+
+
+            form = self.form_class(request.POST, request.FILES)
+            print(request.POST.get("request_type"))
             if form.is_valid():
+                print(form)
                 data = form.save(commit=False)
                 data.customer = customer
                 data.created_by = str(request.user.id)
+
+                data.status = 'pending'
+        
                 data.save()
                 messages.success(request, 'Bottles Successfully Added.', 'alert-success')
                 return redirect('requestType')
@@ -617,21 +638,68 @@ class NewRequestHome(View):
         except Customers.DoesNotExist:
             messages.error(request, 'Customer does not exist.', 'alert-danger')
             return render(request, self.template_name)
+        
+
 
 class WaterDeliveryStatus(View):
     template_name = 'customer_care/water_delivery_status.html'
-    # form_class = DiffBottles_Create_Form
 
-    # @method_decorator(login_required)
     def get(self, request, *args, **kwargs):
-        try:
-            instance = DiffBottlesModel.objects.all()
-            print("instance",instance)
-            context = {
-                "instance:instance"}
-          
-            return render(request, self.template_name,context)
-        except Exception as e:
-            print(e)
-            return render(request, self.template_name)
-        
+        form = DiffBottlesFilterForm(request.GET)
+        queryset = form.filter_data() if form.is_valid() else DiffBottlesModel.objects.none()
+        context = {
+            'form': form,
+            'bottles_data': queryset,
+        }
+        return render(request, self.template_name, context)
+    
+
+class EditQuantityView(View):
+    def post(self, request, diffbottles_id):
+        quantity = request.POST.get('quantity')
+        diff_bottle = DiffBottlesModel.objects.get(diffbottles_id=diffbottles_id)
+        diff_bottle.quantity_required = quantity
+        diff_bottle.save()
+        return HttpResponseRedirect(reverse('water_delivery_status')) 
+
+
+class CancelRequestView(View):
+    def get(self, request, diffbottles_id):
+        if request.method == 'GET':
+            diff_bottle = get_object_or_404(DiffBottlesModel, diffbottles_id=diffbottles_id)
+            diff_bottle.status = 'Cancelled'
+            diff_bottle.save()
+        return redirect('new_request_home', customer_id=diff_bottle.customer.customer_id)
+# class ReassignRequestView(View):
+#     def get(self, request, diffbottles_id):
+#         bottle = get_object_or_404(DiffBottlesModel, diffbottles_id=diffbottles_id)
+#         return render(request, 'reassign_request_form.html', {'bottle': bottle})
+
+#     def post(self, request, diffbottles_id):
+#         bottle = get_object_or_404(DiffBottlesModel, diffbottles_id=diffbottles_id)
+#         salesman = request.POST.get('salesman')
+#         date = request.POST.get('date')
+#         bottle.assign_this_to = salesman
+#         bottle.delivery_date = date
+#         bottle.save()
+#         return redirect('water_delivery_status')
+
+
+class ReassignRequestView(View):
+    def get(self, request, diffbottles_id):
+        form = ReassignRequestForm()
+        return render(request, 'reassign_request_form.html', {'form': form})
+
+    def post(self, request, diffbottles_id):
+        form = ReassignRequestForm(request.POST)
+        if form.is_valid():
+            new_assignee = form.cleaned_data['new_assignee']
+            new_delivery_date = form.cleaned_data['new_delivery_date']
+            diff_bottle = get_object_or_404(DiffBottlesModel, diffbottles_id=diffbottles_id)
+            # Update the assignee and delivery date
+            diff_bottle.assign_this_to = new_assignee
+            diff_bottle.delivery_date = new_delivery_date
+            diff_bottle.save()
+            return redirect('reassign_request')  # Redirect to the appropriate view after reassignment
+        else:
+            return render(request, 'reassign_request_form.html', {'form': form})

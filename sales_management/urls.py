@@ -21,7 +21,12 @@ urlpatterns = [
     path('coupon_sale', CouponSaleView.as_view(), name='coupon_sale'),
     path('details_view/<str:pk>',DetailsView.as_view(), name='details_view'),
 
+#--------------Sales Report---------------------------------
+    path('salesreport', salesreport, name='salesreport'),
+    path('salesreportview/<int:salesman>/', salesreportview, name='salesreportview'),
 
+    path('download-salesreport-pdf/', download_salesreport_pdf, name='download_salesreport_pdf'),
+    path('download-salesreport-excel/', download_salesreport_excel, name='download_salesreport_excel'),
     
 
     # path('create-sale/', SaleEntryCreateView.as_view(), name='create_sale'),

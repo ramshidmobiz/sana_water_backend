@@ -865,7 +865,6 @@ def custody_report(request):
         # return render(request, self.template_name, context)
 
 
-
 class CouponCountList(View):
     template_name = 'client_management/coupon_count_list.html'
 
@@ -873,18 +872,43 @@ class CouponCountList(View):
         customer = Customers.objects.get(customer_id=pk)
         customers = CustomerCouponStock.objects.filter(customer=customer)
 
+        # Calculate total count
+        total_count = customers.aggregate(total_count=Sum('count'))['total_count'] or 0
+
         context = {
             'customers': customers,
             'pk': pk,  # Pass pk to the template context
+            'total_count': total_count,  # Pass total count to the template context
         }
 
         return render(request, self.template_name, context)
 
-    def post(self, request, pk, *args, **kwargs):
-        customer = Customers.objects.get(customer_id=pk)
-        coupon_code = request.POST.get('coupon_code')
-        CustomerCouponStock.objects.create(customer=customer, coupon_code=coupon_code)
-        return redirect('coupon_count_list', pk=pk)
+
+
+
+
+
+
+#
+# class CouponCountList(View):
+#     template_name = 'client_management/coupon_count_list.html'
+#
+#     def get(self, request, pk, *args, **kwargs):
+#         customer = Customers.objects.get(customer_id=pk)
+#         customers = CustomerCouponStock.objects.filter(customer=customer)
+#
+#         context = {
+#             'customers': customers,
+#             'pk': pk,  # Pass pk to the template context
+#         }
+#
+#         return render(request, self.template_name, context)
+#
+#     def post(self, request, pk, *args, **kwargs):
+#         customer = Customers.objects.get(customer_id=pk)
+#         coupon_code = request.POST.get('coupon_code')
+#         CustomerCouponStock.objects.create(customer=customer, coupon_code=coupon_code)
+#         return redirect('coupon_count_list', pk=pk)
 
 
 
@@ -921,7 +945,7 @@ def new_coupon_count(request,pk):
 
     return render(request, 'client_management/edit_coupon_count.html', {'form': form})
 
-def delete_coupon_count(request, pk):
+def delete_count(request, pk):
     customer_coupon_stock = get_object_or_404(CustomerCouponStock, pk=pk)
 
     if request.method == 'POST':
@@ -940,7 +964,10 @@ def customer_outstanding_list(request):
     :return: Customer Outstanding list view
     """
     reports = CustomerOutstandingReport.objects.all()
-    
+    route_filter = request.GET.get('route_name')
+    if route_filter:
+            reports = reports.filter(customer__routes__route_name=route_filter)
+    route_li = RouteMaster.objects.all()
     if request.GET.get("customer_pk"):
         reports = reports.filter(customer__pk=request.GET.get("customer_pk"))
 
@@ -971,7 +998,7 @@ def customer_outstanding_list(request):
         'customer_pk': request.GET.get("customer_pk"),
         
         'is_customer_outstanding': True,
-        'is_need_datetime_picker': True,
+        'is_need_datetime_picker': True,'route_li': route_li,
     }
 
     return render(request, 'client_management/customer_outstanding/list.html', context)

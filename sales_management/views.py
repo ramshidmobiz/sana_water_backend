@@ -33,7 +33,15 @@ from django.db.models import F, Value
 from django.db.models.functions import Coalesce
 from django.views.generic import ListView
 from django.db.models import Count
+from django.shortcuts import render, redirect, get_object_or_404
+from io import BytesIO  
 
+from .models import *
+from client_management.models import *
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+import xlsxwriter
 from .models import *
 
 class TransactionHistoryListView(ListView):
@@ -882,12 +890,114 @@ class DetailsView(View):
             }
             return render(request, self.template_name, context)
         
-# def sales_report(request):
-#     instances = ProductStock.objects.order_by('-created_date')  
+#------------------SALES REPORT-------------------------        
 
-#     return render(request, 'products/product_report.html', {'instances': instances})
-       
         
-        
-        
-        
+def salesreport(request):
+    instances = CustomUser.objects.filter(user_type='Salesman')
+    print("instances",instances)
+    return render(request, 'sales_management/sales_report.html', {'instances': instances})
+
+
+def salesreportview(request, salesman):
+    salesman = get_object_or_404(CustomUser, pk=salesman)
+    customer_supplies = CustomerSupply.objects.filter(salesman=salesman)
+    customer_supply_items = CustomerSupplyItems.objects.filter(customer_supply__in=customer_supplies)
+
+    context = {
+        'salesman': salesman,
+        'customer_supplies': customer_supplies,
+        'customer_supply_items': customer_supply_items,
+    }
+    return render(request, 'sales_management/salesreportview.html', context)
+
+def download_salesreport_pdf(request):
+    # Retrieve sales report data
+    customer_supplies = CustomerSupply.objects.all()
+
+    # Check if customer_supplies is not empty
+    if customer_supplies:
+        # Create the HTTP response with PDF content type and attachment filename
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="sales_report.pdf"'
+
+        # Create a PDF document
+        pdf_buffer = BytesIO()
+        pdf = SimpleDocTemplate(pdf_buffer, pagesize=letter)
+        data = []
+
+        # Add headers
+        headers = ['Customer Name', 'Customer Address', 'Product', 'Quantity', 'Amount']
+        data.append(headers)
+
+        # Add data to the PDF document
+        for supply in customer_supplies:
+            for item in supply.customersupplyitems_set.all():
+                try:
+                    product_name = item.product.product_name
+                except Product.DoesNotExist:
+                    product_name = "Product Not Found"
+
+                # Construct the address from the fields in the Customers model
+                address = ", ".join(filter(None, [supply.customer.building_name, supply.customer.door_house_no, supply.customer.floor_no]))
+                data.append([supply.customer.customer_name, address, product_name, item.quantity, item.amount])
+
+        table = Table(data)
+        style = TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                            ('GRID', (0, 0), (-1, -1), 1, colors.black)])
+        table.setStyle(style)
+
+        # Add the table to the PDF document
+        elements = [table]
+        pdf.build(elements)
+
+        # Get the value of the BytesIO buffer and write it to the response
+        pdf_value = pdf_buffer.getvalue()
+        pdf_buffer.close()
+        response.write(pdf_value)
+
+        return response
+    else:
+        # Return an empty HTTP response with a message indicating no data available
+        return HttpResponse('No sales report data available.')
+
+def download_salesreport_excel(request):
+    # Retrieve sales report data
+    customer_supplies = CustomerSupply.objects.all()  # Assuming CustomerSupply model is imported correctly
+
+    # Create the HTTP response with Excel content type and attachment filename
+    response = HttpResponse(content_type='application/vnd.ms-excel')
+    response['Content-Disposition'] = 'attachment; filename="sales_report.xlsx"'
+
+    # Create an Excel workbook
+    workbook = xlsxwriter.Workbook(response)
+    worksheet = workbook.add_worksheet()
+
+    # Write headers
+    headers = ['Customer Name', 'Customer Address', 'Product', 'Quantity', 'Amount']
+    for col, header in enumerate(headers):
+        worksheet.write(0, col, header)
+
+    # Write data to the Excel workbook
+    row = 1  # Start from row 1 since row 0 is for headers
+    for supply in customer_supplies:
+        for item in supply.customersupplyitems_set.all():
+            customer_address = ", ".join(filter(None, [supply.customer.building_name, supply.customer.door_house_no, supply.customer.floor_no]))
+            product_name = "Product Not Found"
+            if item.product:  # Check if product is not None
+                product_name = item.product.product_name
+            worksheet.write(row, 0, supply.customer.customer_name)
+            worksheet.write(row, 1, customer_address)
+            worksheet.write(row, 2, product_name)
+            worksheet.write(row, 3, item.quantity)
+            worksheet.write(row, 4, item.amount)
+            row += 1
+
+    workbook.close()
+
+    return response

@@ -49,7 +49,7 @@ urlpatterns = [
 
         # path('edit-coupon-count/<uuid:pk>/', edit_coupon_count, name='edit_coupon_count'),
         path('new-coupon-count/<uuid:pk>/', new_coupon_count, name='new_coupon_count'),
-        path('delete-coupon-count/<uuid:pk>/', delete_coupon_count, name='delete_coupon_count'),
+        path('delete-coupon-count/<uuid:pk>/', delete_count, name='delete_count'),
         
          #customer outstanding
         re_path(r'^customer-outstanding/$', customer_outstanding_list, name='customer_outstanding_list'),

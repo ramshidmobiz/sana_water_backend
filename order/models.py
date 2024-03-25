@@ -38,7 +38,7 @@ class Order(models.Model):
     driver = models.ForeignKey(CustomUser, on_delete=models.SET_NULL,  null=True, blank=True, related_name='driver',)
     route = models.ForeignKey(RouteMaster, on_delete=models.SET_NULL,  null=True, blank=True)
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
-    quantity = models.PositiveIntegerField()
+    quantity = models.PositiveIntegerField(default=0)
     salesman = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, blank=True, null=True,  related_name='salesman',)
     order_date = models.DateField(blank=True, null=True)
     created_by = models.CharField(max_length=20, null=True, blank=True)

@@ -22,6 +22,27 @@
                             Water Delivery Status
                         </div>
                     </div>
+                     <form enctype="multipart/form-data" role="form" method="get" class="row g-3 needs-validation mb-4 ">
+                            {% csrf_token %}
+                            <!--row 1-->
+
+                            <div class="col-md-6">
+                                <div class="form-group required">
+
+                                    
+                                    {% comment %} {{ form.as_p }} {% endcomment %}
+                                    
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group required">
+                                    <input type="hidden" id="customer_id_re" name="" value="{{pk}}"
+                                        class="form-control">
+                                </div>
+                            </div>
+
+
+                        </form>
                     
                     
                     <div id="table-container" style="">
@@ -30,33 +51,63 @@
                                 <thead>
                                     <tr>
                                         <th rowspan="2">Sl No</th>
+                                        <th rowspan="2">Req No</th>
                                         <th rowspan="2">Customer Name</th>
                                         <th rowspan="2">Mobile No</th>
                                         <th rowspan="2">No of Bottles requested</th>
                                         <th rowspan="2">Req Date</th>
                                         <th rowspan="2">Planned Date</th>
-                                        <th rowspan="2">Mobile No</th>
                                         <th rowspan="2">Route</th>
                                         <th rowspan="2">Salesman</th>
                                         <th rowspan="2">status</th>
+                                        <th rowspan="2">Reassign</th>
+                                        <th rowspan="2">Cancel Request</th>
+                                        <th rowspan="2">Edit Qty</th>
+
                                     </tr>
                                     
                                 </thead>
                                 <tbody>
-                                    {% for i in instance %}
+                                    {% for bottle in bottles_data %}
                                     <tr>
                                         <td>{{ forloop.counter }}</td>
-                                        <td>{{ i.customer.customer_name }}</td>
-                                        <td>{{ customer.mobile_no }}</td>
-                                        <td>{{ customer.building_name }}</td>
-                                        <td>{{ customer.door_house_no }}</td>
-                                        <td>{{ customer.routes }}</td>
-                                        <td>{{ product_counts.5_gallon_deposit }}</td>
-                                        <td>{{ product_counts.5_gallon_non_deposit }}</td>
-                                        <td>{{ product_counts.dispenser_deposit }}</td>
-                                        <td>{{ product_counts.dispenser_non_deposit }}</td>
-                                        <td>{{ product_counts.cooler_deposit }}</td>
-                                        <td>{{ product_counts.cooler_non_deposit }}</td>
+                                        <td>{{ bottle.request_type_id }}</td>
+                                        <td>{{ bottle.customer.customer_name }}</td>
+                                        <td>{{ bottle.customer.mobile_no }}</td>
+                                        <td>{{ bottle.quantity_required }}</td>
+                                        <td>{{ bottle.created_date }}</td>
+                                        <td>{{ bottle.delivery_date }}</td>
+                                        <td>{{ bottle.customer.routes.route_name }}</td>
+                                        <td>{{ bottle.customer.sales_staff }}</td>
+                                        <td>{{ bottle.status}}</td> 
+                                        <td>
+                                             <a href="{% url 'reassign_request' bottle.diffbottles_id %}">Reassign</a>
+                                        </td>
+                                       <td>
+                                            <a href="{% url 'cancel_request' bottle.diffbottles_id %}" onclick="return confirm('Are you sure you want to cancel this request?')">Cancel</a>
+                                        </td>
+
+                                        <td>
+                                            <!-- Form for editing the quantity -->
+                                            <form method="post" action="{% url 'edit_quantity' bottle.diffbottles_id %}">
+                                                {% csrf_token %}
+                                                {% comment %} <input class="form-control" type="number" name="quantity" value="{{ bottle.quantity_required }}">
+                                                <button type="submit">Save</button> {% endcomment %}
+                                                    <div class="input-group"> 
+                                                        <input type="text" class="form-control" name="quantity" placeholder="Recipient's username" value="{{ bottle.quantity_required }}" aria-label="Recipient's username"
+                                                        aria-describedby="basic-addon2"> 
+                                                    <div class="input-group-append">
+                                                        <button class="btn btn-outline-success" type="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-save"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button>
+                                                    </div>
+                                                    </div>
+
+
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="9">No data available</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -71,5 +122,14 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
 
+{% comment %} <script>
+function confirmCancel(diffbottles_id) {
+    if (confirm("Are you sure you want to cancel this request?")) {
+        window.location.href = "{% url 'cancel_request'   diffbottles_id %}";
+    } else {
+        return false;
+    }
+}
+</script> {% endcomment %}
 
 {% endblock %}

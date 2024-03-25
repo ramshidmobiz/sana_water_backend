@@ -16,7 +16,11 @@
 
                 <!-- Start:: row-1 -->
                 <div class="card card-product-details shadow">
-                  <div class="card-body ">
+      
+                  <div class="card-header text-center">
+                  </div>
+                  
+                {% comment %} <div class="card-body ">
                     <p class="card-text">
                       <div class="table-responsive">
                           <table class="table">
@@ -61,16 +65,16 @@
                                 <td class="text-secondary">Next delivery day</td>
                                 <td>{{van.salesman.username}}</td>
                               </tr>   {% endcomment %}
-                            </tbody>
+                            {% comment %} </tbody> {% endcomment %}
                       
-                          </table>
+                          {% comment %} </table> {% endcomment %}
                           
-                        </div>
+                        {% comment %} </div> {% endcomment %}
       
-                    </p>
+                    {% comment %} </p> {% endcomment %}
                     
-                  </div>
-            </div>
+                  {% comment %} </div> {% endcomment %}
+            {% comment %} </div> {% endcomment %} 
 
       </div>
        
@@ -81,6 +85,8 @@
   {% comment %} <div class="container-fluid"> {% endcomment %}
           
         <!-- Start:: row-1 -->
+        <div class="row">
+            <div class="col-xl-12">
                 <div class="card custom-card">
                    
                      <div class="card-body">
@@ -91,22 +97,20 @@
                             <div class="col-md-6">
                                 <div class="form-group required">
 
-                                    <label class='control-label'>Request Type</label>
                                     {% comment %} <select name="request_type">
                                       <option value="" >select</option>
                                       <option value="1" >1</option>
                                     </select> {% endcomment %}
                                     
-                                      {{ form.request_type }}
-                                    <span style="color: red;">{{ form.request_type.errors }}</span>
+                                          {{ form.as_p }}
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            {% comment %} <div class="col-md-6">
                                 <div class="form-group required">
                                     <input type="hidden" id="customer_id_re" name="" value="{{pk}}"
                                         class="form-control">
                                 </div>
-                            </div>
+                            </div> {% endcomment %}
 
 
                         {% comment %} </form>
@@ -114,34 +118,9 @@
                         <form enctype="multipart/form-data" role="form" method="post" id="differentsectionbottle" class="row g-3 needs-validation">
                             {% csrf_token %} {% endcomment %}
                             <!--row 1-->
-                            <div class="col-md-6">
-                                <div class="form-group required">
-                                    <label class='control-label'>Quantity Required</label>
-                                    {{ form.quantity_required }}
-                                    <span style="color: red;">{{ form.quantity_required.errors }}</span>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group required">
-                                    <label class='control-label'>Delivery date</label>
-                                    {{ form.delivery_date }}
-                                    <span style="color: red;">{{ form.delivery_date.errors }}</span>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group required">
-                                    <label class='control-label'>Assign this to</label>
-                                    {{ form.assign_this_to }}
-                                    <span style="color: red;">{{ form.assign_this_to.errors }}</span>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group required">
-                                    <label class='control-label'>Mode</label>
-                                    {{ form.mode }}
-                                    <span style="color: red;">{{ form.mode.errors }}</span>
-                                </div>
-                            </div>
+                           
+                            
+                          
                             
                             <div class="col-12 text-end mt-5">
                                 <input type="submit" class="btn btn-primary me-2 mb-2 submitcls" value="Submit">
@@ -158,7 +137,9 @@
                       
 
                     </div>
+            </div>
 
+        </div>
    
 </div>
 {% endblock %}
