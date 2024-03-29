@@ -78,6 +78,7 @@ def edit_van(request, van_id):
             data = form.save(commit=False)
             data.modified_by = str(request.user.id)
             data.modified_date = datetime.now()
+            data.branch_id = request.user.branch_id
             data.save()
             return redirect('van')
     else:
@@ -198,22 +199,40 @@ class Licence_List(View):
         licenses = Van_License.objects.all()
         vans = {}
         emirate_names = [emirate.name for emirate in emirates]  # List to store emirate names dynamically
-
-        for license in licenses:
-            van_plate = license.van.plate
-            emirate_name = license.emirate.name
-            emirate_id = license.emirate.emirate_id
-            expiry_date = license.expiry_date
         license_list = []
-        for license in licenses:
-            lic= {'license_id':license.van_license_id,'van_plate':license.van.plate,
-                   'emirate_name':license.emirate,"expiry_date":license.expiry_date}
-            license_list.append(lic)
+        # for license in licenses:
+        #     van_plate = license.van.plate
+        #     emirate_name = license.emirate.name
+        #     emirate_id = license.emirate.emirate_id
+        #     expiry_date = license.expiry_date
+        
+        # for license in licenses:
+        #     lic= {'license_id':license.van_license_id,'van_plate':license.van.plate,
+        #            'emirate_name':license.emirate,"expiry_date":license.expiry_date}
+        #     license_list.append(lic)
 
-            if van_plate not in vans:
-                vans[van_plate] = {emirate: None for emirate in emirate_names}
-            vans[van_plate][emirate_name] = expiry_date
+        #     if van_plate not in vans:
+        #         vans[van_plate] = {emirate: None for emirate in emirate_names}
+        #     vans[van_plate][emirate_name] = expiry_date
+        
+        for license in licenses:
+            if license.van:
+                van_plate = license.van.plate
+                emirate_name = license.emirate.name
+                emirate_id = license.emirate.emirate_id
+                expiry_date = license.expiry_date
+            
+            
+                lic= {'license_id':license.van_license_id,'van_plate':license.van.plate,
+                    'emirate_name':license.emirate,"expiry_date":license.expiry_date}
+                license_list.append(lic)
+
+                if van_plate not in vans:
+                    vans[van_plate] = {emirate: None for emirate in emirate_names}
+                vans[van_plate][emirate_name] = expiry_date
+        
         return render(request, self.template_name, {'vans': vans, 'emirate_names': emirate_names,'license_list':license_list})
+   
     
 
 class Licence_Adding(View):
@@ -359,7 +378,24 @@ def find_customers(request, def_date, route_id):
         week_num = (date.day - 1) // 7 + 1
         week_number = f'Week{week_num}'
     route = RouteMaster.objects.get(route_id=route_id)
+    products = Product.objects.filter(product_name__product_name='5 Gallon').first()
+    # print(products.rate)
+    # print(products.quantity)
+    water_rate_per_bottle = float(products.rate) / float(products.quantity)
+    water_rate_per_bottle = round(water_rate_per_bottle, 2)
+    # print(water_rate_per_bottle)
 
+    products = Product.objects.filter(product_name__product_name='A-TYPE Coupon(10+1)').first()
+    # print(products.rate)
+    # print(products.quantity)
+    coupon_rate_per_bottle = float(products.rate) / float(products.quantity)
+    coupon_rate_per_bottle = round(coupon_rate_per_bottle, 2)
+    # print(coupon_rate_per_bottle)
+    van_route = Van_Routes.objects.filter(routes=route).first()
+    if van_route:
+        van_capacity = van_route.van.capacity
+    else:
+        van_capacity = 200
     todays_customers = []
 
     buildings = []
@@ -427,7 +463,7 @@ def find_customers(request, def_date, route_id):
                 if building_data[0]==building:
                     building = building_data[0]
                     bottle_count = building_data[3]
-                    if current_trip_bottle_count + bottle_count > 232:
+                    if current_trip_bottle_count + bottle_count > van_capacity:
                         trip_buildings = [building]
                         trip_count+=1
                         trips[f"Trip{trip_count}"] = trip_buildings
@@ -449,7 +485,7 @@ def find_customers(request, def_date, route_id):
                 other_trip_key = f"Trip{other_trip_num}"
                 combined_buildings = trips.get(trip_key, []) + trips.get(other_trip_key, [])
                 total_bottles = sum(sorted_building_count.get(building, 0) for building in combined_buildings)
-                if total_bottles <= 232:
+                if total_bottles <= van_capacity:
                     trips[trip_key] = combined_buildings
                     del trips[other_trip_key]
                     merging_occurred = True
@@ -484,6 +520,11 @@ def find_customers(request, def_date, route_id):
                             trip_customer['no_of_bottles'] = dif.quantity_required
                         else:
                             trip_customer['type'] = 'Default'
+                        
+                        if customer.sales_type == 'CASH':
+                            trip_customer['rate'] = trip_customer['no_of_bottles'] * water_rate_per_bottle
+                        else:
+                            trip_customer['rate'] = trip_customer['no_of_bottles'] * coupon_rate_per_bottle
                         trip_customers.append(trip_customer)
         return trip_customers
         
@@ -637,6 +678,7 @@ def excel_download(request, route_id, def_date, trip):
         'Out- Bottles': [' ' for _ in customers],
         'Out- Coupons': [' ' for _ in customers],
         'Out- Cash': [' ' for _ in customers],
+        'Rate': [customer['rate'] for customer in customers],
         'Type': [customer['customer_type'] for customer in customers],
         'Delivery Type': [customer['type'] for customer in customers]
     }
@@ -659,13 +701,13 @@ def excel_download(request, route_id, def_date, trip):
 
         # Merge cells and write other information with borders
         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 16, 'border': 1})
-        worksheet.merge_range('A1:M2', f'National Water', merge_format)
+        worksheet.merge_range('A1:N2', f'National Water', merge_format)
         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
         worksheet.merge_range('A3:D3', f'Route:    {route.route_name}    {trip}', merge_format)
-        worksheet.merge_range('E3:H3', f'Date: {def_date}', merge_format)
-        worksheet.merge_range('I3:M3', f'Total bottle: {total_bottle}', merge_format)
+        worksheet.merge_range('E3:I3', f'Date: {def_date}', merge_format)
+        worksheet.merge_range('J3:N3', f'Total bottle: {total_bottle}', merge_format)
         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
-        worksheet.merge_range('A4:L4', '', merge_format)
+        worksheet.merge_range('A4:N4', '', merge_format)
 
     filename = f"{route.route_name}_{def_date}_{trip}.xlsx"
     response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')

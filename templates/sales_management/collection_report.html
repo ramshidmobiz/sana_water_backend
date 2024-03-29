@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block title %} Custody Report {% endblock %}
+{% block content %}
+{% load static %}
+
+<!-- Page Header -->
+<div class="page-header-breadcrumb d-md-flex d-block align-items-center justify-content-between ">
+    <h4 class="fw-medium mb-0">Collection Report</h4>
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="javascript:void(0);" class="text-white-30">Sales Management</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Collection Rport</li>
+    </ol>
+</div>
+<div class="main-content app-content">
+    <div class="container-fluid">
+        <!-- Start:: row-2 -->
+        <div class="row">
+            <div class="col-xl-12">
+                <div class="card custom-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            Collection
+                        </div>
+                    </div>
+                    <div class="mt">
+                        <form method="GET" action='{% url "custody_issue"%}'>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <label for="start_date">Route</label>
+                                        <select name="route_name" class="form-select">
+                                            <option value="">All Routes</option>
+                                            {% for route in route_li %}
+                                                <option value="{{ route.route_name }}">{{ route.route_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="start_date">From Date:</label>
+                                        <input type="date" class="form-control" id="start_date" name="start_date">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="end_date">To Date:</label>
+                                        <input type="date" class="form-control" id="end_date" name="end_date">
+                                    </div>
+                                    <div class="col-md-2 text-end ">
+                                        <input type="submit" id = "submit" class="btn btn-primary me-2 mb-2 mt-3" value="Submit">
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <div id="table-container" style="display: none;">
+                        <div class="card-body">
+                            <table  class="table table-bordered text-wrap" style="width: 100%">
+                                <thead>
+                                    <tr>
+                                        <th rowspan="2">Sl No</th>
+                                        <th rowspan="2">Date</th>
+                                        <th rowspan="2">Customer/<br>Mobile No</th>
+                                        <th rowspan="2">Route</th>
+                                        <th rowspan="2">Building Name<br>No</th>
+                                        <th rowspan="2">Receipt No/<br>Reference No</th>
+                                        <th rowspan="2">Amount</th>
+                                        <th rowspan="2">Mode of Payment</th>
+                                        
+
+                                       
+                                    </tr>
+                                    
+                                </thead>
+                                <tbody>
+        
+
+                                    {% for data in instances %}
+                                    
+                                        <tr>
+                                            <td>{{ forloop.counter }}</td>
+                                            <td>{{ data.created_date }}</td>
+                                            <td>{{ data.customer.customer_name }}<br>{{ data.customer.mobile_no }}</td>
+                                            <td>{{ data.customer.routes.route_name }}</td>
+                                            <td>{{ data.customer.building_name }}<br>{{ data.customer.door_house_no }}</td>
+                                            <td>{{ data.custody_custom.agreement_no }}</td>
+                                            <td>{{ data.amount_recieved }}</td>
+                                            <td>{{ data.customer.sales_type }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
+<script>
+ $('#submit').click(function(e){ 
+    e.preventDefault();       
+            // Show the table when dates are selected
+            $('#table-container').show();
+    });
+</script>
+
+{% endblock %}

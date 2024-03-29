@@ -22,13 +22,14 @@ urlpatterns = [
     path('details_view/<str:pk>',DetailsView.as_view(), name='details_view'),
 
 #--------------Sales Report---------------------------------
-    path('salesreport', salesreport, name='salesreport'),
+   path('salesreport', salesreport, name='salesreport'),
     path('salesreportview/<int:salesman>/', salesreportview, name='salesreportview'),
-
     path('download-salesreport-pdf/', download_salesreport_pdf, name='download_salesreport_pdf'),
     path('download-salesreport-excel/', download_salesreport_excel, name='download_salesreport_excel'),
-    
 
+    
+    path('collectionreport', collectionreport, name='collectionreport'),
+    
     # path('create-sale/', SaleEntryCreateView.as_view(), name='create_sale'),
     # path('create-sales-entry/', SalesEntryCreateView.as_view(), name='initiate_sale'),
 

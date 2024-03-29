@@ -37,6 +37,10 @@ urlpatterns = [
     path('edit_NewCoupon/<uuid:coupon_id>/', edit_NewCoupon, name="edit_NewCoupon"),
 
     path('delete_Newcoupon/<uuid:coupon_id>/', delete_Newcoupon, name='delete_Newcoupon'),
+    path('customer_stock/', customer_stock, name='customer_stock'),
+    path('generate_excel/', generate_excel, name='generate_excel'),
+    path('customer_stock_pdf/', customer_stock_pdf, name='customer_stock_pdf'),
+
 
 
  ]

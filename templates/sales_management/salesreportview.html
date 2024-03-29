@@ -30,13 +30,13 @@
                                     <th scope="col">Sl No</th>
                                     <th scope="col">Customer</th>
                                     <th scope="col">Customer Address</th>
-                                    <th scope="col">Product</th>
-                                    <th scope="col">Quantity</th>
+                                    <th scope="col">Customer Type</th>
+                                    <th scope="col">Customer Sales Type</th>
+                                    <th scope="col">Cash Coupon Quantity</th>
+                                    <th scope="col">Credit Coupon Quantity</th>                                  
+                                    <th scope="col">Cash Quantity</th>
+                                    <th scope="col">Credit Quantity</th>
                                     <th scope="col">Amount</th>
-
-
-
-                                    
                                 </tr>
                             </thead>
                             <tbody>
@@ -44,11 +44,15 @@
                                 {% for item in supply.customersupplyitems_set.all %}
                                 <tr>
                                     <td>{{ forloop.parentloop.counter }}</td>
-                                    <td>{{ supply.customer }}</td>
+                                    <td>{{ supply.customer.customer_name }}</td>
                                     <td>{{ supply.customer.building_name }} {{ supply.customer.door_house_no }}</td>
-                                    <td>{{ item.product }}</td>
-                                    <td>{{ item.quantity }}</td>
-                                    <td>{{ item.amount }}</td>
+                                    <td>{{ supply.customer.customer_type }} </td>
+                                    <td>{{ supply.customer.sales_type }} </td>
+                                    <td>{% if supply.customer.sales_type == 'CASH COUPON' %} {{ cash_coupon_counts }} {% endif %}</td>
+                                    <td>{% if supply.customer.sales_type == 'CREDIT COUPON' %} {{ credit_coupon_counts }} {% endif %}</td>
+                                    <td>{% if supply.customer.sales_type == 'CASH' %} {{ cash_counts }} {% endif %}</td>
+                                    <td>{% if supply.customer.sales_type == 'CREDIT' %} {{ credit_counts }} {% endif %}</td>
+                                    <td>{{ item.amount }}</td>                                
                                 </tr>
                                 {% endfor %}
                                 {% endfor %}
@@ -58,7 +62,6 @@
                             <a href="{% url 'download_salesreport_pdf' %}" class="btn btn-primary me-2 mb-2">Download PDF</a>
                             <a href="{% url 'download_salesreport_excel' %}" class="btn btn-success me-md-2 mb-2">Export to CSV</a>
                         </div>
-                        
                     </div>
                 </div>
             </div>
@@ -71,4 +74,3 @@
 
 
 {% endblock %}
-

@@ -1243,4 +1243,3 @@ def customer_count(request):
     }
     # print('total customers:', total_customers)
     return render(request, 'client_management/customer_count.html', context)
-            

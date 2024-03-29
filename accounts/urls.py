@@ -14,6 +14,8 @@ urlpatterns = [
     path('customer_create',create_customer, name='customer_create'),
     path('customer_details/<str:pk>', Customer_Details.as_view(), name='customer_details'),
     path('edit_customer/<str:pk>',edit_customer, name='edit_customer'),
+    path('delete_customer/<str:pk>',delete_customer, name='delete_customer'),
+    path('customer_list_excel', customer_list_excel, name="customer_list_excel"),
 
     path('visit_days_assign/<str:customer_id>', visit_days_assign, name="visit_days_assign"),
 

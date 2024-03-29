@@ -40,7 +40,7 @@ class Van_Routes(models.Model):
     created_date = models.DateTimeField(auto_now_add=True,blank=True, null=True)
     modified_by = models.CharField(max_length=20, null=True, blank=True)
     modified_date = models.DateTimeField(blank=True, null=True)
-    van = models.ForeignKey(Van, on_delete=models.SET_NULL, null=True, blank=True,related_name='van_master')
+    van = models.ForeignKey(Van, on_delete=models.CASCADE, null=True, blank=True,related_name='van_master')
     routes = models.ForeignKey(RouteMaster, on_delete=models.SET_NULL, null=True, blank=True,related_name='van_routes')
 
     class Meta:
@@ -55,7 +55,7 @@ class Van_License(models.Model):
     created_date = models.DateTimeField(auto_now_add=True,blank=True, null=True)
     modified_by = models.CharField(max_length=20, null=True, blank=True)
     modified_date = models.DateTimeField(blank=True, null=True)
-    van = models.ForeignKey(Van, on_delete=models.SET_NULL, null=True, blank=True,related_name='van_license')
+    van = models.ForeignKey(Van, on_delete=models.CASCADE, null=True, blank=True,related_name='van_license')
     emirate = models.ForeignKey(EmirateMaster, on_delete=models.SET_NULL, null=True, blank=True,related_name='license_emirate')
     license_no = models.CharField(max_length=50, null=True, blank=True)
     expiry_date = models.DateTimeField(blank=True, null=True)

@@ -1,18 +1,26 @@
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
+from django.template.loader import render_to_string
+from lxml.etree import HTML
+from openpyxl import Workbook
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate
 
+from client_management.models import CustomerCouponStock
 from competitor_analysis.forms import CompetitorAnalysisFilterForm
 from master.functions import generate_form_errors
 from .models import *
 from .forms import  *
-from accounts.models import CustomUser
-from master.models import EmirateMaster,BranchMaster
+from accounts.models import CustomUser, Customers
+from master.models import EmirateMaster, BranchMaster, RouteMaster
 import json
 from django.core.serializers import serialize
 from django.views import View
 from datetime import datetime
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+
 
 # Create your views here.
 
@@ -459,3 +467,205 @@ def delete_Newcoupon(request, coupon_id):
         return redirect('new_coupon')
     return render(request, 'coupon_management/delete_Newcoupon.html', {'deleteCoupon': deleteCoupon})
 
+
+# def customer_stock(request):
+#
+#     couponstock=CustomerCouponStock.objects.select_related('customer').all()
+#     context = {
+#
+#         'couponstock':couponstock
+#     }
+#
+#     return render(request, 'coupon_management/customer_stock.html', context)
+
+
+# def customer_stock(request):
+#     coupenstock = CustomerCouponStock.objects.select_related('customer').all()
+#     return render(request, 'coupon_management/customer_stock.html', {'coupenstock': coupenstock})
+
+
+
+#
+# @login_required
+# def customer_stock(request):
+#     # Get the user's user_type
+#     user_type = request.user.user_type
+#
+#     # Filter customers based on user_type
+#     if user_type == 'Salesman':
+#         coupenstock = CustomerCouponStock.objects.select_related('customer').filter(customer__sales_staff=request.user)
+#         route_li = RouteMaster.objects.filter(branch_id=request.user.branch_id)
+#     else:
+#         coupenstock = CustomerCouponStock.objects.select_related('customer').all()
+#         route_li = RouteMaster.objects.all()
+#
+#     return render(request, 'coupon_management/customer_stock.html', {'coupenstock': coupenstock, 'route_li': route_li})
+
+
+
+@login_required
+def customer_stock(request):
+    # Get the user's user_type
+    user_type = request.user.user_type
+
+    # Get all routes for the dropdown
+    route_li = RouteMaster.objects.all()
+
+    # Filter customers based on user_type and selected route
+    selected_route = request.GET.get('route_name')
+    if user_type == 'Salesman':
+        if selected_route:
+            coupenstock = CustomerCouponStock.objects.select_related('customer').filter(customer__sales_staff=request.user, customer__routes__route_name=selected_route)
+        else:
+            coupenstock = CustomerCouponStock.objects.select_related('customer').filter(customer__sales_staff=request.user)
+    else:
+        if selected_route:
+            coupenstock = CustomerCouponStock.objects.select_related('customer').filter(customer__routes__route_name=selected_route)
+        else:
+            coupenstock = CustomerCouponStock.objects.select_related('customer').all()
+
+    return render(request, 'coupon_management/customer_stock.html', {'coupenstock': coupenstock, 'route_li': route_li})
+
+
+
+
+
+
+
+from openpyxl.styles import Font, Alignment
+
+@login_required
+def generate_excel(request):
+    # Get the user's user_type
+    user_type = request.user.user_type
+
+    # Get all routes for the dropdown
+    route_li = RouteMaster.objects.all()
+
+    # Filter customers based on user_type and selected route
+    selected_route = request.GET.get('route_name')
+    if user_type == 'Salesman':
+        if selected_route:
+            coupenstock = CustomerCouponStock.objects.select_related('customer').filter(customer__sales_staff=request.user, customer__routes__route_name=selected_route)
+        else:
+            coupenstock = CustomerCouponStock.objects.select_related('customer').filter(customer__sales_staff=request.user)
+    else:
+        if selected_route:
+            coupenstock = CustomerCouponStock.objects.select_related('customer').filter(customer__routes__route_name=selected_route)
+        else:
+            coupenstock = CustomerCouponStock.objects.select_related('customer').all()
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="customer_stock.xlsx"'
+
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = 'Customer Stock'
+
+    # Formatting styles
+    header_font = Font(bold=True)
+    header_alignment = Alignment(horizontal='center', vertical='center')
+    data_alignment = Alignment(horizontal='left', vertical='center')
+
+    # Write headers with formatting
+    headers = [
+        'Sl.No', 'Customer Name / Mobile No', 'Building Name / House No',
+        'Digital Coupon Count', 'Manual Coupon Count', 'Total Count'
+    ]
+    for col_num, header_title in enumerate(headers, start=1):
+        cell = worksheet.cell(row=1, column=col_num, value=header_title)
+        cell.font = header_font
+        cell.alignment = header_alignment
+
+    # Write data with formatting
+    for row_num, stock in enumerate(coupenstock, start=2):
+        worksheet.cell(row=row_num, column=1, value=row_num - 1).alignment = data_alignment
+        worksheet.cell(row=row_num, column=2, value=stock.customer.customer_name + ', ' + stock.customer.mobile_no).alignment = data_alignment
+        worksheet.cell(row=row_num, column=3, value=stock.customer.building_name + ', ' + stock.customer.door_house_no).alignment = data_alignment
+        if stock.coupon_method == 'digital':
+            worksheet.cell(row=row_num, column=4, value=stock.count).alignment = data_alignment
+        else:
+            worksheet.cell(row=row_num, column=5, value=stock.count).alignment = data_alignment
+
+    # Calculate and write total counts
+    total_digital_count = sum(stock.count for stock in coupenstock if stock.coupon_method == 'digital')
+    total_manual_count = sum(stock.count for stock in coupenstock if stock.coupon_method == 'manual')
+    total_row_num = len(coupenstock) + 2
+    worksheet.cell(row=total_row_num, column=4, value=total_digital_count).alignment = data_alignment
+    worksheet.cell(row=total_row_num, column=5, value=total_manual_count).alignment = data_alignment
+    worksheet.cell(row=total_row_num, column=6, value=total_digital_count + total_manual_count).alignment = data_alignment
+
+    # Autofit column width
+    for col in worksheet.columns:
+        max_length = 0
+        column = col[0].column_letter
+        for cell in col:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(cell.value)
+            except:
+                pass
+        adjusted_width = (max_length + 2) * 1.2
+        worksheet.column_dimensions[column].width = adjusted_width
+
+    workbook.save(response)
+    return response
+
+from io import BytesIO
+from django.http import HttpResponse
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.lib import colors
+
+
+def customer_stock_pdf(request):
+    # Retrieve customer stock data
+    coupenstock = CustomerCouponStock.objects.select_related('customer').all()
+
+    # Check if coupenstock is not empty
+    if coupenstock:
+        # Create the HTTP response with PDF content type and attachment filename
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="customer_stock.pdf"'
+
+        # Create a PDF document
+        pdf_buffer = BytesIO()
+        pdf = SimpleDocTemplate(pdf_buffer, pagesize=letter)
+        data = []
+
+        # Add headers
+        headers = ['Sl.No', 'Customer Name / Mobile No', 'Building Name / House No', 'Digital', 'Manual', 'Total Count']
+        data.append(headers)
+
+        # Add data to the PDF document
+        for index, stock in enumerate(coupenstock):
+            customer_name_mobile = f"{stock.customer.customer_name}, {stock.customer.mobile_no}"
+            building_house = f"{stock.customer.building_name}, {stock.customer.door_house_no}"
+            digital = stock.count if stock.coupon_method == 'digital' else ''
+            manual = stock.count if stock.coupon_method == 'manual' else ''
+            total_count = stock.count
+            data.append([index + 1, customer_name_mobile, building_house, digital, manual, total_count])
+
+        table = Table(data)
+        style = TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                            ('GRID', (0, 0), (-1, -1), 1, colors.black)])
+        table.setStyle(style)
+
+        # Add the table to the PDF document
+        elements = [table]
+        pdf.build(elements)
+
+        # Get the value of the BytesIO buffer and write it to the response
+        pdf_value = pdf_buffer.getvalue()
+        pdf_buffer.close()
+        response.write(pdf_value)
+
+        return response
+    else:
+        # Return an empty HTTP response with a message indicating no data available
+        return HttpResponse('No customer stock data available.')

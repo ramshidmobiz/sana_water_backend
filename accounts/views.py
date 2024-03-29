@@ -18,13 +18,16 @@ from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.views import LoginView
+from django.urls import reverse
 
 from competitor_analysis.forms import CompetitorAnalysisFilterForm
-from master.functions import generate_form_errors
+from master.functions import generate_form_errors, get_custom_id
 from .forms import *
 from .models import *
 from django.db.models import Q
-
+import pandas as pd
+from io import BytesIO
+from reportlab.pdfgen import canvas
 
 # Create your views here.
 def user_login(request):
@@ -177,6 +180,7 @@ class Customer_List(View):
         # Apply filters if they exist
         if query:
             user_li = user_li.filter(
+                Q(custom_id__icontains=query) |
                 Q(customer_name__icontains=query) |
                 Q(mobile_no__icontains=query) |
                 Q(routes__route_name__icontains=query) |
@@ -190,7 +194,12 @@ class Customer_List(View):
         # Get all route names for the dropdown
         route_li = RouteMaster.objects.all()
 
-        context = {'user_li': user_li, 'route_li': route_li}
+        context = {
+            'user_li': user_li.order_by("-created_date"), 
+            'route_li': route_li,
+            'route_filter':route_filter,
+            'q':query,
+            }
         return render(request, self.template_name, context)
     
 
@@ -211,6 +220,7 @@ def create_customer(request):
                 branch_id=request.user.branch_id.branch_id
                 branch = BranchMaster.objects.get(branch_id=branch_id)  # Adjust the criteria based on your model
                 data.branch_id = branch
+                data.custom_id = get_custom_id(Customers)
                 data.save()
                 Staff_Day_of_Visit.objects.create(customer = data)
                 messages.success(request, 'Customer Created successfully!')
@@ -258,6 +268,81 @@ def edit_customer(request,pk):
         messages.success(request, 'Something went wrong')
         return render(request, template_name,context)
 
+def delete_customer(request,pk):
+    cust_Data = Customers.objects.get(customer_id = pk)
+    cust_Data.delete()
+    
+    response_data = {
+        "status": "true",
+        "title": "Successfully Deleted",
+        "message": "Customer Successfully Deleted.",
+        "redirect": "true",
+        "redirect_url": reverse('customers'),
+    }
+    
+    return HttpResponse(json.dumps(response_data), content_type='application/javascript')
+
+def customer_list_excel(request):
+    query = request.GET.get("q")
+    route_filter = request.GET.get('route_name')
+    user_li = Customers.objects.all()
+    # Apply filters if they exist
+    if query and query != '' and query != 'None':
+        user_li = user_li.filter(
+            Q(custom_id__icontains=query) |
+            Q(customer_name__icontains=query) |
+            Q(mobile_no__icontains=query) |
+            Q(routes__route_name__icontains=query) |
+            Q(location__location_name__icontains=query) |
+            Q(building_name__icontains=query)
+        )
+    
+    print('route_filter :', route_filter)
+    if route_filter and route_filter != '' and route_filter != 'None':
+        user_li = user_li.filter(routes__route_name=route_filter)
+
+    # Get all route names for the dropdown
+    route_li = RouteMaster.objects.all()
+    serial_number = 1
+    for customer in user_li:
+        customer.serial_number = serial_number
+        serial_number += 1
+    data = {
+        'Serial Number': [customer.serial_number for customer in user_li],
+        'Customer ID': [customer.custom_id for customer in user_li],
+        'Customer name': [customer.customer_name for customer in user_li],
+        'Route': [customer.routes.route_name if customer.routes else '' for customer in user_li],
+        'Location': [customer.location.location_name for customer in user_li],
+        'Mobile No': [customer.mobile_no for customer in user_li],
+        'Building Name': [customer.building_name for customer in user_li],
+        'House No': [customer.door_house_no if customer.door_house_no else 'Nil' for customer in user_li],
+        'Next Visit date': ['' for customer in user_li],
+        'Sales Type': [customer.sales_type for customer in user_li],
+
+    }
+    df = pd.DataFrame(data)
+
+    buffer = BytesIO()
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='Sheet1', index=False, startrow=4)
+        workbook = writer.book
+        worksheet = writer.sheets['Sheet1']
+        table_border_format = workbook.add_format({'border':1})
+        worksheet.conditional_format(4, 0, len(df.index)+4, len(df.columns) - 1, {'type':'cell', 'criteria': '>', 'value':0, 'format':table_border_format})
+        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 16, 'border': 1})
+        worksheet.merge_range('A1:J2', f'National Water', merge_format)
+        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
+        worksheet.merge_range('A3:J3', f'    Customer List   ', merge_format)
+        # worksheet.merge_range('E3:H3', f'Date: {def_date}', merge_format)
+        # worksheet.merge_range('I3:M3', f'Total bottle: {total_bottle}', merge_format)
+        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
+        worksheet.merge_range('A4:J4', '', merge_format)
+    
+    filename = f"Customer List.xlsx"
+    response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'inline; filename = "{filename}"'
+    return response
+
 # def visit_days_assign(request,customer_id):
 #     template_name = 'accounts/assign_dayof_visit.html'
 #     customer_data=Customers.objects.get(customer_id = customer_id)
@@ -285,36 +370,39 @@ def visit_days_assign(request, customer_id):
     
     try:
         customer_data = Customers.objects.get(customer_id=customer_id)
+        visit_schedule_data = json.loads(customer_data.visit_schedule)
+        print(visit_schedule_data)
     except Customers.DoesNotExist:
         messages.error(request, 'Customer does not exist.')
         return redirect('customers')
     
-    form = Day_OfVisit_Form()
-    message_content = "Day of visit updated successfully!"
-
-    day_visits = None
-    if Staff_Day_of_Visit.objects.filter(customer_id=customer_data).exists():
-        day_visits = Staff_Day_of_Visit.objects.get(customer_id=customer_data)
-        form = Day_OfVisit_Form(instance=day_visits)
-        message_content = "Day of visit created successfully!"
-        
     if request.method == 'POST':
-        form = Day_OfVisit_Form(request.POST, instance=day_visits)
-        if form.is_valid():
-            data = form.save(commit=False)
-            data.created_by = str(request.user)
-            data.created_date = datetime.now()
-            data.save()
-            messages.success(request, message_content)
-            return redirect('customers')
-        else:
-            messages.error(request, 'Invalid form data. Please check the input.')
+        visit_schedule_data = {}
+        for week_number in "1234":
+            selected_days = []
+            for day in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]:
+                checkbox_name = f'week{week_number}[]'
+                if checkbox_name in request.POST:
+                    if day in request.POST.getlist(checkbox_name):
+                        selected_days.append(day)
+            visit_schedule_data["week" + week_number] = selected_days
+
+        # Convert the dictionary to JSON
+        visit_schedule_json = json.dumps(visit_schedule_data)
+
+        # Save the JSON data to the database field
+        customer_data.visit_schedule = visit_schedule_json
+        customer_data.save()
+
+        messages.success(request, 'Visit schedule updated successfully!')
+        return redirect('customers')
     
+    # Render the form if it's a GET request
     context = {
-        "form": form,
-        'day_visits': day_visits,
-        "customer_data": customer_data
+        "customer_data": customer_data,
+        "visit_schedule_data": visit_schedule_data
     }
-    
     return render(request, template_name, context)
+
+
 

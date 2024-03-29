@@ -135,7 +135,7 @@ class DiffBottles_Create_Form(forms.ModelForm):
             'request_type': forms.Select(attrs={'class': 'form-control', 'required': True}),  # Add widget for request_type
             'quantity_required': forms.TextInput(attrs={'class': 'form-control','required': False}),
             'delivery_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'assign_this_to': forms.TextInput(attrs={'class': 'form-control'}),
+            'assign_this_to': forms.Select(attrs={'class': 'form-control'}),
             'mode': forms.Select(attrs={'class': 'form-control'}),
         }
 
@@ -186,6 +186,8 @@ class Coupon_Create_Form(forms.ModelForm):
 
 class DiffBottlesFilterForm(forms.Form):
     request_type = forms.CharField(max_length=100, required=False)
+    # request_type = forms.ModelChoiceField(queryset=DiffBottlesModel.objects.values_list('request_type__request_name', flat=True).distinct(), empty_label='Select Product', required=False)
+
 
     def filter_data(self):
         request_type = self.cleaned_data.get('request_type')
@@ -194,10 +196,33 @@ class DiffBottlesFilterForm(forms.Form):
             queryset = queryset.filter(request_type__request_name=request_type)
         return queryset
 
-class ReassignRequestForm(forms.ModelForm):
-    new_assignee = forms.CharField(max_length=100, required=True)
-    new_delivery_date = forms.DateField(required=True)
+# class ReassignRequestForm(forms.ModelForm):
+#     new_assignee = forms.CharField(max_length=100, required=True)
+#     new_delivery_date = forms.DateField(required=True)
 
-    class Meta:
-        model = DiffBottlesModel
-        fields =  ['request_type','quantity_required', 'delivery_date', 'assign_this_to', 'mode' ]
+#     class Meta:
+#         model = DiffBottlesModel
+#         fields = ['assign_this_to', 'delivery_date']
+#         widgets = {
+#             'assign_this_to': forms.Select(attrs={'class': 'form-control', 'required': True}),
+            # 'delivery_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'required': True}),
+        # }
+
+    # def clean(self):
+    #     cleaned_data = super().clean()
+    #     new_assignee = cleaned_data.get('assign_this_to')
+    #     # Check if the new assignee is a salesman
+    #     if new_assignee:
+    #         is_salesman = new_assignee.user_type == 'Salesman'  # Adjust as per your user model
+    #         if not is_salesman:
+    #             raise forms.ValidationError("The selected assignee must be a salesman.")
+
+    # def save(self, commit=True):
+    #     instance = super().save(commit=False)
+    #     instance.assign_this_to = self.cleaned_data['assign_this_to']
+    #     instance.delivery_date = self.cleaned_data['delivery_date']
+    #     # Assuming the new assignee is a salesman, add the salesman name
+    #     instance.salesman_name = instance.assign_this_to.get_full_name()  # Adjust as per your user model
+    #     if commit:
+    #         instance.save()
+    #     return instance

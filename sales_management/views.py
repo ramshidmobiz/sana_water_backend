@@ -43,6 +43,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 import xlsxwriter
 from .models import *
+from openpyxl import Workbook
 
 class TransactionHistoryListView(ListView):
     model = Transaction
@@ -898,23 +899,37 @@ def salesreport(request):
     print("instances",instances)
     return render(request, 'sales_management/sales_report.html', {'instances': instances})
 
-
 def salesreportview(request, salesman):
     salesman = get_object_or_404(CustomUser, pk=salesman)
     customer_supplies = CustomerSupply.objects.filter(salesman=salesman)
     customer_supply_items = CustomerSupplyItems.objects.filter(customer_supply__in=customer_supplies)
 
+    # Calculate counts of products for each sales type
+    cash_coupon_counts = customer_supplies.filter(customer__sales_type='CASH COUPON').aggregate(total_products=Count('customersupplyitems'))
+
+    # print("cash_coupon_counts",cash_coupon_counts)
+    credit_coupon_counts = customer_supplies.filter(customer__sales_type='CREDIT COUPON').aggregate(total_products=Count('customersupplyitems'))
+    # print("credit_coupon_counts",credit_coupon_counts)
+    cash_counts = customer_supplies.filter(customer__sales_type='CASH').aggregate(total_products=Count('customersupplyitems'))
+    # print("cash_counts",cash_counts)
+    credit_counts = customer_supplies.filter(customer__sales_type='CREDIT').aggregate(total_products=Count('customersupplyitems'))
+    # print("credit_counts",credit_counts)
+    
     context = {
         'salesman': salesman,
-        'customer_supplies': customer_supplies,
-        'customer_supply_items': customer_supply_items,
+        'customer_supplies':customer_supplies,
+        'customer_supply_items':customer_supply_items,
+        'cash_coupon_counts': cash_coupon_counts['total_products'],
+        'credit_coupon_counts': credit_coupon_counts['total_products'],
+        'cash_counts': cash_counts['total_products'],
+        'credit_counts': credit_counts['total_products'],
     }
+
     return render(request, 'sales_management/salesreportview.html', context)
 
 def download_salesreport_pdf(request):
     # Retrieve sales report data
     customer_supplies = CustomerSupply.objects.all()
-
     # Check if customer_supplies is not empty
     if customer_supplies:
         # Create the HTTP response with PDF content type and attachment filename
@@ -927,20 +942,39 @@ def download_salesreport_pdf(request):
         data = []
 
         # Add headers
-        headers = ['Customer Name', 'Customer Address', 'Product', 'Quantity', 'Amount']
+        headers = ['Customer Name', 'Customer Address', 'Customer Type', 'Customer Sales Type', 
+                   'Cash Coupon Quantity','Credit Coupon Quantity','Cash Quantity','Credit Quantity']
         data.append(headers)
 
-        # Add data to the PDF document
-        for supply in customer_supplies:
-            for item in supply.customersupplyitems_set.all():
-                try:
-                    product_name = item.product.product_name
-                except Product.DoesNotExist:
-                    product_name = "Product Not Found"
 
-                # Construct the address from the fields in the Customers model
-                address = ", ".join(filter(None, [supply.customer.building_name, supply.customer.door_house_no, supply.customer.floor_no]))
-                data.append([supply.customer.customer_name, address, product_name, item.quantity, item.amount])
+        # Add data to the PDF document
+        sl_no = 1
+        for supply in customer_supplies:
+            try:
+                cash_coupon_counts = supply.customersupplyitems_set.filter(customer_supply=supply, customer_supply__customer__sales_type='CASH COUPON').count()
+                credit_coupon_counts = supply.customersupplyitems_set.filter(customer_supply=supply, customer_supply__customer__sales_type='CREDIT COUPON').count()
+                cash_counts = supply.customersupplyitems_set.filter(customer_supply=supply, customer_supply__customer__sales_type='CASH').count()
+                credit_counts = supply.customersupplyitems_set.filter(customer_supply=supply, customer_supply__customer__sales_type='CREDIT').count()
+            except Exception as e:
+                print(e)
+                cash_coupon_counts = 0
+                credit_coupon_counts = 0
+                cash_counts = 0
+                credit_counts = 0
+            
+            # Append data for each supply
+            data.append([
+                sl_no,
+                supply.customer.customer_name,
+                f"{supply.customer.building_name} {supply.customer.door_house_no}",
+                supply.customer.customer_type,
+                supply.customer.sales_type,
+                cash_coupon_counts,
+                credit_coupon_counts,
+                cash_counts,
+                credit_counts
+            ])
+            sl_no += 1
 
         table = Table(data)
         style = TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.grey),
@@ -963,20 +997,66 @@ def download_salesreport_pdf(request):
 
         return response
     else:
-        # Return an empty HTTP response with a message indicating no data available
-        return HttpResponse('No sales report data available.')
+        return HttpResponse("No data available for sales report.")
+    
 
 def download_salesreport_excel(request):
-    # Retrieve sales report data
-    customer_supplies = CustomerSupply.objects.all()  # Assuming CustomerSupply model is imported correctly
+    # Create a new Excel workbook
+    workbook = Workbook()
+    worksheet = workbook.active
 
-    # Create the HTTP response with Excel content type and attachment filename
-    response = HttpResponse(content_type='application/vnd.ms-excel')
+    # Add headers to the worksheet
+    headers = ['Sl No', 'Customer Name', 'Customer Address', 'Customer Type', 
+               'Customer Sales Type', 'Cash Coupon Quantity', 'Credit Coupon Quantity', 
+               'Cash Quantity', 'Credit Quantity']
+    worksheet.append(headers)
+
+    # Retrieve sales report data
+    customer_supplies = CustomerSupply.objects.all()
+
+    # Add data to the worksheet
+    sl_no = 1
+    for supply in customer_supplies:
+        try:
+            
+            cash_coupon_counts = supply.customersupplyitems_set.filter(customer_supply=supply, customer_supply__customer__sales_type='CASH COUPON').count()
+            print("cash_coupon_counts",cash_coupon_counts)
+            credit_coupon_counts = supply.customersupplyitems_set.filter(customer_supply=supply, customer_supply__customer__sales_type='CREDIT COUPON').count()
+            print("credit_coupon_counts",credit_coupon_counts)
+            cash_counts = supply.customersupplyitems_set.filter(customer_supply=supply, customer_supply__customer__sales_type='CASH').count()
+            print("cash_counts",cash_counts)
+            credit_counts = supply.customersupplyitems_set.filter(customer_supply=supply, customer_supply__customer__sales_type='CREDIT').count()
+            print("credit_counts",credit_counts)
+
+        except Exception as e:
+            print(e)
+            cash_coupon_counts = 0
+            credit_coupon_counts = 0
+            cash_counts = 0
+            credit_counts = 0
+        
+        # Write data for each supply to the worksheet
+        row_data = [
+            sl_no,
+            supply.customer.customer_name,
+            f"{supply.customer.building_name} {supply.customer.door_house_no}",
+            supply.customer.customer_type,
+            supply.customer.sales_type,
+            cash_coupon_counts,
+            credit_coupon_counts,
+            cash_counts,
+            credit_counts
+        ]
+        worksheet.append(row_data)
+
+        sl_no += 1
+
+    # Create HTTP response with Excel content type and attachment filename
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = 'attachment; filename="sales_report.xlsx"'
 
-    # Create an Excel workbook
-    workbook = xlsxwriter.Workbook(response)
-    worksheet = workbook.add_worksheet()
+    # Write the workbook data into the response
+    workbook.save(response)
 
     # Write headers
     headers = ['Customer Name', 'Customer Address', 'Product', 'Quantity', 'Amount']
@@ -1001,3 +1081,21 @@ def download_salesreport_excel(request):
     workbook.close()
 
     return response
+
+#------------------Collection Report-------------------------                
+def collectionreport(request):
+    instances = CustomerSupply.objects.all()
+    route_filter = request.GET.get('route_name')
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    if start_date_str and end_date_str:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        instances = instances.filter(created_date__range=[start_date, end_date])
+    if route_filter:
+            instances = instances.filter(routes__route_name=route_filter)
+    route_li = RouteMaster.objects.all()
+  
+    context = {'instances': instances,'route_li':route_li}
+    return render(request, 'sales_management/collection_report.html', context)

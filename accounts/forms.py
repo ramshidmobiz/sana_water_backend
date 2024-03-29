@@ -171,7 +171,7 @@ class CustomerEditForm(forms.ModelForm):
 class Day_OfVisit_Form(forms.ModelForm):
     class Meta:
         model = Staff_Day_of_Visit
-        fields = ['monday','tuesday','wednesday', 'thursday', 'friday', 'saturday','sunday','week1','week2','week3','week4']
+        fields = ['monday','tuesday','wednesday', 'thursday', 'friday', 'saturday','sunday','week1','week2','week3','week4','week5']
         widgets = {
             'monday': forms.CheckboxInput(attrs={}),
             'tuesday': forms.CheckboxInput(attrs={}),
@@ -184,7 +184,15 @@ class Day_OfVisit_Form(forms.ModelForm):
             'week2': forms.CheckboxInput(attrs={}),
             'week3': forms.CheckboxInput(attrs={}),
             'week4': forms.CheckboxInput(attrs={}),
+            'week5': forms.CheckboxInput(attrs={}),
 
         }
     def __init__(self, *args, **kwargs):
         super(Day_OfVisit_Form,self).__init__(*args, **kwargs)
+        
+        
+class VisitScheduleForm(forms.Form):
+    week1 = forms.CharField(required=False)
+    week2 = forms.CharField(required=False)
+    week3 = forms.CharField(required=False)
+    week4 = forms.CharField(required=False)

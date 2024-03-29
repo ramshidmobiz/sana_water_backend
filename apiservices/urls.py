@@ -104,7 +104,7 @@ urlpatterns = [
     # coupon recharge
     path('get-lower-coupon-customers/', views.get_lower_coupon_customers),
     path('fetch-coupon-data/', views.fetch_coupon),
-    path('customer-coupon-recharge/', customer_coupon_recharge.as_view()),
+    path('customer-coupon-recharge/', CustomerCouponRecharge.as_view()),
     
     path('customer-coupon-stock/', views.customer_coupon_stock),
     

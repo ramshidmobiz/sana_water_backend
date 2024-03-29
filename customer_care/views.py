@@ -551,18 +551,18 @@ class Coupon_Purchse_Create(View):
 #     return next_schedule_date
         
 
-def find_next_delivery_date(customer):
-    # Retrieve the last delivery date for the customer
-    last_delivery_date = DiffBottlesModel.objects.filter(customer=customer).aggregate(Max('delivery_date'))['delivery_date__max']
+# def find_next_delivery_date(customer):
+#     # Retrieve the last delivery date for the customer
+#     last_delivery_date = DiffBottlesModel.objects.filter(customer=customer).aggregate(Max('delivery_date'))['delivery_date__max']
 
-    if last_delivery_date:
-        # Calculate the next delivery date
-        next_delivery_date = last_delivery_date + timedelta(days=7)  # Assuming a weekly delivery schedule
-    else:
-        # If there are no previous delivery dates, start from today
-        next_delivery_date = datetime.now().date()
+#     if last_delivery_date:
+#         # Calculate the next delivery date
+#         next_delivery_date = last_delivery_date + timedelta(days=7)  # Assuming a weekly delivery schedule
+#     else:
+#         # If there are no previous delivery dates, start from today
+#         next_delivery_date = datetime.now().date()
 
-    return next_delivery_date
+#     return next_delivery_date
 
 
 class NewRequestHome(View):
@@ -571,17 +571,25 @@ class NewRequestHome(View):
     current_year = date.today().year
     current_month = date.today().month
     
-    # Find the next schedule date
-    # next_schedule_date = find_next_schedule_date(current_year, current_month)
+    def find_next_delivery_date(self, customer):
+        last_delivery_date = DiffBottlesModel.objects.filter(customer=customer).aggregate(Max('delivery_date'))['delivery_date__max']
+        if last_delivery_date:
+            next_delivery_date = last_delivery_date + timedelta(days=7)  # Assuming a weekly delivery schedule
+        else:
+            next_delivery_date = datetime.now().date()
+        return next_delivery_date
 
-    # @method_decorator(login_required)
     def get(self, request, customer_id, *args, **kwargs):
         try:
             customer = Customers.objects.get(customer_id=customer_id)
-            next_delivery_date = find_next_delivery_date(customer)
+            next_delivery_date = self.find_next_delivery_date(customer)
+            
+            # Find the last delivered date
+            last_delivered_date = DiffBottlesModel.objects.filter(customer=customer).aggregate(Max('delivery_date'))['delivery_date__max']
+            
             initial_data = {'delivery_date': next_delivery_date, 'mode': 'paid'}
             if customer and customer.sales_staff:
-                initial_data['assign_this_to'] = customer.sales_staff.get_fullname()
+                initial_data['assign_this_to'] = customer.sales_staff
             else:
                 initial_data['assign_this_to'] = "Driver"  # Default to "Driver" if no salesman is assigned
             form = self.form_class(initial=initial_data)
@@ -597,26 +605,19 @@ class NewRequestHome(View):
                 'sales_man_name': customer.sales_staff.username if customer.sales_staff else "",
                 'route': customer.routes.route_name if customer.routes else "",
                 'next_delivery_date': next_delivery_date,
+                'last_delivered_date': last_delivered_date,  # Add last delivered date to context
                 'form': form,
             }
             return render(request, self.template_name, context)
         except Exception as e:
             print(e)
-            return render(request, self.template_name)
-        
+            return render(request, self.template_name) 
 
     def post(self, request, customer_id, *args, **kwargs):
         try:
             customer = Customers.objects.get(customer_id=customer_id)
 
-            # initial_data = {'delivery_date': self.next_schedule_date}
-
-            # if customer and customer.sales_staff:
-            #     initial_data['assign_this_to'] = customer.sales_staff.get_fullname()
-            # else:
-            #     initial_data['assign_this_to'] = "Driver"  
-            next_delivery_date = find_next_delivery_date(customer)
-
+            next_delivery_date = self.find_next_delivery_date(customer)
 
             form = self.form_class(request.POST, request.FILES)
             print(request.POST.get("request_type"))
@@ -625,7 +626,6 @@ class NewRequestHome(View):
                 data = form.save(commit=False)
                 data.customer = customer
                 data.created_by = str(request.user.id)
-
                 data.status = 'pending'
         
                 data.save()
@@ -638,7 +638,6 @@ class NewRequestHome(View):
         except Customers.DoesNotExist:
             messages.error(request, 'Customer does not exist.', 'alert-danger')
             return render(request, self.template_name)
-        
 
 
 class WaterDeliveryStatus(View):
@@ -647,9 +646,23 @@ class WaterDeliveryStatus(View):
     def get(self, request, *args, **kwargs):
         form = DiffBottlesFilterForm(request.GET)
         queryset = form.filter_data() if form.is_valid() else DiffBottlesModel.objects.none()
+        
+        statustab = "pending"
+        if request.GET.get('statustab') == "cancelled" :
+            queryset = queryset.filter(status="cancelled")
+            statustab = "cancelled"
+        if request.GET.get('statustab') == "pending" :
+            queryset = queryset.filter(status="pending")
+            statustab = "pending"
+        if request.GET.get('statustab') == "supplied" :
+            queryset = queryset.filter(status="supplied")
+            statustab = "supplied"
+            
+
         context = {
             'form': form,
             'bottles_data': queryset,
+            'statustab' : statustab
         }
         return render(request, self.template_name, context)
     
@@ -670,36 +683,83 @@ class CancelRequestView(View):
             diff_bottle.status = 'Cancelled'
             diff_bottle.save()
         return redirect('new_request_home', customer_id=diff_bottle.customer.customer_id)
+
+
+
 # class ReassignRequestView(View):
-#     def get(self, request, diffbottles_id):
-#         bottle = get_object_or_404(DiffBottlesModel, diffbottles_id=diffbottles_id)
-#         return render(request, 'reassign_request_form.html', {'bottle': bottle})
-
-#     def post(self, request, diffbottles_id):
-#         bottle = get_object_or_404(DiffBottlesModel, diffbottles_id=diffbottles_id)
-#         salesman = request.POST.get('salesman')
-#         date = request.POST.get('date')
-#         bottle.assign_this_to = salesman
-#         bottle.delivery_date = date
-#         bottle.save()
-#         return redirect('water_delivery_status')
+#     def get(self, request):
+#         form = ReassignRequestForm(request.POST)
+#         if form.is_valid():
+#             diffbottles_id = request.POST.get('request_id')
+#             new_salesman = form.cleaned_data['new_salesman']
+#             print("new_salesman",new_salesman)
+#             new_delivery_date = form.cleaned_data['new_delivery_date']
+#             print("new_delivery_date",new_delivery_date)
 
 
-class ReassignRequestView(View):
-    def get(self, request, diffbottles_id):
-        form = ReassignRequestForm()
-        return render(request, 'reassign_request_form.html', {'form': form})
+#             # Save reassignment data to the database
+#             # Replace YourModel with your actual model name
+#             instance = DiffBottlesModel.objects.get(pk=diffbottles_id)
+#             print(instance)
+#             instance.assign_this_to = new_salesman
+#             instance.delivery_date = new_delivery_date
+#             instance.save()
 
-    def post(self, request, diffbottles_id):
-        form = ReassignRequestForm(request.POST)
-        if form.is_valid():
-            new_assignee = form.cleaned_data['new_assignee']
-            new_delivery_date = form.cleaned_data['new_delivery_date']
-            diff_bottle = get_object_or_404(DiffBottlesModel, diffbottles_id=diffbottles_id)
-            # Update the assignee and delivery date
-            diff_bottle.assign_this_to = new_assignee
-            diff_bottle.delivery_date = new_delivery_date
-            diff_bottle.save()
-            return redirect('reassign_request')  # Redirect to the appropriate view after reassignment
-        else:
-            return render(request, 'reassign_request_form.html', {'form': form})
+#             # Return success response with a message
+#             return JsonResponse({'message': 'Request successfully reassigned.'})
+#         else:
+#             # Return error response with form errors
+#             return JsonResponse({'errors': form.errors}, status=400)
+
+
+# from django.db import transaction, IntegrityError
+
+
+# def ReassignRequestView(request, diffbottles_id):
+#     instance = get_object_or_404(DiffBottlesModel, diffbottles_id=diffbottles_id)
+    
+#     if request.method == 'POST':
+#         form = ReassignRequestForm(request.POST, instance=instance)
+#         if form.is_valid():
+#             try:
+#                 with transaction.atomic():
+#                     # Get cleaned data from the form
+#                     assign_this_to = form.cleaned_data.get('assign_this_to')
+#                     new_delivery_date = form.cleaned_data.get('delivery_date')
+
+#                     # Save the form with the cleaned data
+#                     form.save()
+
+#                     response_data = {
+#                         "status": "true",
+#                         "title": "Successfully Updated",
+#                         "message": "Request successfully reassigned.",
+#                         'redirect': 'true',
+#                         "redirect_url": reverse('water_delivery_status')
+#                     }
+                    
+#             except IntegrityError as e:
+#                 # Handle database integrity error
+#                 response_data = {
+#                     "status": "false",
+#                     "title": "Failed",
+#                     "message": str(e),
+#                 }
+
+#             except Exception as e:
+#                 # Handle other exceptions
+#                 response_data = {
+#                     "status": "false",
+#                     "title": "Failed",
+#                     "message": str(e),
+#                 }
+            
+#             return JsonResponse(response_data)
+
+#     else:
+#         form = ReassignRequestForm(instance=instance)
+    
+#     context = {
+#         'form': form,
+#     }
+#     return render(request, 'customer_care/reassign_request_form.html', context)

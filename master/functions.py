@@ -40,3 +40,14 @@ def generate_serializer_errors(args):
 
         message += "%s : %s | " %(key,error_message)
     return message[:-3]
+
+def get_custom_id(model):
+    custom_id = 1
+    # try:
+    latest_custom_id =  model.objects.all().order_by("-created_date")[:1]
+    if latest_custom_id:
+        for auto in latest_custom_id:
+            custom_id = int(auto.custom_id) + 1
+    # except:
+        # pass
+    return custom_id

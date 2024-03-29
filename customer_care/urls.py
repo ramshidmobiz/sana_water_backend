@@ -33,7 +33,9 @@ path('new_request_home/<str:customer_id>', NewRequestHome.as_view(), name='new_r
 path('water_delivery_status', WaterDeliveryStatus.as_view(), name='water_delivery_status'),
 path('edit_quantity/<uuid:diffbottles_id>/', EditQuantityView.as_view(), name='edit_quantity'),
 path('cancel_request/<uuid:diffbottles_id>/', CancelRequestView.as_view(), name='cancel_request'),
-path('reassign_request/<uuid:diffbottles_id>/', ReassignRequestView.as_view(), name='reassign_request'),
-path('next_delivery_date', find_next_delivery_date, name = 'nexr_delivery_date'),
+# path('reassign_request/<uuid:diffbottles_id>/', ReassignRequestView.as_view(), name='reassign_request'),
+# path('next_delivery_date', find_next_delivery_date, name = 'nexr_delivery_date'),
+# path('reassign_request/<uuid:diffbottles_id>/',ReassignRequestView, name='reassign_request'),
+
 
 ]

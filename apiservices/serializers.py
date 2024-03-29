@@ -158,36 +158,28 @@ class LowerCouponCustomersSerializer(serializers.ModelSerializer):
         
     def get_last_coupon_type(self, obj):
         coupon_type = ""
-        if (coupon_type:=CustomerCoupon.objects.filter(customer=obj)).exists():
-            coupon_type = coupon_type.latest('created_date').coupon.coupon_type.coupon_type_name
+        if (coupon_type:=CustomerCouponItems.objects.filter(customer_coupon__customer=obj)).exists():
+            coupon_type = coupon_type.latest('customer_coupon__created_date').coupon.coupon_type.coupon_type_name
         return coupon_type
     
     def get_last_coupon_rate(self, obj):
         coupon_rate = ""
-        if (coupon_rate:=CustomerCoupon.objects.filter(customer=obj)).exists():
+        if (coupon_rate:=CustomerCouponItems.objects.filter(customer_coupon__customer=obj)).exists():
             coupon_rate = coupon_rate.latest('created_date').rate
         return coupon_rate
 
 
-class RechargeCustomerCouponSerializer(serializers.ModelSerializer):
+class CustomerCouponSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomerCoupon
-        fields = ['customer','coupon','rate']
-
-class CustomerCouponPaymentSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = CustomerCouponPayment
-        fields = "__all__"
-        read_only_fields = ['id','customer_coupon']
-
-class CashCouponPaymentSerializer(serializers.ModelSerializer):
+        fields = ['customer','salesman']
+        
+class CustomerCouponItemsSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = CashCouponPayment
-        fields = "__all__"
-        read_only_fields = ['id','customer_coupon_payment']
+        model = CustomerCouponItems
+        fields = ['coupon','rate']
 
 class ChequeCouponPaymentSerializer(serializers.ModelSerializer):
 
@@ -304,6 +296,14 @@ class SupplyItemProductGetSerializer(serializers.ModelSerializer):
                 if r.request_type.request_name == "5 Gallon":
                     qty = r.quantity_required
         return qty
+    
+
+class CouponLeafSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = CouponLeaflet
+        fields = ['couponleaflet_id', 'leaflet_number','leaflet_name','used']
+        read_only_fields = ['id']
 
 class SupplyItemCustomersSerializer(serializers.ModelSerializer):
     products = serializers.SerializerMethodField()
@@ -342,19 +342,24 @@ class SupplyItemCustomersSerializer(serializers.ModelSerializer):
         pending_coupons = 0
         digital_coupons = 0
         manual_coupons = 0
+        leafs = []
         
         if CustomerOutstandingReport.objects.filter(product_type="coupons",customer=obj).exists() :
             pending_coupons = CustomerOutstandingReport.objects.get(product_type="coupons",customer=obj).value
-            
+        
         if CustomerCouponStock.objects.filter(customer=obj).exists() :
             digital_coupons = 0
             manual_coupons = CustomerCouponStock.objects.filter(customer=obj).aggregate(total_count=Sum('count'))['total_count']
+            
+            coupon_ids_queryset = CustomerCouponItems.objects.filter(customer_coupon__customer=obj).values_list('coupon__pk', flat=True)
+            coupon_leafs = CouponLeaflet.objects.filter(coupon__pk__in=list(coupon_ids_queryset))
+            leafs = CouponLeafSerializer(coupon_leafs, many=True).data
             
         return {
             'pending_coupons': pending_coupons,
             'digital_coupons': digital_coupons,
             'manual_coupons': manual_coupons,
-            
+            'leafs' : leafs,   
         }
 
 class CustomerSupplySerializer(serializers.ModelSerializer):

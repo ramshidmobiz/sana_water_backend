@@ -1,6 +1,8 @@
 from django.db import models
 import uuid
 from django.contrib.auth.models import AbstractUser,Group,Permission
+
+from coupon_management.models import Coupon
 from master.models import *
 
 class CustomUser(AbstractUser):
@@ -62,6 +64,7 @@ class Customers(models.Model):
     customer_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_by = models.CharField(max_length=250, null=True, blank=True)
     created_date = models.DateTimeField(auto_now_add=True, editable=False)
+    custom_id = models.CharField(max_length=250, null=True, blank=True)
     customer_name = models.CharField(max_length=250, null=True, blank=True)
     building_name = models.CharField(max_length=250, null=True, blank=True)
     door_house_no =  models.CharField(max_length=250, null=True, blank=True)
@@ -102,6 +105,7 @@ class Customers(models.Model):
     is_editable = models.BooleanField(default=True)
     user_id = models.ForeignKey('accounts.CustomUser', on_delete=models.SET_NULL, null=True, blank=True,related_name='user_sign')
     rate = models.CharField(max_length=100, null=True, blank=True)
+    
     def __str__(self):
         return str(self.customer_name)
 
@@ -120,6 +124,7 @@ class Staff_Day_of_Visit(models.Model):
     week2 = models.BooleanField(default=False)
     week3 = models.BooleanField(default=False)
     week4 = models.BooleanField(default=False)
+    week5 = models.BooleanField(default=False)
 
 class Attendance_Log(models.Model):
     attendance_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

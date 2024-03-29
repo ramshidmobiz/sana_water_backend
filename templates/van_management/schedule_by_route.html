@@ -74,7 +74,7 @@
                                         <th scope="col" style="border-bottom: 1; width: 1em;">Out- Coupons</th>
                                         <th scope="col" style="border-bottom: 1; width: 1em;">Out- Cash</th>
 
-                                        
+                                        <th scope="col" style="border-bottom: 1; width: 1em;">Rate</th>
                                         <!-- <th scope="col" style="border-bottom: 1;">longitude</th>
                                         <th scope="col" style="border-bottom: 1;">latitude</th> -->
                                         <th scope="col" style="border-bottom: 1;">Type</th>
@@ -97,7 +97,7 @@
                                             <td></td>
                                             <td></td>
                                             <td></td>
-                                            
+                                            <td>{{ todays_customer.rate|floatformat:2 }}</td>
                                             <!-- <td>{{ todays_customer.gps_longitude   }}</td>
                                             <td>{{ todays_customer.gps_latitude   }}</td> -->
                                             <td>{{ todays_customer.customer_type   }}</td>
@@ -140,7 +140,7 @@
                 <th scope="col" style="border-bottom: 1; width: 1em;">Out- Bottles</th>
                 <th scope="col" style="border-bottom: 1; width: 1em;">Out- Coupons</th>
                 <th scope="col" style="border-bottom: 1; width: 1em;">Out- Cash</th>
-                
+                <th scope="col" style="border-bottom: 1; width: 1em;">Rate</th>
                 <th scope="col" style="border-bottom: 1;" >Type</th>
                 <th scope="col" style="border-bottom: 1;" >Delivery Type</th>
                 
@@ -161,6 +161,7 @@
                     <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;border-bottom: solid 1px;" {% endif %} ></td>
                     <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;border-bottom: solid 1px;" {% endif %} ></td>
                     <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;border-bottom: solid 1px;" {% endif %} ></td>
+                    <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;border-bottom: solid 1px;" {% endif %} >{{ todays_customer.rate|floatformat:2 }}</td>
                     <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;border-bottom: solid 1px;" {% endif %} >{{ todays_customer.customer_type   }}</td>
                     <td {% if todays_customer.type == 'Emergency' %} style="font-weight: bold;border-bottom: solid 1px; border-right: solid 1px;" {% endif %} >{{todays_customer.type}}</td>
 

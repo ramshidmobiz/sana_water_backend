@@ -1,9 +1,10 @@
+import random
 import uuid
 from django.db import models
 
 from accounts.models import Customers
 from master.models import CategoryMaster
-from product.models import Product
+from product.models import Product, ProdutItemMaster
 
 # Create your models here.
 INVOICE_TYPES = (
@@ -13,6 +14,7 @@ INVOICE_TYPES = (
 
 class Invoice(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    reference_no = models.CharField(max_length=200)
     invoice_no = models.CharField(max_length=200)
     invoice_type = models.CharField(max_length=200, choices=INVOICE_TYPES,default='cash_invoice')
     created_date = models.DateTimeField()
@@ -69,7 +71,7 @@ class InvoiceItems(models.Model):
     is_deleted = models.BooleanField(default=False)
     
     category = models.ForeignKey(CategoryMaster, on_delete=models.CASCADE,null=True,blank=True)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE,null=True,blank=True)
+    product_items = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True,blank=True)
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE)
     
     class Meta:

@@ -6,8 +6,7 @@ from datetime import datetime, date, time
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from rest_framework.generics import DestroyAPIView
-from rest_framework.utils import serializer_helpers
+from invoice_management.models import Invoice, InvoiceItems
 from accounts.models import *
 from django.db.models import Q
 from django.http import Http404
@@ -35,7 +34,7 @@ from rest_framework.permissions import BasePermission, IsAuthenticated,IsAuthent
 
 from client_management.forms import CoupenEditForm
 from master.serializers import *
-from master.functions import generate_serializer_errors
+from master.functions import generate_serializer_errors, get_custom_id
 from master.models import *
 from random import randint
 from datetime import datetime as dt
@@ -657,7 +656,11 @@ def find_customers(request, def_date, route_id):
         week_num = (date.day - 1) // 7 + 1
         week_number = f'Week{week_num}'
     route = RouteMaster.objects.get(route_id=route_id)
-
+    van_route = Van_Routes.objects.filter(routes=route).first()
+    if van_route:
+        van_capacity = van_route.van.capacity
+    else:
+        van_capacity = 200
     todays_customers = []
 
     buildings = []
@@ -728,7 +731,7 @@ def find_customers(request, def_date, route_id):
                 if building_data[0]==building:
                     building = building_data[0]
                     bottle_count = building_data[3]
-                    if current_trip_bottle_count + bottle_count > 232:
+                    if current_trip_bottle_count + bottle_count > van_capacity:
                         trip_buildings = [building]
                         trip_count+=1
                         trips[f"Trip{trip_count}"] = trip_buildings
@@ -750,7 +753,7 @@ def find_customers(request, def_date, route_id):
                 other_trip_key = f"Trip{other_trip_num}"
                 combined_buildings = trips.get(trip_key, []) + trips.get(other_trip_key, [])
                 total_bottles = sum(sorted_building_count.get(building, 0) for building in combined_buildings)
-                if total_bottles <= 232:
+                if total_bottles <= van_capacity:
                     trips[trip_key] = combined_buildings
                     del trips[other_trip_key]
                     merging_occurred = True
@@ -1087,8 +1090,8 @@ class UserSignUpView(APIView):
 
 class Customer_API(APIView):
     serializer_class = CustomersSerializers
-    # permission_classes=[IsAuthenticated]
-    # authentication_classes=[BasicAuthentication]
+    permission_classes=[IsAuthenticated]
+    authentication_classes=[BasicAuthentication]
 
     def get(self,request,id=None):
         try:
@@ -1110,11 +1113,15 @@ class Customer_API(APIView):
                 username=request.data["mobile_no"]
                 password=request.data["password"]
                 hashed_password=make_password(password)
+                
                 if Customers.objects.filter(mobile_no=request.data["mobile_no"]).exists() :
                     data = {'data': 'Customer with this mobile number already exist !! Try another number'}
                     return Response(data,status=status.HTTP_201_CREATED)
                 customer_data=CustomUser.objects.create(password=hashed_password,username=username,first_name=request.data['customer_name'],email=request.data['email_id'],user_type='Customer')
-                data=serializer.save(user_id=customer_data.id)
+                data=serializer.save(
+                    user_id=customer_data.id,
+                    custom_id = get_custom_id(Customers)
+                    )
                 Staff_Day_of_Visit.objects.create(customer = data)
                 data = {'data': 'successfully added'}
                 return Response(data,status=status.HTTP_201_CREATED)
@@ -1447,7 +1454,7 @@ class Route_Assign_Staff_Api(APIView):
     serializer_class = Staff_Assigned_Route_Details_Serializer
 
     def post(self, request, *args, **kwargs):
-        try:
+        # try:
             userid = request.data["id"]
             staff = CustomUser.objects.get(id=userid)
             vans = Van.objects.filter(Q(driver=staff) | Q(salesman=staff)).first()
@@ -1468,9 +1475,9 @@ class Route_Assign_Staff_Api(APIView):
                 return Response({'status': True, 'data':data, 'message': 'Assigned Routes List!'})
             else:
                 return Response({'status': False, 'data':[],'message': 'No van found for the given staff.'})
-        except Exception as e:
-            print(e)            
-            return Response({'status': False, 'message': 'Something went wrong!'})
+        # except Exception as e:
+        #     print(e)            
+        #     return Response({'status': False, 'message': str(e) })
 
 
 class Create_Customer(APIView):
@@ -2117,83 +2124,61 @@ def fetch_coupon(request):
 
     return Response(response_data, status_code)
 
-
-class customer_coupon_recharge(APIView):
-    authentication_classes = [BasicAuthentication]
-    permission_classes = [IsAuthenticated]
+class CustomerCouponRecharge(APIView):
     def post(self, request, *args, **kwargs):
-        serializer_verified = False
-        
-        recharge_customer_coupon_serializer = RechargeCustomerCouponSerializer(data=request.data)
-        customer_coupon_payment_serializer = CustomerCouponPaymentSerializer(data=request.data)
-        cash_coupon_payment_serializer = CashCouponPaymentSerializer(data=request.data)
-        cheque_coupon_payment_serializer = ChequeCouponPaymentSerializer(data=request.data)
-        
-        # Validate serializers before accessing errors
-        if (recharge_customer_coupon_serializer.is_valid() and
-                customer_coupon_payment_serializer.is_valid()):
-            if customer_coupon_payment_serializer.validated_data.get('coupon_type') == "credit_coupon":
-                serializer_verified = True
-            else:
-                if customer_coupon_payment_serializer.validated_data.get('payment_type') == "cash":
-                    if cash_coupon_payment_serializer.is_valid():
-                        serializer_verified = True
-                else:
-                    if customer_coupon_payment_serializer.validated_data.get('payment_type') == "cheque":
-                        if cheque_coupon_payment_serializer.is_valid():
-                            serializer_verified = True
-        
-        if serializer_verified:
-            customer_coupon = recharge_customer_coupon_serializer.save(created_by=request.user.id,salesman=request.user)
-            customer_coupon_payment = customer_coupon_payment_serializer.save(customer_coupon=customer_coupon)
-            
-            if not customer_coupon_payment_serializer.validated_data.get('coupon_type') == "credit_coupon":
-                if customer_coupon_payment_serializer.validated_data.get('payment_type') == "cash":
-                    cash_coupon_payment_serializer.save(customer_coupon_payment=customer_coupon_payment)
-                elif customer_coupon_payment_serializer.validated_data.get('payment_type') == "cheque":
-                    cheque_coupon_payment_serializer.save(customer_coupon_payment=customer_coupon_payment)
+        try:
+            coupons_data = request.data.get('coupons', [])
+            payment_data = request.data.get('payment', {})
+
+            coupon_instances = []
+            for coupon_data in coupons_data:
+                customer = Customers.objects.get(pk=coupon_data.pop("customer"))  
+                salesman = CustomUser.objects.get(pk=coupon_data.pop("salesman"))
+                items_data = coupon_data.pop('items', [])  
+                customer_coupon = CustomerCoupon.objects.create(customer=customer, salesman=salesman, **coupon_data)
+                coupon_instances.append(customer_coupon)
+                
+                # Create CustomerCouponItems instances
+                for item_data in items_data:
+                    coupon = NewCoupon.objects.get(pk=item_data.pop("coupon")) 
+                    items = CustomerCouponItems.objects.create(
+                        customer_coupon=customer_coupon,
+                        coupon=coupon,
+                        rate=item_data.pop("rate")
+                    )
                     
-            if (update_customer_coupon_stock:=CustomerCouponStock.objects.filter(
-                    coupon_type_id=customer_coupon.coupon.coupon_type).exists()):
-                stock = CustomerCouponStock.objects.filter(coupon_type_id=customer_coupon.coupon.coupon_type).latest('id')
-                stock.count += 1
-                stock.save()
-            else:
-                CustomerCouponStock.objects.create(
-                    coupon_type_id=customer_coupon.coupon.coupon_type,
-                    customer=customer_coupon.customer,
-                    count=1,
-                )
-            
-            status_code = status.HTTP_200_OK
-            response_data = {
-                "status": status_code,
-                "StatusCode": 6000,
-                "message": "recharge successful"
-            }
-        else:
-            recharge_customer_coupon_serializer.is_valid()
-            customer_coupon_payment_serializer.is_valid()
-            cash_coupon_payment_serializer.is_valid()
-            cheque_coupon_payment_serializer.is_valid()
-            
-            recharge_customer_coupon_error = generate_serializer_errors(recharge_customer_coupon_serializer.errors)
-            customer_coupon_payment_error = generate_serializer_errors(customer_coupon_payment_serializer.errors)
-            cash_coupon_payment_error = generate_serializer_errors(cash_coupon_payment_serializer.errors)
-            cheque_coupon_payment_error = generate_serializer_errors(cheque_coupon_payment_serializer.errors)
+                    # Update CustomerCouponStock based on coupons
+                    for coupon_instance in coupon_instances:
+                        coupon_method = coupon.coupon_method
+                        customer_id = customer
+                        coupon_type_id = CouponType.objects.get(pk=coupon.coupon_type_id)
 
-            combined_errors = "\n".join([recharge_customer_coupon_error, customer_coupon_payment_error,
-                                        cash_coupon_payment_error, cheque_coupon_payment_error])
+                        try:
+                            customer_coupon_stock = CustomerCouponStock.objects.get(
+                                coupon_method=coupon_method,
+                                customer_id=customer_id.pk,
+                                coupon_type_id=coupon_type_id
+                            )
+                        except CustomerCouponStock.DoesNotExist:
+                            customer_coupon_stock = CustomerCouponStock.objects.create(
+                                coupon_method=coupon_method,
+                                customer_id=customer_id.pk,
+                                coupon_type_id=coupon_type_id,
+                                count=0
+                            )
 
-            status_code = status.HTTP_400_BAD_REQUEST
-            response_data = {
-                "status": status_code,
-                "StatusCode": 6001,
-                "message": combined_errors,
-            }
+                        customer_coupon_stock.count += 1
+                        customer_coupon_stock.save()
 
-        return Response(response_data, status=status_code)
+            # Create ChequeCouponPayment instance
+            cheque_payment_instance = None
+            if payment_data.get('payment_type') == 'cheque':
+                cheque_payment_instance = ChequeCouponPayment.objects.create(**payment_data)
 
+            return Response({"message": "Recharge successful"}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     
 from django.shortcuts import get_object_or_404
@@ -2315,72 +2300,166 @@ class create_customer_supply(APIView):
         allocate_bottle_to_pending = request.data.get('allocate_bottle_to_pending')
         allocate_bottle_to_custody = request.data.get('allocate_bottle_to_custody')
         allocate_bottle_to_paid = request.data.get('allocate_bottle_to_paid')
-        
-        if Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CASH COUPON" :
-            total_coupon_collected = request.data.get('total_coupon_collected')
-            collected_coupon_ids = request.data.get('collected_coupon_ids')
-
-        # Create CustomerSupply instance
-        customer_supply = CustomerSupply.objects.create(
-            customer_id=customer_supply_data['customer'],
-            salesman_id=customer_supply_data['salesman'],
-            grand_total=customer_supply_data['grand_total'],
-            discount=customer_supply_data['discount'],
-            net_payable=customer_supply_data['net_payable'],
-            vat=customer_supply_data['vat'],
-            subtotal=customer_supply_data['subtotal'],
-            amount_recieved=customer_supply_data['amount_recieved'],
-            collected_empty_bottle=collected_empty_bottle,
-            allocate_bottle_to_pending=allocate_bottle_to_pending,
-            allocate_bottle_to_custody=allocate_bottle_to_custody,
-            allocate_bottle_to_paid=allocate_bottle_to_paid,
-            created_by=request.user.id,  # Provide the appropriate user ID here
-            created_date=timezone.now()
-        )
-
-        # Create CustomerSupplyItems instances
-        for item_data in items_data:
-            CustomerSupplyItems.objects.create(
-                customer_supply=customer_supply,
-                product_id=item_data['product'],
-                quantity=item_data['quantity'],
-                amount=item_data['amount']
-            )
-
-        # Update CustomerSupplyStock
-        for item_data in items_data:
-            product_id = item_data['product']
-            quantity = item_data['quantity']
-            customer_id = customer_supply_data['customer']
-
-            customer_supply_stock, _ = CustomerSupplyStock.objects.get_or_create(
-                customer_id=customer_id,
-                product_id=product_id
-            )
-            customer_supply_stock.stock_quantity += quantity
-            customer_supply_stock.save()
-            
-            if Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CASH COUPON" and customer_supply_stock.product.product_name.lower() == "5 gallon" :
-                for c_id in collected_coupon_ids:
-                    customer_supply_coupon = CustomerSupplyCoupon.objects.create(
-                        customer_supply=customer_supply,
-                    )
-                    leaflet_instance = CouponLeaflet.objects.get(pk=c_id)
-                    customer_supply_coupon.leaf.add(leaflet_instance)
-                    leaflet_instance.used=True
-                    leaflet_instance.save()
+        reference_no = request.data.get('reference_no')
+        try:
+            with transaction.atomic():
+                if Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CASH COUPON" :
+                    total_coupon_collected = request.data.get('total_coupon_collected')
+                    collected_coupon_ids = request.data.get('collected_coupon_ids')
                     
-                    if CustomerCouponStock.objects.filter(customer__pk=customer_supply_data['customer']).exists() :
-                        customer_stock = CustomerCouponStock.objects.get(customer__pk=customer_supply_data['customer'])
-                        customer_stock.count -= int(total_coupon_collected)
-                        customer_stock.save()                    
+                    for leaf_id in collected_coupon_ids:
+                        leaf = CouponLeaflet.objects.get(pk=leaf_id)
+                        leaf.used=True
+                        leaf.save()
 
-        response_data = {
-            "status": "true",
-            "title": "Successfully Created",
-            "message": "Customer Supply created successfully.",
-        }
-        return Response(response_data, status=status.HTTP_201_CREATED)
+                # Create CustomerSupply instance
+                customer_supply = CustomerSupply.objects.create(
+                    customer_id=customer_supply_data['customer'],
+                    salesman_id=customer_supply_data['salesman'],
+                    grand_total=customer_supply_data['grand_total'],
+                    discount=customer_supply_data['discount'],
+                    net_payable=customer_supply_data['net_payable'],
+                    vat=customer_supply_data['vat'],
+                    subtotal=customer_supply_data['subtotal'],
+                    amount_recieved=customer_supply_data['amount_recieved'],
+                    collected_empty_bottle=collected_empty_bottle,
+                    allocate_bottle_to_pending=allocate_bottle_to_pending,
+                    allocate_bottle_to_custody=allocate_bottle_to_custody,
+                    allocate_bottle_to_paid=allocate_bottle_to_paid,
+                    created_by=request.user.id,
+                    created_date=timezone.now()
+                )
+
+                # Create CustomerSupplyItems instances
+                supply_items_instances = []
+                for item_data in items_data:
+                    suply_items = CustomerSupplyItems.objects.create(
+                        customer_supply=customer_supply,
+                        product_id=item_data['product'],
+                        quantity=item_data['quantity'],
+                        amount=item_data['amount']
+                    )
+                    supply_items_instances.append(suply_items)
+
+                # Update CustomerSupplyStock
+                for item_data in items_data:
+                    product_id = item_data['product']
+                    quantity = item_data['quantity']
+                    customer_id = customer_supply_data['customer']
+
+                    customer_supply_stock, _ = CustomerSupplyStock.objects.get_or_create(
+                        customer_id=customer_id,
+                        product_id=product_id
+                    )
+                    customer_supply_stock.stock_quantity += quantity
+                    customer_supply_stock.save()
+                    
+                    if Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CASH COUPON" and customer_supply_stock.product.product_name.lower() == "5 gallon" :
+                        for c_id in collected_coupon_ids:
+                            customer_supply_coupon = CustomerSupplyCoupon.objects.create(
+                                customer_supply=customer_supply,
+                            )
+                            leaflet_instance = CouponLeaflet.objects.get(pk=c_id)
+                            customer_supply_coupon.leaf.add(leaflet_instance)
+                            leaflet_instance.used=True
+                            leaflet_instance.save()
+                            
+                            if CustomerCouponStock.objects.filter(customer__pk=customer_supply_data['customer']).exists() :
+                                customer_stock = CustomerCouponStock.objects.get(customer__pk=customer_supply_data['customer'])
+                                customer_stock.count -= int(total_coupon_collected)
+                                customer_stock.save()
+                                
+                if customer_supply.subtotal > customer_supply.amount_recieved:
+                    balance_amount = customer_supply.subtotal - customer_supply.amount_recieved
+                    
+                    customer_outstanding = CustomerOutstanding.objects.create(
+                        customer=customer_supply.customer,
+                        product_type="amount",
+                        created_by=request.user.id,
+                    )
+                    
+                    outstanding_amount = OutstandingAmount.objects.create(
+                        amount=balance_amount,
+                        customer_outstanding=customer_outstanding,
+                    )
+                    outstanding_instance = ""
+                    
+                    try:
+                        outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="amount")
+                        outstanding_instance.value += int(outstanding_amount.amount)
+                        outstanding_instance.save()
+                    except:
+                        outstanding_instance = CustomerOutstandingReport.objects.create(
+                            product_type='amount',
+                            value=outstanding_amount.amount,
+                            customer=outstanding_amount.customer_outstanding.customer
+                        )
+                    
+                random_part = str(random.randint(1000, 9999))
+                invoice_number = f'WTR-{random_part}'
+                
+                # Create the invoice
+                invoice = Invoice.objects.create(
+                    invoice_no=invoice_number,
+                    created_date=datetime.today(),
+                    net_taxable=customer_supply.net_payable,
+                    vat=customer_supply.vat,
+                    discount=customer_supply.discount,
+                    amout_total=customer_supply.subtotal,
+                    amout_recieved=customer_supply.amount_recieved,
+                    customer=customer_supply.customer,
+                    reference_no=reference_no
+                )
+
+                # Create invoice items
+                for item_data in supply_items_instances:
+                    item = CustomerSupplyItems.objects.get(pk=item_data.pk)
+                    InvoiceItems.objects.create(
+                        category=item.product.category,
+                        product_items=item.product,
+                        qty=item.quantity,
+                        rate=item.amount,
+                        invoice=invoice,
+                        remarks='invoice genereted from supply items reference no : ' + invoice.reference_no
+                    )
+                    
+                DiffBottlesModel.objects.filter(
+                    delivery_date__date=date.today(),
+                    assign_this_to=customer_supply.salesman_id,
+                    customer=customer_supply.customer_id
+                    ).update(status='supplied')
+
+                if invoice:
+                    response_data = {
+                        "status": "true",
+                        "title": "Successfully Created",
+                        "message": "Customer Supply created successfully and Invoice generated.",
+                        "invoice_id": str(invoice.invoice_no)
+                    }
+                    return Response(response_data, status=status.HTTP_201_CREATED)
+            
+        except IntegrityError as e:
+            # Handle database integrity error
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": str(e),
+            }
+
+        except Exception as e:
+            # Handle other exceptions
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": str(e),
+            }
+        else:
+            response_data = {
+                "status": "false",
+                "title": "Error",
+                "message": "Failed to generate Invoice."
+            }
+        return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 @api_view(['GET'])
 def customer_coupon_stock(request):
@@ -2863,3 +2942,5 @@ class CustomerCouponListAPI(APIView):
         # Serialize the filtered customers
         serializer = CustomerDetailSerializer(customers, many=True, context={'request': request})
         return Response(serializer.data)
+    
+

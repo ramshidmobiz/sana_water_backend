@@ -10,12 +10,11 @@
       </ol>
   </div>
 <div class="main-content app-content">
-    <form enctype="multipart/form-data" role="form" method="post"
-              class="row g-3">
-            {% csrf_token %}
-    <div class="container-fluid">
-             <!-- Start:: row-1 -->
-             <div class="row">
+    <form enctype="multipart/form-data" role="form" method="post" class="row g-3">
+        {% csrf_token %}
+        <div class="container-fluid">
+            
+            <div class="row">
                 <div class="col-xl-12">
                     <div class="card custom-card">
                         <div class="card-header" style="background-color: antiquewhite;">
@@ -23,124 +22,193 @@
                             Customer Details</div>
                         </div>
                         <div class="card-body row g-3" style="background-color: antiquewhite;">
-            <!--row 1-->
-                    <div class="col-md-4">
-                        <div class="form-group required">
-                            <label class='control-label'>Customer Name</label>
-                            <input type="text" class="form-control" disabled value="{{customer_data.customer_name}}">
-                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                            <div class="col-md-4">
+                                <div class="form-group required">
+                                    <label class='control-label'>Customer Name</label>
+                                    <input type="text" class="form-control" disabled value="{{customer_data.customer_name}}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group required">
+                                    <label class='control-label'>Building Name</label>
+                                    <input type="text" class="form-control" disabled value="{{customer_data.building_name}}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group required">
+                                    <label class='control-label'>Door House Number</label>
+                                    <input type="text" class="form-control" disabled value="{{customer_data.door_house_no}}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group required">
+                                    <label class='control-label'>Floor Number</label>
+                                    <input type="text" class="form-control" disabled value="{{customer_data.floor_no}}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group required">
+                                    <label class='control-label'>Route</label>
+                                    <input type="text" class="form-control" disabled value="{{customer_data.routes.route_name}}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group required">
+                                    <label class='control-label'>Location</label>
+                                    <input type="text" class="form-control" disabled value="{{customer_data.location.location_name}}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group required">
+                                    <label class='control-label'>Mobile Number</label>
+                                    <input type="text" class="form-control" disabled value="{{customer_data.mobile_no}}">
+                                </div>
+                            </div>
                         </div>
+                        
                     </div>
-                    <div class="col-md-4">
-                        <div class="form-group required">
-                            <label class='control-label'>Building Name</label>
-                            <input type="text" class="form-control" disabled value="{{customer_data.building_name}}">
-                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group required">
-                            <label class='control-label'>Door House Number</label>
-                            <input type="text" class="form-control" disabled value="{{customer_data.door_house_no}}">
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group required">
-                            <label class='control-label'>Floor Number</label>
-                            <input type="text" class="form-control" disabled value="{{customer_data.floor_no}}">
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group required">
-                            <label class='control-label'>Route</label>
-                            <input type="text" class="form-control" disabled value="{{customer_data.routes.route_name}}">
-                        </div>
-                    </div>
-
-                    <div class="col-md-4">
-                        <div class="form-group required">
-                            <label class='control-label'>Location</label>
-                            <input type="text" class="form-control" disabled value="{{customer_data.location.location_name}}">
-                        </div>
-                    </div>
-
-
-                    <div class="col-md-4">
-                        <div class="form-group required">
-                            <label class='control-label'>Mobile Number</label>
-                            <input type="text" class="form-control" disabled value="{{customer_data.mobile_no}}">
-                        </div>
-                    </div>
-                        </div>
+                </div>
+            </div>
+            <!-- Visit schedule area -->
+            <div class="row">
+                <div class="col-md-12">
+                    {% for week_number in "1234" %}
+                    <div class="card custom-card">
+                        <!-- Week {{ week_number }} -->
                         <div class="card-header">
-                            <div class="card-title mx-auto">
+                            <div class="card-title mx-auto">Week {{ week_number }}</div>
+                        </div>
+                        <div class="card-body row g-3">
+                            <div class="col-md-12 d-flex">
+                                <label class="d-flex m-2 p-2 text-center" style="height:70px;align-items: center;border: 1px solid rgb(128,128,128); border-radius: 6px"><input type="checkbox" class="week-checkbox m-2" name="week{{ week_number }}[]" value="Monday"> Monday</label><br>
+                                <label class="d-flex m-2 p-2 text-center" style="height:70px;align-items: center;border: 1px solid rgb(128,128,128); border-radius: 6px"><input type="checkbox" class="week-checkbox m-2" name="week{{ week_number }}[]" value="Tuesday"> Tuesday</label><br>
+                                <label class="d-flex m-2 p-2 text-center" style="height:70px;align-items: center;border: 1px solid rgb(128,128,128); border-radius: 6px"><input type="checkbox" class="week-checkbox m-2" name="week{{ week_number }}[]" value="Wednesday"> Wednesday</label><br>
+                                <label class="d-flex m-2 p-2 text-center" style="height:70px;align-items: center;border: 1px solid rgb(128,128,128); border-radius: 6px"><input type="checkbox" class="week-checkbox m-2" name="week{{ week_number }}[]" value="Thursday"> Thursday</label><br>
+                                <label class="d-flex m-2 p-2 text-center" style="height:70px;align-items: center;border: 1px solid rgb(128,128,128); border-radius: 6px"><input type="checkbox" class="week-checkbox m-2" name="week{{ week_number }}[]" value="Friday"> Friday</label><br>
+                                <label class="d-flex m-2 p-2 text-center" style="height:70px;align-items: center;border: 1px solid rgb(128,128,128); border-radius: 6px"><input type="checkbox" class="week-checkbox m-2" name="week{{ week_number }}[]" value="Saturday"> Saturday</label><br>
+                                <label class="d-flex m-2 p-2 text-center" style="height:70px;align-items: center;border: 1px solid rgb(128,128,128); border-radius: 6px"><input type="checkbox" class="week-checkbox m-2" name="week{{ week_number }}[]" value="Sunday"> Sunday</label><br>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12 text-end mt-5">
+                    <input type="submit" class="btn btn-primary me-2 mb-2" value="Submit">
+                        <button class="btn btn-success   me-md-2  mb-2" type="button" onClick="javascript:history.go(-1);">
+                            <i class="bi bi-backspace-fill pe-1"></i>Back</button>
+                    <a class="btn btn-success me-md-2  mb-2"
+                        href="{% url 'users' %}"><i class="bi bi-backspace-fill pe-1"></i> Back to Dashboard </a>
+                </div>
+            </div>
+
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block static %}
+{% load static %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var visitScheduleData = {{ visit_schedule_data|safe }};
+        for (var weekNumber = 1; weekNumber <= 4; weekNumber++) {
+            var weekData = visitScheduleData['week' + weekNumber];
+            for (var i = 0; i < weekData.length; i++) {
+                var day = weekData[i];
+                $('input[name="week' + weekNumber + '[]"][value="' + day + '"]').prop('checked', true);
+            }
+        }
+    });    
+</script>
+{% endblock static %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{% comment %} <div class="card-header">
+                    <div class="card-title mx-auto">
                             Week 1</div>
                         </div>
-                        <div class="card-body row g-3">
-            <!--row 1-->
-                    <div class="col-md-2">
-                        <div class="form-group required">
-                            <label class='control-label'>Monday</label>
-                            {{ form.monday }}
-                            <span style="color: red;">{{ form.monday.errors }}</span>
-                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                    <div class="card-body row g-3">
+                        <div class="col-md-2">
+                            <div class="form-group required">
+                                <label class='control-label'>Monday</label>
+                                {{ form.monday }}
+                                <span style="color: red;">{{ form.monday.errors }}</span>
+                                <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="form-group required">
-                            <label class='control-label'>Tuesday</label>
-                            {{ form.tuesday }}
-                            <span style="color: red;">{{ form.tuesday.errors }}</span>
-                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                        <div class="col-md-2">
+                            <div class="form-group required">
+                                <label class='control-label'>Tuesday</label>
+                                {{ form.tuesday }}
+                                <span style="color: red;">{{ form.tuesday.errors }}</span>
+                                <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="form-group required">
-                            <label class='control-label'>Wednesday</label>
-                            {{ form.wednesday }}
-                            <span style="color: red;">{{ form.wednesday.errors }}</span>
+                        <div class="col-md-2">
+                            <div class="form-group required">
+                                <label class='control-label'>Wednesday</label>
+                                {{ form.wednesday }}
+                                <span style="color: red;">{{ form.wednesday.errors }}</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="form-group required">
-                            <label class='control-label'>Thursday</label>
-                            {{ form.thursday }}
-                            <span style="color: red;">{{ form.thursday.errors }}</span> 
+                        <div class="col-md-2">
+                            <div class="form-group required">
+                                <label class='control-label'>Thursday</label>
+                                {{ form.thursday }}
+                                <span style="color: red;">{{ form.thursday.errors }}</span> 
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="form-group required">
-                            <label class='control-label'>Friday</label>
-                            {{ form.friday }}
-                            <span style="color: red;">{{ form.friday.errors }} </span>
+                        <div class="col-md-2">
+                            <div class="form-group required">
+                                <label class='control-label'>Friday</label>
+                                {{ form.friday }}
+                                <span style="color: red;">{{ form.friday.errors }} </span>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="col-md-2">
-                        <div class="form-group required">
-                            <label class='control-label'>Saturday</label>
-                            {{ form.saturday }}
-                            <span style="color: red;">{{ form.saturday.errors }}</span>
-                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                        <div class="col-md-2">
+                            <div class="form-group required">
+                                <label class='control-label'>Saturday</label>
+                                {{ form.saturday }}
+                                <span style="color: red;">{{ form.saturday.errors }}</span>
+                                <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                            </div>
                         </div>
-                    </div>
 
 
-                    <div class="col-md-2">
-                        <div class="form-group required">
-                            <label class='control-label'>Sunday</label>
-                            {{ form.sunday }}
-                            <span style="color: red;">{{ form.sunday.errors }}</span>
-                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                        <div class="col-md-2">
+                            <div class="form-group required">
+                                <label class='control-label'>Sunday</label>
+                                {{ form.sunday }}
+                                <span style="color: red;">{{ form.sunday.errors }}</span>
+                                <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                            </div>
                         </div>
                     </div>
+                    <div class="card-header">
+                        <div class="card-title mx-auto">
+                            Week 2
                         </div>
-                        <div class="card-header">
-                            <div class="card-title mx-auto">
-                            Week 2</div>
-                        </div>
-                        <div class="card-body row g-3">
-            <!--row 1-->
+                    </div>
+                    <div class="card-body row g-3">
                     <div class="col-md-2">
                         <div class="form-group required">
                             <label class='control-label'>Monday</label>
@@ -203,7 +271,6 @@
                             Week 3</div>
                         </div>
                         <div class="card-body row g-3">
-            <!--row 1-->
                     <div class="col-md-2">
                         <div class="form-group required">
                             <label class='control-label'>Monday</label>
@@ -266,7 +333,6 @@
                             Week 4</div>
                         </div>
                         <div class="card-body row g-3">
-            <!--row 1-->
                     <div class="col-md-2">
                         <div class="form-group required">
                             <label class='control-label'>Monday</label>
@@ -329,7 +395,6 @@
                             Week 5</div>
                         </div>
                         <div class="card-body row g-3">
-            <!--row 1-->
                     <div class="col-md-2">
                         <div class="form-group required">
                             <label class='control-label'>Monday</label>
@@ -385,118 +450,42 @@
                             <span style="color: red;">{{ form.sunday.errors }}</span>
                             <!--                                <small class="form-text text-muted">Select Category.</small>-->
                         </div>
-                    </div>
-                        </div>
-                        {% comment %} <div class="card-header">
-                            <div class="card-title mx-auto">
-                            Weeks</div>
-                        </div> {% endcomment %}
-                        <div class="card-body row g-3">
-        
-                            <!--row 1-->
-                                    {% comment %} <div class="col-md-3">
-                                        <div class="form-group required">
-                                            <label class='control-label'>Week 1</label>
-                                            {{ form.week1 }}
-                                            <span style="color: red;">{{ form.week1.errors }}</span>
-                                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
-                                        </div>
+                    </div> {% endcomment %}
+                {% comment %} </div> {% endcomment %}
+                {% comment %} <div class="card-header">
+                        <div class="card-title mx-auto">
+                        Weeks</div>
+                    </div> {% endcomment %}
+                    {% comment %} <div class="card-body row g-3">
+     {% endcomment %}
+                        <!--row 1-->
+                                {% comment %} <div class="col-md-3">
+                                    <div class="form-group required">
+                                        <label class='control-label'>Week 1</label>
+                                        {{ form.week1 }}
+                                        <span style="color: red;">{{ form.week1.errors }}</span>
+                                        <!--                                <small class="form-text text-muted">Select Category.</small>-->
                                     </div>
-                                    <div class="col-md-3">
-                                        <div class="form-group required">
-                                            <label class='control-label'>Week 2</label>
-                                            {{ form.week2 }}
-                                            <span style="color: red;">{{ form.week2.errors }}</span>
-                                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
-                                        </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group required">
+                                        <label class='control-label'>Week 2</label>
+                                        {{ form.week2 }}
+                                        <span style="color: red;">{{ form.week2.errors }}</span>
+                                        <!--                                <small class="form-text text-muted">Select Category.</small>-->
                                     </div>
-                                    <div class="col-md-3">
-                                        <div class="form-group required">
-                                            <label class='control-label'>Week 3</label>
-                                            {{ form.week3 }}
-                                            <span style="color: red;">{{ form.week3.errors }}</span>
-                                        </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group required">
+                                        <label class='control-label'>Week 3</label>
+                                        {{ form.week3 }}
+                                        <span style="color: red;">{{ form.week3.errors }}</span>
                                     </div>
-                                    <div class="col-md-3">
-                                        <div class="form-group required">
-                                            <label class='control-label'>Week 4</label>
-                                            {{ form.week4 }}
-                                            <span style="color: red;">{{ form.week4.errors }}</span> 
-                                        </div>
-                                    </div> {% endcomment %}
-                                    
-                            <div class="col-12 text-end mt-5">
-                                <input type="submit" class="btn btn-primary me-2 mb-2" value="Submit">
-                                    <button class="btn btn-success   me-md-2  mb-2" type="button" onClick="javascript:history.go(-1);">
-                                        <i class="bi bi-backspace-fill pe-1"></i>Back</button>
-                                <a class="btn btn-success me-md-2  mb-2"
-                                   href="{% url 'users' %}"><i class="bi bi-backspace-fill pe-1"></i> Back to Dashboard </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-    </div>
-    </form>
-</div>
-{% endblock %}
-
-
-
-<script>
-    function saveVisitSchedule() {
-        var visitSchedule = {
-            "Monday": [],
-            "Tuesday": [],
-            "Wednesday": [],
-            "Thursday": [],
-            "Friday": [],
-            "Saturday": [],
-            "Sunday": []
-        };
-
-        // Populate visit schedule data
-        $("input[type='checkbox']:checked").each(function () {
-            var dayOfWeek = $(this).data('day');
-            var week = $(this).data('week');
-
-            visitSchedule[dayOfWeek].push(week);
-        });
-
-        // Convert to JSON string
-        var jsonData = JSON.stringify({"visit_schedule": visitSchedule});
-
-        // Display JSON data (for testing)
-        console.log(jsonData);
-
-        // Send jsonData to server using AJAX or any other method
-        // Example:
-        // $.ajax({
-        //     type: 'POST',
-        //     url: 'url_to_send_data_to',
-        //     data: jsonData,
-        //     contentType: 'application/json',
-        //     success: function (response) {
-        //         console.log('Data saved successfully.');
-        //     },
-        //     error: function (error) {
-        //         console.error('Error occurred while saving data:', error);
-        //     }
-        // });
-    }
-</script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group required">
+                                        <label class='control-label'>Week 4</label>
+                                        {{ form.week4 }}
+                                        <span style="color: red;">{{ form.week4.errors }}</span> 
+                                    </div>
+                                </div> {% endcomment %}
