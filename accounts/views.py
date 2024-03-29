@@ -370,8 +370,13 @@ def visit_days_assign(request, customer_id):
     
     try:
         customer_data = Customers.objects.get(customer_id=customer_id)
-        visit_schedule_data = json.loads(customer_data.visit_schedule)
-        print(visit_schedule_data)
+        visit_schedule_data = customer_data.visit_schedule
+        
+        if visit_schedule_data is not None:
+            visit_schedule_data = json.loads(visit_schedule_data)
+            print(visit_schedule_data)
+        else:
+            print("Visit schedule data is None.")
     except Customers.DoesNotExist:
         messages.error(request, 'Customer does not exist.')
         return redirect('customers')
