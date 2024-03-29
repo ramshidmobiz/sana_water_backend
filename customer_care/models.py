@@ -27,7 +27,7 @@ class DiffBottlesModel(models.Model):
     request_type = models.ForeignKey(RequestTypeMaster,on_delete=models.SET_NULL, null=True, blank=True)
     quantity_required = models.IntegerField(null=True, blank=True)
     delivery_date = models.DateTimeField(blank=True, null=True)
-    assign_this_to  = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE,null=True,blank=True)
+    # assign_this_to  = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE,null=True,blank=True)
     mode = models.CharField(max_length=10, choices=[('custody', 'Custody'), ('paid', 'Paid')])
     amount = models.CharField(max_length=50,null=True, blank=True)
     discount_net_total = models.CharField(max_length=50,null=True, blank=True)

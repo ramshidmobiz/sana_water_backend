@@ -129,13 +129,13 @@ class DiffBottles_Create_Form(forms.ModelForm):
     #     self.fields['request_type'].queryset = RequestTypeMaster.objects.filter(request_name__in = [])
     class Meta:
         model = DiffBottlesModel
-        fields = ['request_type','quantity_required', 'delivery_date', 'assign_this_to', 'mode' ]
+        fields = ['request_type','quantity_required', 'delivery_date', 'mode' ]
 
         widgets = {
             'request_type': forms.Select(attrs={'class': 'form-control', 'required': True}),  # Add widget for request_type
             'quantity_required': forms.TextInput(attrs={'class': 'form-control','required': False}),
             'delivery_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'assign_this_to': forms.Select(attrs={'class': 'form-control'}),
+            # 'assign_this_to': forms.Select(attrs={'class': 'form-control'}),
             'mode': forms.Select(attrs={'class': 'form-control'}),
         }
 
