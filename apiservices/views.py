@@ -2135,6 +2135,7 @@ class CustomerCouponRecharge(APIView):
                 customer = Customers.objects.get(pk=coupon_data.pop("customer"))  
                 salesman = CustomUser.objects.get(pk=coupon_data.pop("salesman"))
                 items_data = coupon_data.pop('items', [])  
+                print(coupon_data)
                 customer_coupon = CustomerCoupon.objects.create(customer=customer, salesman=salesman, **coupon_data)
                 coupon_instances.append(customer_coupon)
                 
@@ -2300,7 +2301,7 @@ class create_customer_supply(APIView):
         allocate_bottle_to_pending = request.data.get('allocate_bottle_to_pending')
         allocate_bottle_to_custody = request.data.get('allocate_bottle_to_custody')
         allocate_bottle_to_paid = request.data.get('allocate_bottle_to_paid')
-        reference_no = request.data.get('reference_no')
+        reference_no = request.data.get('reference_number')
         try:
             with transaction.atomic():
                 if Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CASH COUPON" :
@@ -2322,6 +2323,7 @@ class create_customer_supply(APIView):
                     vat=customer_supply_data['vat'],
                     subtotal=customer_supply_data['subtotal'],
                     amount_recieved=customer_supply_data['amount_recieved'],
+                    reference_number=reference_no,
                     collected_empty_bottle=collected_empty_bottle,
                     allocate_bottle_to_pending=allocate_bottle_to_pending,
                     allocate_bottle_to_custody=allocate_bottle_to_custody,
