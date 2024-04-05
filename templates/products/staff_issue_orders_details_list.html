@@ -51,16 +51,20 @@
                                     <td style="text-align:center;">{{forloop.counter}}</td>
                                     <td style="text-align:left;">{{data.product_id}}</td>
                                     <td style="text-align:center;">{{data.count}}</td>
-                                    <td style="text-align:center;"></td>
+                                    <td style="text-align:center;">{{data.issued_qty}}</td>
                                     <td>
+                                        {% if data.count != data.issued_qty %}
                                         <div class="g-2">
                                             <!-- Add the action button for issuing a quantity -->
                                             {% if not data.product_id.category.category_name == "Coupons" %}
-                                                <a href="{% url 'staffIssueOrdersCreate' data.staff_order_details_id %}" id="issueQuantityButton" aria-label="anchor" class="btn btn-primary-light btn-sm" data-bs-toggle="tooltip" data-bs-original-title="Issue Quantity" onclick="disableButton(this)"><span class="bi bi-plus-circle fs-14"></span> Issue Quantity</a>
+                                            <a href="{% url 'staffIssueOrdersCreate' data.staff_order_details_id %}" id="issueQuantityButton" aria-label="anchor" class="btn btn-primary-light btn-sm" data-bs-toggle="tooltip" data-bs-original-title="Issue Quantity" onclick="disableButton(this)"><span class="bi bi-plus-circle fs-14"></span> Issue Quantity</a>
                                             {% else %}
-                                                <button class="btn btn-primary-light btn-sm" data-bs-toggle="modal" data-bs-target="#couponIssueModal" data-request_id="{{data.pk}}" data-href="{% url 'issue_coupons_orders' data.pk %}" onclick="handleButtonClick(this)"><span class="bi bi-plus-circle fs-14"></span> Issue Quantity</button>
+                                            <button class="btn btn-primary-light btn-sm" data-request_id="{{data.pk}}" data-href="{% url 'issue_coupons_orders' %}" onclick="handleButtonClick(this)"><span class="bi bi-plus-circle fs-14"></span> Issue Quantity</button>
                                             {% endif %}
                                         </div>
+                                        {% else %}
+                                        <span>Item Issued to van</span>
+                                        {% endif %}
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -79,33 +83,26 @@
 <div class="modal fade" id="couponIssueModal" tabindex="-1" role="dialog" aria-labelledby="couponIssueModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header text-center">
             <h5 class="modal-title" id="exampleModalLabel">Check Coupon Book</h5>
             <button type="button" class="btn-close text-dark" data-bs-dismiss="modal" aria-label="Close" onclick="clearForm()"></button>
             </div>
-            <div class="modal-body">
-                <div class="row justify-content-center"> <!-- Center the row content -->
-                    <div class="col-6"> <!-- Use Bootstrap grid -->
-                        <div class="form-group required">
-                            <label class='control-label'>Book Number</label>
-                            <input type="text" class="form-control text-center" name="coupon_book_no" id="modalCouponBookNo">
+            <form action="{% url 'issue_coupons_orders' %}" role="form" method="post" enctype="multipart/form-data"  class="row g-3 ajax redirect" autocomplete="off" novalidate>
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row justify-content-center">
+                        <div class="col-12">
+                            <div id="modalBookNumbers">
+                                <!-- Checkboxes will be added here dynamically -->
+                            </div>
                             <input type="hidden" name="request_id" id="modalRequestId">
                         </div>
                     </div>
+                </div>                             
+                <div class="modal-footer">
+                    <button type="submit" class="btn bg-gradient-secondary">Submit</button>
                 </div>
-                <div class="row justify-content-center">
-                    <div class="col-6 text-center mt-3">
-                        <span class="coupon-varification-status"></span>
-                    </div>
-                </div>
-            </div>                    
-            <div class="modal-footer">
-                <button type="button" class="btn bg-gradient-secondary" onclick="clearForm()" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn bg-gradient-primary" id="couponBookVarifyBtn">Varify</button>
-                {% for data in staff_orders_details %}
-                <a href="{% url 'issue_coupons_orders' data.staff_order_details_id %}" class="btn bg-gradient-primary d-none" id="couponBookSubmitBtn" >Submit</a>
-                {% endfor  %}
-            </div>
+            </form>
         </div>
     </div>
 </div>
@@ -116,9 +113,57 @@
     function handleButtonClick(button) {
         var requestId = $(button).data("request_id");
         $("#modalRequestId").val(requestId);
-        var buttonUrl = $(button).data("href");
-        $("#couponBookSubmitBtn").attr("href", buttonUrl);
-    };
+        
+        $.ajax({
+            url: "{% url 'get_coupon_bookno' %}",
+            method: "GET",
+            data: {
+                request_id: requestId
+            },
+            success: function(response) {
+                if (response.data.length > 0) {
+                    var bookNumbers = response.data;
+                    var checkboxesHtml = "";
+                    for (var i = 0; i < bookNumbers.length; i++) {
+                        checkboxesHtml += '<div class="form-check">' +
+                                          '<input class="form-check-input" type="checkbox" name="coupon_book_no" value="' + bookNumbers[i].book_no + '">' +
+                                          '<label class="form-check-label" for="couponBook' + bookNumbers[i].book_no + '">' + bookNumbers[i].book_no + '</label>' +
+                                          '</div>';
+                    }
+                    $("#modalRequestId").val(requestId);
+                    $("#modalBookNumbers").html(checkboxesHtml);
+                    $('#couponIssueModal').modal('show');
+                } else {
+                    $("#modalBookNumbers").html('<p>No book numbers found.</p>');
+                    $('#couponIssueModal').modal('show');
+                }
+            },
+            error: function(xhr, status, error) {
+                // Handle error
+                console.error(xhr.responseText);
+            }
+        });
+    }
+    
+    {% comment %} function handleButtonClick(button) {
+        var requestId = $(button).data("request_id");
+        $("#modalRequestId").val(requestId);
+        
+        $.ajax({
+            url: "{% url 'get_coupon_bookno' %}",
+            method: "GET",
+            data: {
+                request_id: requestId
+            },
+            success: function(response) {
+                $("#modalBookNumbers").html(response);
+
+            },
+            error: function(xhr, status, error) {
+                console.error(xhr.responseText);
+            }
+        });
+    } {% endcomment %}
 
     function clearForm() {
         // Clear the form fields
@@ -126,7 +171,7 @@
         document.getElementById('modalCouponBookNo').value = '';
         }
     </script>
-    <script>
+    {% comment %} <script>
         $("#couponBookVarifyBtn").click(function(){
             var requestId = $("#modalRequestId").val();
             var couponBookNo = $("#modalCouponBookNo").val();
@@ -168,7 +213,7 @@
             });
     
         });
-    </script>
+    </script> {% endcomment %}
 {% endblock static %}
 
 

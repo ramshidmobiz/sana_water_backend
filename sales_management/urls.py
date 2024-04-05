@@ -29,12 +29,26 @@ urlpatterns = [
 
     
     path('collectionreport', collectionreport, name='collectionreport'),
-    
+    path('dailycollectionreport', dailycollectionreport, name='dailycollectionreport'),
+    path('collection_report_excel/', collection_report_excel, name='collection_report_excel'),
+    path('daily_collection_report_excel/', daily_collection_report_excel, name='daily_collection_report_excel'),
+
     # path('create-sale/', SaleEntryCreateView.as_view(), name='create_sale'),
     # path('create-sales-entry/', SalesEntryCreateView.as_view(), name='initiate_sale'),
-
-
     
+#------------------Product-Route wise sales report
+
+    path('product_route_salesreport', product_route_salesreport, name='product_route_salesreport'),
+    path('product_route_salesreport_detail/<str:customersupplyitem_id>/', product_route_salesreport_detail_view, name='product_route_salesreport_detail_view'),
+    path('print_product_sales', print_product_sales, name='print_product_sales'),
+    path('download_product_sales_excel/', download_product_sales_excel, name='download_product_sales_excel'),
+
+    #ytd,mtd report
+    # ----------------
+    path('yearmonthsalesreport', yearmonthsalesreport, name='yearmonthsalesreport'),
+    path('yearmonthsalesreportview/<uuid:route_id>/', yearmonthsalesreportview, name="yearmonthsalesreportview"),
+
+
     
 
 

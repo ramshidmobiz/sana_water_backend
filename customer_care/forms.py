@@ -196,33 +196,33 @@ class DiffBottlesFilterForm(forms.Form):
             queryset = queryset.filter(request_type__request_name=request_type)
         return queryset
 
-# class ReassignRequestForm(forms.ModelForm):
-#     new_assignee = forms.CharField(max_length=100, required=True)
-#     new_delivery_date = forms.DateField(required=True)
+class ReassignRequestForm(forms.ModelForm):
+    new_assignee = forms.CharField(max_length=100, required=True)
+    new_delivery_date = forms.DateField(required=True)
 
-#     class Meta:
-#         model = DiffBottlesModel
-#         fields = ['assign_this_to', 'delivery_date']
-#         widgets = {
-#             'assign_this_to': forms.Select(attrs={'class': 'form-control', 'required': True}),
-            # 'delivery_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'required': True}),
-        # }
+    class Meta:
+        model = DiffBottlesModel
+        fields = ['assign_this_to', 'delivery_date']
+        widgets = {
+            'assign_this_to': forms.Select(attrs={'class': 'form-control', 'required': True}),
+            'delivery_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'required': True}),
+        }
 
-    # def clean(self):
-    #     cleaned_data = super().clean()
-    #     new_assignee = cleaned_data.get('assign_this_to')
-    #     # Check if the new assignee is a salesman
-    #     if new_assignee:
-    #         is_salesman = new_assignee.user_type == 'Salesman'  # Adjust as per your user model
-    #         if not is_salesman:
-    #             raise forms.ValidationError("The selected assignee must be a salesman.")
+    def clean(self):
+        cleaned_data = super().clean()
+        new_assignee = cleaned_data.get('assign_this_to')
+        # Check if the new assignee is a salesman
+        if new_assignee:
+            is_salesman = new_assignee.user_type == 'Salesman'  # Adjust as per your user model
+            if not is_salesman:
+                raise forms.ValidationError("The selected assignee must be a salesman.")
 
-    # def save(self, commit=True):
-    #     instance = super().save(commit=False)
-    #     instance.assign_this_to = self.cleaned_data['assign_this_to']
-    #     instance.delivery_date = self.cleaned_data['delivery_date']
-    #     # Assuming the new assignee is a salesman, add the salesman name
-    #     instance.salesman_name = instance.assign_this_to.get_full_name()  # Adjust as per your user model
-    #     if commit:
-    #         instance.save()
-    #     return instance
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.assign_this_to = self.cleaned_data['assign_this_to']
+        instance.delivery_date = self.cleaned_data['delivery_date']
+        # Assuming the new assignee is a salesman, add the salesman name
+        instance.salesman_name = instance.assign_this_to.get_full_name()  # Adjust as per your user model
+        if commit:
+            instance.save()
+        return instance

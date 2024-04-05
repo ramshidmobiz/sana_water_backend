@@ -8,22 +8,22 @@ class Products_Create_Form(forms.ModelForm):
     
     class Meta:
         model = Product
-        fields = ['product_name', 'rate','tax','quantity']
+        fields = ['product_name','quantity']
         widgets = {
             'product_name': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'rate': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'tax' : forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
             'quantity': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'})
 
         }
 class Product_Item_Create_Form(forms.ModelForm):
     class Meta:
         model = ProdutItemMaster
-        fields = ['product_name','category','unit']
+        fields = ['product_name','category','unit','rate','tax']
         widgets = {
             'product_name': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
             'category': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
             'unit': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+            'rate': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+            'tax' : forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
         }
 
 class Products_Edit_Form(forms.ModelForm):
@@ -32,12 +32,9 @@ class Products_Edit_Form(forms.ModelForm):
         
     class Meta:
         model = Product
-        fields = ['product_name', 'rate', 'tax']
+        fields = ['product_name']
         widgets = {
             'product_name': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'rate': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
-            'tax' : forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-
         }
 
 class Defaultprice_Create_Form(forms.ModelForm):

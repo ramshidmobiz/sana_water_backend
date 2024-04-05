@@ -48,7 +48,20 @@
                                         <!--                                <small class="form-text text-muted">Select Category.</small>-->
                                     </div>
                                 </div>
-                    
+                                <div class="col-md-6">
+                                    <div class="form-group required">
+                                        <label class='control-label'>Rate</label>
+                                        {{ form.rate }}
+                                        <span style="color: red;">{{ form.rate.errors }}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group required">
+                                        <label class='control-label'>Tax</label>
+                                        {{ form.tax }}
+                                        <span style="color: red;">{{ form.tax.errors }}</span>
+                                    </div>
+                                </div>
                                 <div class="col-12 text-end mt-5">
                                     <input type="submit" class="btn btn-primary me-2 mb-2" value="Submit">
                                     <button class="btn btn-success   me-md-2  mb-2" type="button" onClick="javascript:history.go(-1);">

@@ -15,16 +15,15 @@ class CreateCouponTypeForm(forms.ModelForm):
 
 
 class EditCouponTypeForm(forms.ModelForm):
-     class Meta:
+    class Meta:
         model=CouponType
         fields=['coupon_type_name','no_of_leaflets','valuable_leaflets','free_leaflets',]
         widgets = {
-            'coupon_type_name': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+            'coupon_type_name': forms.TextInput(attrs={'class': 'form-control', 'required': 'true','readonly': 'readonly'}),
             'no_of_leaflets': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
             'valuable_leaflets': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
             'free_leaflets': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
         }
-
 
 class CreateCouponForm(forms.ModelForm):
     class Meta:
@@ -41,7 +40,6 @@ class CreateCouponForm(forms.ModelForm):
             'branch_id': forms.TextInput(attrs={'class': 'form-control'}),
             'status': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
     }
-
       
 class EditCouponForm(forms.ModelForm):
     class Meta:

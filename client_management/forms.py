@@ -1,5 +1,7 @@
 from django import forms
 from django.forms import ModelForm
+
+from sales_management.models import CollectionPayment
 from .models import *
 from accounts.models import Customers
 from django.db.models import Q
@@ -364,4 +366,15 @@ class CustomerOutstandingCouponsForm(forms.ModelForm):
         widgets = {
             'coupon_type': forms.Select(attrs={'class': 'form-control'}),
             'count': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
+
+class CollectionPaymentForm(forms.ModelForm):
+    class Meta:
+        model = CollectionPayment
+        fields = ['payment_method', 'amount', 'customer_supply', 'invoice']  # Include the 'amount', 'payment_method', 'customer_supply', and 'invoice' fields
+        widgets = {
+            'payment_method': forms.Select(attrs={'class': 'form-control', 'required': True}),
+            'amount': forms.NumberInput(attrs={'class': 'form-control', 'required': True}),
+            'customer_supply': forms.Select(attrs={'class': 'form-control', 'required': True}),
+            'invoice': forms.Select(attrs={'class': 'form-control', 'required': True}),
         }

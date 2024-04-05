@@ -116,6 +116,7 @@ class AssignStaffCouponDetails(models.Model):
         return str(self.assign_coupon_details_id)
     
 #--------------NewCoupon-----------------
+
 class NewCoupon(models.Model):
 
     coupon_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -130,7 +131,7 @@ class NewCoupon(models.Model):
     modified_by = models.CharField(max_length=20, null=True, blank=True)
     created_date = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     modified_date = models.DateTimeField(blank=True, null=True)
-    coupon_method = models.CharField(max_length=10,choices=COUPON_METHOD_CHOICES,default='digital',null=True,blank=True)
+    coupon_method = models.CharField(max_length=10,choices=COUPON_METHOD_CHOICES,default='manual',null=True,blank=True)
     qr_code = models.ImageField(upload_to="coupon_qr_codes",null=True, blank=True)
 
     class Meta:

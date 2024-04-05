@@ -14,6 +14,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 
+from coupon_management.serializers import couponStockSerializers
 from master.functions import generate_form_errors
 from .forms import *
 import uuid
@@ -26,21 +27,19 @@ from django.template.loader import get_template
 import pandas as pd
 from xhtml2pdf import pisa
 
-def varify_coupon(request):
+def get_coupon_bookno(request):
     request_id = request.GET.get("request_id")
-    coupon_book_no = request.GET.get("coupon_book_no")
-    varify_status = False
+    print(request_id, "request_id")
     
-    if (instances:=Staff_Orders_details.objects.filter(pk=request_id)).exists():
+    if (instances := Staff_Orders_details.objects.filter(pk=request_id)).exists():
         instance = instances.first()
-        stock_instances = CouponStock.objects.filter(couponbook__book_num=coupon_book_no)
-        if stock_instances.exists() and stock_instances.first().coupon_stock == "company":
-            varify_status = True
-        
+        stock_instances = CouponStock.objects.filter(couponbook__coupon_type__coupon_type_name=instance.product_id.product_name,coupon_stock="company")
+        serialized = couponStockSerializers(stock_instances, many=True)
+        print(serialized.data)
         status_code = 200
         response_data = {
             "status": "true",
-            "varify_status": varify_status,
+            "data": serialized.data,
         }
     else:
         status_code = 404
@@ -83,6 +82,17 @@ class Product_items_Create(View):
             data = form.save(commit=False)
             data.created_by = str(request.user.id)
             data.save()
+            
+            if data.category.category_name == 'Coupons':
+                product_name = data.product_name
+                if not CouponType.objects.filter(coupon_type_name=product_name).exists():
+                    CouponType.objects.create(
+                        coupon_type_name=product_name,
+                        no_of_leaflets=0,
+                        valuable_leaflets=0,
+                        free_leaflets=0,
+                        created_by=str(request.user.id)
+                    )
             messages.success(request, 'Product Item Successfully Added.', 'alert-success')
             return redirect('product_items')
         else:
@@ -93,7 +103,42 @@ class Product_items_Create(View):
             messages.success(request, 'Data is not valid.', 'alert-danger')
             context = {'form': form}
             return render(request, self.template_name, context)
-        
+
+
+class Product_Item_Edit(View):
+    template_name = 'products/product_items_create.html'
+    form_class = Product_Item_Create_Form
+
+    @method_decorator(login_required)
+    def get(self, request, pk, *args, **kwargs):
+        rec = ProdutItemMaster.objects.get(id=pk)
+        form = self.form_class(instance=rec)
+        context = {'form': form,'rec':rec}
+        return render(request, self.template_name, context)
+
+    @method_decorator(login_required)
+    def post(self, request, pk, *args, **kwargs):
+        rec = ProdutItemMaster.objects.get(id=pk)
+        pre_name = rec.product_name
+        form = self.form_class(request.POST, request.FILES, instance=rec)
+        if form.is_valid():
+            data = form.save(commit=False)
+            data.modified_by = str(request.user.id)
+            data.modified_date = datetime.now()
+            data.save()
+            
+            if rec.category.category_name == 'Coupons':
+                if (instances:=CouponType.objects.filter(coupon_type_name=pre_name)).exists():
+                    instances.update(coupon_type_name=data.product_name)
+            
+            messages.success(request, 'Product Item Data Successfully Updated', 'alert-success')
+            return redirect('product_items')
+        else:
+            #print(form.errors)
+            messages.success(request, 'Data is not valid.', 'alert-danger')
+            context = {'form': form}
+            return render(request, self.template_name, context)   
+          
 class Products_List(View):
     template_name = 'products/products_list.html'
 
@@ -131,16 +176,6 @@ class Product_Create(View):
             )
             data.save()
             
-            if product_item.category.category_name == 'Coupons':
-                product_name = data.product_name.product_name  # Accessing the product name through the ForeignKey relationship
-                CouponType.objects.create(
-                    coupon_type_name=product_name,
-                    no_of_leaflets=0,
-                    valuable_leaflets=0,
-                    free_leaflets=0,
-                    created_by=str(request.user.id)
-                )
-
             if request.user.branch_id:
                 try:
                     branch_id = request.user.branch_id.branch_id
@@ -178,7 +213,7 @@ class Product_Create(View):
 
 class Product_Edit(View):
     template_name = 'products/product_edit.html'
-    form_class = Products_Edit_Form
+    form_class = Products_Create_Form
 
     @method_decorator(login_required)
     def get(self, request, pk, *args, **kwargs):
@@ -343,8 +378,10 @@ def staff_issue_orders_list(request):
         
     if date_param:
         date = datetime.strptime(date_param, "%Y-%m-%d").date()
-        instances = instances.filter(created_date__date=date)
+        instances = instances.filter(order_date=date)
         filter_data['date'] = date_param
+    else:
+        instances = instances.filter(order_date=timezone.now().date())
 
     context = {
         'instances': instances,
@@ -354,11 +391,11 @@ def staff_issue_orders_list(request):
         
 def staff_issue_orders_details_list(request,staff_order_id):
     order = Staff_Orders.objects.get(pk=staff_order_id)
-    staff_orders_details = Staff_Orders_details.objects.filter(staff_order_id=order).order_by('-created_date')
-
+    staff_orders_details = Staff_Orders_details.objects.filter(staff_order_id=order)
+    
     context = {
-        'staff_orders_details': staff_orders_details,
-        'order_date': order.created_date,
+        'staff_orders_details': staff_orders_details.order_by('-created_date'),
+        'order_date': order.order_date,
         'order_number': order.order_number
         }
     return render(request, 'products/staff_issue_orders_details_list.html', context)
@@ -421,7 +458,7 @@ def staffIssueOrdersCreate(request, staff_order_details_id):
                                 count=int(quantity_issued)
                                 )
                         
-                        issue.count = int(issue.count) - int(quantity_issued)
+                        issue.issued_qty = quantity_issued
                         issue.save()
                         
                         response_data = {
@@ -469,127 +506,127 @@ def staffIssueOrdersCreate(request, staff_order_details_id):
         }
         return render(request, 'products/coupon_issue_orders_create.html', context)
 
-def issue_coupons_orders(request, staff_order_details_id):
-    coupon_no = request.GET.get("coupo_no")
-    issue_instance = get_object_or_404(Staff_Orders_details, staff_order_details_id=staff_order_details_id)
+# def issue_coupons_orders(request):
+#     staff_order_details_id = request.GET.get("request_id")
+#     issue_instance = get_object_or_404(Staff_Orders_details, staff_order_details_id=staff_order_details_id)
     
-    if request.method == 'POST':
-        form = StaffIssue_CouponsOrdersForm(request.POST)
+#     if request.method == 'POST':
+#         form = StaffIssue_CouponsOrdersForm(request.POST)
                 
-        if form.is_valid():
-            try:
-                with transaction.atomic():
-                    update_purchase_stock = ProductStock.objects.filter(product_name=issue_instance.product_id)
+#         if form.is_valid():
+#             try:
+#                 with transaction.atomic():
+#                     update_purchase_stock = ProductStock.objects.filter(product_name=issue_instance.product_id)
 
-                    if update_purchase_stock.exists():  # Check if any records are returned
-                        ptoduct_stockQuantity = update_purchase_stock.first().quantity
-                        if ptoduct_stockQuantity is None:
-                            ptoduct_stockQuantity = 0
-                    else:
-                        ptoduct_stockQuantity = 0  # Default value if no records are found
+#                     if update_purchase_stock.exists():  # Check if any records are returned
+#                         ptoduct_stockQuantity = update_purchase_stock.first().quantity
+#                         if ptoduct_stockQuantity is None:
+#                             ptoduct_stockQuantity = 0
+#                     else:
+#                         ptoduct_stockQuantity = 0  # Default value if no records are found
 
-                    quantity_issued = form.cleaned_data.get('quantity_issued')
+#                     quantity_issued = form.cleaned_data.get('quantity_issued')
 
-                    if 0 < int(quantity_issued) <= ptoduct_stockQuantity:
-                        coupon = NewCoupon.objects.get(coupon_type__coupon_type_name=issue_instance.product_id.product_name,book_num=coupon_no)
+#                     if 0 < int(quantity_issued) <= ptoduct_stockQuantity:
+#                         coupon = NewCoupon.objects.get(coupon_type__coupon_type_name=issue_instance.product_id.product_name,book_num=coupon_no)
                         
-                        data = form.save(commit=False)
-                        data.created_by = str(request.user.id)
-                        data.modified_by = str(request.user.id)
-                        data.modified_date = datetime.now()
-                        data.created_date = datetime.now()
-                        data.product_id = issue_instance.product_id
-                        data.staff_Orders_details_id = issue_instance
-                        data.coupon_book = coupon
-                        data.save()
+#                         data = form.save(commit=False)
+#                         data.created_by = str(request.user.id)
+#                         data.modified_by = str(request.user.id)
+#                         data.modified_date = datetime.now()
+#                         data.created_date = datetime.now()
+#                         data.product_id = issue_instance.product_id
+#                         data.staff_Orders_details_id = issue_instance
+#                         data.coupon_book = coupon
+#                         data.save()
                         
-                        #  ProductStock
-                        update_purchase_stock = update_purchase_stock.first()
-                        update_purchase_stock.quantity -= int(data.quantity_issued)
-                        update_purchase_stock.save()
+#                         #  ProductStock
+#                         update_purchase_stock = update_purchase_stock.first()
+#                         update_purchase_stock.quantity -= int(data.quantity_issued)
+#                         update_purchase_stock.save()
                         
-                        # Update VanStock
-                        van = Van.objects.get(salesman_id__id=issue_instance.staff_order_id.created_by)
+#                         # Update VanStock
+#                         van = Van.objects.get(salesman_id__id=issue_instance.staff_order_id.created_by)
                         
-                        if (update_van_stock:=VanCouponStock.objects.filter(van=van,coupon=coupon,stock_type="opening_stock")).exists():
-                            van_stock = update_van_stock.first()
-                            van_stock.count += int(data.quantity_issued)
-                            van_stock.save()
-                        else:
-                            vanstock = VanStock.objects.create(
-                                created_by=str(request.user.id),
-                                created_date=datetime.now(),
-                                van=van,
-                                stock_type="opening_stock",
-                            )
+#                         if (update_van_stock:=VanCouponStock.objects.filter(van=van,coupon=coupon,stock_type="opening_stock")).exists():
+#                             van_stock = update_van_stock.first()
+#                             van_stock.count += int(data.quantity_issued)
+#                             van_stock.save()
+#                         else:
+#                             vanstock = VanStock.objects.create(
+#                                 created_by=str(request.user.id),
+#                                 created_date=datetime.now(),
+#                                 van=van,
+#                                 stock_type="opening_stock",
+#                             )
                             
-                            VanCouponItems.objects.create(
-                                coupon=coupon,
-                                book_no=coupon_no,
-                                coupon_type=coupon.coupon_type,
-                                van_stock=vanstock,
-                            )
+#                             VanCouponItems.objects.create(
+#                                 coupon=coupon,
+#                                 book_no=coupon_no,
+#                                 coupon_type=coupon.coupon_type,
+#                                 van_stock=vanstock,
+#                             )
                             
-                            van_stock = VanCouponStock.objects.create(
-                                coupon=coupon,
-                                stock_type="opening_stock",
-                                count=int(data.quantity_issued),
-                                van=van
-                            )
+#                             van_stock = VanCouponStock.objects.create(
+#                                 coupon=coupon,
+#                                 stock_type="opening_stock",
+#                                 count=int(data.quantity_issued),
+#                                 van=van
+#                             )
                             
-                        issue_count_balance = int(issue_instance.count) - int(data.quantity_issued)
+#                         issue_count_balance = int(issue_instance.count) - int(data.quantity_issued)
                         
-                        issue_instance.count = issue_count_balance
-                        issue_instance.save()
+#                         issue_instance.count = issue_count_balance
+#                         issue_instance.save()
                         
-                        CouponStock.objects.filter(couponbook=coupon).update(coupon_stock="van")
+#                         CouponStock.objects.filter(couponbook=coupon).update(coupon_stock="van")
                         
-                        response_data = {
-                            "status": "true",
-                            "title": "Successfully Created",
-                            "message": "Coupon Isued successfully.",
-                            'redirect': 'true',
-                            "redirect_url": reverse('staff_issue_orders_list')
-                        }
-                    else:
-                        response_data = {
-                            "status": "false",
-                            "title": "Failed",
-                            "message": f"No stock available in {issue_instance.product_id.product_name}, only {ptoduct_stockQuantity} left",
-                        }
+#                         response_data = {
+#                             "status": "true",
+#                             "title": "Successfully Created",
+#                             "message": "Coupon Isued successfully.",
+#                             'redirect': 'true',
+#                             "redirect_url": reverse('staff_issue_orders_list')
+#                         }
+#                     else:
+#                         response_data = {
+#                             "status": "false",
+#                             "title": "Failed",
+#                             "message": f"No stock available in {issue_instance.product_id.product_name}, only {ptoduct_stockQuantity} left",
+#                         }
             
-            except IntegrityError as e:
-                # Handle database integrity error
-                response_data = {
-                    "status": "false",
-                    "title": "Failed",
-                    "message": str(e),
-                }
+#             except IntegrityError as e:
+#                 # Handle database integrity error
+#                 response_data = {
+#                     "status": "false",
+#                     "title": "Failed",
+#                     "message": str(e),
+#                 }
 
-            except Exception as e:
-                # Handle other exceptions
-                response_data = {
-                    "status": "false",
-                    "title": "Failed",
-                    "message": str(e),
-                }
-        else:
-            message = generate_form_errors(form,formset=False)
+#             except Exception as e:
+#                 # Handle other exceptions
+#                 response_data = {
+#                     "status": "false",
+#                     "title": "Failed",
+#                     "message": str(e),
+#                 }
+#         else:
+#             message = generate_form_errors(form,formset=False)
             
-            response_data = {
-                "status": "false",
-                "title": "Failed",
-                "message": message,
-            }
-        return HttpResponse(json.dumps(response_data), content_type='application/javascript')
-    else:
-        form = StaffIssue_CouponsOrdersForm(initial={"coupo_no":coupon_no})
+#             response_data = {
+#                 "status": "false",
+#                 "title": "Failed",
+#                 "message": message,
+#             }
+#         return HttpResponse(json.dumps(response_data), content_type='application/javascript')
+#     else:
+#         form = StaffIssue_CouponsOrdersForm(initial={"coupo_no":coupon_no})
         
-    context = {
-        'form': form,
-        'issue_instance':issue_instance,
-    }
-    return render(request, 'products/coupon_issue_orders_create.html', context)
+#     context = {
+#         'form': form,
+#         'issue_instance':issue_instance,
+#     }
+#     return render(request, 'products/coupon_issue_orders_create.html', context)
 
 
 # def issue_coupons_orders(request, staff_order_details_id):
@@ -776,6 +813,116 @@ def issue_coupons_orders(request, staff_order_details_id):
 #             print("Product not found or product_id is None")
 
 #     return render(request, 'products/staff_issue_orders_list.html')
+
+from django.http import JsonResponse
+
+def issue_coupons_orders(request):
+    if request.method == 'POST':
+        request_id = request.POST.get("request_id")
+        book_numbers = request.POST.getlist("coupon_book_no")
+        print("Request ID:", request_id)
+        print("Selected Book Numbers:", book_numbers)
+        issue = get_object_or_404(Staff_Orders_details, staff_order_details_id=request_id)
+        
+        for book_no in book_numbers :
+            coupon = NewCoupon.objects.get(book_num=book_no,coupon_type__coupon_type_name=issue.product_id.product_name)
+            print(coupon)
+            update_purchase_stock = ProductStock.objects.filter(product_name=issue.product_id)
+            
+            # if update_purchase_stock.exists():  
+            #     ptoduct_stockQuantity = update_purchase_stock.first().quantity
+            #     if ptoduct_stockQuantity is None:
+            #         ptoduct_stockQuantity = 0
+            # else:
+            #     ptoduct_stockQuantity = 0
+            #     quantity_issued = issue.issued_qty
+            
+            # if 0 < int(issue.issued_qty) <= ptoduct_stockQuantity:
+            try:
+                with transaction.atomic():
+                    issue_order = Staff_IssueOrders.objects.create(
+                        created_by = str(request.user.id),
+                        modified_by = str(request.user.id),
+                        modified_date = datetime.now(),
+                        # created_date = datetime.now(),
+                        
+                        product_id = issue.product_id,
+                        staff_Orders_details_id = issue,
+                        coupon_book = coupon,
+                        quantity_issued = 1
+                    )
+                    
+                    #  ProductStock
+                    update_purchase_stock = update_purchase_stock.first()
+                    update_purchase_stock.quantity -= int(issue_order.quantity_issued)
+                    update_purchase_stock.save()
+                    
+                    # Update VanStock
+                    van = Van.objects.get(salesman_id__id=issue.staff_order_id.created_by)
+                    
+                    if (update_van_stock:=VanCouponStock.objects.filter(van=van,coupon=coupon,stock_type="opening_stock")).exists():
+                        van_stock = update_van_stock.first()
+                        van_stock.count += int(issue_order.quantity_issued)
+                        van_stock.save()
+                    else:
+                        vanstock = VanStock.objects.create(
+                            created_by=str(request.user.id),
+                            created_date=datetime.now(),
+                            van=van,
+                            stock_type="opening_stock",
+                        )
+                        
+                        VanCouponItems.objects.create(
+                            coupon=coupon,
+                            book_no=coupon,
+                            coupon_type=coupon.coupon_type,
+                            van_stock=vanstock,
+                        )
+                        
+                        van_stock = VanCouponStock.objects.create(
+                            coupon=coupon,
+                            stock_type="opening_stock",
+                            count=int(issue_order.quantity_issued),
+                            van=van
+                        )
+                        
+                        issue.issued_qty += issue_order.quantity_issued
+                        issue.save()
+                            
+                        CouponStock.objects.filter(couponbook=coupon).update(coupon_stock="van")
+                        
+                        response_data = {
+                            "status": "true",
+                            "title": "Successfully Created",
+                            "message": "Coupon Isued successfully.",
+                            'redirect': 'true',
+                            "redirect_url": reverse('staff_issue_orders_list')
+                        }
+                        
+            except IntegrityError as e:
+                # Handle database integrity error
+                response_data = {
+                    "status": "false",
+                    "title": "Failed",
+                    "message": str(e),
+                }
+
+            except Exception as e:
+                # Handle other exceptions
+                response_data = {
+                    "status": "false",
+                    "title": "Failed",
+                    "message": str(e),
+                }
+            # else:
+            #     response_data = {
+            #         "status": "false",
+            #         "title": "Failed",
+            #         "message": f"No stock available in {issue.product_id.product_name}, only {ptoduct_stockQuantity} left",
+            #     }
+                
+        return JsonResponse(response_data)
+
 
 #---------------------REPORTS-----
 def product_stock_report(request):

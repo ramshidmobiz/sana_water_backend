@@ -69,6 +69,7 @@
                                 <tr>
                                     <th scope="col">Sl.No</th>
                                     <th scope="col">Created Date</th>
+                                    <th scope="col">Order Date</th>
                                     <th scope="col">Order Number</th>
                                     <th scope="col">Staff Name</th>
                                     <th scope="col">Route</th>
@@ -82,6 +83,7 @@
                                 <tr>
                                     <td style="text-align:center;">{{forloop.counter}}</td>
                                     <td style="text-align:center;">{{data.created_date|date}}</td>
+                                    <td style="text-align:center;">{{data.order_date|date}}</td>
                                     <td style="text-align:center;">{{data.order_number}}</td>
                                     {% if data.created_by %}
                                         {% get_salesman_name data.created_by as salseman %}

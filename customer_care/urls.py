@@ -35,7 +35,7 @@ path('edit_quantity/<uuid:diffbottles_id>/', EditQuantityView.as_view(), name='e
 path('cancel_request/<uuid:diffbottles_id>/', CancelRequestView.as_view(), name='cancel_request'),
 # path('reassign_request/<uuid:diffbottles_id>/', ReassignRequestView.as_view(), name='reassign_request'),
 # path('next_delivery_date', find_next_delivery_date, name = 'nexr_delivery_date'),
-# path('reassign_request/<uuid:diffbottles_id>/',ReassignRequestView, name='reassign_request'),
+path('reassign_request/<uuid:diffbottles_id>/',ReassignRequestView, name='reassign_request'),
 
 
 ]

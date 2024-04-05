@@ -19,6 +19,8 @@ class ProdutItemMaster(models.Model):
         ('Nos', 'Nos'),  # Added 'Nos' as an option
     )
     unit = models.CharField(max_length=50, choices=unit_choices, null=True, blank=True)
+    tax = models.ForeignKey('tax_settings.Tax', on_delete=models.CASCADE, null=True, blank=True)
+    rate = models.DecimalField(default=0, max_digits=10, decimal_places=2)
     
     class Meta:
         ordering = ('product_name',)
@@ -34,12 +36,9 @@ class Product(models.Model):
     modified_date = models.DateTimeField(blank=True, null=True)
     
     product_name = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True, blank=True)
-    rate = models.CharField(max_length=50)
     quantity=models.PositiveIntegerField(null=True, blank=True)
     branch_id = models.ForeignKey('master.BranchMaster', on_delete=models.CASCADE)
     fiveg_status = models.BooleanField(default=False)
-    tax = models.ForeignKey('tax_settings.Tax', on_delete=models.CASCADE)
-    quantity=models.PositiveIntegerField(null=True, blank=True)
 
     
     class Meta:
@@ -94,7 +93,7 @@ class Staff_Orders(models.Model):
         ordering = ('order_number',)
 
     def __str__(self):
-        return str(self.order_number)
+        return f'order number : {self.order_number}, created date : {self.created_date}, order date : {self.order_date}'
     
 class Staff_Orders_details(models.Model):
     staff_order_details_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -110,7 +109,8 @@ class Staff_Orders_details(models.Model):
         ('Pending', 'Pending'),
         ('Delivered', 'Delivered'),
     )
-    count = models.CharField(max_length=50,null=True, blank=True)
+    count = models.DecimalField(max_digits=10, decimal_places=0, default=0)
+    issued_qty = models.DecimalField(max_digits=10, decimal_places=0, default=0)
     status = models.CharField(max_length=20, choices=C_STATUS, null=True, blank=True, default='Order Request')
     
     class Meta:

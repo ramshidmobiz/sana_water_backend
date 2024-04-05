@@ -81,9 +81,9 @@ def get_customer_rate(request,product,customer):
         customer = Customers.objects.get(pk=customer)
         product_price = Product_Default_Price_Level.objects.get(product_id=product,customer_type=customer.customer_type).rate
         
-        if product.tax:
+        if product.product_name.tax:
             # print('vat')
-            vat_rate = product.tax.percentage
+            vat_rate = product.product_name.tax.percentage
             # print(vat_rate)
             total_include_vat = (float(vat_rate)/100) * float(product_price)
             # print(total_include_vat, "vat")

@@ -12,11 +12,17 @@ INVOICE_TYPES = (
     ('credit_invoive', 'Credit Invoice'),
 )
 
+INVOICE_STATUS = (
+    ('non_paid', 'Non Paid'),
+    ('paid', 'Paid'),
+)
+
 class Invoice(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     reference_no = models.CharField(max_length=200)
     invoice_no = models.CharField(max_length=200)
     invoice_type = models.CharField(max_length=200, choices=INVOICE_TYPES,default='cash_invoice')
+    invoice_status = models.CharField(max_length=200, choices=INVOICE_STATUS,default='non_paid')
     created_date = models.DateTimeField()
     net_taxable = models.DecimalField(default=0, max_digits=10, decimal_places=2)
     vat = models.DecimalField(default=0, max_digits=10, decimal_places=2)

@@ -45,16 +45,16 @@
                                 </div>
                                 <div class="row col-md-6" style="">
                                     <div class="col-md-3 col-form-label text-end">
-                                        <p>Route</p>
+                                        <p>Product</p>
                                     </div>
                                     <div class="col-md-4">
-                                        <select name="selected_route_id" id="product" class="form-select" style="width:100%">
-                                            <option value="" disabled {% if not selected_route %}selected{% endif %}>-----------------------------</option>
-                                            {% if selected_route %}
-                                                <option value="{{ selected_route_id }}" selected>{{ selected_route }}</option>
+                                        <select name="selected_product_id" id="product" class="form-select" style="width:100%">
+                                            <option value="" disabled {% if not selected_product %}selected{% endif %}>-----------------------------</option>
+                                            {% if selected_product %}
+                                                <option value="{{ selected_product_id }}" selected>{{ selected_product }}</option>
                                             {% endif %}
-                                            {% for route in routes %}
-                                                <option value="{{ route.id }}">{{ route }}</option>
+                                            {% for product in products %}
+                                                <option value="{{ product.id }}">{{ product }}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
@@ -90,52 +90,55 @@
                                 <!-- <button type="submit" class="btn btn-outline-success" style="width: 7em;">
                                     <i class="fas fa-file-excel"></i> Excel
                                 </button> -->
-                                <a href="{% url 'collection_report_excel' %}?start_date={{start_date_str}}&route_name={{route_filter}}&end_date={{end_date_str}}" class="btn btn-outline-success" style="width: 7em;"><i class="fas fa-file-excel"></i> Excel</a>
+                                <a href="{% url 'download_product_sales_excel' %}" class="btn btn-outline-success" style="width: 7em;"><i class="fas fa-file-excel"></i> Excel</a>
                             </div>
                            
                         </div>
                         <div style="float:right;padding:10px 0px">
-                            <a  onclick="printDiv('printArea'); return false;" class="btn btn-outline-success " style="width: 7em;">
+                            <a href="{% url 'print_product_sales' %}" class="btn btn-outline-success" style="width: 7em;">
                                 <i class="fas fa-print"></i> Print
                             </a>
-
                         </div>
                         <table id="datatable-basic" class="table table-bordered text-wrap " style="width: 100%">
                             <thead>
                                 <tr>
                                     <th rowspan="2">Sl No</th>
-                                    <th rowspan="2">Date</th>
-                                    <th rowspan="2">Customer/<br>Mobile No</th>
-                                    <th rowspan="2">Route</th>
-                                    <th rowspan="2">Building Name<br>No</th>
-                                    <th rowspan="2">Receipt No/<br>Reference No</th>
+                                    <th rowspan="2">Route Name</th>
+                                    <th rowspan="2">Salesman</th>
+                                    <th rowspan="2">Quantity</th>
                                     <th rowspan="2">Amount</th>
-                                    <th rowspan="2">Mode of Payment</th>
-                                    
-
-                                   
+                                    <th rowspan="2">Action</th>
                                 </tr>
-                                
                             </thead>
                             <tbody>
-    
-
-                                {% for data in colectionpayment %}
-                                
+                                {% for customersupplyitem in customersupplyitems %}
                                     <tr>
                                         <td>{{ forloop.counter }}</td>
-                                        <td>{{ data.customer_supply.created_date.date }}</td>
-                                        <td>{{ data.customer.customer_name }}<br>{{ data.customer.mobile_no }}</td>
-                                        <td>{{ data.customer.routes.route_name }}</td>
-                                        <td>{{ data.customer.building_name }}<br>{{ data.customer.door_house_no }}</td>
-                                        <td>{{ data.customer_supply.reference_number }}</td>
-                                        <td>{{ data.amount }}</td>
-                                        <td>{{ data.payment_method }}</td>
+                                        <td>{{ customersupplyitem.customer }}</td>
+                                        <td>{{ customersupplyitem.customer_supply.salesman.username }}</td>
+                                        <td>{{ customersupplyitem.quantity }}</td>
+                                        <td>{{ customersupplyitem.amount }}</td>
+                                        <td>
+                                            <div class="g-2">
+                                                <a href="{% url 'product_route_salesreport_detail_view' customersupplyitem.id %}?start_date={{ start_date }}&end_date={{ end_date }}&selected_date={{ selected_date }}&selected_product_id={{ selected_product_id }}" aria-label="anchor" class="btn  btn-warning-light btn-sm" data-bs-toggle="tooltip" data-bs-original-title="View">
+                                                    <span class="bi bi-eye fs-14"></span>
+                                                </a>
+                                            </div>
+                                        </td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
                             
-                              
+                            <tfoot>
+                                <tr>
+                                    <td style="border-top: solid rgb(0, 0, 0) 1px;"></td>
+                                    <td style="border-top: solid rgb(0, 0, 0) 1px;"></td>
+                                    <td style="font-weight: bold; border-top: solid rgb(0, 0, 0) 1px;">Total</td>
+                                    <td style="font-weight: bold; border-top: solid rgb(0, 0, 0) 1px;">{{ total_quantity }}</td>
+                                    <td style="font-weight: bold; border-top: solid rgb(0, 0, 0) 1px;">{{ total_amount }}</td>
+                                    <td></td> <!-- Assuming you don't have any total for the action column -->
+                                </tr>
+                            </tfoot>  
 
                         </table>
                     </div>
@@ -145,59 +148,14 @@
 
     </div>
 </div>
-<div id="printArea"  style="display: none; padding: 10em;">
-    <div style="margin-top: 4em; ">
-        <h3 style="text-align: center; ;">National Water</h3>
-    </div>
 
-
-    <table class="table table-bordered text-wrap " style="width: 100%; margin-top: 1em;">
-        <thead>
-            <tr>
-                <th scope="col" style="border-bottom: 1; max-width: 5em;">Sl No</th>
-                <th scope="col" style="border-bottom: 1; ">Date</th>
-                <th scope="col" style="border-bottom: 1;">Customer/<br>Mobile No</th>
-                <th scope="col" style="border-bottom: 1;">Route</th>
-                <th scope="col" style="border-bottom: 1;">Building Name<br>No</th>
-                <th scope="col" style="border-bottom: 1; ">Receipt No/<br>Reference No</th>
-                <th scope="col" style="border-bottom: 1; ">Amount</th>
-                <th scope="col" style="border-bottom: 1; ">Mode of Payment</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for data in colectionpayment %}
-                <tr>
-                    <td style="text-align:center;">{{forloop.counter}}</td>
-                    <td style="text-align:left;">{{data.customer_supply.created_date.date}}</td>
-                    <td style="text-align:left;">{{ data.customer.customer_name }},<br>{{ data.customer.mobile_no }}</td>
-                    <td style="text-align:left;">{{data.customer.routes.route_name }}</td>
-                    <td style="text-align:left;">{{data.customer.building_name }},<br>{{ data.customer.door_house_no}}</td>
-                    <td style="text-align:left;">{{data.customer_supply.reference_number }}</td>
-                    <td style="text-align:left;">{{data.amount}}</td>
-                    <td style="text-align:left;">{{ data.payment_method }}</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-
-<script>
-    function printDiv(divName) {
-        var printContents = document.getElementById(divName).innerHTML;
-        var originalContents = document.body.innerHTML;
-        document.body.innerHTML = printContents;
-        window.print();
-        document.body.innerHTML = originalContents;
-    }
-</script>
 
 
 
 <script>
     function resetFilters() {
         // Redirect to the same page
-        location.href = "{% url 'collectionreport' %}";
+        location.href = "{% url 'product_route_salesreport' %}";
     }
 </script>
 

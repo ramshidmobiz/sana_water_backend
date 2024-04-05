@@ -1,13 +1,16 @@
-from django.db.models import Sum
+from django.db.models import Sum, Subquery
 from rest_framework import serializers
 #from . models import *
+from rest_framework.generics import ListAPIView
 from rest_framework.views import APIView
 
+from invoice_management.models import Invoice
 from order.models import *
 from master.models  import *
 from product.models  import * 
 from accounts.serializers import *
-from client_management.models  import * 
+from client_management.models  import *
+from sales_management.models import CollectionPayment
 from van_management.serializers import *
 from customer_care.models import DiffBottlesModel
 
@@ -134,11 +137,6 @@ class CustodyCustomerSerializer(serializers.ModelSerializer):
         model = Customers
         fields = ['customer_id','customer_name'] 
 
-class CustodyCustomItemsSerializer(serializers.ModelSerializer):
-    
-    class Meta:
-        model = CustodyCustomItems
-        fields = ['id', 'custody_custom', 'product', 'quantity', 'serialnumber', 'amount']
 
 class CustomersSerializer(serializers.ModelSerializer):
     class Meta:
@@ -165,7 +163,7 @@ class LowerCouponCustomersSerializer(serializers.ModelSerializer):
     def get_last_coupon_rate(self, obj):
         coupon_rate = ""
         if (coupon_rate:=CustomerCouponItems.objects.filter(customer_coupon__customer=obj)).exists():
-            coupon_rate = coupon_rate.latest('created_date').rate
+            coupon_rate = coupon_rate.latest('customer_coupon__created_date').rate
         return coupon_rate
 
 
@@ -215,16 +213,20 @@ class CustodyCustomReturnSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class ProdutItemMasterSerializer(serializers.ModelSerializer):
+class ProdutItemMasterSerializerr(serializers.ModelSerializer):
     class Meta:
         model = ProdutItemMaster
         fields =['id', 'product_name']
 
 
 class CustodyCustomItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.product_name.product_name', read_only=True)
+    deposit_type = serializers.CharField(source='custody_custom.deposit_type', read_only=True)
+    agreement_number = serializers.CharField(source='custody_custom.agreement_no', read_only=True)
+    
     class Meta:
         model = CustodyCustomItems
-        fields = '__all__'
+        fields = ['id', 'custody_custom', 'product', 'product_name', 'quantity', 'serialnumber', 'amount', 'deposit_type', 'agreement_number']
 
 class SupplyItemFiveCanWaterProductGetSerializer(serializers.ModelSerializer):
     rate = serializers.SerializerMethodField()
@@ -254,11 +256,14 @@ class SupplyItemFiveGallonWaterGetSerializer(serializers.ModelSerializer):
 
     def get_rate(self, obj):
         customer_id = self.context.get('customer_id')
-        try:
-            customer = Customers.objects.get(pk=customer_id)
-            rate = customer.rate
-        except Customers.DoesNotExist:
-            rate = Product.objects.filter(product_name=obj).latest('created_date').rate
+        if obj.product_name == "5 Gallon":
+            try:
+                customer = Customers.objects.get(pk=customer_id)
+                rate = customer.rate
+            except Customers.DoesNotExist:
+                rate = obj.rate
+        else:
+            obj.rate
         return rate
     
     def get_quantity(self, obj):
@@ -412,11 +417,6 @@ class CustomerCouponStockSerializer(serializers.ModelSerializer):
         else:
             return 0
 
-class VanCouponStockSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = OutstandingAmount
-        fields = '__all__'
-
 
 class OutstandingCouponSerializer(serializers.ModelSerializer):
     custodycustomitems = CustodyCustomItemSerializer
@@ -428,8 +428,7 @@ class OutstandingAmountSerializer(serializers.ModelSerializer):
     class Meta:
         model = OutstandingAmount
         fields = '__all__'
-
-
+    
 class VanCouponStockSerializer(serializers.ModelSerializer):
     book_no = serializers.SerializerMethodField()
     number_of_coupons = serializers.SerializerMethodField()
@@ -441,7 +440,7 @@ class VanCouponStockSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = VanCouponStock
-        fields = '__all__'
+        fields = ['id','coupon','stock_type','count','van','book_no','number_of_coupons','number_of_free_coupons','total_number_of_coupons','coupon_method','coupon_type','rate']
         
     def get_book_no(self, obj):
         return obj.coupon.book_num
@@ -464,8 +463,7 @@ class VanCouponStockSerializer(serializers.ModelSerializer):
     
     def get_rate(self, obj):
         product_item = ProdutItemMaster.objects.get(product_name=obj.coupon.coupon_type.coupon_type_name)
-        rate = Product.objects.filter(product_name=product_item).latest("created_date").rate
-        return rate
+        return product_item.rate
         
 class VanProductStockSerializer(serializers.ModelSerializer):
     product_name = serializers.SerializerMethodField()
@@ -491,17 +489,39 @@ class VanProductStockSerializer(serializers.ModelSerializer):
 #         fields = ['customer', 'count', 'coupon_type_id']
 
 class CustomerOutstandingSerializer(serializers.Serializer):
-    customer = serializers.UUIDField()
-    customer_name = serializers.CharField(max_length=200)
-    building_name = serializers.CharField(max_length=200)
-    route_name = serializers.CharField(max_length=200)
-    route_id = serializers.UUIDField()
-    door_house_no = serializers.CharField(max_length=200)
-    amount = serializers.DecimalField(max_digits=10, decimal_places=2)
-    empty_can = serializers.DecimalField(max_digits=10, decimal_places=2)
-    coupons = serializers.DecimalField(max_digits=10, decimal_places=2)
-#         fields = ['customer_name', 'count', 'coupon_type_id', 'coupon_type_name']
-
+    route_name = serializers.SerializerMethodField()
+    route_id = serializers.SerializerMethodField()
+    amount = serializers.SerializerMethodField()
+    empty_can = serializers.SerializerMethodField()
+    coupons = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Customers
+        fields = ['customer_id','customer_name','building_name','route_name','route_id','door_house_no','amount','empty_can','coupons']
+    
+    def get_amount(self,obj):
+        result = 0
+        if (instances:=CustomerOutstandingReport.objects.filter(customer=obj,product_type="amount")).exists():
+            result = instances.first().value
+        return result
+    
+    def get_empty_can(self,obj):
+        result = 0
+        if (instances:=CustomerOutstandingReport.objects.filter(customer=obj,product_type="emptycan")).exists():
+            result = instances.first().value
+        return result
+    
+    def get_coupons(self,obj):
+        result = 0
+        if (instances:=CustomerOutstandingReport.objects.filter(customer=obj,product_type="coupons")).exists():
+            result = instances.first().value
+        return result
+    
+    def get_route_id(self,obj):
+        return obj.routes.route_id
+    
+    def get_route_name(self,obj):
+        return obj.routes.route_name
 
 class CouponTypeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -561,3 +581,182 @@ class CustomerDetailSerializer(serializers.ModelSerializer):
     def get_total_count(self, obj):
         total_count = CustomerCouponStock.objects.filter(customer=obj).aggregate(total_count=Sum('count'))['total_count']
         return total_count
+
+
+class CustomerSerializer(serializers.ModelSerializer):
+    route_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Customers
+        fields = ['id', 'customer_name', 'building_name', 'sales_type', 'route_name']
+
+    def get_route_name(self, obj):
+        if obj.routes:
+            return obj.routes.route_name
+        return None
+
+
+
+# class CollectionSerializer(serializers.ModelSerializer):
+#     route = RouteMasterSerializer(source='customer.routes', read_only=True)
+#     customer_name = serializers.CharField(source='customer.customer_name')
+#     billing_address = serializers.CharField(source='customer.billing_address')
+#     mobile_no=serializers.CharField(source='customer.mobile_no')
+#
+#     class Meta:
+#         model = CustomerSupply
+#         fields = ['created_date', 'customer_name', 'salesman','mobile_no', 'grand_total', 'billing_address','route']
+# class CollectionSerializer(serializers.ModelSerializer):
+#     customer_name = serializers.CharField(source='customer.customer_name')
+#     mobile_no = serializers.CharField(source='customer.mobile_no')
+#     route_name = RouteMasterSerializer(source='customer.routes', read_only=True)
+
+#     payment_method = serializers.ChoiceField(choices=CollectionPayment.PAYMENT_TYPE_CHOICES)
+#     amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+#     class Meta:
+#         model=CollectionPayment
+#         fields='__all__'
+        
+class DashBoardSerializer(serializers.Serializer):
+    total_schedule = serializers.DecimalField(max_digits=10, decimal_places=2)
+    completed_schedule = serializers.DecimalField(max_digits=10, decimal_places=2)
+    coupon_sale = serializers.DecimalField(max_digits=10, decimal_places=2)
+    empty_bottles = serializers.DecimalField(max_digits=10, decimal_places=2)
+    expences = serializers.DecimalField(max_digits=10, decimal_places=2)
+    filled_bottles = serializers.DecimalField(max_digits=10, decimal_places=2)
+    used_coupons = serializers.DecimalField(max_digits=10, decimal_places=2)
+    cash_in_hand = serializers.DecimalField(max_digits=10, decimal_places=2)
+    fields=['customer_name','mobile_no','payment_method','amount','route_name']
+
+    def create(self, validated_data):
+        customer_supply_data = validated_data.pop('customer_supply', None)
+        if customer_supply_data:
+            customer_supply = CustomerSupply.objects.create(**customer_supply_data)
+            validated_data['customer_supply'] = customer_supply
+        return super().create(validated_data)
+
+
+
+
+class CollectionPaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CollectionPayment
+        fields = '__all__'
+
+
+
+
+
+# class RouteMasterSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = RouteMaster
+#         fields = ['route_name']
+# class CustomerSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Customers
+#         fields = ['customer_id']
+#
+# class CollectionSerializer(serializers.ModelSerializer):
+#     customer_id = CustomerSerializer(source='customer', read_only=True)
+#     invoice_id = serializers.SerializerMethodField()
+#     payment_method = serializers.SerializerMethodField()
+#     payment_amount = serializers.SerializerMethodField()
+#     reference_no = serializers.SerializerMethodField()
+#
+#     class Meta:
+#         model = CustomerSupply
+#         fields = ['customer_id', 'created_date', 'grand_total', 'invoice_id', 'payment_method', 'payment_amount', 'reference_no']
+#
+#     def get_invoice_id(self, obj):
+#         invoice = Invoice.objects.filter(customer=obj.customer).last()
+#         return invoice.id if invoice else None
+#
+#     def get_payment_method(self, obj):
+#         payment = CollectionPayment.objects.filter(customer_supply=obj).last()
+#         return payment.payment_method if payment else None
+#
+#     def get_payment_amount(self, obj):
+#         payment = CollectionPayment.objects.filter(customer_supply=obj).last()
+#         return payment.amount if payment else None
+#
+#     def get_reference_no(self, obj):
+#         invoice = Invoice.objects.filter(customer=obj.customer).last()
+#         return invoice.reference_no if invoice else None
+
+
+# class CollectionSerializer(serializers.ModelSerializer):
+#     customer_id = serializers.CharField(source='customer.customer_id')
+#     invoices = serializers.SerializerMethodField()
+#
+#     class Meta:
+#         model = CustomerSupply
+#         fields = ['customer_id', 'invoices']
+#
+#     def get_invoices(self, obj):
+#         invoices = Invoice.objects.filter(customer=obj.customer).order_by('-created_date')
+#         invoice_list = []
+#         for invoice in invoices:
+#             invoice_data = {
+#                 'invoice_id': str(invoice.id),
+#                 'created_date': serializers.DateTimeField().to_representation(invoice.created_date),
+#                 'grand_total': invoice.amout_total,
+#                 'reference_no': invoice.reference_no,
+#             }
+#             invoice_list.append(invoice_data)
+#         return invoice_list
+
+
+
+# class DashBoardSerializer(serializers.Serializer):
+#     total_schedule = serializers.DecimalField(max_digits=10, decimal_places=2)
+#     completed_schedule = serializers.DecimalField(max_digits=10, decimal_places=2)
+#     coupon_sale = serializers.DecimalField(max_digits=10, decimal_places=2)
+#     empty_bottles = serializers.DecimalField(max_digits=10, decimal_places=2)
+#     expences = serializers.DecimalField(max_digits=10, decimal_places=2)
+#     filled_bottles = serializers.DecimalField(max_digits=10, decimal_places=2)
+#     used_coupons = serializers.DecimalField(max_digits=10, decimal_places=2)
+#     cash_in_hand = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+
+class ProdutItemMasterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProdutItemMaster
+        fields = ['id','product_name','unit','tax','rate','created_date']
+
+class CustomerSupplySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerSupply
+        fields = ('collected_empty_bottle','created_date')
+
+
+class CollectionCustomerSerializer(serializers.ModelSerializer):
+    invoices = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Customers
+        fields = ['customer_id','customer_name','invoices']
+
+    def get_invoices(self, obj):
+        invoices = Invoice.objects.filter(customer=obj,invoice_status="non_paid").order_by('-created_date')
+        invoice_list = []
+        for invoice in invoices:
+            invoice_data = {
+                'invoice_id': str(invoice.id),
+                'created_date': serializers.DateTimeField().to_representation(invoice.created_date),
+                'grand_total': invoice.amout_total,
+                'reference_no': invoice.reference_no,
+            }
+            invoice_list.append(invoice_data)
+        return invoice_list
+    
+class CustodyCustomSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustodyCustom
+        fields = ['customer', 'agreement_no', 'deposit_type']
+class CustodyCustomItemsSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.product_name.product_name', read_only=True)
+
+    class Meta:
+        model = CustodyCustomItems
+        fields = ['id', 'custody_custom', 'product', 'product_name', 'quantity', 'serialnumber', 'amount']

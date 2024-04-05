@@ -31,3 +31,13 @@ class assigncustomerCouponserializers(serializers.ModelSerializer):
     class Meta :
         model = AssignStaffCouponDetails
         fields = '__all__'
+        
+class couponStockSerializers(serializers.ModelSerializer):
+    book_no = serializers.SerializerMethodField()
+
+    class Meta :
+        model = CouponStock
+        fields = ['couponstock_id','book_no']
+        
+    def get_book_no(self,obj):
+        return obj.couponbook.book_num

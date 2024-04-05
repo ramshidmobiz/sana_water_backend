@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
+from coupon_management.serializers import couponStockSerializers
 from lxml.etree import HTML
 from openpyxl import Workbook
 from reportlab.lib.pagesizes import letter
@@ -10,6 +11,7 @@ from reportlab.platypus import SimpleDocTemplate
 from client_management.models import CustomerCouponStock
 from competitor_analysis.forms import CompetitorAnalysisFilterForm
 from master.functions import generate_form_errors
+from product.models import Staff_Orders_details
 from .models import *
 from .forms import  *
 from accounts.models import CustomUser, Customers
@@ -23,6 +25,28 @@ from django.http import JsonResponse, HttpResponse
 
 
 # Create your views here.
+def get_coupon_bookno(request):
+    request_id = request.GET.get("request_id")
+    
+    if (instances:=Staff_Orders_details.objects.filter(pk=request_id)).exists():
+        instance = instances.first()
+        stock_instances = CouponStock.objects.filter(couponbook__coupon_type__coupon_type_name=instance.product_id.product_name,coupon_stock="company")
+        serialized = couponStockSerializers(stock_instances, many=True)
+        
+        status_code = 200
+        response_data = {
+            "status": "true",
+            "data": serialized.data,
+        }
+    else:
+        status_code = 404
+        response_data = {
+            "status": "false",
+            "title": "Failed",
+            "message": "item not found",
+        }
+
+    return HttpResponse(json.dumps(response_data),status=status_code, content_type="application/json")
 
 def couponType(request):
     all_couponType = CouponType.objects.all()
@@ -83,6 +107,7 @@ def create_coupon(request):
     if request.method == 'POST':
         form = CreateCouponForm(request.POST)
         if form.is_valid():
+            # if form.cleaned_data['book_num']
             data = form.save(commit=False)
             data.created_by = str(request.user.id)
             data.save()
@@ -321,7 +346,7 @@ class AssignStaffCouponDetailsListView(View):
         return render(request, self.template_name, context)
 #------------------------New Coupon
 def new_coupon(request):
-    all_coupon = NewCoupon.objects.all()
+    all_coupon = NewCoupon.objects.all().order_by("-created_date")
     coupon_stock_list = CouponStock.objects.all()  # Fetch all CouponStock instances
     context = {'all_coupon': all_coupon, 'coupon_stock_list': coupon_stock_list}  # Add coupon_stock_list to context
     return render(request, 'coupon_management/index_Newcoupon.html', context)
@@ -337,49 +362,49 @@ def create_Newcoupon(request):
             
             # Check if the coupon book already exists
             if NewCoupon.objects.filter(book_num=book_num,coupon_type=coupon_type_id).exists():
-                print("Exists")
+                # print("Exists")
                 messages.error(request, f'Coupon book {book_num} already exists.')
                 return redirect('new_coupon')
-            selected_coupon_type = get_object_or_404(CouponType, coupon_type_id=coupon_type_id)
+            else:
+                selected_coupon_type = get_object_or_404(CouponType, coupon_type_id=coupon_type_id)
 
-            data.coupon_type = selected_coupon_type
-            data.book_num = book_num
-            data.no_of_leaflets = selected_coupon_type.no_of_leaflets
-            data.valuable_leaflets = selected_coupon_type.valuable_leaflets
-            data.free_leaflets = selected_coupon_type.free_leaflets
-            data.created_by = str(request.user.id)
-            branch_id = request.user.branch_id.branch_id
-            branch = BranchMaster.objects.get(branch_id=branch_id)
-            data.branch_id = branch           
-            data.save()
-            print("DATA SAVED")
+                data.coupon_type = selected_coupon_type
+                data.book_num = book_num
+                data.no_of_leaflets = selected_coupon_type.no_of_leaflets
+                data.valuable_leaflets = selected_coupon_type.valuable_leaflets
+                data.free_leaflets = selected_coupon_type.free_leaflets
+                data.created_by = str(request.user.id)
+                branch_id = request.user.branch_id.branch_id
+                branch = BranchMaster.objects.get(branch_id=branch_id)
+                data.branch_id = branch           
+                data.save()
+                print("DATA SAVED")
 
-            # Generate leaflets for the coupon
-            leaflets = []
-            no_of_leaflets = int(selected_coupon_type.no_of_leaflets)
-            print("no_of_leaflets",no_of_leaflets)
-            for leaflet_num in range(1, no_of_leaflets + 1):
-                if leaflet_num < 10:  # If leaflet number is less than 10, add a leading '0'
-                    leaflet_name = f"{book_num}0{leaflet_num}"
-                else:
-                    leaflet_name = f"{book_num}{leaflet_num}"  # Otherwise, use leaflet_num directly
-                print("leaflet_name", leaflet_name)
+                # Generate leaflets for the coupon
+                leaflets = []
+                no_of_leaflets = int(selected_coupon_type.no_of_leaflets)
+                print("no_of_leaflets",no_of_leaflets)
+                for leaflet_num in range(1, no_of_leaflets + 1):
+                    if leaflet_num < 10:  # If leaflet number is less than 10, add a leading '0'
+                        leaflet_name = f"{book_num}0{leaflet_num}"
+                    else:
+                        leaflet_name = f"{book_num}{leaflet_num}"  # Otherwise, use leaflet_num directly
+                    print("leaflet_name", leaflet_name)
 
-                leaflet = CouponLeaflet(coupon=data, leaflet_number=str(leaflet_num),leaflet_name=leaflet_name)
-                print("leaflet",leaflet)
-                leaflet.save()
-                leaflets.append({'leaflet_number': leaflet.leaflet_number})
-            # Create CouponStock instance
-            coupon_stock = CouponStock.objects.create(couponbook=data, coupon_stock='company', created_by=str(request.user.id))
-            # print("coupon_stock",coupon_stock)
+                    leaflet = CouponLeaflet(coupon=data, leaflet_number=str(leaflet_num),leaflet_name=leaflet_name)
+                    print("leaflet",leaflet)
+                    leaflet.save()
+                    leaflets.append({'leaflet_number': leaflet.leaflet_number})
+                # Create CouponStock instance
+                coupon_stock = CouponStock.objects.create(couponbook=data, coupon_stock='company', created_by=str(request.user.id))
+                # print("coupon_stock",coupon_stock)
 
-            response_data = {
-                'success': True,
-                'book_num': data.book_num,
-                'leaflets': leaflets
-            }
-            return JsonResponse(response_data, status=200)
-        
+                response_data = {
+                    'success': True,
+                    'book_num': data.book_num,
+                    'leaflets': leaflets
+                }
+                return JsonResponse(response_data, status=200)
         else:
             message = generate_form_errors(form,formset=False)
             response_data = {
@@ -523,6 +548,13 @@ def customer_stock(request):
             coupenstock = CustomerCouponStock.objects.select_related('customer').filter(customer__routes__route_name=selected_route)
         else:
             coupenstock = CustomerCouponStock.objects.select_related('customer').all()
+
+
+    created_date = request.GET.get('created_date')
+    if created_date:
+        coupenstock = coupenstock.filter(
+            coupon_type_id__created_date=created_date
+        )
 
     return render(request, 'coupon_management/customer_stock.html', {'coupenstock': coupenstock, 'route_li': route_li})
 

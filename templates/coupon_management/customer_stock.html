@@ -53,6 +53,8 @@
                                             <option value="{{ route.route_name }}" {% if request.GET.route_name == route.route_name %}selected{% endif %}>{{ route.route_name }}</option>
                                         {% endfor %}
                                     </select>
+                                    <label for="created_date" class="visually-hidden">Created Date:</label>
+                                    <input type="date" id="created_date" name="created_date" value="{% if request.GET.created_date %}{{ request.GET.created_date }}{% endif %}" class="form-control" placeholder="Created Date">
                                     <button type="submit" class="btn btn-primary me-2">
                                         <i class="bi bi-search"></i> Search
                                     </button>
@@ -62,11 +64,12 @@
                                     </div>
                                 </div>
                             </form>
-
                         </div>
                         <div style="display: inline-block;">
                             <h4>Route: {{ request.GET.route_name }}  , {{ request.user }} </h4>
-
+                            {% if request.GET.created_date %}
+                                <p>Selected Date: {{ request.GET.created_date }}</p>
+                            {% endif %}
                         </div>
 
                         <table>

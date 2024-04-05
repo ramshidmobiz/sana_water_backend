@@ -28,6 +28,8 @@ from django.db.models import Q
 import pandas as pd
 from io import BytesIO
 from reportlab.pdfgen import canvas
+from datetime import datetime, timedelta
+
 
 # Create your views here.
 def user_login(request):
@@ -167,6 +169,56 @@ class User_Details(View):
 #         context = {'user_li': user_li, 'form': form, 'route_li': route_li}
 #         return render(request, self.template_name, context)
 
+# class Customer_List(View):
+#     template_name = 'accounts/customer_list.html'
+
+#     def get_next_visit_date(self, customer):
+#         try:
+#             staff_day_of_visit = Staff_Day_of_Visit.objects.get(customer=customer)
+#             # Logic to determine the next visit date based on the visit schedule
+#             # For demonstration purposes, let's assume the next visit is 7 days from today
+#             next_visit_date = timezone.now() + timezone.timedelta(days=7)
+#             return next_visit_date
+#         except Staff_Day_of_Visit.DoesNotExist:
+#             # Handle the case where no staff day of visit is found
+#             return None
+
+#     def get(self, request, *args, **kwargs):
+#         # Retrieve the query parameter
+#         query = request.GET.get("q")
+#         route_filter = request.GET.get('route_name')
+#         # Start with all customers
+#         user_li = Customers.objects.all()
+
+#         # Apply filters if they exist
+#         if query:
+#             user_li = user_li.filter(
+#                 Q(custom_id__icontains=query) |
+#                 Q(customer_name__icontains=query) |
+#                 Q(mobile_no__icontains=query) |
+#                 Q(routes__route_name__icontains=query) |
+#                 Q(location__location_name__icontains=query) |
+#                 Q(building_name__icontains=query)
+#             )
+
+#         if route_filter:
+#             user_li = user_li.filter(routes__route_name=route_filter)
+
+#         # Get all route names for the dropdown
+#         route_li = RouteMaster.objects.all()
+
+#         # Iterate over each customer and get the next visit date
+#         for customer in user_li:
+#             next_visit_date = self.get_next_visit_date(customer)
+#             customer.next_visit_date = next_visit_date  # Add the next visit date to the customer object
+
+#         context = {
+#             'user_li': user_li.order_by("-created_date"), 
+#             'route_li': route_li,
+#             'route_filter': route_filter,
+#             'q': query,
+#         }
+#         return render(request, self.template_name, context)
 class Customer_List(View):
     template_name = 'accounts/customer_list.html'
 
@@ -174,6 +226,7 @@ class Customer_List(View):
         # Retrieve the query parameter
         query = request.GET.get("q")
         route_filter = request.GET.get('route_name')
+
         # Start with all customers
         user_li = Customers.objects.all()
 
@@ -195,13 +248,12 @@ class Customer_List(View):
         route_li = RouteMaster.objects.all()
 
         context = {
-            'user_li': user_li.order_by("-created_date"), 
+            'user_li': user_li.order_by("-created_date"),
             'route_li': route_li,
-            'route_filter':route_filter,
-            'q':query,
-            }
+            'route_filter': route_filter,
+            'q': query,
+        }
         return render(request, self.template_name, context)
-    
 
 def create_customer(request):
     branch = request.user.branch_id
@@ -373,8 +425,13 @@ def visit_days_assign(request, customer_id):
         visit_schedule_data = customer_data.visit_schedule
         
         if visit_schedule_data is not None:
-            visit_schedule_data = json.loads(visit_schedule_data)
-            print(visit_schedule_data)
+            if isinstance(visit_schedule_data, str):
+                visit_schedule_data = json.loads(visit_schedule_data)
+                print(visit_schedule_data)
+            else:
+                print("Visit schedule data is already a dictionary.")
+                # Handle the case where visit_schedule_data is already a dictionary
+            
         else:
             print("Visit schedule data is None.")
     except Customers.DoesNotExist:
@@ -408,6 +465,3 @@ def visit_days_assign(request, customer_id):
         "visit_schedule_data": visit_schedule_data
     }
     return render(request, template_name, context)
-
-
-

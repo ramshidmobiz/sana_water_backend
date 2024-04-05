@@ -13,15 +13,10 @@
             </ol>
         </div>
         <!-- Page Header Close -->
-
-
-
         <!-- Start::app-content -->
         <div class="main-content app-content">
             <div class="container-fluid">
-
-                
-                         <!-- Start:: row-2 -->
+                <!-- Start:: row-2 -->
                 <div class="row">
                     <div class="col-xl-12">
                         <div class="card custom-card">
@@ -35,7 +30,6 @@
                                     </a>
                                 </div>
                             </div>
-                            
                             <div class="card-body">
                                 <table id="responsiveDataTable" class="table table-bordered text-nowrap" style="width:100%">
                                     <thead>
@@ -44,6 +38,8 @@
                                             <th scope="col">Product Category</th>
                                             <th scope="col">Product Items</th>
                                             <th scope="col">Unit Type</th>
+                                            <th scope="col">Rate</th>
+                                            <th scope="col">Tax</th>
                                             <th scope="col">Actions</th>
                                             
                                         </tr>
@@ -55,14 +51,18 @@
                                             <td>{{data.category}}</td>
                                             <td>{{data.product_name}}</td>
                                             <td>{{data.unit}}</td>
+                                            <td>{{data.rate}}</td>
+                                            <td>{{data.tax.percentage}}</td>
                                             <td>
                                                 <div class="g-2">
-                                                    {% comment %} <a href="{% url 'category_edit' data.category_id %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Edit">
+                                                    {% if data.product_name != "5 Gallon" %}
+                                                    <a href="{% url 'product_item_edit' data.id %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Edit">
                                                         <span class="ri-pencil-line fs-14"></span>
-                                                    </a> {% endcomment %}
+                                                    </a>
                                                     <a aria-label="anchor" class="btn btn-danger-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Delete">
                                                         <span class="ri-delete-bin-7-line fs-14"></span>
                                                     </a>
+                                                    {% endif %}
                                             </div>
                                             </td>
                                         </tr>

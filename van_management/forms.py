@@ -153,3 +153,6 @@ class ExpenseEditForm(forms.ModelForm):
             'expense_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'remarks': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
+        
+        
+        

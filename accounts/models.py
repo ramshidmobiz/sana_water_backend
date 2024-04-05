@@ -98,7 +98,6 @@ class Customers(models.Model):
     trn = models.CharField(max_length=100, null=True, blank=True)
     billing_address = models.CharField(max_length=100, null=True, blank=True)
     preferred_time = models.CharField(max_length=100, null=True, blank=True)
-    rate = models.CharField(max_length=100, null=True, blank=True)
     branch_id = models.ForeignKey('master.BranchMaster', on_delete=models.SET_NULL, null=True, blank=True,related_name='branch_customer')
     is_active = models.BooleanField(default=True)
     visit_schedule = models.JSONField(null=True,blank=True)
@@ -112,6 +111,8 @@ class Customers(models.Model):
 class Staff_Day_of_Visit(models.Model):
     visit_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customer = models.ForeignKey(Customers, on_delete=models.SET_NULL, null=True, blank=False)
+    # customer = models.OneToOneField(Customers, on_delete=models.CASCADE, related_name='staff_day_of_visit')
+
     monday = models.BooleanField(default=False)
     tuesday = models.BooleanField(default=False)
     wednesday = models.BooleanField(default=False)

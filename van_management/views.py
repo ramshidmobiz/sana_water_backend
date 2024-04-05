@@ -5,7 +5,8 @@ from .models import Van, Van_Routes, Van_License
 from accounts.models import CustomUser, Customers
 from master.models import EmirateMaster, RouteMaster
 from customer_care.models import DiffBottlesModel
-from client_management.models import Vacation
+from client_management.models import Vacation,CustomerSupply
+from product.models import Staff_IssueOrders
 
 
 from .forms import  *
@@ -23,6 +24,12 @@ from reportlab.lib import colors
 from django.db.models import Q,Count,Sum
 from datetime import datetime
 import math
+from django.utils.decorators import method_decorator
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+
+
 
 
 
@@ -378,19 +385,7 @@ def find_customers(request, def_date, route_id):
         week_num = (date.day - 1) // 7 + 1
         week_number = f'Week{week_num}'
     route = RouteMaster.objects.get(route_id=route_id)
-    products = Product.objects.filter(product_name__product_name='5 Gallon').first()
-    # print(products.rate)
-    # print(products.quantity)
-    water_rate_per_bottle = float(products.rate) / float(products.quantity)
-    water_rate_per_bottle = round(water_rate_per_bottle, 2)
-    # print(water_rate_per_bottle)
 
-    products = Product.objects.filter(product_name__product_name='A-TYPE Coupon(10+1)').first()
-    # print(products.rate)
-    # print(products.quantity)
-    coupon_rate_per_bottle = float(products.rate) / float(products.quantity)
-    coupon_rate_per_bottle = round(coupon_rate_per_bottle, 2)
-    # print(coupon_rate_per_bottle)
     van_route = Van_Routes.objects.filter(routes=route).first()
     if van_route:
         van_capacity = van_route.van.capacity
@@ -513,6 +508,7 @@ def find_customers(request, def_date, route_id):
                             "gps_longitude": customer.gps_longitude,
                             "gps_latitude": customer.gps_latitude,
                             "customer_type": customer.sales_type,
+                            # 'rate': customer.rate,
                         }
                         if customer in emergency_customers:
                             trip_customer['type'] = 'Emergency'
@@ -520,11 +516,9 @@ def find_customers(request, def_date, route_id):
                             trip_customer['no_of_bottles'] = dif.quantity_required
                         else:
                             trip_customer['type'] = 'Default'
-                        
-                        if customer.sales_type == 'CASH':
-                            trip_customer['rate'] = trip_customer['no_of_bottles'] * water_rate_per_bottle
-                        else:
-                            trip_customer['rate'] = trip_customer['no_of_bottles'] * coupon_rate_per_bottle
+                        if customer.sales_type == 'CASH' or  customer.sales_type == 'CREDIT':
+                            trip_customer['rate'] = customer.rate
+
                         trip_customers.append(trip_customer)
         return trip_customers
         
@@ -857,17 +851,48 @@ class ExpenseDelete(View):
     
     
 # ----------VanStock-----------
-class VanStock(View):
+# class VanStock(View):
+    
+#     def get(self, request, *args, **kwargs):
+#         instances = VanCouponStock.objects.all()
+#         van_stock = VanProductStock.objects.all()
+
+#         if request.user.is_authenticated and request.user.user_type == "Salesman":
+#             instances = instances.filter(van__salesman_id=request.user.id)
+#             van_stock = van_stock.filter(van__salesman_id=request.user.id)
+            
+#         # Aggregate the total count of each coupon type for each van
+#         van_coupon_counts = instances.values('van__van_make', 'coupon__coupon_type__coupon_type_name').annotate(
+#             coupon_count=Sum('count')
+#         )
+        
+#         # Calculate opening stock based on total count of coupons
+#         for van_coupon in van_coupon_counts:
+#             van_coupon['opening_stock'] = van_coupon['coupon_count']
+    
+#         context = {'van_stock': van_stock, 'van_coupon_counts': van_coupon_counts}
+#         return render(request, 'van_management/vanstock_list.html', context)
+from datetime import time
+class VanStockList(View):
     
     def get(self, request, *args, **kwargs):
         instances = VanCouponStock.objects.all()
         van_stock = VanProductStock.objects.all()
-
+        requested_quantity=CustomerSupply.objects.all()
+        issued=Staff_IssueOrders.objects.all()
+        offload=OffloadVan.objects.all()
         if request.user.is_authenticated and request.user.user_type == "Salesman":
             instances = instances.filter(van__salesman_id=request.user.id)
             van_stock = van_stock.filter(van__salesman_id=request.user.id)
-            
-        # Aggregate the total count of each coupon type for each van
+            morning_stocks = VanStock.objects.filter(van__salesman_id=request.user.id,created_date__time__lt=time(12, 0, 0))
+            morning_stock_count = morning_stocks.filter(van__salesman_id=request.user.id).count()
+            evening_stocks = VanStock.objects.filter(van__salesman_id=request.user.id,created_date__time__gte=time(12, 0, 0))
+            evening_stock_count = evening_stocks.filter(van__salesman_id=request.user.id).count()
+
+        # requested_quantity=requested_quantity.filter(salesman__salesman_id=request.user.id)
+        issued=issued.filter(salesman_id=request.user.id)
+        offload=offload.filter(van__salesman_id=request.user.id)
+       
         van_coupon_counts = instances.values('van__van_make', 'coupon__coupon_type__coupon_type_name').annotate(
             coupon_count=Sum('count')
         )
@@ -876,12 +901,30 @@ class VanStock(View):
         for van_coupon in van_coupon_counts:
             van_coupon['opening_stock'] = van_coupon['coupon_count']
     
-        context = {'van_stock': van_stock, 'van_coupon_counts': van_coupon_counts}
-        return render(request, 'van_management/vanstock_list.html', context)
-
-
+        context = {'van_stock': van_stock, 'van_coupon_counts': van_coupon_counts,
+                   'issued':issued,'morning_stock_count': morning_stock_count,
+            'evening_stock_count': evening_stock_count}
+        return render(request, 'van_management/vanstock.html', context)
+    
 def offload(request):
     van_stock = VanProductStock.objects.all()
-    
     context = {'van_stock': van_stock}
     return render(request, 'van_management/offload.html', context)
+
+class View_Item_Details(View):
+    template_name = 'van_management/item_details.html'
+
+    @method_decorator(login_required)
+    def get(self, request, pk, *args, **kwargs):
+        item_details = VanProductStock.objects.filter(product__id=pk)
+        context = {'item_details': item_details}
+        return render(request, self.template_name, context)   
+class EditItemView(View):
+    def post(self, request, product_id):
+        count = request.POST.get('count')
+        item = VanProductStock.objects.filter(product=product_id).first()
+        if item:
+            item.count = count
+            item.save()
+        return HttpResponseRedirect(reverse('offload')) 
+    

@@ -44,6 +44,10 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 import xlsxwriter
 from .models import *
 from openpyxl import Workbook
+import pandas as pd
+from io import BytesIO
+from reportlab.pdfgen import canvas
+from django.utils import timezone
 
 class TransactionHistoryListView(ListView):
     model = Transaction
@@ -1084,18 +1088,461 @@ def download_salesreport_excel(request):
 
 #------------------Collection Report-------------------------                
 def collectionreport(request):
-    instances = CustomerSupply.objects.all()
+    start_date = None
+    end_date = None
+    selected_date = None
+    selected_route_id = None
+    selected_route = None
+    template = 'sales_management/collection_report.html'
+    colectionpayment = CollectionPayment.objects.all()
+    
+    routes = RouteMaster.objects.all()
+    route_counts = {}
+    today = datetime.today()
+    
+    if request.method == 'POST':
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        selected_date = request.POST.get('date')
+        selected_route_id = request.POST.get('selected_route_id')
+        if start_date and end_date:
+            colectionpayment = colectionpayment.filter(customer_supply__created_date__range=[start_date, end_date])
+        elif selected_date:
+            colectionpayment = colectionpayment.filter(customer_supply__created_date=selected_date)
+        
+        if selected_route_id:
+            selected_route = RouteMaster.objects.get(id=selected_route_id)
+            colectionpayment = colectionpayment.filter(customer__routes__route_name=selected_route)
+    
+    # /
+    
+    context = {
+        'colectionpayment': colectionpayment, 
+        'routes': routes, 
+        'route_counts': route_counts, 
+        'today': today,
+        'start_date': start_date, 
+        'end_date': end_date, 
+        'selected_date': selected_date, 
+        'selected_route_id': selected_route_id, 
+        'selected_route': selected_route,
+        
+    }
+    return render(request, template, context)
+
+
+
+def collection_report_excel(request):
+    instances = CollectionPayment.objects.all()
     route_filter = request.GET.get('route_name')
     start_date_str = request.GET.get('start_date')
     end_date_str = request.GET.get('end_date')
-
+    
     if start_date_str and end_date_str:
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-        instances = instances.filter(created_date__range=[start_date, end_date])
+        instances = instances.filter(customer__customer_supply__created_date__range=[start_date, end_date])
+    
+    print('route_filter :', route_filter)
+    if route_filter and route_filter != '' and route_filter != 'None':
+        instances = instances.filter(routes__route_name=route_filter)
+
+    route_li = RouteMaster.objects.all()
+    serial_number = 1
+    for customer in instances:
+        customer.serial_number = serial_number
+        serial_number += 1
+    data = {
+        'Serial Number': [customer.serial_number for customer in instances],
+        'Date': [customer.customer_supply.created_date.date() for customer in instances],
+        'Customer name': [customer.customer.customer_name for customer in instances],
+        'Mobile No': [customer.customer.mobile_no for customer in instances],
+        'Route': [customer.customer.routes.route_name if customer.customer.routes else '' for customer in instances],
+        'Building Name': [customer.customer.building_name for customer in instances],
+        'House No': [customer.customer.door_house_no if customer.customer.door_house_no else 'Nil' for customer in instances],
+        'Receipt No/Reference No': [customer.customer_supply.reference_number for customer in instances],
+        'Amount': [customer.amount for customer in instances],
+        'Mode of Payment': [customer.payment_method for customer in instances],
+
+    }
+    df = pd.DataFrame(data)
+
+    buffer = BytesIO()
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='Sheet1', index=False, startrow=4)
+        workbook = writer.book
+        worksheet = writer.sheets['Sheet1']
+        table_border_format = workbook.add_format({'border':1})
+        worksheet.conditional_format(4, 0, len(df.index)+4, len(df.columns) - 1, {'type':'cell', 'criteria': '>', 'value':0, 'format':table_border_format})
+        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 16, 'border': 1})
+        worksheet.merge_range('A1:J2', f'National Water', merge_format)
+        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
+        worksheet.merge_range('A3:J3', f'    Collection Report   ', merge_format)
+        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
+        worksheet.merge_range('A4:J4', '', merge_format)
+    
+    filename = f"Collection Report.xlsx"
+    response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'inline; filename = "{filename}"'
+    return response
+
+
+def dailycollectionreport(request):
+    instances = CollectionPayment.objects.all()
+    route_filter = request.GET.get('route_name')
+    start_date_str = request.GET.get('start_date')
+
+    if start_date_str :
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        instances = instances.filter(created_date__range=start_date)
     if route_filter:
             instances = instances.filter(routes__route_name=route_filter)
     route_li = RouteMaster.objects.all()
-  
+    
     context = {'instances': instances,'route_li':route_li}
-    return render(request, 'sales_management/collection_report.html', context)
+    return render(request, 'sales_management/daily_collection_report.html', context)
+
+
+def daily_collection_report_excel(request):
+    instances = CollectionPayment.objects.all()
+    route_filter = request.GET.get('route_name')
+    start_date_str = request.GET.get('start_date')
+    
+    if start_date_str :
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        instances = instances.filter(customer__customer_supply__created_date__range=start_date)
+    
+    print('route_filter :', route_filter)
+    if route_filter and route_filter != '' and route_filter != 'None':
+        instances = instances.filter(routes__route_name=route_filter)
+
+    route_li = RouteMaster.objects.all()
+    serial_number = 1
+    for customer in instances:
+        customer.serial_number = serial_number
+        serial_number += 1
+    data = {
+        'Serial Number': [customer.serial_number for customer in instances],
+        'Customer name': [customer.customer.customer_name for customer in instances],
+        'Mobile No': [customer.customer.mobile_no for customer in instances],
+        'Route': [customer.customer.routes.route_name if customer.customer.routes else '' for customer in instances],
+        'Building Name': [customer.customer.building_name for customer in instances],
+        'House No': [customer.customer.door_house_no if customer.customer.door_house_no else 'Nil' for customer in instances],
+        'Receipt No/Reference No': [customer.customer_supply.reference_number for customer in instances],
+        'Amount': [customer.amount for customer in instances],
+        'Mode of Payment': [customer.payment_method for customer in instances],
+        'Invoice': [customer.invoice.invoice_no for customer in instances],
+        'Invoice Reference No': [customer.invoice.reference_no  for customer in instances],
+
+
+    }
+    df = pd.DataFrame(data)
+
+    buffer = BytesIO()
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='Sheet1', index=False, startrow=4)
+        workbook = writer.book
+        worksheet = writer.sheets['Sheet1']
+        table_border_format = workbook.add_format({'border':1})
+        worksheet.conditional_format(4, 0, len(df.index)+4, len(df.columns) - 1, {'type':'cell', 'criteria': '>', 'value':0, 'format':table_border_format})
+        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 16, 'border': 1})
+        worksheet.merge_range('A1:J2', f'National Water', merge_format)
+        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
+        worksheet.merge_range('A3:J3', f'    Daily Collection Report   ', merge_format)
+        # worksheet.merge_range('E3:H3', f'Date: {def_date}', merge_format)
+        # worksheet.merge_range('I3:M3', f'Total bottle: {total_bottle}', merge_format)
+        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
+        worksheet.merge_range('A4:J4', '', merge_format)
+    
+    filename = f"Daily Collection Report.xlsx" 
+    response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'inline; filename = "{filename}"'
+    return response
+
+#------------------Product-Route wise sales report
+
+
+def product_route_salesreport(request):
+    start_date = None
+    end_date = None
+    selected_date = None
+    selected_product_id = None
+    selected_product = None
+    template = 'sales_management/product_route_salesreport.html'
+    customersupplyitems = CustomerSupplyItems.objects.all()
+    # print("customersupplyitems",customersupplyitems)
+    products = ProdutItemMaster.objects.all()
+    route_counts = {}
+    today = datetime.today()
+    
+    if request.method == 'POST':
+        start_date = request.POST.get('start_date')
+        # print("start_date",start_date)
+        end_date = request.POST.get('end_date')
+        # print("end_date",end_date)
+        selected_date = request.POST.get('date')
+        selected_product_id = request.POST.get('selected_product_id')
+        # print("selected_product_id",selected_product_id)
+        if start_date and end_date:
+            customersupplyitems = customersupplyitems.filter(customer_supply__created_date__range=[start_date, end_date])
+        elif selected_date:
+            customersupplyitems = customersupplyitems.filter(customer_supply__created_date=selected_date)
+        else:
+            customersupplyitems = CustomerSupplyItems.objects.filter(customer_supply__created_date=timezone.now().date())
+        # print("customersupplyitemsHHHHHHHHHHHHHHHHHHHH",customersupplyitems)
+        
+        if selected_product_id:
+            selected_product = ProdutItemMaster.objects.get(id=selected_product_id)
+            customersupplyitems = customersupplyitems.filter(product=selected_product)
+    
+    else:
+        customersupplyitems = CustomerSupplyItems.objects.filter(customer_supply__created_date=timezone.now().date())
+    
+    total_quantity = customersupplyitems.aggregate(total_quantity=Sum('quantity'))['total_quantity']
+    print("total_quantity",total_quantity)
+    total_amount = customersupplyitems.aggregate(total_amount=Sum('amount'))['total_amount']
+    print("total_amount",total_amount)
+    context = {
+        'customersupplyitems': customersupplyitems, 
+        'products': products, 
+        'route_counts': route_counts, 
+        'today': today,
+        'start_date': start_date, 
+        'end_date': end_date, 
+        'selected_date': selected_date, 
+        'selected_product_id': selected_product_id, 
+        'selected_product': selected_product,
+        'total_quantity': total_quantity,
+        'total_amount': total_amount,
+    }
+    return render(request, template, context)
+
+def product_route_salesreport_detail_view(request, customersupplyitem_id):
+    customersupplyitem = get_object_or_404(CustomerSupplyItems, id=customersupplyitem_id)
+    return render(request, 'sales_management/product_route_salesreport_detail.html', {'customersupplyitem': customersupplyitem}) 
+
+def print_product_sales(request):
+    # Retrieve sales report data
+    customer_supplies = CustomerSupplyItems.objects.all()
+    # Check if customer_supplies is not empty
+    if customer_supplies:
+        # Create the HTTP response with PDF content type and attachment filename
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="sales_report.pdf"'
+
+        # Create a PDF document
+        pdf_buffer = BytesIO()
+        pdf = SimpleDocTemplate(pdf_buffer, pagesize=letter)
+        data = []
+
+        # Add headers
+        headers = ['Sl No', 'Salesman', 'Customer Name', 'Product', 'Quantity', 'Amount']
+        data.append(headers)
+
+        total_quantity = 0
+        total_amount = 0
+
+        # Add data to the PDF document
+        sl_no = 1
+        for supply in customer_supplies:
+            # Append data for each supply
+            data.append([
+                sl_no,
+                supply.customer_supply.salesman.username,
+                supply.customer_supply.customer.customer_name,
+                supply.product,
+                supply.quantity,
+                supply.amount,
+            ])
+            # Update total quantity and amount
+            total_quantity += supply.quantity
+            total_amount += supply.amount
+            sl_no += 1
+
+        # Add footer with total quantity and amount
+        footer = ['Total', '', '', '', total_quantity, total_amount]
+        data.append(footer)
+
+        table = Table(data)
+        style = TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                            ('GRID', (0, 0), (-1, -1), 1, colors.black)])
+        table.setStyle(style)
+
+        # Add the table to the PDF document
+        elements = [table]
+        pdf.build(elements)
+
+        # Get the value of the BytesIO buffer and write it to the response
+        pdf_value = pdf_buffer.getvalue()
+        pdf_buffer.close()
+        response.write(pdf_value)
+
+        return response
+    else:
+        return HttpResponse("No data available for sales report.")
+
+def download_product_sales_excel(request):
+    # Retrieve sales report data
+    customer_supplies = CustomerSupplyItems.objects.all()
+
+    # Create the HttpResponse object with Excel content type and attachment filename
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="sales_report.xlsx"'
+
+    # Create a new Excel workbook and add a worksheet
+    workbook = xlsxwriter.Workbook(response)
+    worksheet = workbook.add_worksheet()
+
+    # Define cell formats
+    bold_format = workbook.add_format({'bold': True})
+
+    # Write headers
+    headers = ['Sl No', 'Salesman', 'Customer Name', 'Product', 'Quantity', 'Amount']
+    for col, header in enumerate(headers):
+        worksheet.write(0, col, header, bold_format)
+
+    # Write data rows
+    for row, supply in enumerate(customer_supplies, start=1):
+        worksheet.write(row, 0, row)  # Sl No
+        worksheet.write(row, 1, supply.customer_supply.salesman.username)  # Salesman
+        worksheet.write(row, 2, supply.customer_supply.customer.customer_name)  # Customer Name
+        worksheet.write(row, 3, supply.product.product_name)  # Product
+        worksheet.write(row, 4, supply.quantity)  # Quantity
+        worksheet.write(row, 5, supply.amount)  # Amount
+
+    # Calculate and write total quantity and amount
+    total_quantity = sum(supply.quantity for supply in customer_supplies)
+    total_amount = sum(supply.amount for supply in customer_supplies)
+    worksheet.write(len(customer_supplies) + 1, 4, total_quantity, bold_format)  # Total Quantity
+    worksheet.write(len(customer_supplies) + 1, 5, total_amount, bold_format)  # Total Amount
+
+    # Close the workbook
+    workbook.close()
+
+    return response
+
+
+# def yearmonthsalesreport(request):
+#     user_li = Customers.objects.all()
+#     # user_li = user_li.filter(routes__route_name=route_filter)
+#     route_li = RouteMaster.objects.all()
+
+#     context = {
+#         'user_li': user_li, 
+#         'route_li': route_li,
+        
+#             }
+#     # route_li = RouteMaster.objects.all()
+#     # print(route_li,'route_li')
+#     # context = {'route_li': route_li}
+
+#     return render(request,'sales_management/yearmonthsalesreport.html',context)
+def yearmonthsalesreport(request):
+    # Get all customers and routes
+    user_li = Customers.objects.all()
+    route_li = RouteMaster.objects.all()
+
+    # Calculate YTD and MTD sales for each route
+    route_sales = []
+    current_year = datetime.now().year
+    print(route_sales,"route_sales")
+    print(current_year,'current_year')
+    current_month = datetime.now().month
+    print(current_month,'current_month')
+
+
+    for route in route_li:
+        ytd_sales = CustomerSupply.objects.filter(customer__routes=route, created_date__year=current_year).aggregate(total_sales=Sum('grand_total'))['total_sales'] or 0
+        print('ytd_sales',ytd_sales)
+
+        mtd_sales = CustomerSupply.objects.filter(customer__routes=route, created_date__year=current_year, created_date__month=current_month).aggregate(total_sales=Sum('grand_total'))['total_sales'] or 0
+        print('mtd_sales',mtd_sales)
+
+        route_sales.append({
+            'route': route,
+            'ytd_sales': ytd_sales,
+            'mtd_sales': mtd_sales,
+            'year': current_year,
+        })
+        print(route_sales,'route_sales')
+
+
+    context = {
+        'user_li': user_li, 
+        'route_li' : route_li,
+        'route_sales': route_sales,
+    }
+
+    return render(request, 'sales_management/yearmonthsalesreport.html', context)
+
+# def yearmonthsalesreportview(request,route_id):
+#     route = RouteMaster.objects.get(route_id = route_id)
+#     print(route,'route')
+#     route_customer = Customers.objects.filter(routes__route_name=route)
+#     print(route_customer,'route_customer')
+
+#     context = {
+#         'route_customer': route_customer
+#         }
+    
+#     return render(request, 'sales_management/yearmonthsalesreportview.html',context)
+# def yearmonthsalesreportview(request, route_id):
+#     route = RouteMaster.objects.get(route_id=route_id)
+#     route_customers = Customers.objects.filter(routes__route_name=route)
+
+#     # Calculate YTD and MTD sales for each customer
+#     today = date.today()
+#     ytd_sales = CustomerSupply.objects.filter(customer__in=route_customers, created_date__year=today.year).aggregate(total_ytd_sales=Sum('grand_total'))['total_ytd_sales'] or 0
+#     mtd_sales = CustomerSupply.objects.filter(customer__in=route_customers, created_date__year=today.year, created_date__month=today.month).aggregate(total_mtd_sales=Sum('grand_total'))['total_mtd_sales'] or 0
+
+#     # Associate YTD and MTD sales with each customer
+#     customers_with_sales = []
+#     for customer in route_customers:
+#         ytd_customer_sales = CustomerSupply.objects.filter(customer=customer, created_date__year=today.year).aggregate(total_ytd_sales=Sum('grand_total'))['total_ytd_sales'] or 0
+#         mtd_customer_sales = CustomerSupply.objects.filter(customer=customer, created_date__year=today.year, created_date__month=today.month).aggregate(total_mtd_sales=Sum('grand_total'))['total_mtd_sales'] or 0
+
+#         customers_with_sales.append({
+#             'customer': customer,
+#             'ytd_sales': ytd_customer_sales,
+#             'mtd_sales': mtd_customer_sales
+#         })
+
+#     context = {
+#         'route': route,
+#         'customers_with_sales': customers_with_sales,
+#         'ytd_sales': ytd_sales,
+#         'mtd_sales': mtd_sales
+#     }
+
+#     return render(request, 'sales_management/yearmonthsalesreportview.html', context)
+
+from datetime import datetime
+def yearmonthsalesreportview(request, route_id):
+    route = RouteMaster.objects.get(route_id=route_id)
+    current_year = datetime.now().year
+
+    yearly_sales = CustomerSupply.objects.filter(customer__routes=route, created_date__year=current_year).aggregate(total_sales=Sum('grand_total'))['total_sales'] or 0
+
+    customers = Customers.objects.filter(routes__route_name=route)
+    monthly_sales = []
+    for customer in customers:
+        monthly_sales_data = []
+        for month in range(1, 13):
+            month_date = datetime(current_year, month, 1)
+
+            month_name = month_date.strftime("%B")  # Get month name
+            monthly_sales_amount = CustomerSupply.objects.filter(customer=customer, created_date__year=current_year, created_date__month=month).aggregate(total_sales=Sum('grand_total'))['total_sales'] or 0
+            monthly_sales_data.append({month_name: monthly_sales_amount})  # Append month name and sales amount
+        monthly_sales.append({'customer': customer, 'monthly_sales': monthly_sales_data})
+
+    context = {
+        'route_id': route_id,
+        'yearly_sales': yearly_sales,
+        'monthly_sales': monthly_sales,
+    }
+    return render(request, 'sales_management/yearmonthsalesreportview.html', context)

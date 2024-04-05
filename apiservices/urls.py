@@ -141,7 +141,9 @@ urlpatterns = [
     path('delete_coupon_count/<uuid:pk>/', DeleteCouponCount.as_view(), name='delete_coupon_count'),
     path('customers_coupon/', CustomerCouponListAPI.as_view(), name='customer_list_api'),
 
+    path('collectionapi/', CollectionAPI.as_view(), name='collectionapi'),
+    path('add_collection_payment/<uuid:pk>/', AddCollectionPayment.as_view(), name='add_collection_payment'),
 
-
+    path('product-bottle/', ProductAndBottleAPIView.as_view(), name='product_bottle_api'),
 
 ]

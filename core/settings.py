@@ -157,7 +157,7 @@ USE_I18N = True
 USE_TZ = True
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
-LOGIN_URL = '/app/accounts/login/'
+LOGIN_URL = 'login'
 LOGOUT_URL = '/app/accounts/logout/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = 'login'

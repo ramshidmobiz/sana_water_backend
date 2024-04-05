@@ -589,7 +589,7 @@ class NewRequestHome(View):
             
             initial_data = {'delivery_date': next_delivery_date, 'mode': 'paid'}
             if customer and customer.sales_staff:
-                initial_data['assign_this_to'] = customer.sales_staff
+                initial_data['assign_this_to'] = customer.sales_staff.get_full_name
             else:
                 initial_data['assign_this_to'] = "Driver"  # Default to "Driver" if no salesman is assigned
             form = self.form_class(initial=initial_data)
@@ -666,6 +666,7 @@ class WaterDeliveryStatus(View):
         }
         return render(request, self.template_name, context)
     
+    
 
 class EditQuantityView(View):
     def post(self, request, diffbottles_id):
@@ -712,54 +713,54 @@ class CancelRequestView(View):
 #             return JsonResponse({'errors': form.errors}, status=400)
 
 
-# from django.db import transaction, IntegrityError
+from django.db import transaction, IntegrityError
 
 
-# def ReassignRequestView(request, diffbottles_id):
-#     instance = get_object_or_404(DiffBottlesModel, diffbottles_id=diffbottles_id)
+def ReassignRequestView(request, diffbottles_id):
+    instance = get_object_or_404(DiffBottlesModel, diffbottles_id=diffbottles_id)
     
-#     if request.method == 'POST':
-#         form = ReassignRequestForm(request.POST, instance=instance)
-#         if form.is_valid():
-#             try:
-#                 with transaction.atomic():
-#                     # Get cleaned data from the form
-#                     assign_this_to = form.cleaned_data.get('assign_this_to')
-#                     new_delivery_date = form.cleaned_data.get('delivery_date')
+    if request.method == 'POST':
+        form = ReassignRequestForm(request.POST, instance=instance)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    # Get cleaned data from the form
+                    assign_this_to = form.cleaned_data.get('assign_this_to')
+                    new_delivery_date = form.cleaned_data.get('delivery_date')
 
-#                     # Save the form with the cleaned data
-#                     form.save()
+                    # Save the form with the cleaned data
+                    form.save()
 
-#                     response_data = {
-#                         "status": "true",
-#                         "title": "Successfully Updated",
-#                         "message": "Request successfully reassigned.",
-#                         'redirect': 'true',
-#                         "redirect_url": reverse('water_delivery_status')
-#                     }
+                    response_data = {
+                        "status": "true",
+                        "title": "Successfully Updated",
+                        "message": "Request successfully reassigned.",
+                        'redirect': 'true',
+                        "redirect_url": reverse('water_delivery_status')
+                    }
                     
-#             except IntegrityError as e:
-#                 # Handle database integrity error
-#                 response_data = {
-#                     "status": "false",
-#                     "title": "Failed",
-#                     "message": str(e),
-#                 }
+            except IntegrityError as e:
+                # Handle database integrity error
+                response_data = {
+                    "status": "false",
+                    "title": "Failed",
+                    "message": str(e),
+                }
 
-#             except Exception as e:
-#                 # Handle other exceptions
-#                 response_data = {
-#                     "status": "false",
-#                     "title": "Failed",
-#                     "message": str(e),
-#                 }
+            except Exception as e:
+                # Handle other exceptions
+                response_data = {
+                    "status": "false",
+                    "title": "Failed",
+                    "message": str(e),
+                }
             
-#             return JsonResponse(response_data)
+            return JsonResponse(response_data)
 
-#     else:
-#         form = ReassignRequestForm(instance=instance)
+    else:
+        form = ReassignRequestForm(instance=instance)
     
-#     context = {
-#         'form': form,
-#     }
-#     return render(request, 'customer_care/reassign_request_form.html', context)
+    context = {
+        'form': form,
+    }
+    return render(request, 'customer_care/reassign_request_form.html', context)

@@ -282,12 +282,12 @@ class CustomerOutstandingReport(models.Model):
     product_type = models.CharField(max_length=200, choices=PRODUCT_TYPES)
     value = models.IntegerField(default=0)
     customer = models.ForeignKey('accounts.Customers', on_delete=models.CASCADE)
-
     class Meta:
         ordering = ('-id',)
         
     def __str__(self):
         return str(self.id)
+
 
 class CustomerSupply(models.Model):
         id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

@@ -4,7 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path('varify-coupon/', varify_coupon, name='varify_coupon'),
+    path('get-coupon-bookno/', get_coupon_bookno, name='get_coupon_bookno'),
     path('get-product-items/', get_product_items, name='get_product_items'),
     
     path('products', Products_List.as_view(), name='products'),
@@ -24,10 +24,11 @@ urlpatterns = [
     path('staff-issue-order-details/<str:staff_order_id>/', staff_issue_orders_details_list, name='staff_issue_orders_details_list'),
     
     path('staffIssueOrdersCreate/<str:staff_order_details_id>/',staffIssueOrdersCreate, name='staffIssueOrdersCreate'),
-    path('issue_coupons_orders/<str:staff_order_details_id>/', issue_coupons_orders, name='issue_coupons_orders'),
+    path('issue_coupons_orders/', issue_coupons_orders, name='issue_coupons_orders'),
     # path('coupon_issue_orders_create/',couponIssueOrdersList, name='coupon_issue_orders_create'),
     path('product_items', Product_items_List.as_view(), name='product_items'),
     path('product_items_create',Product_items_Create.as_view(), name='product_items_create'),
+    path('product_item_edit/<str:pk>',Product_Item_Edit.as_view(), name='product_item_edit'),
 
     path('product_stock_report', product_stock_report, name='product_stock_report'),
     path('download_productstock_pdf', download_productstock_pdf, name='download_productstock_pdf'),
