@@ -10,7 +10,7 @@ from master.models  import *
 from product.models  import * 
 from accounts.serializers import *
 from client_management.models  import *
-from sales_management.models import CollectionPayment
+from sales_management.models import CollectionCheque, CollectionItems, CollectionPayment
 from van_management.serializers import *
 from customer_care.models import DiffBottlesModel
 
@@ -488,7 +488,7 @@ class VanProductStockSerializer(serializers.ModelSerializer):
 #         model = CustomerCouponStock
 #         fields = ['customer', 'count', 'coupon_type_id']
 
-class CustomerOutstandingSerializer(serializers.Serializer):
+class CustomerOutstandingSerializer(serializers.ModelSerializer):
     route_name = serializers.SerializerMethodField()
     route_id = serializers.SerializerMethodField()
     amount = serializers.SerializerMethodField()
@@ -738,7 +738,7 @@ class CollectionCustomerSerializer(serializers.ModelSerializer):
         fields = ['customer_id','customer_name','invoices']
 
     def get_invoices(self, obj):
-        invoices = Invoice.objects.filter(customer=obj,invoice_status="non_paid").order_by('-created_date')
+        invoices = Invoice.objects.filter(customer=obj,invoice_status="non_paid",is_deleted=False).order_by('-created_date')
         invoice_list = []
         for invoice in invoices:
             invoice_data = {
@@ -749,6 +749,39 @@ class CollectionCustomerSerializer(serializers.ModelSerializer):
             }
             invoice_list.append(invoice_data)
         return invoice_list
+    
+class CollectionChequeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CollectionCheque
+        fields = '__all__'
+
+class CollectionItemsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CollectionItems
+        fields = '__all__'
+
+class CollectionPaymentSerializer(serializers.ModelSerializer):
+    cheque_details = CollectionChequeSerializer(required=False)
+    collection_items = CollectionItemsSerializer(many=True, required=False)
+
+    class Meta:
+        model = CollectionPayment
+        fields = ['payment_method', 'customer', 'amount_received', 'cheque_details', 'collection_items']
+
+    def create(self, validated_data):
+        cheque_data = validated_data.pop('cheque_details', None)
+        collection_items_data = validated_data.pop('collection_items', None)
+
+        collection_payment = CollectionPayment.objects.create(**validated_data)
+
+        if cheque_data:
+            CollectionCheque.objects.create(collection_payment=collection_payment, **cheque_data)
+
+        if collection_items_data:
+            for item_data in collection_items_data:
+                CollectionItems.objects.create(collection_payment=collection_payment, **item_data)
+
+        return collection_payment
     
 class CustodyCustomSerializer(serializers.ModelSerializer):
     class Meta:

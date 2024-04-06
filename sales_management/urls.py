@@ -49,7 +49,9 @@ urlpatterns = [
     path('yearmonthsalesreportview/<uuid:route_id>/', yearmonthsalesreportview, name="yearmonthsalesreportview"),
 
 
-    
+    path('customerSales_report',customerSales_report, name='customerSales_report'),
+    path('customerSales_Detail_report/<uuid:id>/', customerSales_Detail_report, name='customerSales_Detail_report'),
+    path('customerSales_Excel_report',customerSales_Excel_report, name='customerSales_Excel_report'),
 
 
 

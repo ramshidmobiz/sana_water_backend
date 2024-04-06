@@ -142,7 +142,7 @@ urlpatterns = [
     path('customers_coupon/', CustomerCouponListAPI.as_view(), name='customer_list_api'),
 
     path('collectionapi/', CollectionAPI.as_view(), name='collectionapi'),
-    path('add_collection_payment/<uuid:pk>/', AddCollectionPayment.as_view(), name='add_collection_payment'),
+    path('add_collection_payment/', AddCollectionPayment.as_view(), name='add_collection_payment'),
 
     path('product-bottle/', ProductAndBottleAPIView.as_view(), name='product_bottle_api'),
 

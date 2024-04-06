@@ -48,6 +48,7 @@ import pandas as pd
 from io import BytesIO
 from reportlab.pdfgen import canvas
 from django.utils import timezone
+from van_management.models import Van_Routes,Van
 
 class TransactionHistoryListView(ListView):
     model = Transaction
@@ -1546,3 +1547,148 @@ def yearmonthsalesreportview(request, route_id):
         'monthly_sales': monthly_sales,
     }
     return render(request, 'sales_management/yearmonthsalesreportview.html', context)
+
+#---------------------New Sales Report-----------------------------
+
+
+def customerSales_report(request):
+    routes = RouteMaster.objects.all()
+    customersales = CustomerSupplyItems.objects.all()
+
+    # Initialize totals
+    total_amount = 0
+    total_discount = 0
+    total_net_payable = 0
+    total_vat = 0
+    total_grand_total = 0
+
+    # Calculate totals
+    for sale in customersales:
+        total_amount += sale.amount
+        total_discount += sale.customer_supply.discount
+        total_net_payable += sale.customer_supply.net_payable
+        total_vat += sale.customer_supply.vat
+        total_grand_total += sale.customer_supply.grand_total
+
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    instances = customersales.none()  # Initialize as an empty queryset
+
+    if start_date_str and end_date_str:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        instances = customersales.filter(customer_supply__created_date__range=[start_date, end_date])
+
+    # Initialize dictionary to store routes for each salesman
+    salesman_routes = {}
+
+    # Get route for each salesman
+    for route in routes:
+        van_route = Van_Routes.objects.filter(routes=route).first()
+        if van_route and van_route.van:
+            salesman = van_route.van.salesman
+            print("salesman",salesman)
+            # Check if salesman exists in CustomerSupply
+            if CustomerSupplyItems.objects.filter(customer_supply__salesman=salesman).exists():
+                print("")
+                salesman_routes[salesman.username] = route.route_name
+            print("salesman_routes",salesman_routes)
+
+    context = {
+        'instances': instances,
+        'customersales': customersales,
+        'total_amount': total_amount,
+        'total_discount': total_discount,
+        'total_net_payable': total_net_payable,
+        'total_vat': total_vat,
+        'total_grand_total': total_grand_total,
+        'salesman_routes': salesman_routes,
+        
+    }
+    return render(request, 'sales_management/customerSales_report.html', context)
+
+def customerSales_Detail_report(request, id):
+    customersale = get_object_or_404(CustomerSupplyItems, id=id)
+    return render(request, 'sales_management/customerSales_Detail_report.html', {'customersale': customersale})
+
+
+
+def customerSales_Excel_report(request):
+
+# Retrieve sales report data
+    routes = RouteMaster.objects.all()
+    customersales = CustomerSupplyItems.objects.all()
+    # Initialize totals
+    total_amount = 0
+    total_discount = 0
+    total_net_payable = 0
+    total_vat = 0
+    total_grand_total = 0
+
+    
+    # Initialize dictionary to store routes for each salesman
+    salesman_routes = {}
+
+    # Get route for each salesman
+    for route in routes:
+        van_route = Van_Routes.objects.filter(routes=route).first()
+        if van_route and van_route.van:
+            salesman = van_route.van.salesman
+            # Check if salesman exists in CustomerSupply
+            if CustomerSupplyItems.objects.filter(customer_supply__salesman=salesman).exists():
+                salesman_routes[salesman.username] = route.route_name
+    # Create the HttpResponse object with Excel content type and attachment filename
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="customerSales_Excel_report.xlsx"'
+
+    # Create a new Excel workbook and add a worksheet
+    workbook = xlsxwriter.Workbook(response)
+    worksheet = workbook.add_worksheet()
+
+    # Define cell formats
+    bold_format = workbook.add_format({'bold': True})
+
+    # Write headers
+    headers = ['Ref/Invoice No', 'Date & Time', 'Customer Name', 'Building Name/Room No/Floor No', 'Route', 'Salesman', 'Amount', 'Discount', 'Net Taxable', 'Vat Amount', 'Grand Total']
+    for col, header in enumerate(headers):
+        worksheet.write(0, col, header, bold_format)
+
+    # Write data rows
+    row = 1
+    for customersale in customersales:
+        worksheet.write(row, 0, customersale.customer_supply.reference_number)
+        worksheet.write(row, 1, str(customersale.customer_supply.created_date))
+        worksheet.write(row, 2, customersale.customer_supply.customer.customer_name)
+        worksheet.write(row, 3, f"{customersale.customer_supply.customer.building_name}/{customersale.customer_supply.customer.door_house_no}/{customersale.customer_supply.customer.floor_no}")
+        worksheet.write(row, 4, salesman_routes.get(customersale.customer_supply.salesman.username, 'Not Assigned'))
+        worksheet.write(row, 5, customersale.customer_supply.salesman.username)
+        worksheet.write(row, 6, customersale.amount)
+        worksheet.write(row, 7, customersale.customer_supply.discount)
+        worksheet.write(row, 8, customersale.customer_supply.net_payable)
+        worksheet.write(row, 9, customersale.customer_supply.vat)
+        worksheet.write(row, 10, customersale.customer_supply.grand_total)
+        row += 1
+
+
+    # Calculate totals
+    for sale in customersales:
+        total_amount += sale.amount
+        total_discount += sale.customer_supply.discount
+        total_net_payable += sale.customer_supply.net_payable
+        total_vat += sale.customer_supply.vat
+        total_grand_total += sale.customer_supply.grand_total
+    
+     # Write totals
+    worksheet.write(row, 5, 'Total:')
+    worksheet.write(row, 6, total_amount)
+    worksheet.write(row, 7, total_discount)
+    worksheet.write(row, 8, total_net_payable)
+    worksheet.write(row, 9, total_vat)
+    worksheet.write(row, 10, total_grand_total)
+
+    # Close the workbook
+    workbook.close()
+
+    return response
+

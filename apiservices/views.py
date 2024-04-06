@@ -32,7 +32,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.permissions import BasePermission, IsAuthenticated,IsAuthenticatedOrReadOnly
 
-from client_management.forms import CoupenEditForm, CollectionPaymentForm
+from client_management.forms import CoupenEditForm
 from master.serializers import *
 from master.functions import generate_serializer_errors, get_custom_id
 from master.models import *
@@ -48,7 +48,7 @@ from rest_framework.permissions import IsAuthenticated
 from accounts.models import *
 from master.models import *
 from product.models import *
-from sales_management.models import CollectionPayment
+from sales_management.models import CollectionItems, CollectionPayment
 from van_management.models import *
 from customer_care.models import *
 from order.models import *
@@ -2635,18 +2635,13 @@ class OutstandingAmountAPI(APIView):
     def post(self, request, *args, **kwargs):
         try:
             customer_id = request.data['customer_id']
-            print(customer_id)
             custody_items = CustodyCustomItems.objects.filter(customer=customer_id)
-            print("custody_items", custody_items)
             total_amount = custody_items.aggregate(total_amount=Sum('amount'))['total_amount']
-            print("total_amount", total_amount)
             amount_paid = request.data['amount_paid']
-            print("amount_paid", amount_paid)
             amount_paid = int(amount_paid)
             balance = total_amount - amount_paid
-            print('balance', balance)
             product = custody_items.first().product
-            print("product", product)
+            
             outstanding_amount = OutstandingAmount.objects.create(
                 customer_id=customer_id,
                 product=product,
@@ -2658,8 +2653,7 @@ class OutstandingAmountAPI(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            print(e,"errror")
-            return Response({"status": False, "data": str(e), "message": "Something went wrong!"})
+            return Response({"status": False, "data": str(e), "message": str(e) })
 
 
 class VanStockAPI(APIView):
@@ -2683,28 +2677,6 @@ class VanStockAPI(APIView):
             'coupon_stock': coupon_serializer.data,
             'product_stock': product_serializer.data
         }, status=status.HTTP_200_OK)
-    # authentication_classes = [BasicAuthentication]
-    # permission_classes = [IsAuthenticated]
-
-    # def get(self, request, *args, **kwargs):
-    #     # id = request.user.id
-    #     # print("id",id)
-    #     # customer=Customers.objects.filter(sales_staff__id = id)
-    #     # print("customer",customer)
-    #     coupon_stock = VanCouponStock.objects.all()
-    #     product_stock = VanProductStock.objects.all()
-    #     # if product_stock:
-    #     #     salesman=product_stock.van.salesman
-    #     #     print("salesman",salesman)
-    #     coupon_serializer = VanCouponStockSerializer(coupon_stock, many=True)
-    #     product_serializer = VanProductStockSerializer(product_stock, many=True)
-    #     print("coupon_serializer",coupon_serializer)
-    #     print("product_serializer",product_serializer)
-    #     return Response({
-    #         # 'customer':customer,
-    #         'coupon_stock': coupon_serializer.data,
-    #         'product_stock': product_serializer.data
-    #     }, status=status.HTTP_200_OK)
 
 class OutstandingAmountListAPI(APIView):
     authentication_classes = [BasicAuthentication]
@@ -2734,40 +2706,6 @@ class VanStockAPI(APIView):
             'coupon_stock': coupon_serializer.data,
             'product_stock': product_serializer.data
         }, status=status.HTTP_200_OK)
-
-# class VanStockAPI(APIView):
-#     def get(self, request, *args, **kwargs):
-#         id = request.user.id
-#         print("id",id)
-#         customer=Customers.objects.filter(sales_staff__id = id)
-#         print("customer",customer)
-#         coupon_stock = VanCouponStock.objects.filter(van__driver=customer)
-#         print("coupon_stock",coupon_stock)
-#         product_stock = VanProductStock.objects.all()
-#         coupon_serializer = VanCouponStockSerializer(coupon_stock, many=True)
-#         product_serializer = VanProductStockSerializer(product_stock, many=True)
-#         print("coupon_serializer",coupon_serializer)
-#         print("product_serializer",product_serializer)
-#         return Response({
-#             'coupon_stock': coupon_serializer.data,
-#             'product_stock': product_serializer.data
-#         }, status=status.HTTP_200_OK)
-# class CouponCountListAPI(APIView):
-#     def get(self, request, pk, format=None):
-#         try:
-#             customer = Customers.objects.get(customer_id=pk)
-#         except Customers.DoesNotExist:
-#             return Response({"message": "Customer not found"}, status=status.HTTP_404_NOT_FOUND)
-#
-#         customers = CustomerCouponStock.objects.filter(customer=customer)
-#         serializer = CustomerCouponStockSerializer(customers, many=True)
-#         return Response(serializer.data)
-
-
-
-
-
-
 
 class CouponCountList(APIView):
 
@@ -2799,7 +2737,6 @@ class NewCouponCreateAPI(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class NewCouponCountAPI(APIView):
     def post(self, request, pk):
         form = CoupenEditForm(request.data)
@@ -2814,14 +2751,12 @@ class NewCouponCountAPI(APIView):
         else:
             return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class DeleteCouponCount(APIView):
     def delete(self, request, pk):
         customer_coupon_stock = get_object_or_404(CustomerCouponStock, pk=pk)
         customer_pk = customer_coupon_stock.customer.pk
         customer_coupon_stock.delete()
         return Response({'message': 'Coupon count deleted successfully!', 'customer_pk': str(customer_pk)}, status=status.HTTP_200_OK)
-
 
 class customer_outstanding(APIView):
     authentication_classes = [BasicAuthentication]
@@ -2833,45 +2768,12 @@ class customer_outstanding(APIView):
         if route_id :
             customers = customers.filter(routes__pk=route_id)
             
-        # reports = CustomerOutstandingReport.objects.all()
-
-        # 
-
-        # # if request.user and request.user.user_type=="Salesman":
-        # customer_data = {}
-        # for report in reports:
-        #     customer_id = report.customer.pk
-        #     if customer_id not in customer_data:
-        #         customer_data[customer_id] = {
-        #             'customer': report.customer.pk,
-        #             'customer_name': report.customer.customer_name,
-        #             'building_name': report.customer.building_name,
-        #             'route_name': report.customer.routes.route_name,
-        #             'route_id': report.customer.routes.pk,
-        #             'door_house_no': report.customer.door_house_no,
-        #             'floor_no': report.customer.floor_no,
-        #             'amount': 0,
-        #             'empty_can': 0,
-        #             'coupons': 0
-        #         }
-
-        #     # Add product values based on product type
-        #     if report.product_type == 'amount':
-        #         customer_data[customer_id]['amount'] += report.value
-        #     elif report.product_type == 'emptycan':
-        #         customer_data[customer_id]['empty_can'] += report.value
-        #     elif report.product_type == 'coupons':
-        #         customer_data[customer_id]['coupons'] += report.value
-
-        # print(customer_data)
-
         serialized_data = CustomerOutstandingSerializer(customers, many=True)
         
         customer_outstanding = CustomerOutstandingReport.objects.filter(customer__in=customers)
         total_amount = customer_outstanding.filter(product_type="amount").aggregate(total=Coalesce(Sum('value'), Value(0)))['total']
         total_coupons = customer_outstanding.filter(product_type="coupons").aggregate(total=Coalesce(Sum('value'), Value(0)))['total']
         total_emptycan = customer_outstanding.filter(product_type="emptycan").aggregate(total=Coalesce(Sum('value'), Value(0)))['total']
-
 
         return Response({
             'status': True,
@@ -2895,175 +2797,6 @@ class CustomerCouponListAPI(APIView):
         serializer = CustomerDetailSerializer(customers, many=True, context={'request': request})
 
         return Response(serializer.data)
-# class CustomerCouponListAPI(APIView):
-#     authentication_classes = [BasicAuthentication]
-#     permission_classes = [IsAuthenticated]
-#     def get(self, request, format=None):
-#         customers = Customers.objects.all()
-#         serializer = CustomerDetailSerializer(customers, many=True, context={'request': request})
-#         return Response(serializer.data)
-
-
-
-
-# class CustomerCouponListAPI(APIView):
-#     authentication_classes = [BasicAuthentication]
-#     permission_classes = [IsAuthenticated]
-#
-#     def get(self, request, format=None):
-#         customers = Customers.objects.all()
-#         route_id = request.GET.get("route_id")
-#
-#         if route_id:
-#             customers = customers.filter(customer__routes__pk=route_id)
-
-
-# class CustomerCouponListAPI(APIView):
-#     authentication_classes = [BasicAuthentication]
-#     permission_classes = [IsAuthenticated]
-#
-#     def get(self, request, format=None):
-#         # Get the current user
-#         user = request.user
-#
-#         if user.is_authenticated:
-#             if user.user_type == 'Salesman':
-#                 # For Salesman, filter customers based on the salesman's routes
-#                 route_ids = user.customer_staff.values_list('routes__pk', flat=True)
-#                 customers = Customers.objects.filter(routes__pk__in=route_ids)
-#             elif user.user_type == 'Supervisor':
-#                 # For Supervisor, filter customers based on the supervisor's routes
-#                 route_ids = user.supervisor_routes.values_list('pk', flat=True)
-#                 customers = Customers.objects.filter(routes__pk__in=route_ids)
-#             elif user.user_type == 'Driver':
-#                 # For Driver, filter customers based on the driver's assigned routes
-#                 route_ids = user.driver_routes.values_list('pk', flat=True)
-#                 customers = Customers.objects.filter(routes__pk__in=route_ids)
-#             else:
-#                 # For other user types, return an empty queryset
-#                 customers = Customers.objects.none()
-#
-#             # Serialize the filtered customers
-#             serializer = CustomerDetailSerializer(customers, many=True, context={'request': request})
-#             return Response(serializer.data)
-#
-#         return Response({'error': 'User is not authenticated'}, status=status.HTTP_401_UNAUTHORIZED)
-
-
-# class CustomerCouponListAPI(APIView):
-#     authentication_classes = [BasicAuthentication]
-#     permission_classes = [IsAuthenticated]
-#
-#     def get(self, request, format=None):
-#         customers = Customers.objects.all()
-#         route_id = request.GET.get("route_id")
-#
-#         if route_id:
-#             customers = customers.filter(customer__routes__pk=route_id)
-#
-#         serializer = CustomerDetailSerializer(customers, many=True, context={'request': request})
-#         return Response(serializer.data)
-
-# class CustomerCouponListAPI(APIView):
-#     authentication_classes = [BasicAuthentication]
-#     permission_classes = [IsAuthenticated]
-#
-#     def get(self, request, format=None):
-#         user = request.user
-#
-#         # Filter customers based on user's role
-#         if user.user_type == 'Salesman':
-#             route_ids = user.customer_staff.values_list('routes__pk', flat=True)
-#             customers = Customers.objects.filter(routes__pk__in=route_ids)
-#         elif user.user_type == 'Supervisor':
-#             # If user is a supervisor, get all customers under their supervision
-#             subordinate_salesmen_ids = user.subordinates.values_list('id', flat=True)
-#             subordinate_route_ids = Customers.objects.filter(sales_staff__id__in=subordinate_salesmen_ids).values_list('routes__pk', flat=True)
-#             customers = Customers.objects.filter(routes__pk__in=subordinate_route_ids)
-#         else:
-#             # For other user types, return an empty queryset
-#             customers = Customers.objects.none()
-#
-#         # Serialize the filtered customers
-#         serializer = CustomerDetailSerializer(customers, many=True, context={'request': request})
-#         return Response(serializer.data)
-#
-
-
-#
-# class CollectionAPI(APIView):
-#     authentication_classes = [BasicAuthentication]
-#     permission_classes = [IsAuthenticated]
-#
-#     def get(self, request, *args, **kwargs):
-#         collection = CollectionPayment.objects.all()
-#         collection_serializer = CollectionSerializer(collection, many=True)
-#         return Response({
-#             'collection': collection_serializer.data,
-#         }, status=status.HTTP_200_OK)
-#
-#     def post(self, request, *args, **kwargs):
-#         serializer = CollectionSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-#
-#
-#
-#
-# class CollectionCreateAPI(APIView):
-#     def post(self, request, *args, **kwargs):
-#         customer_name = request.data.get('customer_name')
-#         mobile_no = request.data.get('mobile_no')
-#
-#         try:
-#             customer = Customers.objects.get(customer_name=customer_name, mobile_no=mobile_no)
-#         except Customers.DoesNotExist:
-#             raise ValidationError("Customer does not exist.")
-#
-#         serializer = CollectionSerializer(data=request.data, context={'customer': customer})
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-#
-
-
-
-class AddCollectionPayment(APIView):
-    def post(self, request, pk):
-        form = CollectionPaymentForm(request.data)
-        if form.is_valid():
-            data = form.save(commit=False)
-            try:
-                data.customer = Customers.objects.get(pk=pk)
-                data.save()
-                return Response({'message': 'Collection payment added successfully!'}, status=status.HTTP_201_CREATED)
-            except Customers.DoesNotExist:
-                return Response({'message': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
-        else:
-            return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-
-# class CollectionAPI(APIView):
-#     authentication_classes = [BasicAuthentication]
-#     permission_classes = [IsAuthenticated]
-#
-#     def get(self, request, *args, **kwargs):
-#         collection = CustomerSupply.objects.all()
-#
-#         collection_serializer = CollectionSerializer(collection, many=True)
-#
-#         return Response({
-#             'collection': collection_serializer.data,
-#         }, status=status.HTTP_200_OK)
-#
-
-
-
 
 class ProductAndBottleAPIView(APIView):
     def get(self, request):
@@ -3090,8 +2823,6 @@ class ProductAndBottleAPIView(APIView):
             })
         except ValueError:
             return Response({'error': 'Invalid date format. Please use YYYY-MM-DD.'}, status=400)
-
-
 
 class CollectionAPI(APIView):
     authentication_classes = [BasicAuthentication]
@@ -3121,4 +2852,71 @@ class CollectionAPI(APIView):
             'message': 'Data retrieved successfully.',
             'user_id': user.id,
             'data': collection_serializer.data,
-        }, status=status.HTTP_200_OK)
+        }, status=400)
+
+class AddCollectionPayment(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        # Extract data from request
+        payment_method = request.data.get("payment_method")
+        amount_received = request.data.get("amount_received")
+        invoice_ids = request.data.get("invoice_ids")
+        customer_id = request.data.get("customer_id")
+        
+        # Retrieve customer object
+        try:
+            customer = Customers.objects.get(pk=customer_id)
+        except Customers.DoesNotExist:
+            return Response({"message": "Customer does not exist."}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Create collection payment instance
+        collection_payment = CollectionPayment.objects.create(
+            payment_method=payment_method,
+            customer=customer,
+            salesman=request.user,
+            amount_received=amount_received,
+        )
+        
+        # If payment method is cheque, handle cheque details
+        if payment_method == "CHEQUE":
+            cheque_data = request.data.get("cheque_details", {})
+            cheque_serializer = CollectionChequeSerializer(data=cheque_data)
+            if cheque_serializer.is_valid():
+                cheque = cheque_serializer.save(collection_payment=collection_payment)
+            else:
+                return Response(cheque_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        remaining_amount = amount_received
+        
+        # Distribute the received amount among invoices
+        for invoice_id in invoice_ids:
+            invoice = Invoice.objects.get(pk=invoice_id)
+            balance_invoice_amount = invoice.amout_total - invoice.amout_recieved
+            
+            if balance_invoice_amount <= remaining_amount:
+                invoice.amout_recieved += balance_invoice_amount
+                remaining_amount -= balance_invoice_amount
+            else:
+                invoice.amout_recieved += remaining_amount
+                remaining_amount = 0
+            
+            # Update invoice status if fully paid
+            if invoice.amout_recieved == invoice.amout_total:
+                invoice.invoice_status = 'paid'
+            
+            invoice.save()
+
+            # Create CollectionItems instance
+            CollectionItems.objects.create(
+                invoice=invoice,
+                amount=invoice.amout_total,
+                balance=balance_invoice_amount - invoice.amout_recieved,
+                amount_received=invoice.amout_recieved,
+                collection_payment=collection_payment
+            )
+            
+            if remaining_amount == 0:
+                break
+        
+        return Response({"message": "Collection payment saved successfully."}, status=status.HTTP_201_CREATED)

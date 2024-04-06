@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% block title %} Customer Sales Report {% endblock %}
+{% block content %}
+{% load static %}
+
+<!-- Page Header -->
+<div class="page-header-breadcrumb d-md-flex d-block align-items-center justify-content-between ">
+    <h4 class="fw-medium mb-0">Customer Sales Report</h4>
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="javascript:void(0);" class="text-white-30">Sales Management</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Customer Sales Report</li>
+    </ol>
+</div>
+<div class="main-content app-content">
+    <div class="container-fluid">
+        <!-- Start:: row-2 -->
+        <div class="row">
+            <div class="col-xl-12">
+                <div class="card custom-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            Customer Sales Report
+                        </div>
+                    </div>
+                    <div class="mt">
+                        <form method="GET" action='{% url "custody_issue"%}'>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-5">
+                                        <label for="start_date">From Date:</label>
+                                        <input type="date" class="form-control" id="start_date" name="start_date">
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label for="end_date">To Date:</label>
+                                        <input type="date" class="form-control" id="end_date" name="end_date">
+                                    </div>
+                                    <div class="col-md-2 text-end ">
+                                        <input type="submit" id = "submit" class="btn btn-primary me-2 mb-2 mt-3" value="Submit">
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <div id="table-container" style="display: none;">
+                        <div class="card-body">
+                            <div style="float:right;padding:10px 0px">
+                                        
+                                <div class="input-group">
+                                    <!-- <button type="submit" class="btn btn-outline-success" style="width: 7em;">
+                                        <i class="fas fa-file-excel"></i> Excel
+                                    </button> -->
+                                    <a href="{% url 'customerSales_Excel_report' %}" class="btn btn-outline-success" style="width: 7em;"><i class="fas fa-file-excel"></i> Excel</a>
+                                </div>
+                               
+                            </div>
+                            <div style="float:right;padding:10px 0px">
+                                <a  onclick="printDiv('printArea'); return false;" class="btn btn-outline-success " style="width: 7em;">
+                                    <i class="fas fa-print"></i> Print
+                                </a>
+    
+                            </div>
+                            <table  class="table table-bordered text-wrap" style="width: 100%">
+                                <thead>
+                                    <tr>
+                                        <th rowspan="2">Sl No</th>
+                                        <th rowspan="2">Ref/Invoice No</th>
+                                        <th rowspan="2">Date & Time</th>
+                                        <th rowspan="2">Customer Name</th>
+                                        <th rowspan="2">Building Name/Room No/Floor No</th>
+                                        <th rowspan="2">Route</th>
+                                        <th rowspan="2">Salesman</th>
+                                        <th rowspan="2">Amount</th>
+                                        <th rowspan="2">Discount</th>
+                                        <th rowspan="2">Net Taxable</th>
+                                        <th rowspan="2">Vat Amount</th>
+                                        <th rowspan="2">Grand Total </th>
+                                        <th rowspan="2">Actions</th>
+
+                                       
+                                    </tr>
+                                    
+                                </thead>
+                                <tbody>
+        
+
+                                    {% for customersale in customersales %}
+                                        <tr>
+                                            <td>{{ forloop.counter }}</td>
+                                            <td>{{ customersale.customer_supply.reference_number }}</td>
+                                            <td>{{ customersale.customer_supply.created_date }}</td>
+                                            <td>{{ customersale.customer_supply.customer.customer_name }}</td>
+                                            <td>{{ customersale.customer_supply.customer.building_name }}/ {{ customersale.customer_supply.customer.door_house_no }}/ {{ customersale.customer_supply.customer.floor_no }}</td>
+                                            <td>{{ salesman_routes|default:"Not Assigned" }}</td>
+                                            <td>{{ customersale.customer_supply.salesman.username }}</td>
+                                            <td>{{ customersale.amount }}</td>
+                                            <td>{{ customersale.customer_supply.discount }}</td>
+                                            <td>{{ customersale.customer_supply.net_payable }}</td>
+                                            <td>{{ customersale.customer_supply.vat}}</td>
+                                            <td>{{ customersale.customer_supply.grand_total}}</td>
+                                            <td>
+                                                <div class="g-2">
+                                                    <a href="{% url 'customerSales_Detail_report' customersale.id %}" aria-label="anchor" class="btn  btn-warning-light btn-sm" data-bs-toggle="tooltip" data-bs-original-title="View">
+                                                        <span class="bi bi-eye fs-14"></span>
+                                                    </a>
+                                                    
+                                                </div>
+                                            </td>
+
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <!-- Table Footer -->
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="7" style="text-align: right;">Total:</td>
+                                        <td>{{ total_amount }}</td>
+                                        <td>{{ total_discount }}</td>
+                                        <td>{{ total_net_payable }}</td>
+                                        <td>{{ total_vat }}</td>
+                                        <td>{{ total_grand_total }}</td>
+                                    </tr>
+                                </tfoot>
+
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="printArea"  style="display: none; padding: 10em;">
+    <div style="margin-top: 4em; ">
+        <h3 style="text-align: center; ;">National Water</h3>
+    </div>
+
+
+    <table class="table table-bordered text-wrap " style="width: 100%; margin-top: 1em;">
+        <thead>
+            <tr>
+                <th rowspan="2">Sl No</th>
+                                        <th rowspan="2">Ref/Invoice No</th>
+                                        <th rowspan="2">Date & Time</th>
+                                        <th rowspan="2">Customer Name</th>
+                                        <th rowspan="2">Building Name/Room No/Floor No</th>
+                                        <th rowspan="2">Route</th>
+                                        <th rowspan="2">Salesman</th>
+                                        <th rowspan="2">Amount</th>
+                                        <th rowspan="2">Discount</th>
+                                        <th rowspan="2">Net Taxable</th>
+                                        <th rowspan="2">Vat Amount</th>
+                                        <th rowspan="2">Grand Total </th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for customersale in customersales %}
+                                        <tr>
+                                            <td>{{ forloop.counter }}</td>
+                                            <td>{{ customersale.customer_supply.reference_number }}</td>
+                                            <td>{{ customersale.customer_supply.created_date }}</td>
+                                            <td>{{ customersale.customer_supply.customer.customer_name }}</td>
+                                            <td>{{ customersale.customer_supply.customer.building_name }}/ {{ customersale.customer_supply.customer.door_house_no }}/ {{ customersale.customer_supply.customer.floor_no }}</td>
+                                            <td>{{ salesman_routes|default:"Not Assigned" }}</td>
+                                            <td>{{ customersale.customer_supply.salesman.username }}</td>
+                                            <td>{{ customersale.amount }}</td>
+                                            <td>{{ customersale.customer_supply.discount }}</td>
+                                            <td>{{ customersale.customer_supply.net_payable }}</td>
+                                            <td>{{ customersale.customer_supply.vat}}</td>
+                                            <td>{{ customersale.customer_supply.grand_total}}</td>
+                                            
+
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <!-- Table Footer -->
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="7" style="text-align: right;">Total:</td>
+                                        <td>{{ total_amount }}</td>
+                                        <td>{{ total_discount }}</td>
+                                        <td>{{ total_net_payable }}</td>
+                                        <td>{{ total_vat }}</td>
+                                        <td>{{ total_grand_total }}</td>
+                                    </tr>
+                                </tfoot>
+    </table>
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
+<script>
+ $('#submit').click(function(e){ 
+    e.preventDefault();       
+            // Show the table when dates are selected
+            $('#table-container').show();
+    });
+</script>
+<script>
+    function printDiv(divName) {
+        var printContents = document.getElementById(divName).innerHTML;
+        var originalContents = document.body.innerHTML;
+        document.body.innerHTML = printContents;
+        window.print();
+        document.body.innerHTML = originalContents;
+    }
+</script>
+
+
+
+{% endblock %}

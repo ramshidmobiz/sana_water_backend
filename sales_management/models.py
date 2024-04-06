@@ -148,23 +148,33 @@ class CollectionPayment(models.Model):
     )
     payment_method = models.CharField(max_length=100, choices=PAYMENT_TYPE_CHOICES, null=True, blank=True)
     customer = models.ForeignKey(Customers, on_delete=models.CASCADE)
-    customer_supply = models.ForeignKey(CustomerSupply, on_delete=models.CASCADE)
-    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE,)
-    amount = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+    salesman = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    amount_received = models.DecimalField(default=0, max_digits=10, decimal_places=2)
 
     class Meta:
         ordering = ('-id',)
 
     def __str__(self):
-        return self.customer
+        return str(self.customer)
+    
+class CollectionItems(models.Model):
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE)
+    amount = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+    balance = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+    amount_received = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+    collection_payment = models.OneToOneField(CollectionPayment, on_delete=models.CASCADE)
 
+    class Meta:
+        ordering = ('-id',)
 
+    def __str__(self):
+        return str(self.customer)
 
 class CollectionCheque(models.Model):
-    collection_payment = models.ForeignKey(CollectionPayment, on_delete=models.CASCADE, )
-    cheque_amount =models.DecimalField(default=0, max_digits=10, decimal_places=2)
+    collection_payment = models.OneToOneField(CollectionPayment, on_delete=models.CASCADE)
+    cheque_amount = models.DecimalField(default=0, max_digits=10, decimal_places=2)
     cheque_no = models.CharField(max_length=20)
-    bank_name= models.CharField(max_length=20)
+    bank_name = models.CharField(max_length=20)
 
     class Meta:
         ordering = ('-id',)

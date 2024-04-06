@@ -18,11 +18,15 @@ class CustomUserSerializers(serializers.ModelSerializer):
 
 class CustomersSerializers(serializers.ModelSerializer):
     location = serializers.SerializerMethodField()
+    location_name = serializers.SerializerMethodField()
     class Meta :
         model = Customers
         fields = '__all__'
 
     def get_location(self, obj):
+        return obj.location.pk
+    
+    def get_location_name(self, obj):
         return obj.location.location_name
         
 class Create_Customers_Serializers(serializers.ModelSerializer):
