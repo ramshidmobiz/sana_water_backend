@@ -753,7 +753,7 @@ class CollectionCustomerSerializer(serializers.ModelSerializer):
 class CollectionChequeSerializer(serializers.ModelSerializer):
     class Meta:
         model = CollectionCheque
-        fields = '__all__'
+        fields = ['cheque_amount','cheque_no','bank_name']
 
 class CollectionItemsSerializer(serializers.ModelSerializer):
     class Meta:
