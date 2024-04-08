@@ -6,7 +6,7 @@ from accounts.models import CustomUser, Customers
 from master.models import EmirateMaster, RouteMaster
 from customer_care.models import DiffBottlesModel
 from client_management.models import Vacation,CustomerSupply
-from product.models import Staff_IssueOrders
+# from product.models import Staff_IssueOrders
 
 
 from .forms import  *

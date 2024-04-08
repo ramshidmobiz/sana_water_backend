@@ -187,14 +187,11 @@ class Product_Create(View):
         
         if form.is_valid():
             product_item = ProdutItemMaster.objects.get(pk=form.data.get('product_name'))
-            tax = Tax.objects.get(pk=form.data.get('tax'))
             
             data = Product(
                 product_name=product_item,
                 created_by = str(request.user.id),
-                rate=form.data.get('rate'),
                 branch_id=request.user.branch_id,
-                tax=tax,
                 quantity=form.data.get('quantity')
             )
             data.save()
@@ -433,11 +430,12 @@ def staffIssueOrdersCreate(request, staff_order_details_id):
     if request.method == 'POST':
         form = StaffIssueOrdersForm(request.POST)
         if form.is_valid():
-            try:
-                with transaction.atomic():
+            # try:
+            #     with transaction.atomic():
                     quantity_issued = form.cleaned_data.get('quantity_issued')
                     if 0 < int(quantity_issued) <= int(product_stock.quantity):
                         # Creating Staff Issue Order
+                        van = Van.objects.get(salesman_id__id=issue.staff_order_id.created_by)
                         data = form.save(commit=False)
                         # data.created_by = request.user.id
                         data.modified_by = request.user.id
@@ -446,13 +444,13 @@ def staffIssueOrdersCreate(request, staff_order_details_id):
                         data.product_id = issue.product_id
                         data.staff_Orders_details_id = issue
                         data.stock_quantity = stock_quantity
+                        data.van = van
                         data.save()
                         
                         # Updating ProductStock
                         product_stock.quantity -= int(quantity_issued)
                         product_stock.save()
                         
-                        van = Van.objects.get(salesman_id__id=issue.staff_order_id.created_by)
                         # Updating VanStock and VanProductStock
                         # van = Van.objects.get(salesman_id__id=form.cleaned_data.get('salesman_id').pk)
                         vanstock = VanStock.objects.create(
@@ -497,21 +495,21 @@ def staffIssueOrdersCreate(request, staff_order_details_id):
                             "title": "Failed",
                             "message": f"No stock available in {product_stock.product_name}, only {product_stock.quantity} left",
                         }
-            except IntegrityError as e:
-                # Handle database integrity error
-                response_data = {
-                    "status": "false",
-                    "title": "Failed",
-                    "message": str(e),
-                }
+            # except IntegrityError as e:
+            #     # Handle database integrity error
+            #     response_data = {
+            #         "status": "false",
+            #         "title": "Failed",
+            #         "message": str(e),
+            #     }
 
-            except Exception as e:
-                # Handle other exceptions
-                response_data = {
-                    "status": "false",
-                    "title": "Failed",
-                    "message": str(e),
-                }
+            # except Exception as e:
+            #     # Handle other exceptions
+            #     response_data = {
+            #         "status": "false",
+            #         "title": "Failed",
+            #         "message": str(e),
+            #     }
         else:
             message = generate_form_errors(form, formset=False)
             response_data = {

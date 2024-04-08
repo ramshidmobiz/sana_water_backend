@@ -119,33 +119,33 @@ class Staff_Orders_details(models.Model):
     def __str__(self):
         return str(self.staff_order_details_id)
 
-class Staff_IssueOrders(models.Model):
-    staff_issuesorder_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    order_number = models.CharField(max_length=30, null=True, blank=True, unique=True)
-    salesman_id = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='salesman_orders',limit_choices_to={'designation_id__designation_name__in': ['Sales Executive', 'Sales Supervisor']})
-    staff_Orders_details_id = models.ForeignKey(Staff_Orders_details, on_delete=models.SET_NULL, null=True, blank=True, related_name='salesman_order_details')
-    van_route_id = models.ForeignKey(RouteMaster, on_delete=models.SET_NULL, null=True, blank=True, related_name='van_route_orders')
-    product_id = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE, related_name='issued_products')
-    coupon_book= models.ForeignKey('coupon_management.NewCoupon',on_delete=models.SET_NULL, null=True, blank=True, related_name='couponsales')
-    quantity_issued = models.CharField(max_length=50,null=True, blank=True)
-    stock_quantity = models.CharField(max_length=50,null=True, blank=True)
-    van = models.ForeignKey('van_management.Van', null=True, blank=True, on_delete=models.SET_NULL)
+# class Staff_IssueOrders(models.Model):
+#     staff_issuesorder_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+#     order_number = models.CharField(max_length=30, null=True, blank=True, unique=True)
+#     salesman_id = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='salesman_orders',limit_choices_to={'designation_id__designation_name__in': ['Sales Executive', 'Sales Supervisor']})
+#     staff_Orders_details_id = models.ForeignKey(Staff_Orders_details, on_delete=models.SET_NULL, null=True, blank=True, related_name='salesman_order_details')
+#     van_route_id = models.ForeignKey(RouteMaster, on_delete=models.SET_NULL, null=True, blank=True, related_name='van_route_orders')
+#     product_id = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE, related_name='issued_products')
+#     coupon_book= models.ForeignKey('coupon_management.NewCoupon',on_delete=models.SET_NULL, null=True, blank=True, related_name='couponsales')
+#     quantity_issued = models.CharField(max_length=50,null=True, blank=True)
+#     stock_quantity = models.CharField(max_length=50,null=True, blank=True)
+#     van = models.ForeignKey('van_management.Van', null=True, blank=True, on_delete=models.SET_NULL)
 
-    STATUS_CHOICES = (
-        ('Order Issued','Order Issued'),
-        ('Delivered', 'Delivered'),
-        ('Cancelled', 'Cancelled'),
-    )
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Order Issued')
-    created_by = models.CharField(max_length=20,  blank=True)
-    # created_date = models.DateTimeField(auto_now_add=True,blank=True, null=True)
-    modified_by = models.CharField(max_length=20, null=True, blank=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    class Meta:
-            ordering = ('staff_issuesorder_id',)
+#     STATUS_CHOICES = (
+#         ('Order Issued','Order Issued'),
+#         ('Delivered', 'Delivered'),
+#         ('Cancelled', 'Cancelled'),
+#     )
+#     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Order Issued')
+#     created_by = models.CharField(max_length=20,  blank=True)
+#     # created_date = models.DateTimeField(auto_now_add=True,blank=True, null=True)
+#     modified_by = models.CharField(max_length=20, null=True, blank=True)
+#     modified_date = models.DateTimeField(blank=True, null=True)
+#     class Meta:
+#             ordering = ('staff_issuesorder_id',)
 
-    def __str__(self):
-        return str(self.order_number)
+#     def __str__(self):
+#         return str(self.order_number)
 
 
 class ProductStock(models.Model):
