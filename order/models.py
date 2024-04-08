@@ -56,25 +56,25 @@ class Change_Reason(models.Model):
 
 
 
-class ChangeOrReturn(models.Model):
-    customer = models.ForeignKey('accounts.Customers', on_delete = models.SET_NULL, null=True, blank=True)
-    route = models.ForeignKey(RouteMaster, on_delete=models.SET_NULL, null=True)
-    product = models.ForeignKey(Product, on_delete=models.SET_NULL, blank=True, null=True)
-    reason = models.ForeignKey(Change_Reason, on_delete=models.SET_NULL,  null=True)
-    note = models.TextField(blank=True, null=True)
+# class ChangeOrReturn(models.Model):
+#     customer = models.ForeignKey('accounts.Customers', on_delete = models.SET_NULL, null=True, blank=True)
+#     route = models.ForeignKey(RouteMaster, on_delete=models.SET_NULL, null=True)
+#     product = models.ForeignKey(Product, on_delete=models.SET_NULL, blank=True, null=True)
+#     reason = models.ForeignKey(Change_Reason, on_delete=models.SET_NULL,  null=True)
+#     note = models.TextField(blank=True, null=True)
     
-    class Meta:
-        abstract = True
+#     class Meta:
+#         abstract = True
 
-class Order_change(ChangeOrReturn):
-    order_change_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    changed_quantity = models.IntegerField()
-    change_date = models.DateField()
+# class Order_change(ChangeOrReturn):
+#     order_change_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+#     changed_quantity = models.IntegerField()
+#     change_date = models.DateField()
 
     
 
-class Order_return(ChangeOrReturn):
-    order_return_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    returned_quantity = models.IntegerField()
-    return_date = models.DateField()
+# class Order_return(ChangeOrReturn):
+#     order_return_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+#     returned_quantity = models.IntegerField()
+#     return_date = models.DateField()
         

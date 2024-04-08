@@ -41,17 +41,17 @@ class Order_change_Form(forms.ModelForm):
             instance.save()
         return instance
 
-    class Meta:
-        model = Order_change
-        fields = ['customer', 'reason', 'note', 'changed_quantity', 'change_date','product']
-        widgets= {
-            'product': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'changed_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
-            'change_date': forms.DateInput(attrs={'class': 'form-control', 'type':'date'}),
-            'reason':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'customer':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'note':forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
-        }
+    # class Meta:
+    #     model = Order_change
+    #     fields = ['customer', 'reason', 'note', 'changed_quantity', 'change_date','product']
+    #     widgets= {
+    #         'product': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+    #         'changed_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
+    #         'change_date': forms.DateInput(attrs={'class': 'form-control', 'type':'date'}),
+    #         'reason':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+    #         'customer':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+    #         'note':forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
+    #     }
 
 
 class Order_change_Edit_Form(forms.ModelForm):
@@ -60,16 +60,16 @@ class Order_change_Edit_Form(forms.ModelForm):
         self.fields['product'].queryset = Product.objects.all()
         self.fields['reason'].queryset = Change_Reason.objects.all()
 
-    class Meta:
-        model = Order_change
-        fields = [ 'reason', 'note', 'changed_quantity', 'change_date', 'product']
-        widgets= {
-            'product': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'changed_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
-            'change_date': forms.DateInput(attrs={'class': 'form-control', 'type':'date'}),
-            'reason':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'note':forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
-        }
+    # class Meta:
+    #     model = Order_change
+    #     fields = [ 'reason', 'note', 'changed_quantity', 'change_date', 'product']
+    #     widgets= {
+    #         'product': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+    #         'changed_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
+    #         'change_date': forms.DateInput(attrs={'class': 'form-control', 'type':'date'}),
+    #         'reason':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+    #         'note':forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
+    #     }
 
 # Return
 class Order_return_Form(forms.ModelForm):
@@ -88,17 +88,17 @@ class Order_return_Form(forms.ModelForm):
             instance.save()
         return instance
 
-    class Meta:
-        model = Order_return
-        fields = ['customer', 'reason', 'note', 'returned_quantity', 'return_date','product']
-        widgets= {
-            'product': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'returned_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
-            'return_date': forms.DateInput(attrs={'class': 'form-control', 'type':'date'}),
-            'reason':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'customer':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'note':forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
-        }
+    # class Meta:
+    #     model = Order_return
+    #     fields = ['customer', 'reason', 'note', 'returned_quantity', 'return_date','product']
+    #     widgets= {
+    #         'product': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+    #         'returned_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
+    #         'return_date': forms.DateInput(attrs={'class': 'form-control', 'type':'date'}),
+    #         'reason':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+    #         'customer':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+    #         'note':forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
+    #     }
 
 
 class Order_return_Edit_Form(forms.ModelForm):
@@ -107,16 +107,16 @@ class Order_return_Edit_Form(forms.ModelForm):
         self.fields['product'].queryset = Product.objects.all()
         self.fields['reason'].queryset = Change_Reason.objects.all()
 
-    class Meta:
-        model = Order_return
-        fields = [ 'reason', 'note', 'returned_quantity', 'return_date', 'product']
-        widgets= {
-            'product': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'returned_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
-            'return_date': forms.DateInput(attrs={'class': 'form-control', 'type':'date'}),
-            'reason':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            'note':forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
-        }
+    # class Meta:
+    #     model = Order_return
+    #     fields = [ 'reason', 'note', 'returned_quantity', 'return_date', 'product']
+    #     widgets= {
+    #         'product': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+    #         'returned_quantity': forms.NumberInput(attrs={'class': 'form-control'}),
+    #         'return_date': forms.DateInput(attrs={'class': 'form-control', 'type':'date'}),
+    #         'reason':forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+    #         'note':forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
+    #     }
 
 
 class OrderForm(forms.ModelForm):
