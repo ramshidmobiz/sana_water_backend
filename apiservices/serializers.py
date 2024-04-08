@@ -207,10 +207,10 @@ class CustodyCustomItemListSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class CustodyCustomReturnSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = CustomerReturn
-        fields = '__all__'
+    pass
+    # class Meta:
+    #     model = CustomerReturn
+    #     fields = '__all__'
 
 
 class ProdutItemMasterSerializerr(serializers.ModelSerializer):
