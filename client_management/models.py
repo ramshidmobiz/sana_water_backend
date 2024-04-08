@@ -41,19 +41,19 @@ class CustodyCustom(models.Model):
     modified_by = models.CharField(max_length=20, null=True, blank=True)
     modified_date = models.DateTimeField(blank=True, null=True)
 
-# class CustodyCustomItems(models.Model):
-#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-#     custody_custom = models.ForeignKey(CustodyCustom, on_delete=models.CASCADE,null=True,blank=True)
-#     product = models.ForeignKey('product.ProdutItemMaster', on_delete=models.CASCADE,null=True,blank=True)
-#     quantity = models.IntegerField(blank=True,null=True)
-#     serialnumber = models.CharField(max_length=20, null=True, blank=True)
-#     amount = models.IntegerField(blank=True,null=True)
+class CustodyCustomItems(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    custody_custom = models.ForeignKey(CustodyCustom, on_delete=models.CASCADE,null=True,blank=True)
+    product = models.ForeignKey('product.ProdutItemMaster', on_delete=models.CASCADE,null=True,blank=True)
+    quantity = models.IntegerField(blank=True,null=True)
+    serialnumber = models.CharField(max_length=20, null=True, blank=True)
+    amount = models.IntegerField(blank=True,null=True)
 
-#     class Meta:
-#         ordering = ('custody_custom__created_date',)
+    class Meta:
+        ordering = ('custody_custom__created_date',)
 
-#     def __str__(self):
-#         return str(self.id)
+    def __str__(self):
+        return str(self.id)
     
 
 class CustodyCustomDeposit(models.Model):
@@ -103,7 +103,7 @@ class CustomerReturn(models.Model):
     
 
 def generate_pay_order(request, custody_item_id):
-    custody_item = {}
+    custody_item = CustodyCustomItems.objects.get(custody_item_id=custody_item_id)
     # Check if deposit type is set and generate pay order accordingly
     if custody_item.deposit_type:
         # Generate pay order logic based on the deposit type
@@ -115,7 +115,7 @@ def generate_pay_order(request, custody_item_id):
 
 
 def generate_invoice(request, custody_item_id):
-    custody_item = {}
+    custody_item = CustodyCustomItems.objects.get(custody_item_id=custody_item_id)
     if custody_item.deposit_type:
         invoice_content = f"Invoice for {custody_item.deposit_type} deposit"
         return HttpResponse(invoice_content)
