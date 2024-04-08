@@ -59,8 +59,8 @@
                                                     <a href="{% url 'product_item_edit' data.id %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Edit">
                                                         <span class="ri-pencil-line fs-14"></span>
                                                     </a>
-                                                    <a aria-label="anchor" class="btn btn-danger-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Delete">
-                                                        <span class="ri-delete-bin-7-line fs-14"></span>
+                                                    <a aria-label="anchor" class="action-button remove btn btn-danger-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Delete"
+                                                        data-id="{{data.pk}}" data-text="{{confirm_delete_message}}" data-title="Are you sure?" href="{% url 'delete_product_item' data.pk %}"><span class="ri-delete-bin-7-line fs-14"></span>
                                                     </a>
                                                     {% endif %}
                                             </div>

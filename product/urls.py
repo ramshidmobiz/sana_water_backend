@@ -1,5 +1,7 @@
-from django.urls import path
-from .views import *
+from django.urls import path,re_path
+
+from . import views
+from . views import *
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -29,6 +31,8 @@ urlpatterns = [
     path('product_items', Product_items_List.as_view(), name='product_items'),
     path('product_items_create',Product_items_Create.as_view(), name='product_items_create'),
     path('product_item_edit/<str:pk>',Product_Item_Edit.as_view(), name='product_item_edit'),
+    # path('product_item_delete/<str:pk>/',delete_product_item, name='product_item_delete'),
+    re_path(r'^product_item_delete/(?P<pk>.*)/$', views.delete_product_item, name='delete_product_item'),
 
     path('product_stock_report', product_stock_report, name='product_stock_report'),
     path('download_productstock_pdf', download_productstock_pdf, name='download_productstock_pdf'),

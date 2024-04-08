@@ -138,6 +138,29 @@ class Product_Item_Edit(View):
             messages.success(request, 'Data is not valid.', 'alert-danger')
             context = {'form': form}
             return render(request, self.template_name, context)   
+
+# @method_decorator(login_required)    
+def delete_product_item(request, pk):
+    """
+    delete product_item,
+    :param request:
+    :param pk:
+    :return:
+    """
+    instance = ProdutItemMaster.objects.get(pk=pk)
+    if instance.category.category_name == 'Coupons':
+        if (instances:=CouponType.objects.filter(coupon_type_name=instance.product_name)).exists():
+                    instances.delete()
+    instance.delete()
+    
+    response_data = {
+        "status": "true",
+        "title": "Successfully Deleted",
+        "message": "Product Item Successfully Deleted.",
+        "reload": "true",
+    }
+
+    return HttpResponse(json.dumps(response_data), content_type='application/javascript')
           
 class Products_List(View):
     template_name = 'products/products_list.html'
