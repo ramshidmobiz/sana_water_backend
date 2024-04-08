@@ -25,11 +25,11 @@ class InvoiceItemsForm(forms.ModelForm):
     
     class Meta:
         model = InvoiceItems
-        fields = ['product_items','rate','total_including_vat','qty','remarks','category']
+        fields = ['rate','total_including_vat','qty','remarks','category']
 
         widgets = {
             'category': Select(attrs={'class': 'required form-control product-category'}), 
-            'product_items': Select(attrs={'class': 'required form-control product-item'}), 
+            # 'product_items': Select(attrs={'class': 'required form-control product-item'}), 
             'rate': TextInput(attrs={'class': 'required form-control','placeholder' : 'Enter Rate'}), 
             'qty': TextInput(attrs={'class': 'form-control product-qty','placeholder' : 'Enter QTY'}), 
             'total_including_vat': TextInput(attrs={'class': 'form-control total_including_vat','placeholder' : 'Enter Total'}), 

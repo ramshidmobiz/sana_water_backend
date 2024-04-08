@@ -77,7 +77,7 @@ class InvoiceItems(models.Model):
     is_deleted = models.BooleanField(default=False)
     
     category = models.ForeignKey(CategoryMaster, on_delete=models.CASCADE,null=True,blank=True)
-    product_items = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True,blank=True)
+    # product_items = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True,blank=True)
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE)
     
     class Meta:
