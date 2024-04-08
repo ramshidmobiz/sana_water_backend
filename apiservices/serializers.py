@@ -393,27 +393,30 @@ class CustomerSupplyStockSerializer(serializers.ModelSerializer):
 
 
 class CustomerCouponStockSerializer(serializers.ModelSerializer):
-    customer_name = serializers.SerializerMethodField()
+    stock_id = serializers.SerializerMethodField()
     manual_count = serializers.SerializerMethodField()
     digital_count = serializers.SerializerMethodField()
 
     class Meta:
-        model = CustomerCouponStock
-        fields = ['id', 'coupon_type_id', 'count', 'customer_name', 'manual_count', 'digital_count']
-        read_only_fields = ['id']
+        model = Customers
+        fields = ['customer_id','custom_id','customer_name','stock_id', 'manual_count', 'digital_count']
         
-    def get_customer_name(self, obj):
-        return obj.customer.customer_name
+    def get_stock_id(self, obj):
+        try :
+            stock = CustomerCouponStock.objects.get(customer=obj).pk
+        except:
+            stock = ""
+        return stock
     
     def get_manual_count(self, obj):
-        if obj.coupon_method == 'manual':
-            return obj.count
+        if CustomerCouponStock.objects.filter(customer=obj,coupon_method='manual').exists():
+            return  CustomerCouponStock.objects.get(customer=obj,coupon_method='manual').count
         else:
             return 0
     
     def get_digital_count(self, obj):
-        if obj.coupon_method == 'digital':
-            return obj.count
+        if CustomerCouponStock.objects.filter(customer=obj,coupon_method='digital').exists():
+            return  CustomerCouponStock.objects.get(customer=obj,coupon_method='digital').count
         else:
             return 0
 

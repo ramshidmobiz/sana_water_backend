@@ -343,7 +343,7 @@ def schedule_view(request):
         todays_customers = find_customers(request, date_str, route.route_id)
         if todays_customers:
             customer_count = len(todays_customers)
-            bottle_count = sum(customer['no_of_bottles'] for customer in todays_customers)
+            bottle_count = sum(customer['no_of_bottles'] if customer['no_of_bottles'] is not None else 0 for customer in todays_customers)
             trips = list(set(customer['trip'] for customer in todays_customers))
             trips.reverse()
             route_details.append({
@@ -366,8 +366,11 @@ def schedule_by_route(request, def_date, route_id, trip):
         if customer['trip'] == trip:
             customers.append(customer)
     totale_bottle=0
+    no_of_bottles=0
     for customer in customers:
-        totale_bottle+=customer['no_of_bottles'] 
+        if customer['no_of_bottles'] :
+            no_of_bottles = customer['no_of_bottles']
+        totale_bottle+=no_of_bottles
     return render(request, 'van_management/schedule_by_route.html', {
         'def_date':def_date,  
         'route':route, 
@@ -421,7 +424,8 @@ def find_customers(request, def_date, route_id):
                     buildings.append(client.customer.building_name)
     co = 0
     for cus in todays_customers:
-        co+=cus.no_of_bottles_required
+        if cus.no_of_bottles_required:
+            co+=cus.no_of_bottles_required
     # print(route,co)
     
     if not len(buildings) == 0:
@@ -444,7 +448,7 @@ def find_customers(request, def_date, route_id):
             gps_latitude = c.gps_latitude
             building_gps.append((building, gps_longitude, gps_latitude, bottle_count))
 
-        sorted_building_gps = sorted(building_gps, key=lambda x: (x[1], x[2]))
+        sorted_building_gps = sorted(building_gps, key=lambda x: (x[1] if x[1] is not None else '', x[2] if x[2] is not None else ''))
         sorted_buildings = [item[0] for item in sorted_building_gps]
         sorted_building_count = dict(sorted(building_count.items(), key=lambda item: item[1]))
 
@@ -452,12 +456,15 @@ def find_customers(request, def_date, route_id):
         trip_count = 1
         current_trip_bottle_count = 0
         trip_buildings = []
+        bottle_count = 0
         for building in sorted_buildings:
           
             for building_data in sorted_building_gps:
                 if building_data[0]==building:
                     building = building_data[0]
-                    bottle_count = building_data[3]
+                    if building_data[3]:
+                        bottle_count = building_data[3]
+                        
                     if current_trip_bottle_count + bottle_count > van_capacity:
                         trip_buildings = [building]
                         trip_count+=1
@@ -676,9 +683,12 @@ def excel_download(request, route_id, def_date, trip):
         'Type': [customer['customer_type'] for customer in customers],
         'Delivery Type': [customer['type'] for customer in customers]
     }
-    total_bottle = 0
+    total_bottle=0
+    no_of_bottles=0
     for customer in customers:
-        total_bottle+=customer['no_of_bottles']
+        if customer['no_of_bottles'] :
+            no_of_bottles = customer['no_of_bottles']
+        total_bottle+=no_of_bottles
     # Create DataFrame
     df = pd.DataFrame(data)
 
@@ -881,6 +891,9 @@ class VanStockList(View):
         requested_quantity=CustomerSupply.objects.all()
         issued=Staff_IssueOrders.objects.all()
         offload=OffloadVan.objects.all()
+        
+        morning_stock_count=0
+        evening_stock_count=0
         if request.user.is_authenticated and request.user.user_type == "Salesman":
             instances = instances.filter(van__salesman_id=request.user.id)
             van_stock = van_stock.filter(van__salesman_id=request.user.id)

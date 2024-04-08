@@ -716,7 +716,7 @@ def find_customers(request, def_date, route_id):
             building_gps.append((building, gps_longitude, gps_latitude, bottle_count))
 
             # Sort buildings based on GPS longitude and latitude
-        sorted_building_gps = sorted(building_gps, key=lambda x: (x[1], x[2]))
+        sorted_building_gps = sorted(building_gps, key=lambda x: (x[1] if x[1] is not None else '', x[2] if x[2] is not None else ''))
         sorted_buildings = [item[0] for item in sorted_building_gps]
         sorted_building_count = dict(sorted(building_count.items(), key=lambda item: item[1]))
 
@@ -2193,7 +2193,7 @@ class GetProductAPI(APIView):
 
     def get(self, request, *args, **kwargs):
         try:
-            product_names = ["5 Gallon", "Water Cooler", "Dispenser"]
+            product_names = ["5 Gallon", "Hot and  Cool", "Dispenser"]
             product_items = ProdutItemMaster.objects.filter(product_name__in=product_names)
             print('product_items',product_items)
             serializer = ProdutItemMasterSerializerr(product_items, many=True)          
@@ -2203,6 +2203,48 @@ class GetProductAPI(APIView):
             print(e, "error")
             return Response({"status": False, "data": str(e), "message": "Something went wrong!"})
 
+# class CustodyCustomItemAPI(APIView):
+#     authentication_classes = [BasicAuthentication]
+#     permission_classes = [IsAuthenticated]
+#     serializer_class = CustodyCustomItemSerializer
+
+#     def post(self, request, *args, **kwargs):
+#         try:
+#             customer_id = request.data['customer_id'] 
+#             product_id = request.data['product_id']
+#             serial_number = request.data['serialnumber']
+#             quantity = request.data['count']
+#             deposit_type = request.data['deposit_type'] 
+#             agreement_number = request.data['agreement_no']
+#             amount = request.data['amount']
+
+#             # Retrieve the ProdutItemMaster instance
+#             product_instance = get_object_or_404(ProdutItemMaster, id=product_id)
+
+#             # Create or retrieve CustodyCustom instance
+#             custody_custom, _ = CustodyCustom.objects.get_or_create(
+#                 customer_id=customer_id,
+#                 agreement_no=agreement_number,
+#                 deposit_type=deposit_type 
+#             )
+#             productinstance = CustodyCustomItems.objects.get( product=product_instance)
+#             if productinstance:
+#                 old_quantity = productinstance.quantity
+#                 new_qty = old_quantity + quantity
+#                 productinstance.quantity = new_qty
+#                 productinstance.save()
+#             else :
+
+#                 # Create CustodyCustomItems instance
+#                 custody_item = CustodyCustomItems.objects.create(
+#                     custody_custom=custody_custom,
+#                     product=product_instance,
+#                     amount=amount,
+#                     serialnumber=serial_number,
+#                     quantity=quantity
+#                 )
+
+
 class CustodyCustomItemAPI(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
@@ -2210,38 +2252,51 @@ class CustodyCustomItemAPI(APIView):
 
     def post(self, request, *args, **kwargs):
         try:
-            customer_id = request.data['customer_id'] 
+            customer_id = request.data['customer_id']
             product_id = request.data['product_id']
             serial_number = request.data['serialnumber']
             quantity = request.data['count']
-            deposit_type = request.data['deposit_type'] 
+            deposit_type = request.data['deposit_type']
             agreement_number = request.data['agreement_no']
             amount = request.data['amount']
 
-            # Retrieve the ProdutItemMaster instance
             product_instance = get_object_or_404(ProdutItemMaster, id=product_id)
 
-            # Create or retrieve CustodyCustom instance
             custody_custom, _ = CustodyCustom.objects.get_or_create(
                 customer_id=customer_id,
                 agreement_no=agreement_number,
                 deposit_type=deposit_type
             )
 
-            # Create CustodyCustomItems instance
-            custody_item = CustodyCustomItems.objects.create(
+            existing_custody_item = CustodyCustomItems.objects.filter(
                 custody_custom=custody_custom,
                 product=product_instance,
-                amount=amount,
-                serialnumber=serial_number,
-                quantity=quantity
-            )
+                serialnumber=serial_number
+            ).first()
+            print("existing_custody_item",existing_custody_item)
+
+            if existing_custody_item:
+                print("fdjygdjgghgghg")
+                # Update the quantity if the product already exists
+                existing_custody_item.quantity += quantity
+                existing_custody_item.save()
+                custody_item = existing_custody_item
+            else:
+                print("secndasssdddfff")
+                custody_item = CustodyCustomItems.objects.create(
+                    custody_custom=custody_custom,
+                    product=product_instance,
+                    amount=amount,
+                    serialnumber=serial_number,
+                    quantity=quantity
+                )
 
             serializer = self.serializer_class(custody_item)
             return Response({"status": True, "data": serializer.data, "message": "Data saved successfully!"})
         except Exception as e:
             print(e)
             return Response({"status": False, "message": str(e)})
+
 
 class supply_product(APIView):
     def get(self, request, *args, **kwargs):
@@ -2482,27 +2537,54 @@ class create_customer_supply(APIView):
             }
         return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['GET'])
-def customer_coupon_stock(request):
-    if (instances:=CustomerCouponStock.objects.all()).exists():
+# @api_view(['GET'])
+# def customer_coupon_stock(request):
+#     if (instances:=CustomerCouponStock.objects.all()).exists():
 
-        serializer = CustomerCouponStockSerializer(instances, many=True, context={"request": request})
+#         serializer = CustomerCouponStockSerializer(instances, many=True, context={"request": request})
 
-        status_code = status.HTTP_200_OK
-        response_data = {
-            "status": status_code,
-            "StatusCode": 6000,
-            "data": serializer.data,
-        }
-    else:
-        status_code = status.HTTP_400_BAD_REQUEST
-        response_data = {
-            "status": status_code,
-            "StatusCode": 6001,
-            "message": "No data",
-        }
+#         status_code = status.HTTP_200_OK
+#         response_data = {
+#             "status": status_code,
+#             "StatusCode": 6000,
+#             "data": serializer.data,
+#         }
+#     else:
+#         status_code = status.HTTP_400_BAD_REQUEST
+#         response_data = {
+#             "status": status_code,
+#             "StatusCode": 6001,
+#             "message": "No data",
+#         }
 
-    return Response(response_data, status_code)
+#     return Response(response_data, status_code)
+
+class customerCouponStock(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get(self, request, *args, **kwargs):
+        if (customers:=Customers.objects.filter(sales_staff=request.user)).exists():
+            route_id = request.GET.get("route_id")
+            
+            if route_id :
+                customers = customers.filter(routes__pk=route_id)
+                
+            serialized_data = CustomerCouponStockSerializer(customers, many=True)
+            
+            status_code = status.HTTP_200_OK
+            response_data = {
+                "status": status_code,
+                "StatusCode": 6000,
+                "data": serialized_data.data,
+            }
+        else:
+            status_code = status.HTTP_400_BAD_REQUEST
+            response_data = {
+                "status": status_code,
+                "StatusCode": 6001,
+                "message": "No data",
+            }
+        return Response(response_data, status_code)
 
 # class CustodyCustomItemListAPI(APIView):
 

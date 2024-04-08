@@ -106,7 +106,7 @@ urlpatterns = [
     path('fetch-coupon-data/', views.fetch_coupon),
     path('customer-coupon-recharge/', CustomerCouponRecharge.as_view()),
     
-    path('customer-coupon-stock/', views.customer_coupon_stock),
+    path('customer-coupon-stock/', customerCouponStock.as_view()),
     
     path('product-items/', views.product_items),
     path('staff_new_order_api/', Staff_New_Order.as_view()),
