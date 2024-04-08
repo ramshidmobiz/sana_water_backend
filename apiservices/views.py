@@ -2921,20 +2921,17 @@ class CollectionAPI(APIView):
         # Filter CustomerSupply objects based on the user
         collection = Customers.objects.filter(sales_staff=user)
 
-        if not collection.exists():
+        if collection.exists():
+            collection_serializer = CollectionCustomerSerializer(collection, many=True)
             return Response({
                 'status': True,
-                'message': 'No data exists for the user.',
-                'data': []
+                'data': collection_serializer.user
             }, status=status.HTTP_200_OK)
-
-        collection_serializer = CollectionCustomerSerializer(collection, many=True)
-
-        return Response({
-            'message': 'Data retrieved successfully.',
-            'user_id': user.id,
-            'data': collection_serializer.data,
-        }, status=400)
+        else:
+            return Response({
+                'status': False,
+                'message': 'No data found',
+            }, status=400)
 
 class AddCollectionPayment(APIView):
     authentication_classes = [BasicAuthentication]
