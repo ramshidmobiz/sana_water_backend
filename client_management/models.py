@@ -82,24 +82,24 @@ class CustomerReturnReason(models.Model):
         return str(self.pk)
     
 
-# class CustomerReturn(models.Model):
-#     retutn_id = models.CharField(max_length=100)
-#     customer = models.ForeignKey(Customers, on_delete=models.CASCADE,null=True,blank=True)
-#     product = models.ForeignKey(Product, on_delete=models.CASCADE,null=True,blank=True)
-#     count = models.IntegerField(blank=True,null=True)
-#     serialnumber = models.IntegerField(blank=True,null=True)
-#     amount = models.IntegerField(blank=True,null=True)
-#     deposit_form_number = models.CharField(max_length=100,default='')
+class CustomerReturn(models.Model):
+    retutn_id = models.CharField(max_length=100)
+    customer = models.ForeignKey(Customers, on_delete=models.CASCADE,null=True,blank=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE,null=True,blank=True)
+    count = models.IntegerField(blank=True,null=True)
+    serialnumber = models.IntegerField(blank=True,null=True)
+    amount = models.IntegerField(blank=True,null=True)
+    deposit_form_number = models.CharField(max_length=100,default='')
 
 
     
-#     class Meta:
-#         db_table = 'customer_return_items'
-#         verbose_name = ('Customer Return Items')
-#         verbose_name_plural = ('Customer Return Items')
+    class Meta:
+        db_table = 'customer_return_items'
+        verbose_name = ('Customer Return Items')
+        verbose_name_plural = ('Customer Return Items')
     
-#     def _str_(self):
-#         return str(self.pk)
+    def _str_(self):
+        return str(self.pk)
     
 
 def generate_pay_order(request, custody_item_id):
