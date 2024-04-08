@@ -29,9 +29,9 @@ urlpatterns = [
 
     
     path('collectionreport', collectionreport, name='collectionreport'),
-    path('dailycollectionreport', dailycollectionreport, name='dailycollectionreport'),
+    # path('dailycollectionreport', dailycollectionreport, name='dailycollectionreport'),
     path('collection_report_excel/', collection_report_excel, name='collection_report_excel'),
-    path('daily_collection_report_excel/', daily_collection_report_excel, name='daily_collection_report_excel'),
+    # path('daily_collection_report_excel/', daily_collection_report_excel, name='daily_collection_report_excel'),
 
     # path('create-sale/', SaleEntryCreateView.as_view(), name='create_sale'),
     # path('create-sales-entry/', SalesEntryCreateView.as_view(), name='initiate_sale'),

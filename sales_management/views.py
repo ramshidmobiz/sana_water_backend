@@ -1088,177 +1088,177 @@ def download_salesreport_excel(request):
     return response
 
 #------------------Collection Report-------------------------                
-def collectionreport(request):
-    start_date = None
-    end_date = None
-    selected_date = None
-    selected_route_id = None
-    selected_route = None
-    template = 'sales_management/collection_report.html'
-    colectionpayment = CollectionPayment.objects.all()
+# def collectionreport(request):
+#     start_date = None
+#     end_date = None
+#     selected_date = None
+#     selected_route_id = None
+#     selected_route = None
+#     template = 'sales_management/collection_report.html'
+#     colectionpayment = CollectionPayment.objects.all()
     
-    routes = RouteMaster.objects.all()
-    route_counts = {}
-    today = datetime.today()
+#     routes = RouteMaster.objects.all()
+#     route_counts = {}
+#     today = datetime.today()
     
-    if request.method == 'POST':
-        start_date = request.POST.get('start_date')
-        end_date = request.POST.get('end_date')
-        selected_date = request.POST.get('date')
-        selected_route_id = request.POST.get('selected_route_id')
-        if start_date and end_date:
-            colectionpayment = colectionpayment.filter(customer_supply__created_date__range=[start_date, end_date])
-        elif selected_date:
-            colectionpayment = colectionpayment.filter(customer_supply__created_date=selected_date)
+#     if request.method == 'POST':
+#         start_date = request.POST.get('start_date')
+#         end_date = request.POST.get('end_date')
+#         selected_date = request.POST.get('date')
+#         selected_route_id = request.POST.get('selected_route_id')
+#         if start_date and end_date:
+#             colectionpayment = colectionpayment.filter(customer_supply__created_date__range=[start_date, end_date])
+#         elif selected_date:
+#             colectionpayment = colectionpayment.filter(customer_supply__created_date=selected_date)
         
-        if selected_route_id:
-            selected_route = RouteMaster.objects.get(id=selected_route_id)
-            colectionpayment = colectionpayment.filter(customer__routes__route_name=selected_route)
+#         if selected_route_id:
+#             selected_route = RouteMaster.objects.get(id=selected_route_id)
+#             colectionpayment = colectionpayment.filter(customer__routes__route_name=selected_route)
     
-    # /
+#     # /
     
-    context = {
-        'colectionpayment': colectionpayment, 
-        'routes': routes, 
-        'route_counts': route_counts, 
-        'today': today,
-        'start_date': start_date, 
-        'end_date': end_date, 
-        'selected_date': selected_date, 
-        'selected_route_id': selected_route_id, 
-        'selected_route': selected_route,
+#     context = {
+#         'colectionpayment': colectionpayment, 
+#         'routes': routes, 
+#         'route_counts': route_counts, 
+#         'today': today,
+#         'start_date': start_date, 
+#         'end_date': end_date, 
+#         'selected_date': selected_date, 
+#         'selected_route_id': selected_route_id, 
+#         'selected_route': selected_route,
         
-    }
-    return render(request, template, context)
+#     }
+#     return render(request, template, context)
 
 
 
-def collection_report_excel(request):
-    instances = CollectionPayment.objects.all()
-    route_filter = request.GET.get('route_name')
-    start_date_str = request.GET.get('start_date')
-    end_date_str = request.GET.get('end_date')
+# def collection_report_excel(request):
+#     instances = CollectionPayment.objects.all()
+#     route_filter = request.GET.get('route_name')
+#     start_date_str = request.GET.get('start_date')
+#     end_date_str = request.GET.get('end_date')
     
-    if start_date_str and end_date_str:
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-        instances = instances.filter(customer__customer_supply__created_date__range=[start_date, end_date])
+#     if start_date_str and end_date_str:
+#         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+#         end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+#         instances = instances.filter(customer__customer_supply__created_date__range=[start_date, end_date])
     
-    print('route_filter :', route_filter)
-    if route_filter and route_filter != '' and route_filter != 'None':
-        instances = instances.filter(routes__route_name=route_filter)
+#     print('route_filter :', route_filter)
+#     if route_filter and route_filter != '' and route_filter != 'None':
+#         instances = instances.filter(routes__route_name=route_filter)
 
-    route_li = RouteMaster.objects.all()
-    serial_number = 1
-    for customer in instances:
-        customer.serial_number = serial_number
-        serial_number += 1
-    data = {
-        'Serial Number': [customer.serial_number for customer in instances],
-        'Date': [customer.customer_supply.created_date.date() for customer in instances],
-        'Customer name': [customer.customer.customer_name for customer in instances],
-        'Mobile No': [customer.customer.mobile_no for customer in instances],
-        'Route': [customer.customer.routes.route_name if customer.customer.routes else '' for customer in instances],
-        'Building Name': [customer.customer.building_name for customer in instances],
-        'House No': [customer.customer.door_house_no if customer.customer.door_house_no else 'Nil' for customer in instances],
-        'Receipt No/Reference No': [customer.customer_supply.reference_number for customer in instances],
-        'Amount': [customer.amount for customer in instances],
-        'Mode of Payment': [customer.payment_method for customer in instances],
+#     route_li = RouteMaster.objects.all()
+#     serial_number = 1
+#     for customer in instances:
+#         customer.serial_number = serial_number
+#         serial_number += 1
+#     data = {
+#         'Serial Number': [customer.serial_number for customer in instances],
+#         'Date': [customer.customer_supply.created_date.date() for customer in instances],
+#         'Customer name': [customer.customer.customer_name for customer in instances],
+#         'Mobile No': [customer.customer.mobile_no for customer in instances],
+#         'Route': [customer.customer.routes.route_name if customer.customer.routes else '' for customer in instances],
+#         'Building Name': [customer.customer.building_name for customer in instances],
+#         'House No': [customer.customer.door_house_no if customer.customer.door_house_no else 'Nil' for customer in instances],
+#         'Receipt No/Reference No': [customer.customer_supply.reference_number for customer in instances],
+#         'Amount': [customer.amount for customer in instances],
+#         'Mode of Payment': [customer.payment_method for customer in instances],
 
-    }
-    df = pd.DataFrame(data)
+#     }
+#     df = pd.DataFrame(data)
 
-    buffer = BytesIO()
-    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-        df.to_excel(writer, sheet_name='Sheet1', index=False, startrow=4)
-        workbook = writer.book
-        worksheet = writer.sheets['Sheet1']
-        table_border_format = workbook.add_format({'border':1})
-        worksheet.conditional_format(4, 0, len(df.index)+4, len(df.columns) - 1, {'type':'cell', 'criteria': '>', 'value':0, 'format':table_border_format})
-        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 16, 'border': 1})
-        worksheet.merge_range('A1:J2', f'National Water', merge_format)
-        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
-        worksheet.merge_range('A3:J3', f'    Collection Report   ', merge_format)
-        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
-        worksheet.merge_range('A4:J4', '', merge_format)
+#     buffer = BytesIO()
+#     with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+#         df.to_excel(writer, sheet_name='Sheet1', index=False, startrow=4)
+#         workbook = writer.book
+#         worksheet = writer.sheets['Sheet1']
+#         table_border_format = workbook.add_format({'border':1})
+#         worksheet.conditional_format(4, 0, len(df.index)+4, len(df.columns) - 1, {'type':'cell', 'criteria': '>', 'value':0, 'format':table_border_format})
+#         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 16, 'border': 1})
+#         worksheet.merge_range('A1:J2', f'National Water', merge_format)
+#         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
+#         worksheet.merge_range('A3:J3', f'    Collection Report   ', merge_format)
+#         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
+#         worksheet.merge_range('A4:J4', '', merge_format)
     
-    filename = f"Collection Report.xlsx"
-    response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'inline; filename = "{filename}"'
-    return response
+#     filename = f"Collection Report.xlsx"
+#     response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+#     response['Content-Disposition'] = f'inline; filename = "{filename}"'
+#     return response
 
 
-def dailycollectionreport(request):
-    instances = CollectionPayment.objects.all()
-    route_filter = request.GET.get('route_name')
-    start_date_str = request.GET.get('start_date')
+# def dailycollectionreport(request):
+#     instances = CollectionPayment.objects.all()
+#     route_filter = request.GET.get('route_name')
+#     start_date_str = request.GET.get('start_date')
 
-    if start_date_str :
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-        instances = instances.filter(created_date__range=start_date)
-    if route_filter:
-            instances = instances.filter(routes__route_name=route_filter)
-    route_li = RouteMaster.objects.all()
+#     if start_date_str :
+#         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+#         instances = instances.filter(created_date__range=start_date)
+#     if route_filter:
+#             instances = instances.filter(routes__route_name=route_filter)
+#     route_li = RouteMaster.objects.all()
     
-    context = {'instances': instances,'route_li':route_li}
-    return render(request, 'sales_management/daily_collection_report.html', context)
+#     context = {'instances': instances,'route_li':route_li}
+#     return render(request, 'sales_management/daily_collection_report.html', context)
 
 
-def daily_collection_report_excel(request):
-    instances = CollectionPayment.objects.all()
-    route_filter = request.GET.get('route_name')
-    start_date_str = request.GET.get('start_date')
+# def daily_collection_report_excel(request):
+#     instances = CollectionPayment.objects.all()
+#     route_filter = request.GET.get('route_name')
+#     start_date_str = request.GET.get('start_date')
     
-    if start_date_str :
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-        instances = instances.filter(customer__customer_supply__created_date__range=start_date)
+#     if start_date_str :
+#         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+#         instances = instances.filter(customer__customer_supply__created_date__range=start_date)
     
-    print('route_filter :', route_filter)
-    if route_filter and route_filter != '' and route_filter != 'None':
-        instances = instances.filter(routes__route_name=route_filter)
+#     print('route_filter :', route_filter)
+#     if route_filter and route_filter != '' and route_filter != 'None':
+#         instances = instances.filter(routes__route_name=route_filter)
 
-    route_li = RouteMaster.objects.all()
-    serial_number = 1
-    for customer in instances:
-        customer.serial_number = serial_number
-        serial_number += 1
-    data = {
-        'Serial Number': [customer.serial_number for customer in instances],
-        'Customer name': [customer.customer.customer_name for customer in instances],
-        'Mobile No': [customer.customer.mobile_no for customer in instances],
-        'Route': [customer.customer.routes.route_name if customer.customer.routes else '' for customer in instances],
-        'Building Name': [customer.customer.building_name for customer in instances],
-        'House No': [customer.customer.door_house_no if customer.customer.door_house_no else 'Nil' for customer in instances],
-        'Receipt No/Reference No': [customer.customer_supply.reference_number for customer in instances],
-        'Amount': [customer.amount for customer in instances],
-        'Mode of Payment': [customer.payment_method for customer in instances],
-        'Invoice': [customer.invoice.invoice_no for customer in instances],
-        'Invoice Reference No': [customer.invoice.reference_no  for customer in instances],
+#     route_li = RouteMaster.objects.all()
+#     serial_number = 1
+#     for customer in instances:
+#         customer.serial_number = serial_number
+#         serial_number += 1
+#     data = {
+#         'Serial Number': [customer.serial_number for customer in instances],
+#         'Customer name': [customer.customer.customer_name for customer in instances],
+#         'Mobile No': [customer.customer.mobile_no for customer in instances],
+#         'Route': [customer.customer.routes.route_name if customer.customer.routes else '' for customer in instances],
+#         'Building Name': [customer.customer.building_name for customer in instances],
+#         'House No': [customer.customer.door_house_no if customer.customer.door_house_no else 'Nil' for customer in instances],
+#         'Receipt No/Reference No': [customer.customer_supply.reference_number for customer in instances],
+#         'Amount': [customer.amount for customer in instances],
+#         'Mode of Payment': [customer.payment_method for customer in instances],
+#         'Invoice': [customer.invoice.invoice_no for customer in instances],
+#         'Invoice Reference No': [customer.invoice.reference_no  for customer in instances],
 
 
-    }
-    df = pd.DataFrame(data)
+#     }
+#     df = pd.DataFrame(data)
 
-    buffer = BytesIO()
-    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-        df.to_excel(writer, sheet_name='Sheet1', index=False, startrow=4)
-        workbook = writer.book
-        worksheet = writer.sheets['Sheet1']
-        table_border_format = workbook.add_format({'border':1})
-        worksheet.conditional_format(4, 0, len(df.index)+4, len(df.columns) - 1, {'type':'cell', 'criteria': '>', 'value':0, 'format':table_border_format})
-        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 16, 'border': 1})
-        worksheet.merge_range('A1:J2', f'National Water', merge_format)
-        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
-        worksheet.merge_range('A3:J3', f'    Daily Collection Report   ', merge_format)
-        # worksheet.merge_range('E3:H3', f'Date: {def_date}', merge_format)
-        # worksheet.merge_range('I3:M3', f'Total bottle: {total_bottle}', merge_format)
-        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
-        worksheet.merge_range('A4:J4', '', merge_format)
+#     buffer = BytesIO()
+#     with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+#         df.to_excel(writer, sheet_name='Sheet1', index=False, startrow=4)
+#         workbook = writer.book
+#         worksheet = writer.sheets['Sheet1']
+#         table_border_format = workbook.add_format({'border':1})
+#         worksheet.conditional_format(4, 0, len(df.index)+4, len(df.columns) - 1, {'type':'cell', 'criteria': '>', 'value':0, 'format':table_border_format})
+#         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 16, 'border': 1})
+#         worksheet.merge_range('A1:J2', f'National Water', merge_format)
+#         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
+#         worksheet.merge_range('A3:J3', f'    Daily Collection Report   ', merge_format)
+#         # worksheet.merge_range('E3:H3', f'Date: {def_date}', merge_format)
+#         # worksheet.merge_range('I3:M3', f'Total bottle: {total_bottle}', merge_format)
+#         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
+#         worksheet.merge_range('A4:J4', '', merge_format)
     
-    filename = f"Daily Collection Report.xlsx" 
-    response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'inline; filename = "{filename}"'
-    return response
+#     filename = f"Daily Collection Report.xlsx" 
+#     response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+#     response['Content-Disposition'] = f'inline; filename = "{filename}"'
+#     return response
 
 #------------------Product-Route wise sales report
 
@@ -1270,6 +1270,8 @@ def product_route_salesreport(request):
     selected_product_id = None
     selected_product = None
     template = 'sales_management/product_route_salesreport.html'
+    routes = RouteMaster.objects.all()
+
     customersupplyitems = CustomerSupplyItems.objects.all()
     # print("customersupplyitems",customersupplyitems)
     products = ProdutItemMaster.objects.all()
@@ -1303,6 +1305,21 @@ def product_route_salesreport(request):
     print("total_quantity",total_quantity)
     total_amount = customersupplyitems.aggregate(total_amount=Sum('amount'))['total_amount']
     print("total_amount",total_amount)
+
+    # Initialize dictionary to store routes for each salesman
+    salesman_routes = {}
+
+    # Get route for each salesman
+    for route in routes:
+        van_route = Van_Routes.objects.filter(routes=route).first()
+        if van_route and van_route.van:
+            salesman = van_route.van.salesman
+            print("salesman",salesman)
+            # Check if salesman exists in CustomerSupply
+            if CustomerSupplyItems.objects.filter(customer_supply__salesman=salesman).exists():
+                print("")
+                salesman_routes[salesman.username] = route.route_name
+            print("salesman_routes",salesman_routes)
     context = {
         'customersupplyitems': customersupplyitems, 
         'products': products, 
@@ -1315,6 +1332,7 @@ def product_route_salesreport(request):
         'selected_product': selected_product,
         'total_quantity': total_quantity,
         'total_amount': total_amount,
+        'salesman_routes':salesman_routes,
     }
     return render(request, template, context)
 
@@ -1323,6 +1341,9 @@ def product_route_salesreport_detail_view(request, customersupplyitem_id):
     return render(request, 'sales_management/product_route_salesreport_detail.html', {'customersupplyitem': customersupplyitem}) 
 
 def print_product_sales(request):
+    # Retrieve sales Route data
+    routes = RouteMaster.objects.all()
+
     # Retrieve sales report data
     customer_supplies = CustomerSupplyItems.objects.all()
     # Check if customer_supplies is not empty
@@ -1337,11 +1358,25 @@ def print_product_sales(request):
         data = []
 
         # Add headers
-        headers = ['Sl No', 'Salesman', 'Customer Name', 'Product', 'Quantity', 'Amount']
+        headers = ['Sl No','Ref/Invoice No','Route', 'Salesman', 'Customer Name', 'Product', 'Quantity', 'Amount']
         data.append(headers)
 
         total_quantity = 0
         total_amount = 0
+    # Initialize dictionary to store routes for each salesman
+    salesman_routes = {}
+
+    # Get route for each salesman
+    for route in routes:
+        van_route = Van_Routes.objects.filter(routes=route).first()
+        if van_route and van_route.van:
+            salesman = van_route.van.salesman
+            print("salesman",salesman)
+            # Check if salesman exists in CustomerSupply
+            if CustomerSupplyItems.objects.filter(customer_supply__salesman=salesman).exists():
+                print("")
+                salesman_routes[salesman.username] = route.route_name
+            print("salesman_routes",salesman_routes)
 
         # Add data to the PDF document
         sl_no = 1
@@ -1349,6 +1384,8 @@ def print_product_sales(request):
             # Append data for each supply
             data.append([
                 sl_no,
+                supply.customer_supply.reference_number,
+                salesman_routes.get(supply.customer_supply.salesman.username, 'Not Assigned'),  # Route
                 supply.customer_supply.salesman.username,
                 supply.customer_supply.customer.customer_name,
                 supply.product,
@@ -1361,7 +1398,7 @@ def print_product_sales(request):
             sl_no += 1
 
         # Add footer with total quantity and amount
-        footer = ['Total', '', '', '', total_quantity, total_amount]
+        footer = ['Total', '', '', '','','', total_quantity, total_amount]
         data.append(footer)
 
         table = Table(data)
@@ -1390,6 +1427,21 @@ def print_product_sales(request):
 def download_product_sales_excel(request):
     # Retrieve sales report data
     customer_supplies = CustomerSupplyItems.objects.all()
+    # Retrieve routes 
+
+    routes = RouteMaster.objects.all()
+
+    # Initialize dictionary to store routes for each salesman
+    salesman_routes = {}
+
+    # Get route for each salesman
+    for route in routes:
+        van_route = Van_Routes.objects.filter(routes=route).first()
+        if van_route and van_route.van:
+            salesman = van_route.van.salesman
+            # Check if salesman exists in CustomerSupply
+            if CustomerSupplyItems.objects.filter(customer_supply__salesman=salesman).exists():
+                salesman_routes[salesman.username] = route.route_name
 
     # Create the HttpResponse object with Excel content type and attachment filename
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -1403,24 +1455,26 @@ def download_product_sales_excel(request):
     bold_format = workbook.add_format({'bold': True})
 
     # Write headers
-    headers = ['Sl No', 'Salesman', 'Customer Name', 'Product', 'Quantity', 'Amount']
+    headers = ['Sl No','Ref/Invoice No','Route', 'Salesman', 'Customer Name', 'Product', 'Quantity', 'Amount']
     for col, header in enumerate(headers):
         worksheet.write(0, col, header, bold_format)
 
     # Write data rows
     for row, supply in enumerate(customer_supplies, start=1):
         worksheet.write(row, 0, row)  # Sl No
-        worksheet.write(row, 1, supply.customer_supply.salesman.username)  # Salesman
-        worksheet.write(row, 2, supply.customer_supply.customer.customer_name)  # Customer Name
-        worksheet.write(row, 3, supply.product.product_name)  # Product
-        worksheet.write(row, 4, supply.quantity)  # Quantity
-        worksheet.write(row, 5, supply.amount)  # Amount
+        worksheet.write(row, 1, supply.customer_supply.reference_number)  # reference number
+        worksheet.write(row, 2, salesman_routes.get(supply.customer_supply.salesman.username, 'Not Assigned'))  # Route
+        worksheet.write(row, 3, supply.customer_supply.salesman.username)  # Salesman
+        worksheet.write(row, 4, supply.customer_supply.customer.customer_name)  # Customer Name
+        worksheet.write(row, 5, supply.product.product_name)  # Product
+        worksheet.write(row, 6, supply.quantity)  # Quantity
+        worksheet.write(row, 7, supply.amount)  # Amount
 
     # Calculate and write total quantity and amount
     total_quantity = sum(supply.quantity for supply in customer_supplies)
     total_amount = sum(supply.amount for supply in customer_supplies)
-    worksheet.write(len(customer_supplies) + 1, 4, total_quantity, bold_format)  # Total Quantity
-    worksheet.write(len(customer_supplies) + 1, 5, total_amount, bold_format)  # Total Amount
+    worksheet.write(len(customer_supplies) + 1, 6, total_quantity, bold_format)  # Total Quantity
+    worksheet.write(len(customer_supplies) + 1, 7, total_amount, bold_format)  # Total Amount
 
     # Close the workbook
     workbook.close()
@@ -1691,4 +1745,48 @@ def customerSales_Excel_report(request):
     workbook.close()
 
     return response
+#------------------Collection Report-------------------------                
 
+def collectionreport(request):
+    # Retrieve collection payments along with related fields
+    collection_payments = CollectionItems.objects.select_related('invoice','collection_payment__customer', 'collection_payment__customer__routes').all()
+
+    context = {
+        'collection_payments': collection_payments
+    }
+
+    return render(request, 'sales_management/collection_report.html', context)
+
+def collection_report_excel(request):
+    instances = CollectionItems.objects.all()
+    data = {
+        # 'Date': [instance.collection_payment.created_date.date() for instance in instances],
+        'Customer name': [instance.collection_payment.customer.customer_name for instance in instances],
+        'Mobile No': [instance.collection_payment.customer.mobile_no for instance in instances],
+        'Route': [instance.collection_payment.customer.routes.route_name if instance.collection_payment.customer.routes else '' for instance in instances],
+        'Building Name': [instance.collection_payment.customer.building_name for instance in instances],
+        'House No': [instance.collection_payment.customer.door_house_no if instance.collection_payment.customer.door_house_no else 'Nil' for instance in instances],
+        'Receipt No/Reference No': [instance.invoice.reference_no for instance in instances],
+        'Amount': [instance.amount for instance in instances],
+        'Mode of Payment': [instance.collection_payment.payment_method for instance in instances],
+    }
+    df = pd.DataFrame(data)
+
+    buffer = BytesIO()
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='Sheet1', index=False, startrow=4)
+        workbook = writer.book
+        worksheet = writer.sheets['Sheet1']
+        table_border_format = workbook.add_format({'border':1})
+        worksheet.conditional_format(4, 0, len(df.index)+4, len(df.columns) - 1, {'type':'cell', 'criteria': '>', 'value':0, 'format':table_border_format})
+        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 16, 'border': 1})
+        worksheet.merge_range('A1:J2', f'National Water', merge_format)
+        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
+        worksheet.merge_range('A3:J3', f'    Collection Report   ', merge_format)
+        merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
+        worksheet.merge_range('A4:J4', '', merge_format)
+    
+    filename = f"Collection Report.xlsx"
+    response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'inline; filename = "{filename}"'
+    return response
