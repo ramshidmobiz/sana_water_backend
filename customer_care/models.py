@@ -41,7 +41,7 @@ class DiffBottlesModel(models.Model):
         ordering = ('request_type',)
 
     def __str__(self):
-        return str(self.customer)
+        return str(self.customer_id)
 class OtherRequirementModel(models.Model):
     requirement_id   = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     request_type = models.ForeignKey(RequestTypeMaster,on_delete=models.SET_NULL, null=True, blank=True)

@@ -74,13 +74,11 @@
                                     <td>{{ bottle.delivery_date.date }}</td>
                                     <td>{{ bottle.customer.routes.route_name }}</td>
                                     <td>{{ bottle.customer.sales_staff }}</td>
-                                    <td>{{ bottle.status}}</td> 
+                                    <td>{{ bottle.status}}</td>
+                                    
                                     <td>
-                                        <a href="" id="issueQuantityButton" aria-label="anchor" class="btn btn-primary-light btn-sm" data-bs-toggle="tooltip" data-bs-original-title="Reassign" onclick="disableButton(this)"><span class="bi bi-plus-circle fs-14"></span> Reassign</a>
-
-                                            {% comment %} <a href="{% url 'reassign_request' bottle.diffbottles_id %}">Reassign</a> {% endcomment %}
-                                    </td>
-                                    <td>
+                                        <a href="{% url 'reassign_request' bottle.diffbottles_id  %}" aria-label="anchor" class="btn btn-primary-light btn-sm"><span class="bi bi-plus-circle fs-14"></span>Reassign</a> 
+                                    </td> 
                                         <a href="{% url 'cancel_request' bottle.diffbottles_id %}" onclick="return confirm('Are you sure you want to cancel this request?')">Cancel</a>
                                     </td>
 
