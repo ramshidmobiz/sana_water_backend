@@ -17,7 +17,7 @@ from master.functions import generate_form_errors
 from master.models import RouteMaster
 from accounts.models import Customers
 from credit_note.forms import CreditNoteForm, CreditNoteItemsForm
-from credit_note.models import CreditNote, CreditNoteItems
+# from credit_note.models import CreditNote, CreditNoteItems
 
 @login_required
 def credit_note_info(request,pk):
@@ -26,10 +26,10 @@ def credit_note_info(request,pk):
     :param request:
     :return: credit_note single view
     """
-    instance = CreditNote.objects.get(pk=pk,is_deleted=False)
+    # instance = CreditNote.objects.get(pk=pk,is_deleted=False)
     
     context = {
-        'instance': instance,
+        # 'instance': instance,
         'page_name' : 'CreditNote',
         'page_title' : 'CreditNote',
         'is_credit_note': True,
@@ -45,7 +45,7 @@ def credit_note_list(request):
     :return: CreditNotes list view
     """
     
-    instances = CreditNote.objects.filter(is_deleted=False).order_by("-created_date")
+    instances = {}
          
     date_range = ""
     date_range = request.GET.get('date_range')
