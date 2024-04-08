@@ -1756,7 +1756,9 @@ class Staff_New_Order(APIView):
                     serializer_2 = self.staff_order_details_serializer(data=order_details_data, many=True)
 
                     if serializer_2.is_valid(raise_exception=True):
-                        serializer_2.save()
+                        serializer_2.save(
+                            created_by=request.user.id
+                        )
                         return Response({'status': True, 'message': 'Order Placed Successfully'}, status=status.HTTP_201_CREATED)
                     else:
                         return Response({'status': False, 'message': serializer_2.errors}, status=status.HTTP_400_BAD_REQUEST)

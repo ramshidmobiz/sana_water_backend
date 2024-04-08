@@ -468,10 +468,12 @@ def staffIssueOrdersCreate(request, staff_order_details_id):
                         )
                         
                         if VanProductStock.objects.filter(product=issue.product_id,stock_type='opening_stock',van=van).exists():
+                            print("excist")
                             van_product_stock = VanProductStock.objects.get(product=issue.product_id,stock_type='opening_stock',van=van)
                             van_product_stock.count += int(quantity_issued)
                             van_product_stock.save()
                         else:
+                            print("excist")
                             van_product_stock = VanProductStock.objects.create(
                                 product=issue.product_id,
                                 stock_type='opening_stock',
