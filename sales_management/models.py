@@ -150,6 +150,8 @@ class CollectionPayment(models.Model):
     customer = models.ForeignKey(Customers, on_delete=models.CASCADE)
     salesman = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
     amount_received = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+    created_date = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey('accounts.CustomUser', on_delete=models.SET_NULL,null=True, blank=True)
 
     class Meta:
         ordering = ('-id',)

@@ -2925,7 +2925,7 @@ class CollectionAPI(APIView):
             collection_serializer = CollectionCustomerSerializer(collection, many=True)
             return Response({
                 'status': True,
-                'data': collection_serializer.user
+                'data': collection_serializer.data
             }, status=status.HTTP_200_OK)
         else:
             return Response({
