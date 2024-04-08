@@ -26,10 +26,10 @@ def credit_note_info(request,pk):
     :param request:
     :return: credit_note single view
     """
-    # instance = CreditNote.objects.get(pk=pk,is_deleted=False)
+    instance = CreditNote.objects.get(pk=pk,is_deleted=False)
     
     context = {
-        # 'instance': instance,
+        'instance': instance,
         'page_name' : 'CreditNote',
         'page_title' : 'CreditNote',
         'is_credit_note': True,
@@ -45,7 +45,7 @@ def credit_note_list(request):
     :return: CreditNotes list view
     """
     
-    instances = {}
+    instances = CreditNote.objects.filter(is_deleted=False).order_by("-created_date")
          
     date_range = ""
     date_range = request.GET.get('date_range')
