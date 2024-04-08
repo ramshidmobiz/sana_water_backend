@@ -258,17 +258,18 @@ class CustodyCustomForm(forms.ModelForm):
         }
 
 class CustodyCustomItemForm(forms.ModelForm):
+    pass
 
-    class Meta:
-        model = CustodyCustomItems
-        fields = ['product', 'quantity', 'serialnumber', 'amount']
+    # class Meta:
+    #     model = CustodyCustomItems
+    #     fields = ['product', 'quantity', 'serialnumber', 'amount']
         
-        widgets = {
-            'product': forms.Select(attrs={'class': 'form-control', 'required': True,}),
-            'quantity': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter QTY'}),
-            'serialnumber': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Serial Number'}),
-            'amount': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Amount'}),
-        }
+    #     widgets = {
+    #         'product': forms.Select(attrs={'class': 'form-control', 'required': True,}),
+    #         'quantity': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter QTY'}),
+    #         'serialnumber': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Serial Number'}),
+    #         'amount': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Amount'}),
+    #     }
 
 
 #------------------- Customer Supply

@@ -10,7 +10,7 @@ import json
 from django.core.serializers import serialize
 from django.views import View
 from datetime import datetime
-from client_management.models import CustodyCustomItems
+# from client_management.models import CustodyCustomItems
 from master.forms import *
 # Create your views here.
 from accounts.models import Customers
