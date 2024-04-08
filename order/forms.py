@@ -126,25 +126,25 @@ class OrderForm(forms.ModelForm):
         self.fields['salesman'].queryset = CustomUser.objects.filter(user_type='Salesman')
         self.fields['route'].queryset = RouteMaster.objects.all()
         self.fields['product'].queryset = Product.objects.all()
-    # class Meta:
-    #     model = Order
-    #     fields = ['driver', 'route', 'product', 'quantity', 'salesman', 'order_date']
-    #     widgets = {
-    #         'driver': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-    #         'route': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-    #         'product': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-    #         'salesman': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-    #         'order_date': forms.DateInput(attrs={'class': 'form-control', 'required': 'true', 'type': 'date'}),
-    #         'quantity': forms.TextInput(attrs={'class': 'form-control', 'required': 'true','type': 'number',}),
-    #     }
+    class Meta:
+        model = Order
+        fields = ['driver', 'route', 'product', 'quantity', 'salesman', 'order_date']
+        widgets = {
+            'driver': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+            'route': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+            'product': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+            'salesman': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
+            'order_date': forms.DateInput(attrs={'class': 'form-control', 'required': 'true', 'type': 'date'}),
+            'quantity': forms.TextInput(attrs={'class': 'form-control', 'required': 'true','type': 'number',}),
+        }
 
 class OrderUpdateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-    # class Meta:
-    #     model = Order
-    #     fields = ['quantity', 'order_date']
-    #     widgets = {
-    #         'order_date': forms.DateInput(attrs={'class': 'form-control', 'required': 'true', 'type': 'date'}),
-    #         'quantity': forms.TextInput(attrs={'class': 'form-control', 'required': 'true','type': 'number',}),
-    #     }
+    class Meta:
+        model = Order
+        fields = ['quantity', 'order_date']
+        widgets = {
+            'order_date': forms.DateInput(attrs={'class': 'form-control', 'required': 'true', 'type': 'date'}),
+            'quantity': forms.TextInput(attrs={'class': 'form-control', 'required': 'true','type': 'number',}),
+        }
