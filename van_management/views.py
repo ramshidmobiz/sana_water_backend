@@ -917,7 +917,7 @@ class VanStockList(View):
         context = {'van_stock': van_stock, 'van_coupon_counts': van_coupon_counts,
                    'issued':issued,'morning_stock_count': morning_stock_count,
             'evening_stock_count': evening_stock_count}
-        return render(request, 'van_management/vanstock.html', context)
+        return render(request, 'van_management/vanstock_list.html', context)
     
 def offload(request):
     van_stock = VanProductStock.objects.all()

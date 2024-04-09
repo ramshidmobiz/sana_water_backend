@@ -430,8 +430,8 @@ def staffIssueOrdersCreate(request, staff_order_details_id):
     if request.method == 'POST':
         form = StaffIssueOrdersForm(request.POST)
         if form.is_valid():
-            # try:
-            #     with transaction.atomic():
+            try:
+                with transaction.atomic():
                     quantity_issued = form.cleaned_data.get('quantity_issued')
                     if 0 < int(quantity_issued) <= int(product_stock.quantity):
                         # Creating Staff Issue Order
@@ -444,6 +444,7 @@ def staffIssueOrdersCreate(request, staff_order_details_id):
                         data.product_id = issue.product_id
                         data.staff_Orders_details_id = issue
                         data.stock_quantity = stock_quantity
+                        data.quantity_issued = int(data.quantity_issued) + int(quantity_issued)
                         data.van = van
                         data.save()
                         
@@ -481,7 +482,7 @@ def staffIssueOrdersCreate(request, staff_order_details_id):
                                 count=int(quantity_issued)
                                 )
                         
-                        issue.issued_qty = quantity_issued
+                        issue.issued_qty += int(quantity_issued)
                         issue.save()
                         
                         response_data = {
@@ -497,21 +498,21 @@ def staffIssueOrdersCreate(request, staff_order_details_id):
                             "title": "Failed",
                             "message": f"No stock available in {product_stock.product_name}, only {product_stock.quantity} left",
                         }
-            # except IntegrityError as e:
-            #     # Handle database integrity error
-            #     response_data = {
-            #         "status": "false",
-            #         "title": "Failed",
-            #         "message": str(e),
-            #     }
+            except IntegrityError as e:
+                # Handle database integrity error
+                response_data = {
+                    "status": "false",
+                    "title": "Failed",
+                    "message": str(e),
+                }
 
-            # except Exception as e:
-            #     # Handle other exceptions
-            #     response_data = {
-            #         "status": "false",
-            #         "title": "Failed",
-            #         "message": str(e),
-            #     }
+            except Exception as e:
+                # Handle other exceptions
+                response_data = {
+                    "status": "false",
+                    "title": "Failed",
+                    "message": str(e),
+                }
         else:
             message = generate_form_errors(form, formset=False)
             response_data = {
