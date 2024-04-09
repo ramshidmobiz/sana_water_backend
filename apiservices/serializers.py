@@ -796,3 +796,8 @@ class CustodyCustomItemsSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustodyCustomItems
         fields = ['id', 'custody_custom', 'product', 'product_name', 'quantity', 'serialnumber', 'amount']
+        
+class CollectionCustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CouponType
+        fields = ['coupon_type_id','coupon_type_name','no_of_leaflets','valuable_leaflets','free_leaflets']

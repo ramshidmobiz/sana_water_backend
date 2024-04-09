@@ -3001,3 +3001,20 @@ class AddCollectionPayment(APIView):
                 break
         
         return Response({"message": "Collection payment saved successfully."}, status=status.HTTP_201_CREATED)
+    
+class CouponTypesAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        
+        if not user:
+            return Response({'status': False,'message': 'User ID is required!'}, status=status.HTTP_400_BAD_REQUEST)
+
+        instances = CouponType.objects.all()
+
+        if instances.exists():
+            serialized = CollectionCustomerSerializer(instances, many=True)
+            return Response({'status': True,'data': serialized.data}, status=status.HTTP_200_OK)
+        else:
+            return Response({'status': False,'message': 'No data found'}, status=400)
