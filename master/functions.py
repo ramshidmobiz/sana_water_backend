@@ -107,10 +107,10 @@ def get_next_visit_date(visit_schedule):
     for day, visit_date in next_visit_dates.items():
         if visit_date >= current_date:
             nearest_next_visit_date = visit_date
-            
-    if next_visit_date == current_date :
+                
+    if nearest_next_visit_date == current_date:
         nearest_next_visit_date = "Today"
-    
+        
     return nearest_next_visit_date
 
 # # Example usage

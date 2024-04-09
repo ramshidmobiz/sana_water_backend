@@ -167,7 +167,7 @@ class Products_List(View):
 
     @method_decorator(login_required)
     def get(self, request, *args, **kwargs):
-        instances = Product.objects.filter()
+        instances = Product.objects.all().order_by('-created_date')
         context = {'instances': instances}
         return render(request, self.template_name, context)
 
