@@ -320,7 +320,7 @@ class SupplyItemCustomersSerializer(serializers.ModelSerializer):
         
     def get_products(self, obj):
         fivegallon = ProdutItemMaster.objects.get(product_name="5 Gallon")
-        five_gallon_serializer = SupplyItemFiveGallonWaterGetSerializer(fivegallon, context={"customer": obj.pk})
+        five_gallon_serializer = SupplyItemFiveGallonWaterGetSerializer(fivegallon, context={"customer_id": obj.pk})
         five_gallon_data = five_gallon_serializer.data
         
         supply_product_data = []
@@ -748,6 +748,8 @@ class CollectionCustomerSerializer(serializers.ModelSerializer):
                 'invoice_id': str(invoice.id),
                 'created_date': serializers.DateTimeField().to_representation(invoice.created_date),
                 'grand_total': invoice.amout_total,
+                'amout_recieved': invoice.amout_recieved,
+                'balance_amount': invoice.amout_total - invoice.amout_recieved ,
                 'reference_no': invoice.reference_no,
             }
             invoice_list.append(invoice_data)
@@ -796,8 +798,3 @@ class CustodyCustomItemsSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustodyCustomItems
         fields = ['id', 'custody_custom', 'product', 'product_name', 'quantity', 'serialnumber', 'amount']
-        
-class CollectionCustomerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CouponType
-        fields = ['coupon_type_id','coupon_type_name','no_of_leaflets','valuable_leaflets','free_leaflets']

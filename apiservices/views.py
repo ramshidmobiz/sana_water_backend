@@ -969,12 +969,13 @@ class OrderChangeListAPI(APIView):
 
     def post(self, request):
         serializer = OrderChangeSerializer(data=request.data)
+        print(request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+from uuid import UUID
 class OrderChangeDetailAPI(APIView):
     def get_object(self, order_change_id):
         try:
@@ -988,17 +989,13 @@ class OrderChangeDetailAPI(APIView):
         return Response(serializer.data)
 
     def put(self, request, order_change_id):
-        order_change = self.get_object(order_change_id)
-        existing_data = OrderChangeSerializer(order_change).data  # Get existing data
-
-        # Merge existing data with request data
-        merged_data = {**existing_data, **request.data}
-        serializer = OrderChangeSerializer(order_change, data=merged_data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        order_change = self.get_object(order_change_id)  
+        serializer = OrderChangeSerializer(order_change, data=request.data, partial=True)
+        print(request.data)
+        if serializer.is_valid():  
+            serializer.save()  
+            return Response(serializer.data)  
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
 
     def delete(self, request, order_change_id):
         order_change = self.get_object(order_change_id)
@@ -1010,6 +1007,7 @@ class OrderReturnListAPI(APIView):
     def get(self, request):
         order_retrn = Order_return.objects.all()
         serializer = OrderReturnSerializer(order_retrn, many=True)
+        print(serializer.data)
         return Response(serializer.data)
 
     def post(self, request):
@@ -1034,11 +1032,7 @@ class OrderReturnDetailAPI(APIView):
 
     def put(self, request, order_return_id):
         order_return = self.get_object(order_return_id)
-        existing_data = OrderReturnSerializer(order_return).data
-
-        merged_data = {**existing_data, **request.data}
-        serializer = OrderReturnSerializer(order_return, data=merged_data)
-
+        serializer = OrderReturnSerializer(order_return, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -1048,11 +1042,6 @@ class OrderReturnDetailAPI(APIView):
         order_return = self.get_object(order_return_id)
         order_return.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-
-
-
 
 ####################################Account####################################
 
@@ -1756,9 +1745,7 @@ class Staff_New_Order(APIView):
                     serializer_2 = self.staff_order_details_serializer(data=order_details_data, many=True)
 
                     if serializer_2.is_valid(raise_exception=True):
-                        serializer_2.save(
-                            created_by=request.user.id
-                        )
+                        serializer_2.save()
                         return Response({'status': True, 'message': 'Order Placed Successfully'}, status=status.HTTP_201_CREATED)
                     else:
                         return Response({'status': False, 'message': serializer_2.errors}, status=status.HTTP_400_BAD_REQUEST)
@@ -2129,63 +2116,144 @@ def fetch_coupon(request):
 class CustomerCouponRecharge(APIView):
     def post(self, request, *args, **kwargs):
         try:
-            coupons_data = request.data.get('coupons', [])
-            payment_data = request.data.get('payment', {})
+            with transaction.atomic():
+                coupons_data = request.data.get('coupons', [])
+                payment_data = request.data.get('payment', {})
 
-            coupon_instances = []
-            for coupon_data in coupons_data:
-                customer = Customers.objects.get(pk=coupon_data.pop("customer"))
-                salesman = CustomUser.objects.get(pk=coupon_data.pop("salesman"))
-                items_data = coupon_data.pop('items', [])
-                # print(coupon_data)
-                customer_coupon = CustomerCoupon.objects.create(customer=customer, salesman=salesman, **coupon_data)
-                coupon_instances.append(customer_coupon)
+                coupon_instances = []
+                for coupon_data in coupons_data:
+                    customer = Customers.objects.get(pk=coupon_data.pop("customer"))
+                    salesman = CustomUser.objects.get(pk=coupon_data.pop("salesman"))
+                    items_data = coupon_data.pop('items', [])
+                    
+                    customer_coupon = CustomerCoupon.objects.create(customer=customer, salesman=salesman, **coupon_data)
+                    coupon_instances.append(customer_coupon)
+                    
+                    balance_amount = int(coupon_data.pop("balance"))
+                    
+                    if balance_amount != 0 :
+                        
+                        customer_outstanding = CustomerOutstanding.objects.create(
+                            customer=customer,
+                            product_type="amount",
+                            created_by=request.user.id,
+                        )
 
-                # Create CustomerCouponItems instances
-                for item_data in items_data:
-                    coupon = NewCoupon.objects.get(pk=item_data.pop("coupon"))
-                    items = CustomerCouponItems.objects.create(
-                        customer_coupon=customer_coupon,
-                        coupon=coupon,
-                        rate=item_data.pop("rate")
-                    )
-
-                    # Update CustomerCouponStock based on coupons
-                    for coupon_instance in coupon_instances:
-                        coupon_method = coupon.coupon_method
-                        customer_id = customer
-                        coupon_type_id = CouponType.objects.get(pk=coupon.coupon_type_id)
+                        outstanding_amount = OutstandingAmount.objects.create(
+                            amount=balance_amount,
+                            customer_outstanding=customer_outstanding,
+                        )
+                        outstanding_instance = ""
 
                         try:
-                            customer_coupon_stock = CustomerCouponStock.objects.get(
-                                coupon_method=coupon_method,
-                                customer_id=customer_id.pk,
-                                coupon_type_id=coupon_type_id
-                            )
-                        except CustomerCouponStock.DoesNotExist:
-                            customer_coupon_stock = CustomerCouponStock.objects.create(
-                                coupon_method=coupon_method,
-                                customer_id=customer_id.pk,
-                                coupon_type_id=coupon_type_id,
-                                count=0
+                            outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer,product_type="amount")
+                            outstanding_instance.value += int(outstanding_amount.amount)
+                            outstanding_instance.save()
+                        except:
+                            outstanding_instance = CustomerOutstandingReport.objects.create(
+                                product_type='amount',
+                                value=outstanding_amount.amount,
+                                customer=outstanding_amount.customer_outstanding.customer
                             )
 
-                        customer_coupon_stock.count += int(coupon.no_of_leaflets)
-                        customer_coupon_stock.save()
-                        
-                        van_coupon_stock = VanCouponStock.objects.get(coupon=coupon)
-                        van_coupon_stock.count -= 1
-                        van_coupon_stock.save()
+                    # Create CustomerCouponItems instances
+                    for item_data in items_data:
+                        coupon = NewCoupon.objects.get(pk=item_data.pop("coupon"))
+                        items = CustomerCouponItems.objects.create(
+                            customer_coupon=customer_coupon,
+                            coupon=coupon,
+                            rate=item_data.pop("rate")
+                        )
 
-            # Create ChequeCouponPayment instanceno_of_leaflets
-            cheque_payment_instance = None
-            if payment_data.get('payment_type') == 'cheque':
-                cheque_payment_instance = ChequeCouponPayment.objects.create(**payment_data)
+                        # Update CustomerCouponStock based on coupons
+                        for coupon_instance in coupon_instances:
+                            coupon_method = coupon.coupon_method
+                            customer_id = customer
+                            coupon_type_id = CouponType.objects.get(pk=coupon.coupon_type_id)
 
-            return Response({"message": "Recharge successful"}, status=status.HTTP_200_OK)
+                            try:
+                                customer_coupon_stock = CustomerCouponStock.objects.get(
+                                    coupon_method=coupon_method,
+                                    customer_id=customer_id.pk,
+                                    coupon_type_id=coupon_type_id
+                                )
+                            except CustomerCouponStock.DoesNotExist:
+                                customer_coupon_stock = CustomerCouponStock.objects.create(
+                                    coupon_method=coupon_method,
+                                    customer_id=customer_id.pk,
+                                    coupon_type_id=coupon_type_id,
+                                    count=0
+                                )
+
+                            customer_coupon_stock.count += int(coupon.no_of_leaflets)
+                            customer_coupon_stock.save()
+                            
+                            van_coupon_stock = VanCouponStock.objects.get(coupon=coupon)
+                            van_coupon_stock.count -= 1
+                            van_coupon_stock.save()
+                    
+                    random_part = str(random.randint(1000, 9999))
+                    invoice_number = f'WTR-{random_part}'
+
+                    # Create the invoice
+                    invoice_instance = Invoice.objects.create(
+                        invoice_no=invoice_number,
+                        created_date=datetime.today(),
+                        net_taxable=customer_coupon.net_amount,
+                        discount=customer_coupon.discount,
+                        amout_total=customer_coupon.total_payeble,
+                        amout_recieved=customer_coupon.amount_recieved,
+                        customer=customer_coupon.customer,
+                        reference_no=customer_coupon.reference_number
+                    )
+                    
+                    if invoice_instance.amout_total == invoice_instance.amout_recieved:
+                        invoice_instance.invoice_status = "paid"
+                        invoice_instance.save()
+                    
+                    coupon_items = CustomerCouponItems.objects.filter(customer_coupon=customer_coupon) 
+                    
+                    # Create invoice items
+                    for item_data in coupon_items:
+                        category = CategoryMaster.objects.get(category_name__iexact="coupons")
+                        product_item = ProdutItemMaster.objects.get(product_name=item_data.coupon.coupon_type.coupon_type_name)
+                        print(product_item)
+                        InvoiceItems.objects.create(
+                            category=category,
+                            product_items=product_item,
+                            qty=1,
+                            rate=product_item.rate,
+                            invoice=invoice_instance,
+                            remarks='invoice genereted from recharge coupon items reference no : ' + invoice_instance.reference_no
+                        )    
+
+                # Create ChequeCouponPayment instanceno_of_leaflets
+                cheque_payment_instance = None
+                if payment_data.get('payment_type') == 'cheque':
+                    cheque_payment_instance = ChequeCouponPayment.objects.create(**payment_data)
+                    
+                
+
+                return Response({"message": "Recharge successful"}, status=status.HTTP_200_OK)
+
+        except IntegrityError as e:
+            # Handle database integrity error
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": str(e),
+            }
+            return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            # Handle other exceptions
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": str(e),
+            }
+            return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 from django.shortcuts import get_object_or_404
@@ -2257,7 +2325,7 @@ class CustodyCustomItemAPI(APIView):
             customer_id = request.data['customer_id']
             product_id = request.data['product_id']
             serial_number = request.data['serialnumber']
-            quantity = request.data['count']
+            quantity = request.data['quantity']
             deposit_type = request.data['deposit_type']
             agreement_number = request.data['agreement_no']
             amount = request.data['amount']
@@ -2273,18 +2341,17 @@ class CustodyCustomItemAPI(APIView):
             existing_custody_item = CustodyCustomItems.objects.filter(
                 custody_custom=custody_custom,
                 product=product_instance,
-                serialnumber=serial_number
+                
             ).first()
-            print("existing_custody_item",existing_custody_item)
 
             if existing_custody_item:
-                print("fdjygdjgghgghg")
-                # Update the quantity if the product already exists
+               
                 existing_custody_item.quantity += quantity
+                existing_custody_item.serialnumber = existing_custody_item.serialnumber  + ',' + serial_number
                 existing_custody_item.save()
                 custody_item = existing_custody_item
+
             else:
-                print("secndasssdddfff")
                 custody_item = CustodyCustomItems.objects.create(
                     custody_custom=custody_custom,
                     product=product_instance,
@@ -2294,6 +2361,9 @@ class CustodyCustomItemAPI(APIView):
                 )
 
             serializer = self.serializer_class(custody_item)
+           
+
+            
             return Response({"status": True, "data": serializer.data, "message": "Data saved successfully!"})
         except Exception as e:
             print(e)
@@ -2974,6 +3044,8 @@ class AddCollectionPayment(APIView):
         for invoice_id in invoice_ids:
             invoice = Invoice.objects.get(pk=invoice_id)
             balance_invoice_amount = invoice.amout_total - invoice.amout_recieved
+             
+            # print(balance_invoice_amount)
             
             if balance_invoice_amount <= remaining_amount:
                 invoice.amout_recieved += balance_invoice_amount
@@ -2992,8 +3064,8 @@ class AddCollectionPayment(APIView):
             CollectionItems.objects.create(
                 invoice=invoice,
                 amount=invoice.amout_total,
-                balance=balance_invoice_amount - invoice.amout_recieved,
-                amount_received=invoice.amout_recieved,
+                balance=invoice.amout_recieved - balance_invoice_amount,
+                amount_received=remaining_amount,
                 collection_payment=collection_payment
             )
             
@@ -3001,7 +3073,8 @@ class AddCollectionPayment(APIView):
                 break
         
         return Response({"message": "Collection payment saved successfully."}, status=status.HTTP_201_CREATED)
-    
+
+
 class CouponTypesAPI(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
