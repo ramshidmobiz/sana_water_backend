@@ -2373,6 +2373,8 @@ class CustodyCustomItemAPI(APIView):
 class supply_product(APIView):
     def get(self, request, *args, **kwargs):
         route_id = request.GET.get("route_id")
+        CustomerCouponStock.objects.update(coupon_method="manual")
+        NewCoupon.objects.update(coupon_method="manual")
         customers = Customers.objects.all()
 
         if route_id:

@@ -353,8 +353,12 @@ class SupplyItemCustomersSerializer(serializers.ModelSerializer):
             pending_coupons = CustomerOutstandingReport.objects.get(product_type="coupons",customer=obj).value
         
         if CustomerCouponStock.objects.filter(customer=obj).exists() :
-            digital_coupons = 0
-            manual_coupons = CustomerCouponStock.objects.filter(customer=obj).aggregate(total_count=Sum('count'))['total_count']
+            customer_coupon_stock = CustomerCouponStock.objects.filter(customer=obj)
+            
+            if (customer_coupon_stock_digital:=customer_coupon_stock.filter(coupon_method="digital")).exists() :
+                digital_coupons = customer_coupon_stock_digital.aggregate(total_count=Sum('count'))['total_count']
+            if (customer_coupon_stock_manual:=customer_coupon_stock.filter(coupon_method="manual")).exists() :
+                manual_coupons = customer_coupon_stock_manual.aggregate(total_count=Sum('count'))['total_count']
             
             coupon_ids_queryset = CustomerCouponItems.objects.filter(customer_coupon__customer=obj).values_list('coupon__pk', flat=True)
             coupon_leafs = CouponLeaflet.objects.filter(coupon__pk__in=list(coupon_ids_queryset))
