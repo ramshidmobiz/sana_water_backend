@@ -3087,7 +3087,7 @@ class CouponTypesAPI(APIView):
         instances = CouponType.objects.all()
 
         if instances.exists():
-            serialized = CollectionCustomerSerializer(instances, many=True)
+            serialized = CouponTypeSerializer(instances, many=True)
             return Response({'status': True,'data': serialized.data}, status=status.HTTP_200_OK)
         else:
             return Response({'status': False,'message': 'No data found'}, status=400)

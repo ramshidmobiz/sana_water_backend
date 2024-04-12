@@ -375,7 +375,7 @@ class CustomerSupplySerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_by', 'created_date', 'modified_by', 'modified_date']
 
 class CustomerSupplyItemsSerializer(serializers.ModelSerializer):
-    product = ProductSerializer()  # Assuming you have a serializer for the Product model
+    product = ProductSerializer()
 
     class Meta:
         model = CustomerSupplyItems
@@ -529,8 +529,8 @@ class CustomerOutstandingSerializer(serializers.ModelSerializer):
 class CouponTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = CouponType
-        fields = '__all__'
-        read_only_fields = ['id', 'coupon_type_name']
+        fields = ['coupon_type_id','coupon_type_name','no_of_leaflets','valuable_leaflets','free_leaflets']
+        
 class RouteMasterSerializer(serializers.ModelSerializer):
     class Meta:
         model = RouteMaster
