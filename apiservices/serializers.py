@@ -802,3 +802,18 @@ class CustodyCustomItemsSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustodyCustomItems
         fields = ['id', 'custody_custom', 'product', 'product_name', 'quantity', 'serialnumber', 'amount']
+
+# class EmergencyCustomersSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = DiffBottlesModel
+#         fields = '__all__'
+class EmergencyCustomersSerializer(serializers.ModelSerializer):
+    quantity_required = serializers.IntegerField()
+    assign_this_to = serializers.CharField(source='assign_this_to.username', allow_null=True)
+    mode = serializers.CharField()
+    request_type = serializers.CharField()  # Removed source='request_type'
+    delivery_date = serializers.DateTimeField()
+
+    class Meta:
+        model = DiffBottlesModel
+        fields = ['customer', 'quantity_required', 'assign_this_to', 'mode', 'request_type', 'delivery_date']

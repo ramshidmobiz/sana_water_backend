@@ -147,4 +147,9 @@ urlpatterns = [
     path('product-bottle/', ProductAndBottleAPIView.as_view(), name='product_bottle_api'),
     
     path('coupon-types/', CouponTypesAPI.as_view(), name='coupon_types'),
+
+
+
+    path('emergency_customers/', EmergencyCustomersAPI.as_view(), name='emergency_customers'),
+
 ]

@@ -3117,3 +3117,17 @@ class CouponTypesAPI(APIView):
             return Response({'status': True,'data': serialized.data}, status=status.HTTP_200_OK)
         else:
             return Response({'status': False,'message': 'No data found'}, status=400)
+
+class EmergencyCustomersAPI(APIView):
+    # authentication_classes = [BasicAuthentication]
+    # permission_classes = [IsAuthenticated]
+    def get(self, request, *args, **kwargs):
+        
+        emergency_customers = DiffBottlesModel.objects.all()
+        print(emergency_customers,"emergency_customers")
+        if emergency_customers.exists():
+            serialized = EmergencyCustomersSerializer(emergency_customers, many=True)
+            return Response({'status': True,'data': serialized.data}, status=status.HTTP_200_OK)
+        else:
+            return Response({'status': False,'message': 'No data found'}, status=400)
+
