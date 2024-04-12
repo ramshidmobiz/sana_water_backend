@@ -2419,8 +2419,6 @@ class supply_product(APIView):
 
 #     return Response(response_data, status_code)
 
-# @api_view(['POST'])
-# def create_customer_supply(request):
 class create_customer_supply(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
@@ -2482,7 +2480,33 @@ class create_customer_supply(APIView):
                         amount=item_data['amount']
                     )
                     supply_items_instances.append(suply_items)
+                    
+                    if suply_items.product.product_name == "5 Gallon" and int(customer_supply.collected_empty_bottle) < int(suply_items.quantity) :
+                        
+                        balance_empty_bottle = suply_items.quantity - int(collected_empty_bottle)
+                        customer_outstanding = CustomerOutstanding.objects.create(
+                            customer=customer_supply.customer,
+                            product_type="emptycan",
+                            created_by=request.user.id,
+                        )
 
+                        outstanding_product = OutstandingProduct.objects.create(
+                            empty_bottle=balance_empty_bottle,
+                            customer_outstanding=customer_outstanding,
+                        )
+                        outstanding_instance = ""
+
+                        try:
+                            outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="emptycan")
+                            outstanding_instance.value += int(outstanding_product.empty_bottle)
+                            outstanding_instance.save()
+                        except:
+                            outstanding_instance = CustomerOutstandingReport.objects.create(
+                                product_type='emptycan',
+                                value=outstanding_product.empty_bottle,
+                                customer=outstanding_product.customer_outstanding.customer
+                            )
+                    
                 # Update CustomerSupplyStock
                 for item_data in items_data:
                     product_id = item_data['product']
@@ -2544,7 +2568,7 @@ class create_customer_supply(APIView):
                             value=outstanding_amount.amount,
                             customer=outstanding_amount.customer_outstanding.customer
                         )
-
+                        
                 random_part = str(random.randint(1000, 9999))
                 invoice_number = f'WTR-{random_part}'
 

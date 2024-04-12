@@ -5,6 +5,13 @@ class OrderChangeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order_change
         fields = '__all__'
+    
+    
+
+    def update(self, instance, validated_data):
+        # Call superclass's update method
+        super().update(instance, validated_data)
+        return instance
 
 class OrderReturnSerializer(serializers.ModelSerializer):
     class Meta:

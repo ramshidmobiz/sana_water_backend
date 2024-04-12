@@ -84,7 +84,7 @@
                                     <td style="text-align:center;">{{forloop.counter}}</td>
                                     <td style="text-align:center;">{{data.created_date|date}}</td>
                                     <td style="text-align:center;">{{data.order_date|date}}</td>
-                                    <td style="text-align:center;">{{data.order_number}}</td>
+                                    <td style="text-align:center;">{{forloop.counter}}</td>
                                     {% if data.created_by %}
                                         {% get_salesman_name data.created_by as salseman %}
                                         <td style="text-align:left;">{{salseman}}</td>

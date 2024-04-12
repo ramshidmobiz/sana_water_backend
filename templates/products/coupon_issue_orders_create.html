@@ -51,7 +51,7 @@
                         <div class="card-title mx-auto">Issue Order</div>
                     </div>
                     <div class="card-body">
-                        <form action="." enctype="multipart/form-data" role="form" method="post" class="row g-3 needs-validation ajax redirect">
+                        <form enctype="multipart/form-data" role="form" method="post" class="row g-3 needs-validation ajax redirect">
                             {% csrf_token %}
                             <!-- Row 1 -->
                             {% if form.coupo_no %}

@@ -23,26 +23,35 @@
                         </div>
                     </div>
                     <div class="mt">
-                        <form method="GET" action='{% url "custody_issue"%}'>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-5">
-                                        <label for="start_date">From Date:</label>
-                                        <input type="date" class="form-control" id="start_date" name="start_date">
+                        <form method="get">
+                            <div class="row mt-3">
+                                <div class="row col-md-6" >
+                                    <div id="datePeriodDiv" class="row col-12" style="flex-direction: row;
+                                    justify-content: space-around;
+                                    align-items: flex-end;">
+                                        
+                                        <div class="col-md-5">
+                                            <label for="start_date">From Date:</label>
+                                            <input name="start_date" type="date" class="form-select"  value="{% if start_date %}{{ start_date }}{% endif %}">
+                                        </div>
+                                        <div class="col-md-5">
+                                            <label for="end_date">To Date:</label>
+                                            <input name="end_date" type="date" class="form-select"  value="{% if end_date %}{{ end_date }}{% endif %}">
+                                        </div>
                                     </div>
-                                    <div class="col-md-5">
-                                        <label for="end_date">To Date:</label>
-                                        <input type="date" class="form-control" id="end_date" name="end_date">
-                                    </div>
-                                    <div class="col-md-2 text-end ">
-                                        <input type="submit" id = "submit" class="btn btn-primary me-2 mb-2 mt-3" value="Submit">
+                                </div>
+                                <div class="row col-md-6 mt-4">
+                                     
+                                    <div class="col-md-5 text-end">
+                                        <input type="submit" class="btn btn-primary btn-sm" value="Apply Filter">
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick="resetFilters()">Reset Filter</button>
                                     </div>
                                 </div>
                             </div>
                         </form>
                     </div>
                     
-                    <div id="table-container" style="display: none;">
+                    <div id="table-container" >
                         <div class="card-body">
                             <table  class="table table-bordered text-wrap" style="width: 100%">
                                 <thead>
@@ -101,5 +110,10 @@
             $('#table-container').show();
     });
 </script>
-
+<script>
+    function resetFilters() {
+        // Redirect to the same page
+        location.href = "{% url 'custody_issue' %}";
+    }
+</script>
 {% endblock %}

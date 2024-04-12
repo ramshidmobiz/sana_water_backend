@@ -103,6 +103,7 @@
                             <thead>
                                 <tr>
                                     <th rowspan="2">Sl No</th>
+                                    <th rowspan="2">Ref/Invoice No</th>
                                     <th rowspan="2">Route Name</th>
                                     <th rowspan="2">Salesman</th>
                                     <th rowspan="2">Quantity</th>
@@ -114,7 +115,8 @@
                                 {% for customersupplyitem in customersupplyitems %}
                                     <tr>
                                         <td>{{ forloop.counter }}</td>
-                                        <td>{{ customersupplyitem.customer }}</td>
+                                        <td>{{ customersupplyitem.customer_supply.reference_number}}</td>
+                                        <td>{{ salesman_routes|default:"Not Assigned" }}</td>
                                         <td>{{ customersupplyitem.customer_supply.salesman.username }}</td>
                                         <td>{{ customersupplyitem.quantity }}</td>
                                         <td>{{ customersupplyitem.amount }}</td>
@@ -131,6 +133,7 @@
                             
                             <tfoot>
                                 <tr>
+                                    <td style="border-top: solid rgb(0, 0, 0) 1px;"></td>
                                     <td style="border-top: solid rgb(0, 0, 0) 1px;"></td>
                                     <td style="border-top: solid rgb(0, 0, 0) 1px;"></td>
                                     <td style="font-weight: bold; border-top: solid rgb(0, 0, 0) 1px;">Total</td>

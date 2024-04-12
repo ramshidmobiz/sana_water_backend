@@ -401,36 +401,24 @@ def customer_supply_list(request):
     """
     
     instances = CustomerSupply.objects.all().order_by("-created_date")
-         
-    date_range = ""
-    date_range = request.GET.get('date_range')
-    # print(date_range)
-
-    if date_range:
-        start_date_str, end_date_str = date_range.split(' - ')
-        start_date = datetime.strptime(start_date_str, '%m/%d/%Y').date()
-        end_date = datetime.strptime(end_date_str, '%m/%d/%Y').date()
-        instances = instances.filter(date__range=[start_date, end_date])
+    routes = RouteMaster.objects.all()
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    route_name = request.GET.get('route_name')
     
-    filter_data = {}
-    query = request.GET.get("q")
+    if start_date_str and end_date_str:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        instances = instances.filter(created_date__range=[start_date, end_date])
     
-    if query:
-
-        instances = instances.filter(
-            Q(customer_supply_no__icontains=query) |
-            Q(product__customer_supply_id__icontains=query) 
-        )
-        title = "Customer Supply List - %s" % query
-        filter_data['q'] = query
+    if route_name:
+        instances = instances.filter(customer__routes__route_name=route_name)
     
     context = {
         'instances': instances,
         'page_name' : 'Customer Supply List',
         'page_title' : 'Customer Supply List',
-        'filter_data' :filter_data,
-        'date_range': date_range,
-        
+        'routes': routes, 
         'is_customer_supply': True,
         'is_need_datetime_picker': True,
     }
@@ -766,17 +754,17 @@ def custody_items_list_report(request):
 
 
 def custody_issue(request):
-    instances = CustodyCustom.objects.all()
+    instances = CustodyCustom.objects.all().order_by("-created_date")
 
     start_date_str = request.GET.get('start_date')
     end_date_str = request.GET.get('end_date')
-
+    
     if start_date_str and end_date_str:
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
         instances = instances.filter(created_date__range=[start_date, end_date])
     
-
+        
     customer_product_counts = {}
 
     for instance in instances:
@@ -813,7 +801,13 @@ def custody_issue(request):
                     else:
                         customer_product_counts[customer]['cooler_non_deposit'] += 1
 
+    for customer, counts in customer_product_counts.items():
+        for key, value in counts.items():
+            if value == 0:
+                customer_product_counts[customer][key] = '--'
+
     return render(request, 'client_management/custody_issue.html', {'customer_product_counts': customer_product_counts})
+
 
 
 def get_customercustody(request, customer_id):
@@ -838,21 +832,25 @@ def get_customercustody(request, customer_id):
     return render(request, 'client_management/customer_custody_items.html', context)
 
 def custody_report(request):
-    instances = CustodyCustom.objects.all()
+    instances = CustodyCustom.objects.all().order_by("-created_date")
 
     start_date_str = request.GET.get('start_date')
-    end_date_str = request.GET.get('end_date')
+    print("start_date_str",    start_date_str)
 
+    end_date_str = request.GET.get('end_date')
+    print("end_date_str",end_date_str)
+    
     if start_date_str and end_date_str:
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+
         instances = instances.filter(created_date__range=[start_date, end_date])
-        # custody_items = instance.custodycustomitems_set.all()
 
     custody_items_with_products = []
     
     for custody_item in instances:
         custody_custom_items = CustodyCustomItems.objects.filter(custody_custom=custody_item)
+        print("custody_custom_items",custody_custom_items)
         custody_item_data = {
             'custody_custom': custody_item,
             'custody_custom_items': custody_custom_items,
@@ -861,8 +859,8 @@ def custody_report(request):
         custody_items_with_products.append(custody_item_data)
 
     context = {'custody_items_with_products': custody_items_with_products,'instances':instances}
+    print("context",context)
     return render(request, 'client_management/custody_report.html', context)
-        # return render(request, self.template_name, context)
 
 
 class CouponCountList(View):

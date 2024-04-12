@@ -51,7 +51,6 @@ class Order(models.Model):
 
 class Change_Reason(models.Model):
     reason_name = models.CharField(max_length=100)
-    
     def __str__(self):
         return self.reason_name
 
@@ -61,7 +60,7 @@ class ChangeOrReturn(models.Model):
     customer = models.ForeignKey('accounts.Customers', on_delete = models.SET_NULL, null=True, blank=True)
     route = models.ForeignKey(RouteMaster, on_delete=models.SET_NULL, null=True)
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, blank=True, null=True)
-    reason = models.ForeignKey(Change_Reason, on_delete=models.SET_NULL,blank=True, null=True)
+    reason = models.ForeignKey(Change_Reason, on_delete=models.SET_NULL,  null=True)
     note = models.TextField(blank=True, null=True)
     
     class Meta:
@@ -72,10 +71,18 @@ class Order_change(ChangeOrReturn):
     changed_quantity = models.IntegerField()
     change_date = models.DateField()
 
+    def save(self, *args, **kwargs):
+        if self.customer:
+            self.route = self.customer.routes
+        super().save(*args, **kwargs)
+
     
 
 class Order_return(ChangeOrReturn):
     order_return_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     returned_quantity = models.IntegerField()
     return_date = models.DateField()
-        
+    def save(self, *args, **kwargs):
+        if self.customer:
+            self.route = self.customer.routes
+        super().save(*args, **kwargs)

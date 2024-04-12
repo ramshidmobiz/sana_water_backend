@@ -589,9 +589,11 @@ class NewRequestHome(View):
             
             initial_data = {'delivery_date': next_delivery_date, 'mode': 'paid'}
             if customer and customer.sales_staff:
-                initial_data['assign_this_to'] = customer.sales_staff.get_full_name
+                initial_data['assign_this_to'] = customer.sales_staff  # Assign the user object
             else:
-                initial_data['assign_this_to'] = "Driver"  # Default to "Driver" if no salesman is assigned
+                initial_data['assign_this_to'] = None  # Default to None if no salesman is assigned
+            form = self.form_class(initial=initial_data)
+            print("customer.sales_staff",customer.sales_staff)
             form = self.form_class(initial=initial_data)
 
             context = {
@@ -686,81 +688,47 @@ class CancelRequestView(View):
         return redirect('new_request_home', customer_id=diff_bottle.customer.customer_id)
 
 
+class ReassignRequestView(View):
+    def get(self, request, diffbottles_id):
+        diff_bottle = DiffBottlesModel.objects.filter(diffbottles_id=diffbottles_id).first()
+        assign_this_to = diff_bottle.assign_this_to
+        customer_id = diff_bottle.customer_id  # Retrieve the customer ID from the DiffBottlesModel instance
+        salesmen = CustomUser.objects.filter(user_type='Salesman')
+        print(salesmen,"salesmen")
+        if assign_this_to:
+            user_type = assign_this_to.user_type
+            print("User Type:", user_type)
+        else:
+            print("No CustomUser assigned to this DiffBottlesModel.")
+            user_type = None
+        context = {
+            'user_type': user_type,
+            'salesmen': salesmen,
+            'customer_id': customer_id,
+            'diff_bottle': diff_bottle,  # Add customer ID to the context
+        }
+        return render(request, 'customer_care/reassign_request_form.html', context)
 
-# class ReassignRequestView(View):
-#     def get(self, request):
-#         form = ReassignRequestForm(request.POST)
-#         if form.is_valid():
-#             diffbottles_id = request.POST.get('request_id')
-#             new_salesman = form.cleaned_data['new_salesman']
-#             print("new_salesman",new_salesman)
-#             new_delivery_date = form.cleaned_data['new_delivery_date']
-#             print("new_delivery_date",new_delivery_date)
+    def post(self, request, diffbottles_id):
+        diff_bottle = DiffBottlesModel.objects.filter(diffbottles_id=diffbottles_id).first()
+        print(diff_bottle.customer.sales_staff)
+        assign_this_to_username_id = request.POST.get('assign_this_to')
+        delivery_date = request.POST.get('delivery_date')     
+        customuser=CustomUser.objects.get(id=assign_this_to_username_id)
+        print("CUSTOMEUSER ::\n",customuser)
 
+        if not assign_this_to_username_id:
+            print("No CustomUser assigned. Cannot update.")
+            # You can handle this case as required, such as returning an error message
+            return HttpResponse("No CustomUser assigned. Cannot update.")
 
-#             # Save reassignment data to the database
-#             # Replace YourModel with your actual model name
-#             instance = DiffBottlesModel.objects.get(pk=diffbottles_id)
-#             print(instance)
-#             instance.assign_this_to = new_salesman
-#             instance.delivery_date = new_delivery_date
-#             instance.save()
-
-#             # Return success response with a message
-#             return JsonResponse({'message': 'Request successfully reassigned.'})
-#         else:
-#             # Return error response with form errors
-#             return JsonResponse({'errors': form.errors}, status=400)
-
-
-from django.db import transaction, IntegrityError
-
-
-def ReassignRequestView(request, diffbottles_id):
-    instance = get_object_or_404(DiffBottlesModel, diffbottles_id=diffbottles_id)
-    
-    if request.method == 'POST':
-        form = ReassignRequestForm(request.POST, instance=instance)
-        if form.is_valid():
-            try:
-                with transaction.atomic():
-                    # Get cleaned data from the form
-                    assign_this_to = form.cleaned_data.get('assign_this_to')
-                    new_delivery_date = form.cleaned_data.get('delivery_date')
-
-                    # Save the form with the cleaned data
-                    form.save()
-
-                    response_data = {
-                        "status": "true",
-                        "title": "Successfully Updated",
-                        "message": "Request successfully reassigned.",
-                        'redirect': 'true',
-                        "redirect_url": reverse('water_delivery_status')
-                    }
-                    
-            except IntegrityError as e:
-                # Handle database integrity error
-                response_data = {
-                    "status": "false",
-                    "title": "Failed",
-                    "message": str(e),
-                }
-
-            except Exception as e:
-                # Handle other exceptions
-                response_data = {
-                    "status": "false",
-                    "title": "Failed",
-                    "message": str(e),
-                }
-            
-            return JsonResponse(response_data)
-
-    else:
-        form = ReassignRequestForm(instance=instance)
-    
-    context = {
-        'form': form,
-    }
-    return render(request, 'customer_care/reassign_request_form.html', context)
+        diff_bottle.delivery_date = delivery_date
+        diff_bottle.save()
+        customer = diff_bottle.customer
+        customer.sales_staff = customuser
+        customer.save()
+        print("DATA SAVED")     
+        context = {
+            'diff_bottle': diff_bottle,
+        }
+        return render(request, 'customer_care/reassign_request_form.html', context)

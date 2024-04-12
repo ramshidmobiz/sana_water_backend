@@ -679,7 +679,7 @@ def excel_download(request, route_id, def_date, trip):
         'Out- Bottles': [' ' for _ in customers],
         'Out- Coupons': [' ' for _ in customers],
         'Out- Cash': [' ' for _ in customers],
-        'Rate': [customer['rate'] for customer in customers],
+        'Rate': [customer.get('rate', '') for customer in customers],
         'Type': [customer['customer_type'] for customer in customers],
         'Delivery Type': [customer['type'] for customer in customers]
     }
@@ -917,7 +917,7 @@ class VanStockList(View):
         context = {'van_stock': van_stock, 'van_coupon_counts': van_coupon_counts,
                    'issued':issued,'morning_stock_count': morning_stock_count,
             'evening_stock_count': evening_stock_count}
-        return render(request, 'van_management/vanstock_list.html', context)
+        return render(request, 'van_management/vanstock.html', context)
     
 def offload(request):
     van_stock = VanProductStock.objects.all()

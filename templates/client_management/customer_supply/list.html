@@ -4,11 +4,11 @@
 <!-- End::app-sidebar -->
 <!-- Page Header -->
 <div class="page-header-breadcrumb d-md-flex d-block align-items-center justify-content-between ">
-    <h4 class="fw-medium mb-0">Invoice List</h4>
+    <h4 class="fw-medium mb-0">Supply List</h4>
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="javascript:void(0);" class="text-white-50">Dashboard</a>
         </li>
-        <li class="breadcrumb-item active" aria-current="page">Custody Supply List</li>
+        <li class="breadcrumb-item active" aria-current="page">Supply List</li>
     </ol>
 </div>
 <!-- Page Header Close -->
@@ -21,7 +21,7 @@
                 <div class="card custom-card">
                     <div class="card-header">
                         <div class="card-title">
-                            Custody Supply List
+                            Supply List
                         </div>
 
                         <div class="ms-auto">
@@ -30,7 +30,43 @@
                         </a>
                         </div>
                     </div>
-                    
+                    <div class="" >
+                        <form method="get">
+                            <div class="row mt-3">
+                                <div class="row col-md-6">
+                                    <div id="datePeriodDiv" class="row col-12">
+                                        <div class="col-md-3 col-form-label text-end">
+                                            <p>Start and <br> End Date</p>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <input name="start_date" type="date" class="form-select" style="width: min-content;" value="{% if start_date %}{{ start_date }}{% endif %}">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input name="end_date" type="date" class="form-select" style="width: min-content;" value="{% if end_date %}{{ end_date }}{% endif %}">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row col-md-6">
+                                    <div class="col-md-3 col-form-label text-end">
+                                        <p>Route</p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select name="route_name" class="form-select" style="width:100%">
+                                            <option value="">-- Select Route --</option>
+                                            {% for route in routes %}
+                                                <option value="{{ route.route_name }}" {% if route.route_name == route_name %}selected{% endif %}>{{ route.route_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div> 
+                                    <div class="col-md-5 text-end">
+                                        <input type="submit" class="btn btn-primary btn-sm" value="Apply Filter">
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick="resetFilters()">Reset Filter</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                        
+                    </div>
                     <div class="card-body" style="overflow: auto;">
                         <table class="table table-bordered text-nowrap" style="width:100%">
                             <thead>
@@ -97,5 +133,11 @@
         <!-- End:: row-2 -->
     </div>
 </div>
+<script>
+    function resetFilters() {
+        // Redirect to the same page
+        location.href = "{% url 'customer_supply_list' %}";
+    }
+</script>
 <!-- End::app-content -->
 {% endblock %}

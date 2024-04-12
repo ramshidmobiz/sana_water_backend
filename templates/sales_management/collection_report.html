@@ -44,20 +44,21 @@
                                     </div>
                                 </div>
                                 <div class="row col-md-6" style="">
-                                    {% comment %} <div class="col-md-3 col-form-label text-end">
+                                    <div class="col-md-3 col-form-label text-end">
                                         <p>Route</p>
                                     </div>
                                     <div class="col-md-4">
-                                        <select name="selected_route_id" id="product" class="form-select" style="width:100%">
+                                        <select name="route_name"  class="form-select" style="width:100%">
                                             <option value="" disabled {% if not selected_route %}selected{% endif %}>-----------------------------</option>
+
                                             {% if selected_route %}
                                                 <option value="{{ selected_route_id }}" selected>{{ selected_route }}</option>
                                             {% endif %}
                                             {% for route in routes %}
-                                                <option value="{{ route.id }}">{{ route }}</option>
+                                                <option value="{{ route.route_name }}">{{ route.route_name }}</option>
                                             {% endfor %}
                                         </select>
-                                    </div> {% endcomment %}
+                                    </div> 
                                     <div class="col-md-5 text-end">
                                         <input type="submit" class="btn btn-primary btn-sm" value="Apply Filter">
                                         <button type="button" class="btn btn-secondary btn-sm" onclick="resetFilters()">Reset Filter</button>
@@ -102,13 +103,15 @@
                             <thead>
                                 <tr>
                                     <th rowspan="2">Sl No</th>
-                                    <th rowspan="2">Date</th>
+                                    <th rowspan="2">Date & Time</th>
                                     <th rowspan="2">Customer/<br>Mobile No</th>
                                     <th rowspan="2">Route</th>
                                     <th rowspan="2">Building Name<br>No</th>
                                     <th rowspan="2">Receipt No/<br>Reference No</th>
                                     <th rowspan="2">Amount</th>
                                     <th rowspan="2">Mode of Payment</th>
+                                    <th rowspan="2">Sales Type</th>
+
                                     
 
                                    
@@ -122,13 +125,14 @@
                                 
                                     <tr>
                                         <td>{{ forloop.counter }}</td>
-                                        <td>{{ data.customer_supply.created_date.date }}</td>
+                                        <td>{{ data.collection_payment.created_date }}</td>
                                         <td>{{ data.collection_payment.customer.customer_name }}<br>{{ data.collection_payment.customer.mobile_no }}</td>
                                         <td>{{ data.collection_payment.customer.routes.route_name }}</td>
                                         <td>{{ data.collection_payment.customer.building_name }}<br>{{ data.collection_payment.customer.door_house_no }}</td>
                                         <td>{{ data.invoice.reference_no }}</td>
                                         <td>{{ data.amount }}</td>
                                         <td>{{ data.collection_payment.payment_method }}</td>
+                                        <td>{{ data.collection_payment.customer.sales_type }}</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
@@ -153,7 +157,7 @@
         <thead>
             <tr>
                 <th scope="col" style="border-bottom: 1; max-width: 5em;">Sl No</th>
-                <th scope="col" style="border-bottom: 1; ">Date</th>
+                <th scope="col" style="border-bottom: 1; ">Date & Time</th>
                 <th scope="col" style="border-bottom: 1;">Customer/<br>Mobile No</th>
                 <th scope="col" style="border-bottom: 1;">Route</th>
                 <th scope="col" style="border-bottom: 1;">Building Name<br>No</th>
@@ -167,7 +171,7 @@
                                 
             <tr>
                 <td>{{ forloop.counter }}</td>
-                <td>{{ data.customer_supply.created_date.date }}</td>
+                <td>{{ data.collection_payment.created_date }}</td>
                 <td>{{ data.collection_payment.customer.customer_name }}<br>{{ data.collection_payment.customer.mobile_no }}</td>
                 <td>{{ data.collection_payment.customer.routes.route_name }}</td>
                 <td>{{ data.collection_payment.customer.building_name }}<br>{{ data.collection_payment.customer.door_house_no }}</td>

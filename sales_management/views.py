@@ -7,7 +7,7 @@ from django.urls import reverse, reverse_lazy
 from django.views import View
 from django.shortcuts import render
 from django.db.models import Q
-from client_management.models import CustodyCustomItems
+# from client_management.models import CustodyCustomItems
 from coupon_management.models import AssignStaffCouponDetails
 from master.models import RouteMaster  # Assuming you have imported RouteMaster
 from accounts.models import Customers
@@ -1606,7 +1606,7 @@ def yearmonthsalesreportview(request, route_id):
 
 
 def customerSales_report(request):
-    routes = RouteMaster.objects.all()
+    filter_data = {}
     customersales = CustomerSupplyItems.objects.all()
 
     # Initialize totals
@@ -1616,6 +1616,22 @@ def customerSales_report(request):
     total_vat = 0
     total_grand_total = 0
 
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    
+    print(start_date_str,end_date_str)
+
+    if start_date_str and end_date_str:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        customersales = customersales.filter(customer_supply__created_date__date__range=[start_date, end_date])
+        filter_data['start_date'] = start_date
+        filter_data['end_date'] = end_date
+    else:
+        customersales = customersales.filter(customer_supply__created_date__date=datetime.today().date())
+        filter_data['start_date'] = datetime.today().date()
+        filter_data['end_date'] = datetime.today().date()
+        
     # Calculate totals
     for sale in customersales:
         total_amount += sale.amount
@@ -1624,40 +1640,14 @@ def customerSales_report(request):
         total_vat += sale.customer_supply.vat
         total_grand_total += sale.customer_supply.grand_total
 
-    start_date_str = request.GET.get('start_date')
-    end_date_str = request.GET.get('end_date')
-
-    instances = customersales.none()  # Initialize as an empty queryset
-
-    if start_date_str and end_date_str:
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-        instances = customersales.filter(customer_supply__created_date__range=[start_date, end_date])
-
-    # Initialize dictionary to store routes for each salesman
-    salesman_routes = {}
-
-    # Get route for each salesman
-    for route in routes:
-        van_route = Van_Routes.objects.filter(routes=route).first()
-        if van_route and van_route.van:
-            salesman = van_route.van.salesman
-            print("salesman",salesman)
-            # Check if salesman exists in CustomerSupply
-            if CustomerSupplyItems.objects.filter(customer_supply__salesman=salesman).exists():
-                print("")
-                salesman_routes[salesman.username] = route.route_name
-            print("salesman_routes",salesman_routes)
-
     context = {
-        'instances': instances,
         'customersales': customersales,
         'total_amount': total_amount,
         'total_discount': total_discount,
         'total_net_payable': total_net_payable,
         'total_vat': total_vat,
         'total_grand_total': total_grand_total,
-        'salesman_routes': salesman_routes,
+        'filter_data': filter_data,
         
     }
     return render(request, 'sales_management/customerSales_report.html', context)
@@ -1747,20 +1737,68 @@ def customerSales_Excel_report(request):
     return response
 #------------------Collection Report-------------------------                
 
+# def collectionreport(request):
+#     # Retrieve collection payments along with related fields
+#     collection_payments = CollectionItems.objects.select_related('invoice','collection_payment__customer', 'collection_payment__customer__routes').all()
+
+#     context = {
+#         'collection_payments': collection_payments
+#     }
+
+#     return render(request, 'sales_management/collection_report.html', context)
 def collectionreport(request):
-    # Retrieve collection payments along with related fields
-    collection_payments = CollectionItems.objects.select_related('invoice','collection_payment__customer', 'collection_payment__customer__routes').all()
-
+    start_date = None
+    end_date = None
+    selected_date = None
+    selected_route_id = None
+    selected_route = None
+    template = 'sales_management/collection_report.html'
+    collection_payments = CollectionItems.objects.select_related('invoice','collection_payment', 'collection_payment__customer', 'collection_payment__customer__routes').all()
+    # print("collection_payments",collection_payments)
+    routes = RouteMaster.objects.all()
+    print("routes",routes)
+    route_counts = {}
+    today = datetime.today()
+    
+    if request.method == 'POST':
+        start_date = request.POST.get('start_date')
+        print("start_date",start_date)
+        end_date = request.POST.get('end_date')
+        print("end_date",end_date)
+        selected_date = request.POST.get('date')
+        selected_route_id = request.POST.get('route_name')
+        print("selected_route_id",selected_route_id)
+        if start_date and end_date:
+            collection_payments = collection_payments.filter(collection_payment__created_date__range=[start_date, end_date])
+        elif selected_date:
+            collection_payments = collection_payments.filter(collection_payment__created_date=selected_date)
+        
+        if selected_route_id:
+            selected_route = RouteMaster.objects.get(route_name=selected_route_id)
+            print("selected_route",selected_route)
+            collection_payments = collection_payments.filter(collection_payment__customer__routes__route_name=selected_route)
+            print("collection_payments",collection_payments)
+    
+    # /
+    
     context = {
-        'collection_payments': collection_payments
+        'collection_payments': collection_payments, 
+        'routes': routes, 
+        'route_counts': route_counts, 
+        'today': today,
+        'start_date': start_date, 
+        'end_date': end_date, 
+        'selected_date': selected_date, 
+        'selected_route_id': selected_route_id, 
+        'selected_route': selected_route,
+        
     }
-
-    return render(request, 'sales_management/collection_report.html', context)
+    return render(request, template, context)
 
 def collection_report_excel(request):
     instances = CollectionItems.objects.all()
     data = {
-        # 'Date': [instance.collection_payment.created_date.date() for instance in instances],
+        'Date': [instance.collection_payment.created_date.date() for instance in instances],
         'Customer name': [instance.collection_payment.customer.customer_name for instance in instances],
         'Mobile No': [instance.collection_payment.customer.mobile_no for instance in instances],
         'Route': [instance.collection_payment.customer.routes.route_name if instance.collection_payment.customer.routes else '' for instance in instances],
