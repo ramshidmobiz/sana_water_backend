@@ -2443,13 +2443,13 @@ class create_customer_supply(APIView):
                         leaf.used=True
                         leaf.save()
                         
-                        van_coupon_stock = VanCouponStock.objects.get(coupon=leaf.coupon,stock_type="opening_stock")
-                        van_coupon_stock.count -= int(total_coupon_collected)
-                        van_coupon_stock.save()
+                        # van_coupon_stock = VanCouponStock.objects.get(coupon=leaf.coupon,stock_type="opening_stock")
+                        # van_coupon_stock.count -= int(total_coupon_collected)
+                        # van_coupon_stock.save()
 
-                        van_coupon_stock = VanCouponStock.objects.get(coupon=leaf.coupon,stock_type="opening_stock")
-                        van_coupon_stock.count -= int(total_coupon_collected)
-                        van_coupon_stock.save()
+                        # van_coupon_stock = VanCouponStock.objects.get(coupon=leaf.coupon,stock_type="opening_stock")
+                        # van_coupon_stock.count -= int(total_coupon_collected)
+                        # van_coupon_stock.save()
 
                 # Create CustomerSupply instance
                 customer_supply = CustomerSupply.objects.create(
