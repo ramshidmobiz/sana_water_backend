@@ -2515,7 +2515,8 @@ class create_customer_supply(APIView):
 
                     customer_supply_stock, _ = CustomerSupplyStock.objects.get_or_create(
                         customer_id=customer_id,
-                        product_id=product_id
+                        product_id=product_id,
+                        coupon_method="manual"
                     )
                     customer_supply_stock.stock_quantity += quantity
                     customer_supply_stock.save()
