@@ -2434,21 +2434,6 @@ class create_customer_supply(APIView):
         reference_no = request.data.get('reference_number')
         try:
             with transaction.atomic():
-                # if Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CASH COUPON" :
-                    
-
-                #     for leaf_id in collected_coupon_ids:
-                #         leaf = CouponLeaflet.objects.get(pk=leaf_id)
-                #         leaf.used=True
-                #         leaf.save()
-                        
-                        # van_coupon_stock = VanCouponStock.objects.get(coupon=leaf.coupon,stock_type="opening_stock")
-                        # van_coupon_stock.count -= int(total_coupon_collected)
-                        # van_coupon_stock.save()
-
-                        # van_coupon_stock = VanCouponStock.objects.get(coupon=leaf.coupon,stock_type="opening_stock")
-                        # van_coupon_stock.count -= int(total_coupon_collected)
-                        # van_coupon_stock.save()
 
                 # Create CustomerSupply instance
                 customer_supply = CustomerSupply.objects.create(
@@ -2549,7 +2534,7 @@ class create_customer_supply(APIView):
                                 customer_stock.save()
                             
                                 
-                        if total_coupon_collected < leaflet_count:
+                        if total_coupon_collected != leaflet_count:
                             balance_coupon = int(total_coupon_collected) - int(leaflet_count)
                             customer = Customers.objects.get(pk=customer_supply_data['customer'])
                             

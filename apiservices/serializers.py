@@ -1,4 +1,5 @@
-from django.db.models import Sum, Subquery
+from django.db.models import Sum, Subquery,Value
+from django.db.models.functions import Coalesce
 from rest_framework import serializers
 #from . models import *
 from rest_framework.generics import ListAPIView
@@ -336,12 +337,14 @@ class SupplyItemCustomersSerializer(serializers.ModelSerializer):
         return [five_gallon_data] + supply_product_data
     
     def get_pending_to_return(self, obj):
-        total_quantity = CustodyCustomItems.objects.filter(
-            product__product_name="5 Gallon",
-            custody_custom__customer=obj
-        ).aggregate(total_quantity=Sum('quantity'))['total_quantity']
+        # total_quantity = CustodyCustomItems.objects.filter(
+        #     product__product_name="5 Gallon",
+        #     custody_custom__customer=obj
+        # ).aggregate(total_quantity=Sum('quantity'))['total_quantity']
         
-        return total_quantity
+        total_coupons = CustomerOutstandingReport.objects.filter(product_type="coupons").aggregate(total=Coalesce(Sum('value'), Value(0)))['total']
+        
+        return total_coupons
     
     def get_coupon_details(self, obj):
         pending_coupons = 0
@@ -361,7 +364,7 @@ class SupplyItemCustomersSerializer(serializers.ModelSerializer):
                 manual_coupons = customer_coupon_stock_manual.aggregate(total_count=Sum('count'))['total_count']
             
             coupon_ids_queryset = CustomerCouponItems.objects.filter(customer_coupon__customer=obj).values_list('coupon__pk', flat=True)
-            coupon_leafs = CouponLeaflet.objects.filter(coupon__pk__in=list(coupon_ids_queryset))
+            coupon_leafs = CouponLeaflet.objects.filter(used=False,coupon__pk__in=list(coupon_ids_queryset))
             leafs = CouponLeafSerializer(coupon_leafs, many=True).data
             
         return {
