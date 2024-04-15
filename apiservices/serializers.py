@@ -342,7 +342,7 @@ class SupplyItemCustomersSerializer(serializers.ModelSerializer):
         #     custody_custom__customer=obj
         # ).aggregate(total_quantity=Sum('quantity'))['total_quantity']
         
-        total_coupons = CustomerOutstandingReport.objects.filter(customer=obj,product_type="coupons").aggregate(total=Coalesce(Sum('value'), Value(0)))['total']
+        total_coupons = CustomerOutstandingReport.objects.filter(customer=obj,product_type="emptycan").aggregate(total=Coalesce(Sum('value'), Value(0)))['total']
         
         return total_coupons
     
