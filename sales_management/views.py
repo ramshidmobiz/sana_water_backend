@@ -1619,8 +1619,6 @@ def customerSales_report(request):
     start_date_str = request.GET.get('start_date')
     end_date_str = request.GET.get('end_date')
     
-    print(start_date_str,end_date_str)
-
     if start_date_str and end_date_str:
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
@@ -1756,18 +1754,14 @@ def collectionreport(request):
     collection_payments = CollectionItems.objects.select_related('invoice','collection_payment', 'collection_payment__customer', 'collection_payment__customer__routes').all()
     # print("collection_payments",collection_payments)
     routes = RouteMaster.objects.all()
-    print("routes",routes)
     route_counts = {}
     today = datetime.today()
     
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
-        print("start_date",start_date)
         end_date = request.POST.get('end_date')
-        print("end_date",end_date)
         selected_date = request.POST.get('date')
         selected_route_id = request.POST.get('route_name')
-        print("selected_route_id",selected_route_id)
         if start_date and end_date:
             collection_payments = collection_payments.filter(collection_payment__created_date__range=[start_date, end_date])
         elif selected_date:
@@ -1775,11 +1769,7 @@ def collectionreport(request):
         
         if selected_route_id:
             selected_route = RouteMaster.objects.get(route_name=selected_route_id)
-            print("selected_route",selected_route)
             collection_payments = collection_payments.filter(collection_payment__customer__routes__route_name=selected_route)
-            print("collection_payments",collection_payments)
-    
-    # /
     
     context = {
         'collection_payments': collection_payments, 

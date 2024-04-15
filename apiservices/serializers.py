@@ -283,7 +283,10 @@ class SupplyItemFiveGallonWaterGetSerializer(serializers.ModelSerializer):
         return qty
     
     def get_tax(self,obj):
-        return obj.tax.percentage
+        try:
+            return obj.tax.percentage
+        except:
+            return 0
     
 class SupplyItemProductGetSerializer(serializers.ModelSerializer):
     rate = serializers.SerializerMethodField()
