@@ -249,10 +249,11 @@ class SupplyItemFiveCanWaterProductGetSerializer(serializers.ModelSerializer):
 class SupplyItemFiveGallonWaterGetSerializer(serializers.ModelSerializer):
     rate = serializers.SerializerMethodField()
     quantity = serializers.SerializerMethodField()
+    tax = serializers.SerializerMethodField()
 
     class Meta:
         model = ProdutItemMaster
-        fields = ['id', 'product_name','category','unit','rate','quantity']
+        fields = ['id', 'product_name','category','unit','rate','quantity','tax']
         read_only_fields = ['id', 'product_name']
 
     def get_rate(self, obj):
@@ -280,6 +281,9 @@ class SupplyItemFiveGallonWaterGetSerializer(serializers.ModelSerializer):
                 if r.request_type.request_name == "5 Gallon":
                     qty = qty + r.quantity_required
         return qty
+    
+    def get_tax(self,obj):
+        return obj.tax.percentage
     
 class SupplyItemProductGetSerializer(serializers.ModelSerializer):
     rate = serializers.SerializerMethodField()
@@ -730,10 +734,14 @@ class CollectionPaymentSerializer(serializers.ModelSerializer):
 
 
 class ProdutItemMasterSerializer(serializers.ModelSerializer):
+    tax = serializers.SerializerMethodField()
     class Meta:
         model = ProdutItemMaster
         fields = ['id','product_name','unit','tax','rate','created_date']
-
+        
+    def get_tax(self,obj):
+        return obj.tax.percentage
+        
 class CustomerSupplySerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomerSupply
