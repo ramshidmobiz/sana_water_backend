@@ -2434,14 +2434,13 @@ class create_customer_supply(APIView):
         reference_no = request.data.get('reference_number')
         try:
             with transaction.atomic():
-                if Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CASH COUPON" :
-                    total_coupon_collected = request.data.get('total_coupon_collected')
-                    collected_coupon_ids = request.data.get('collected_coupon_ids')
+                # if Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CASH COUPON" :
+                    
 
-                    for leaf_id in collected_coupon_ids:
-                        leaf = CouponLeaflet.objects.get(pk=leaf_id)
-                        leaf.used=True
-                        leaf.save()
+                #     for leaf_id in collected_coupon_ids:
+                #         leaf = CouponLeaflet.objects.get(pk=leaf_id)
+                #         leaf.used=True
+                #         leaf.save()
                         
                         # van_coupon_stock = VanCouponStock.objects.get(coupon=leaf.coupon,stock_type="opening_stock")
                         # van_coupon_stock.count -= int(total_coupon_collected)
@@ -2520,15 +2519,19 @@ class create_customer_supply(APIView):
                     customer_supply_stock.stock_quantity += quantity
                     customer_supply_stock.save()
                     
-                    van_stock = VanProductStock.objects.get(
-                        product=product_id,
-                        van__salesman=request.user,
-                        stock_type="opening_stock",
-                    )
-                    van_stock.count -= quantity
-                    van_stock.save()
+                    # van_stock = VanProductStock.objects.get(
+                    #     product=product_id,
+                    #     van__salesman=request.user,
+                    #     stock_type="opening_stock",
+                    # )
+                    # van_stock.count -= quantity
+                    # van_stock.save()
                     
                     if Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CASH COUPON" and customer_supply_stock.product.product_name.lower() == "5 gallon" :
+                        total_coupon_collected = request.data.get('total_coupon_collected')
+                        collected_coupon_ids = request.data.get('collected_coupon_ids')
+                        
+                        leaflet_count = 0
                         for c_id in collected_coupon_ids:
                             customer_supply_coupon = CustomerSupplyCoupon.objects.create(
                                 customer_supply=customer_supply,
@@ -2537,11 +2540,42 @@ class create_customer_supply(APIView):
                             customer_supply_coupon.leaf.add(leaflet_instance)
                             leaflet_instance.used=True
                             leaflet_instance.save()
+                            
+                            leaflet_count += 1
 
                             if CustomerCouponStock.objects.filter(customer__pk=customer_supply_data['customer'],coupon_method="manual",coupon_type_id=leaflet_instance.coupon.coupon_type).exists() :
                                 customer_stock = CustomerCouponStock.objects.get(customer__pk=customer_supply_data['customer'],coupon_method="manual",coupon_type_id=leaflet_instance.coupon.coupon_type)
                                 customer_stock.count -= int(total_coupon_collected)
                                 customer_stock.save()
+                            
+                                
+                        if total_coupon_collected < leaflet_count:
+                            balance_coupon = int(total_coupon_collected) - int(leaflet_count)
+                            customer = Customers.objects.get(pk=customer_supply_data['customer'])
+                            
+                            customer_outstanding = CustomerOutstanding.objects.create(
+                                customer=customer,
+                                product_type="coupons",
+                                created_by=request.user.id,
+                            )
+                            customer_coupon = CustomerCouponStock.objects.filter(coupon_method="manual").first()
+                            outstanding_coupon = OutstandingCoupon.objects.create(
+                                count=balance_coupon,
+                                customer_outstanding=customer_outstanding,
+                                coupon_type=customer_coupon.coupon_type_id
+                            )
+                            outstanding_instance = ""
+
+                            try:
+                                outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="coupons")
+                                outstanding_instance.value += int(outstanding_coupon.count)
+                                outstanding_instance.save()
+                            except:
+                                outstanding_instance = CustomerOutstandingReport.objects.create(
+                                    product_type='coupons',
+                                    value=outstanding_coupon.count,
+                                    customer=outstanding_coupon.customer_outstanding.customer
+                                )
 
                 if customer_supply.subtotal > customer_supply.amount_recieved:
                     balance_amount = customer_supply.subtotal - customer_supply.amount_recieved
