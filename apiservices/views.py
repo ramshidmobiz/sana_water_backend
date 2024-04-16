@@ -2610,7 +2610,7 @@ class create_customer_supply(APIView):
                     balance_amount = customer_supply.amount_recieved - customer_supply.subtotal
                     
                     outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="amount")
-                    outstanding_instance.value += int(balance_amount)
+                    outstanding_instance.value -= int(balance_amount)
                     outstanding_instance.save()
                         
                 random_part = str(random.randint(1000, 9999))
@@ -3217,6 +3217,14 @@ class AddCollectionPayment(APIView):
                 else:
                     # Break the loop if there is no remaining amount or the current invoice is fully paid
                     break
+            
+            # If there is remaining amount after paying all invoices, adjust it with the outstanding balance
+            if remaining_amount > Decimal('0'):
+                
+                # Update the outstanding balance
+                outstanding_instance = CustomerOutstandingReport.objects.get(customer=customer, product_type="amount")
+                outstanding_instance.value -= remaining_amount
+                outstanding_instance.save()
         
         return Response({"message": "Collection payment saved successfully."}, status=status.HTTP_201_CREATED)
 
