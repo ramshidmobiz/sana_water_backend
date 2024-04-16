@@ -748,7 +748,7 @@ class CollectionCustomerSerializer(serializers.ModelSerializer):
         fields = ['customer_id','customer_name','invoices']
 
     def get_invoices(self, obj):
-        invoices = Invoice.objects.filter(customer=obj,invoice_status="non_paid",is_deleted=False).order_by('-created_date')
+        invoices = Invoice.objects.filter(customer=obj,invoice_status="non_paid",is_deleted=False).exclude(amout_total=0).order_by('-created_date')
         invoice_list = []
         for invoice in invoices:
             invoice_data = {

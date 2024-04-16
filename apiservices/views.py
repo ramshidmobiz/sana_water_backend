@@ -2470,7 +2470,7 @@ class create_customer_supply(APIView):
                     if suply_items.product.product_name == "5 Gallon" :
                         total_fivegallon_qty += suply_items.quantity
                     
-                    if suply_items.product.product_name == "5 Gallon" and int(suply_items.quantity) > int(customer_supply.collected_empty_bottle) :
+                    if suply_items.product.product_name == "5 Gallon" and int(suply_items.quantity) < int(customer_supply.collected_empty_bottle) :
                         
                         balance_empty_bottle = suply_items.quantity - int(collected_empty_bottle)
                         customer_outstanding = CustomerOutstanding.objects.create(
@@ -2496,7 +2496,7 @@ class create_customer_supply(APIView):
                                 customer=outstanding_product.customer_outstanding.customer
                             )
                     
-                    if suply_items.product.product_name == "5 Gallon" and int(suply_items.quantity) < int(customer_supply.collected_empty_bottle) :
+                    if suply_items.product.product_name == "5 Gallon" and int(suply_items.quantity) > int(customer_supply.collected_empty_bottle) :
                         balance_empty_bottle = total_fivegallon_qty - int(customer_supply.collected_empty_bottle)
                         
                         outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="emptycan")
@@ -3075,9 +3075,84 @@ class CollectionAPI(APIView):
                 'message': 'No data found',
             }, status=400)
 
+# class AddCollectionPayment(APIView):
+#     authentication_classes = [BasicAuthentication]
+#     permission_classes = [IsAuthenticated]
+#     def post(self, request):
+#         # Extract data from request
+#         payment_method = request.data.get("payment_method")
+#         amount_received = request.data.get("amount_received")
+#         invoice_ids = request.data.get("invoice_ids")
+#         customer_id = request.data.get("customer_id")
+        
+#         # Retrieve customer object
+#         try:
+#             customer = Customers.objects.get(pk=customer_id)
+#         except Customers.DoesNotExist:
+#             return Response({"message": "Customer does not exist."}, status=status.HTTP_404_NOT_FOUND)
+        
+#         # Create collection payment instance
+#         collection_payment = CollectionPayment.objects.create(
+#             payment_method=payment_method,
+#             customer=customer,
+#             salesman=request.user,
+#             amount_received=amount_received,
+#         )
+        
+#         # If payment method is cheque, handle cheque details
+#         if payment_method == "CHEQUE":
+#             cheque_data = request.data.get("cheque_details", {})
+#             cheque_serializer = CollectionChequeSerializer(data=cheque_data)
+#             if cheque_serializer.is_valid():
+#                 cheque = cheque_serializer.save(collection_payment=collection_payment)
+#             else:
+#                 return Response(cheque_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+#         remaining_amount = amount_received
+        
+#         # Distribute the received amount among invoices
+#         for invoice_id in invoice_ids:
+#             invoice = Invoice.objects.get(pk=invoice_id)
+#             balance_invoice_amount = invoice.amout_total - invoice.amout_recieved
+            
+#             # Check if a CollectionItems instance already exists for this invoice and collection payment
+#             existing_collection_item = CollectionItems.objects.filter(invoice=invoice, collection_payment=collection_payment).first()
+#             if existing_collection_item:
+#                 # Update existing CollectionItems instance
+#                 existing_collection_item.amount_received += min(balance_invoice_amount, remaining_amount)
+#                 existing_collection_item.balance = invoice.amout_recieved - existing_collection_item.amount_received
+#                 existing_collection_item.save()
+#             else:
+#                 # Create new CollectionItems instance
+#                 CollectionItems.objects.create(
+#                     invoice=invoice,
+#                     amount=invoice.amout_total,
+#                     balance=balance_invoice_amount,
+#                     amount_received=min(balance_invoice_amount, remaining_amount),
+#                     collection_payment=collection_payment
+#                 )
+            
+#             remaining_amount -= min(balance_invoice_amount, remaining_amount)
+            
+#             # Update invoice status if fully paid
+#             if invoice.amout_recieved >= invoice.amout_total:
+#                 invoice.invoice_status = 'paid'
+#                 print("paid")
+            
+#             invoice.save()
+            
+#             if remaining_amount <= 0:
+#                 break
+
+        
+#         return Response({"message": "Collection payment saved successfully."}, status=status.HTTP_201_CREATED)
+from django.db.models import F
+from decimal import Decimal
+
 class AddCollectionPayment(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
+    
     def post(self, request):
         # Extract data from request
         payment_method = request.data.get("payment_method")
@@ -3091,60 +3166,54 @@ class AddCollectionPayment(APIView):
         except Customers.DoesNotExist:
             return Response({"message": "Customer does not exist."}, status=status.HTTP_404_NOT_FOUND)
         
-        # Create collection payment instance
-        collection_payment = CollectionPayment.objects.create(
-            payment_method=payment_method,
-            customer=customer,
-            salesman=request.user,
-            amount_received=amount_received,
-        )
-        
-        # If payment method is cheque, handle cheque details
-        if payment_method == "CHEQUE":
-            cheque_data = request.data.get("cheque_details", {})
-            cheque_serializer = CollectionChequeSerializer(data=cheque_data)
-            if cheque_serializer.is_valid():
-                cheque = cheque_serializer.save(collection_payment=collection_payment)
-            else:
-                return Response(cheque_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-        remaining_amount = amount_received
-        
-        # Distribute the received amount among invoices
-        for invoice_id in invoice_ids:
-            invoice = Invoice.objects.get(pk=invoice_id)
-            balance_invoice_amount = invoice.amout_total - invoice.amout_recieved
-             
-            # print(balance_invoice_amount)
+        # Use atomic transaction to ensure data consistency
+        with transaction.atomic():
+            # Create collection payment instance
+            collection_payment_data = {
+                "payment_method": payment_method,
+                "customer": customer,
+                "salesman": request.user,
+                "amount_received": amount_received,
+            }
+            collection_payment = CollectionPayment.objects.create(**collection_payment_data)
             
-            if balance_invoice_amount <= remaining_amount:
-                invoice.amout_recieved += balance_invoice_amount
-                remaining_amount -= balance_invoice_amount
-            else:
-                invoice.amout_recieved += remaining_amount
-                remaining_amount = 0
+            # Distribute the payment amount evenly among invoices
+            amount_per_invoice = amount_received / len(invoice_ids)
             
+            for invoice_id in invoice_ids:
+                try:
+                    invoice = Invoice.objects.get(pk=invoice_id, customer=customer)
+                except Invoice.DoesNotExist:
+                    continue
+                
+                balance_invoice_amount = invoice.amout_total - invoice.amout_recieved
+                
+                # Deduct the amount from the invoice balance
+                received_amount = min(balance_invoice_amount, amount_per_invoice)
+                invoice.amout_recieved += Decimal(received_amount)
+                invoice.save()
+                
+                # Create or update CollectionItems instance
+                collection_item, created = CollectionItems.objects.get_or_create(
+                    invoice=invoice,
+                    collection_payment=collection_payment,
+                    defaults={
+                        "amount": invoice.amout_total,
+                        "balance": balance_invoice_amount - Decimal(received_amount),
+                        "amount_received": received_amount
+                    }
+                )
+                if not created:
+                    collection_item.amount_received += Decimal(received_amount)
+                    collection_item.balance -= Decimal(received_amount)
+                    collection_item.save()
+                
             # Update invoice status if fully paid
-            if invoice.amout_recieved == invoice.amout_total:
-                invoice.invoice_status = 'paid'
-            
-            invoice.save()
-
-            # Create CollectionItems instance
-            CollectionItems.objects.create(
-                invoice=invoice,
-                amount=invoice.amout_total,
-                balance=invoice.amout_recieved - balance_invoice_amount,
-                amount_received=remaining_amount,
-                collection_payment=collection_payment
-            )
-            
-            if remaining_amount == 0:
-                break
+            fully_paid_invoices = Invoice.objects.filter(amout_recieved=F('amout_total'))
+            fully_paid_invoices.update(invoice_status='paid')
         
         return Response({"message": "Collection payment saved successfully."}, status=status.HTTP_201_CREATED)
-
-
+    
 class CouponTypesAPI(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]

@@ -163,13 +163,13 @@ class CollectionItems(models.Model):
     amount = models.DecimalField(default=0, max_digits=10, decimal_places=2)
     balance = models.DecimalField(default=0, max_digits=10, decimal_places=2)
     amount_received = models.DecimalField(default=0, max_digits=10, decimal_places=2)
-    collection_payment = models.OneToOneField(CollectionPayment, on_delete=models.CASCADE)
+    collection_payment = models.ForeignKey(CollectionPayment, on_delete=models.CASCADE)
 
     class Meta:
         ordering = ('-id',)
 
     def __str__(self):
-        return str(self.customer)
+        return str(self.collection_payment.customer)
 
 class CollectionCheque(models.Model):
     collection_payment = models.OneToOneField(CollectionPayment, on_delete=models.CASCADE)
