@@ -3148,6 +3148,7 @@ class CollectionAPI(APIView):
 #         return Response({"message": "Collection payment saved successfully."}, status=status.HTTP_201_CREATED)
 from django.db.models import F
 from decimal import Decimal
+from django.db import transaction
 
 class AddCollectionPayment(APIView):
     authentication_classes = [BasicAuthentication]
@@ -3156,7 +3157,7 @@ class AddCollectionPayment(APIView):
     def post(self, request):
         # Extract data from request
         payment_method = request.data.get("payment_method")
-        amount_received = request.data.get("amount_received")
+        amount_received = Decimal(request.data.get("amount_received"))
         invoice_ids = request.data.get("invoice_ids")
         customer_id = request.data.get("customer_id")
         
@@ -3169,50 +3170,56 @@ class AddCollectionPayment(APIView):
         # Use atomic transaction to ensure data consistency
         with transaction.atomic():
             # Create collection payment instance
-            collection_payment_data = {
-                "payment_method": payment_method,
-                "customer": customer,
-                "salesman": request.user,
-                "amount_received": amount_received,
-            }
-            collection_payment = CollectionPayment.objects.create(**collection_payment_data)
+            collection_payment = CollectionPayment.objects.create(
+                payment_method=payment_method,
+                customer=customer,
+                salesman=request.user,
+                amount_received=amount_received,
+            )
             
-            # Distribute the payment amount evenly among invoices
-            amount_per_invoice = amount_received / len(invoice_ids)
+            remaining_amount = amount_received
             
+            # Iterate over invoice IDs
             for invoice_id in invoice_ids:
                 try:
                     invoice = Invoice.objects.get(pk=invoice_id, customer=customer)
                 except Invoice.DoesNotExist:
                     continue
                 
-                balance_invoice_amount = invoice.amout_total - invoice.amout_recieved
+                # Calculate the amount due for this invoice
+                due_amount = invoice.amout_total - invoice.amout_recieved
                 
-                # Deduct the amount from the invoice balance
-                received_amount = min(balance_invoice_amount, amount_per_invoice)
-                invoice.amout_recieved += Decimal(received_amount)
-                invoice.save()
-                
-                # Create or update CollectionItems instance
-                collection_item, created = CollectionItems.objects.get_or_create(
-                    invoice=invoice,
-                    collection_payment=collection_payment,
-                    defaults={
-                        "amount": invoice.amout_total,
-                        "balance": balance_invoice_amount - Decimal(received_amount),
-                        "amount_received": received_amount
-                    }
-                )
-                if not created:
-                    collection_item.amount_received += Decimal(received_amount)
-                    collection_item.balance -= Decimal(received_amount)
-                    collection_item.save()
-                
-            # Update invoice status if fully paid
-            fully_paid_invoices = Invoice.objects.filter(amout_recieved=F('amout_total'))
-            fully_paid_invoices.update(invoice_status='paid')
+                # If remaining_amount is greater than zero and there is still due amount for the current invoice
+                if remaining_amount > Decimal('0') and due_amount > Decimal('0'):
+                    # Calculate the payment amount for this invoice
+                    payment_amount = min(due_amount, remaining_amount)
+                    
+                    # Update the invoice balance and amount received
+                    invoice.amout_recieved += payment_amount
+                    invoice.save()
+                    
+                    # Create CollectionItems instance
+                    CollectionItems.objects.create(
+                        invoice=invoice,
+                        amount=invoice.amout_total,
+                        balance=invoice.amout_total - invoice.amout_recieved,
+                        amount_received=payment_amount,
+                        collection_payment=collection_payment
+                    )
+                    
+                    # Update the remaining amount
+                    remaining_amount -= payment_amount
+                    
+                    # If the invoice is fully paid, update its status
+                    if invoice.amout_recieved == invoice.amout_total:
+                        invoice.invoice_status = 'paid'
+                        invoice.save()
+                else:
+                    # Break the loop if there is no remaining amount or the current invoice is fully paid
+                    break
         
         return Response({"message": "Collection payment saved successfully."}, status=status.HTTP_201_CREATED)
+
     
 class CouponTypesAPI(APIView):
     authentication_classes = [BasicAuthentication]

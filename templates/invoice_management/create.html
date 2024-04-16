@@ -81,7 +81,7 @@
                                                     </td>
                                                     <td>
                                                         <span class="product">
-                                                            {{ item.product }}
+                                                            {{ item.product_items }}
                                                         </span>
                                                     </td>
 
@@ -164,6 +164,13 @@
                                             <div class="form-group required">
                                                 <label class='control-label'>Balance</label>
                                                 <input type="text" value="0" class="required form-control text-right" required="" id="id_balance_amount"  style="text-align: right;">
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="form-group required">
+                                                <label class='control-label'>Reference no</label>
+                                                {{invoice_form.reference_no}}
+                                                <span style="color: red;">{{ invoice_form.reference_no.errors }}</span>
                                             </div>
                                         </div>
                                     </div>
