@@ -6,9 +6,8 @@ from datetime import datetime, date, time
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from invoice_management.models import Invoice, InvoiceItems
-from accounts.models import *
-from django.db.models import Q
+from django.db.models import Q, F
+from decimal import Decimal
 from django.http import Http404
 from django.urls import reverse
 from django.db import transaction
@@ -32,6 +31,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.permissions import BasePermission, IsAuthenticated,IsAuthenticatedOrReadOnly
 
+from accounts.models import *
+from invoice_management.models import Invoice, InvoiceItems
 from client_management.forms import CoupenEditForm
 from master.serializers import *
 from master.functions import generate_serializer_errors, get_custom_id
@@ -2455,7 +2456,6 @@ class create_customer_supply(APIView):
                 )
 
                 # Create CustomerSupplyItems instances
-                supply_items_instances = []
                 total_fivegallon_qty = 0
                 
                 for item_data in items_data:
@@ -2465,70 +2465,59 @@ class create_customer_supply(APIView):
                         quantity=item_data['quantity'],
                         amount=item_data['amount']
                     )
-                    supply_items_instances.append(suply_items)
                     
                     if suply_items.product.product_name == "5 Gallon" :
-                        total_fivegallon_qty += suply_items.quantity
-                    
-                    if suply_items.product.product_name == "5 Gallon" and int(suply_items.quantity) < int(customer_supply.collected_empty_bottle) :
-                        
-                        balance_empty_bottle = suply_items.quantity - int(collected_empty_bottle)
-                        customer_outstanding = CustomerOutstanding.objects.create(
-                            customer=customer_supply.customer,
-                            product_type="emptycan",
-                            created_by=request.user.id,
-                        )
-
-                        outstanding_product = OutstandingProduct.objects.create(
-                            empty_bottle=balance_empty_bottle,
-                            customer_outstanding=customer_outstanding,
-                        )
-                        outstanding_instance = ""
-
-                        try:
-                            outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="emptycan")
-                            outstanding_instance.value += int(outstanding_product.empty_bottle)
-                            outstanding_instance.save()
-                        except:
-                            outstanding_instance = CustomerOutstandingReport.objects.create(
-                                product_type='emptycan',
-                                value=outstanding_product.empty_bottle,
-                                customer=outstanding_product.customer_outstanding.customer
-                            )
-                    
-                    if suply_items.product.product_name == "5 Gallon" and int(suply_items.quantity) > int(customer_supply.collected_empty_bottle) :
-                        balance_empty_bottle = total_fivegallon_qty - int(customer_supply.collected_empty_bottle)
-                        
-                        outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="emptycan")
+                        total_fivegallon_qty += int(suply_items.quantity)
+                
+                # empty bottle calculate
+                if total_fivegallon_qty < int(customer_supply.collected_empty_bottle) :
+                    balance_empty_bottle = int(collected_empty_bottle) - total_fivegallon_qty
+                    if CustomerOutstandingReport.objects.filter(customer=customer_supply.customer,product_type="emptycan").exists():
+                        outstanding_instance = CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="emptycan")
                         outstanding_instance.value -= int(balance_empty_bottle)
                         outstanding_instance.save()
-                    
-                # Update CustomerSupplyStock
-                for item_data in items_data:
-                    product_id = item_data['product']
-                    quantity = item_data['quantity']
-                    customer_id = customer_supply_data['customer']
-
-                    customer_supply_stock, _ = CustomerSupplyStock.objects.get_or_create(
-                        customer_id=customer_id,
-                        product_id=product_id,
+                
+                elif total_fivegallon_qty > int(customer_supply.collected_empty_bottle) :
+                    balance_empty_bottle = total_fivegallon_qty - int(customer_supply.collected_empty_bottle)
+                    customer_outstanding = CustomerOutstanding.objects.create(
+                        customer=customer_supply.customer,
+                        product_type="emptycan",
+                        created_by=request.user.id,
                     )
-                    customer_supply_stock.stock_quantity += quantity
+
+                    outstanding_product = OutstandingProduct.objects.create(
+                        empty_bottle=balance_empty_bottle,
+                        customer_outstanding=customer_outstanding,
+                    )
+                    outstanding_instance = {}
+
+                    try:
+                        outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="emptycan")
+                        outstanding_instance.value += int(outstanding_product.empty_bottle)
+                        outstanding_instance.save()
+                    except:
+                        outstanding_instance = CustomerOutstandingReport.objects.create(
+                            product_type='emptycan',
+                            value=outstanding_product.empty_bottle,
+                            customer=outstanding_product.customer_outstanding.customer
+                        )
+            
+                supply_items = CustomerSupplyItems.objects.filter(customer_supply=customer_supply) # supply items
+                
+                # Update CustomerSupplyStock
+                for item_data in supply_items:
+                    customer_supply_stock, _ = CustomerSupplyStock.objects.get_or_create(
+                        customer=customer_supply.customer,
+                        product=item_data.product,
+                    )
+                    
+                    customer_supply_stock.stock_quantity += item_data.quantity
                     customer_supply_stock.save()
                     
-                    # van_stock = VanProductStock.objects.get(
-                    #     product=product_id,
-                    #     van__salesman=request.user,
-                    #     stock_type="opening_stock",
-                    # )
-                    # van_stock.count -= quantity
-                    # van_stock.save()
-                    
-                    if Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CASH COUPON" and customer_supply_stock.product.product_name.lower() == "5 gallon" :
+                    if Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CASH COUPON" :
                         total_coupon_collected = request.data.get('total_coupon_collected')
                         collected_coupon_ids = request.data.get('collected_coupon_ids')
                         
-                        leaflet_count = 0
                         for c_id in collected_coupon_ids:
                             customer_supply_coupon = CustomerSupplyCoupon.objects.create(
                                 customer_supply=customer_supply,
@@ -2538,24 +2527,21 @@ class create_customer_supply(APIView):
                             leaflet_instance.used=True
                             leaflet_instance.save()
                             
-                            leaflet_count += 1
-
                             if CustomerCouponStock.objects.filter(customer__pk=customer_supply_data['customer'],coupon_method="manual",coupon_type_id=leaflet_instance.coupon.coupon_type).exists() :
                                 customer_stock = CustomerCouponStock.objects.get(customer__pk=customer_supply_data['customer'],coupon_method="manual",coupon_type_id=leaflet_instance.coupon.coupon_type)
-                                customer_stock.count -= int(total_coupon_collected)
+                                customer_stock.count -= int(len(collected_coupon_ids))
                                 customer_stock.save()
-                            
                                 
-                        if total_coupon_collected != leaflet_count:
-                            balance_coupon = int(total_coupon_collected) - int(leaflet_count)
-                            customer = Customers.objects.get(pk=customer_supply_data['customer'])
+                        if total_fivegallon_qty < len(collected_coupon_ids):
+                            balance_coupon = int(total_fivegallon_qty) - int(len(collected_coupon_ids))
                             
                             customer_outstanding = CustomerOutstanding.objects.create(
-                                customer=customer,
+                                customer=customer_supply.customer,
                                 product_type="coupons",
                                 created_by=request.user.id,
                             )
-                            customer_coupon = CustomerCouponStock.objects.filter(coupon_method="manual").first()
+                            
+                            customer_coupon = CustomerCouponStock.objects.filter(customer__pk=customer_supply_data['customer'],coupon_method="manual").first()
                             outstanding_coupon = OutstandingCoupon.objects.create(
                                 count=balance_coupon,
                                 customer_outstanding=customer_outstanding,
@@ -2574,44 +2560,50 @@ class create_customer_supply(APIView):
                                     customer=outstanding_coupon.customer_outstanding.customer
                                 )
                         
-                        elif total_coupon_collected > leaflet_count:
-                            balance_coupon = total_fivegallon_qty - leaflet_count
+                        elif total_fivegallon_qty > len(collected_coupon_ids):
+                            balance_coupon = total_fivegallon_qty - len(collected_coupon_ids)
                             outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="coupons")
-                            outstanding_instance.value -= int(balance_coupon)
+                            outstanding_instance.value += int(balance_coupon)
                             outstanding_instance.save()
+                            
+                    elif Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CREDIT COUPON" :
+                        pass
+                    elif Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CASH" or Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CREDIT" :
+                        if customer_supply.amount_recieved < customer_supply.subtotal:
+                            balance_amount = customer_supply.subtotal - customer_supply.amount_recieved
+                            
+                            customer_outstanding = CustomerOutstanding.objects.create(
+                                customer=customer_supply.customer,
+                                product_type="amount",
+                                created_by=request.user.id,
+                            )
 
-                if customer_supply.amount_recieved < customer_supply.subtotal:
-                    balance_amount = customer_supply.subtotal - customer_supply.amount_recieved
+                            outstanding_amount = OutstandingAmount.objects.create(
+                                amount=balance_amount,
+                                customer_outstanding=customer_outstanding,
+                            )
+                            outstanding_instance = {}
 
-                    customer_outstanding = CustomerOutstanding.objects.create(
-                        customer=customer_supply.customer,
-                        product_type="amount",
-                        created_by=request.user.id,
-                    )
-
-                    outstanding_amount = OutstandingAmount.objects.create(
-                        amount=balance_amount,
-                        customer_outstanding=customer_outstanding,
-                    )
-                    outstanding_instance = ""
-
-                    try:
-                        outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="amount")
-                        outstanding_instance.value += int(outstanding_amount.amount)
-                        outstanding_instance.save()
-                    except:
-                        outstanding_instance = CustomerOutstandingReport.objects.create(
-                            product_type='amount',
-                            value=outstanding_amount.amount,
-                            customer=outstanding_amount.customer_outstanding.customer
-                        )
-                        
-                elif customer_supply.amount_recieved > customer_supply.subtotal:
-                    balance_amount = customer_supply.amount_recieved - customer_supply.subtotal
-                    
-                    outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="amount")
-                    outstanding_instance.value -= int(balance_amount)
-                    outstanding_instance.save()
+                            try:
+                                outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="amount")
+                                outstanding_instance.value += int(outstanding_amount.amount)
+                                outstanding_instance.save()
+                            except:
+                                outstanding_instance = CustomerOutstandingReport.objects.create(
+                                    product_type='amount',
+                                    value=outstanding_amount.amount,
+                                    customer=outstanding_amount.customer_outstanding.customer
+                                )
+                                
+                        elif customer_supply.amount_recieved > customer_supply.subtotal:
+                            balance_amount = customer_supply.amount_recieved - customer_supply.subtotal
+                            
+                            outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="amount")
+                            outstanding_instance.value -= int(balance_amount)
+                            outstanding_instance.save()
+                            
+                    # elif Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CREDIT" :
+                        # pass
                         
                 random_part = str(random.randint(1000, 9999))
                 invoice_number = f'WTR-{random_part}'
@@ -2630,7 +2622,7 @@ class create_customer_supply(APIView):
                 )
 
                 # Create invoice items
-                for item_data in supply_items_instances:
+                for item_data in supply_items:
                     item = CustomerSupplyItems.objects.get(pk=item_data.pk)
                     InvoiceItems.objects.create(
                         category=item.product.category,
@@ -3146,9 +3138,6 @@ class CollectionAPI(APIView):
 
         
 #         return Response({"message": "Collection payment saved successfully."}, status=status.HTTP_201_CREATED)
-from django.db.models import F
-from decimal import Decimal
-from django.db import transaction
 
 class AddCollectionPayment(APIView):
     authentication_classes = [BasicAuthentication]
