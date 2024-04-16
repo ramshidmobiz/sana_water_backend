@@ -249,7 +249,6 @@ class SupplyItemFiveCanWaterProductGetSerializer(serializers.ModelSerializer):
 class SupplyItemFiveGallonWaterGetSerializer(serializers.ModelSerializer):
     rate = serializers.SerializerMethodField()
     quantity = serializers.SerializerMethodField()
-    tax = serializers.SerializerMethodField()
 
     class Meta:
         model = ProdutItemMaster
@@ -281,12 +280,6 @@ class SupplyItemFiveGallonWaterGetSerializer(serializers.ModelSerializer):
                 if r.request_type.request_name == "5 Gallon":
                     qty = qty + r.quantity_required
         return qty
-    
-    def get_tax(self,obj):
-        try:
-            return obj.tax.percentage
-        except:
-            return 0
     
 class SupplyItemProductGetSerializer(serializers.ModelSerializer):
     rate = serializers.SerializerMethodField()
@@ -737,13 +730,9 @@ class CollectionPaymentSerializer(serializers.ModelSerializer):
 
 
 class ProdutItemMasterSerializer(serializers.ModelSerializer):
-    tax = serializers.SerializerMethodField()
     class Meta:
         model = ProdutItemMaster
         fields = ['id','product_name','unit','tax','rate','created_date']
-        
-    def get_tax(self,obj):
-        return obj.tax.percentage
         
 class CustomerSupplySerializer(serializers.ModelSerializer):
     class Meta:

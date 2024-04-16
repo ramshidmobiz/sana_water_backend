@@ -2456,6 +2456,8 @@ class create_customer_supply(APIView):
 
                 # Create CustomerSupplyItems instances
                 supply_items_instances = []
+                total_fivegallon_qty = 0
+                
                 for item_data in items_data:
                     suply_items = CustomerSupplyItems.objects.create(
                         customer_supply=customer_supply,
@@ -2465,7 +2467,10 @@ class create_customer_supply(APIView):
                     )
                     supply_items_instances.append(suply_items)
                     
-                    if suply_items.product.product_name == "5 Gallon" and int(customer_supply.collected_empty_bottle) < int(suply_items.quantity) :
+                    if suply_items.product.product_name == "5 Gallon" :
+                        total_fivegallon_qty += suply_items.quantity
+                    
+                    if suply_items.product.product_name == "5 Gallon" and int(suply_items.quantity) > int(customer_supply.collected_empty_bottle) :
                         
                         balance_empty_bottle = suply_items.quantity - int(collected_empty_bottle)
                         customer_outstanding = CustomerOutstanding.objects.create(
@@ -2490,6 +2495,13 @@ class create_customer_supply(APIView):
                                 value=outstanding_product.empty_bottle,
                                 customer=outstanding_product.customer_outstanding.customer
                             )
+                    
+                    if suply_items.product.product_name == "5 Gallon" and int(suply_items.quantity) < int(customer_supply.collected_empty_bottle) :
+                        balance_empty_bottle = total_fivegallon_qty - int(customer_supply.collected_empty_bottle)
+                        
+                        outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="emptycan")
+                        outstanding_instance.value -= int(balance_empty_bottle)
+                        outstanding_instance.save()
                     
                 # Update CustomerSupplyStock
                 for item_data in items_data:
@@ -2561,8 +2573,14 @@ class create_customer_supply(APIView):
                                     value=outstanding_coupon.count,
                                     customer=outstanding_coupon.customer_outstanding.customer
                                 )
+                        
+                        elif total_coupon_collected > leaflet_count:
+                            balance_coupon = total_fivegallon_qty - leaflet_count
+                            outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="coupons")
+                            outstanding_instance.value -= int(balance_coupon)
+                            outstanding_instance.save()
 
-                if customer_supply.subtotal > customer_supply.amount_recieved:
+                if customer_supply.amount_recieved < customer_supply.subtotal:
                     balance_amount = customer_supply.subtotal - customer_supply.amount_recieved
 
                     customer_outstanding = CustomerOutstanding.objects.create(
@@ -2587,6 +2605,13 @@ class create_customer_supply(APIView):
                             value=outstanding_amount.amount,
                             customer=outstanding_amount.customer_outstanding.customer
                         )
+                        
+                elif customer_supply.amount_recieved > customer_supply.subtotal:
+                    balance_amount = customer_supply.amount_recieved - customer_supply.subtotal
+                    
+                    outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="amount")
+                    outstanding_instance.value += int(balance_amount)
+                    outstanding_instance.save()
                         
                 random_part = str(random.randint(1000, 9999))
                 invoice_number = f'WTR-{random_part}'
