@@ -3219,7 +3219,7 @@ class AddCollectionPayment(APIView):
                     break
             
             # If there is remaining amount after paying all invoices, adjust it with the outstanding balance
-            if remaining_amount > Decimal('0'):
+            if remaining_amount > Decimal('0') and CustomerOutstandingReport.objects.filter(customer=customer, product_type="amount").exists() :
                 
                 # Update the outstanding balance
                 outstanding_instance = CustomerOutstandingReport.objects.get(customer=customer, product_type="amount")
