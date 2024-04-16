@@ -39,8 +39,6 @@ urlpatterns = [
 #------------------Product-Route wise sales report
 
     path('product_route_salesreport', product_route_salesreport, name='product_route_salesreport'),
-    path('product_route_salesreport_detail/<str:customersupplyitem_id>/', product_route_salesreport_detail_view, name='product_route_salesreport_detail_view'),
-    path('print_product_sales', print_product_sales, name='print_product_sales'),
     path('download_product_sales_excel/', download_product_sales_excel, name='download_product_sales_excel'),
 
     #ytd,mtd report

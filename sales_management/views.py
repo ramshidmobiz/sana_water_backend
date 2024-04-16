@@ -1264,217 +1264,130 @@ def download_salesreport_excel(request):
 
 
 def product_route_salesreport(request):
-    start_date = None
-    end_date = None
-    selected_date = None
-    selected_product_id = None
-    selected_product = None
     template = 'sales_management/product_route_salesreport.html'
-    routes = RouteMaster.objects.all()
+    filter_data = {}
+
+    start_date = request.POST.get('start_date')
+    end_date = request.POST.get('end_date')
+    selected_date = request.POST.get('date')
+    selected_product_id = request.POST.get('selected_product_id')
+    print("selected_product_id", selected_product_id)
+
+    selected_product = None
+    if selected_product_id:
+        selected_product = get_object_or_404(ProdutItemMaster, id=selected_product_id)
+
+    query = request.GET.get("q")
+    print("query",query)
+    route_filter = request.POST.get('route_name')  # Modify to use POST instead of GET
+    print("route_filter",route_filter)
+
+    # Start with all customers
+    user_li = Customers.objects.all()
+
+    # Apply filters if they exist
+    if query:
+        user_li = user_li.filter(
+            Q(custom_id__icontains=query) |
+            Q(customer_name__icontains=query) |
+            Q(sales_type__icontains=query) |
+
+            Q(mobile_no__icontains=query) |
+            Q(routes__route_name__icontains=query) |
+            Q(location__location_name__icontains=query) |
+            Q(building_name__icontains=query)
+        )
+        print("user_li",user_li)
+
+    if route_filter:
+        user_li = user_li.filter(routes__route_name=route_filter)
+
+    # Get all route names for the dropdown
+    route_li = RouteMaster.objects.all()
 
     customersupplyitems = CustomerSupplyItems.objects.all()
-    # print("customersupplyitems",customersupplyitems)
+    coupons_collected = CustomerSupplyCoupon.objects.all()
     products = ProdutItemMaster.objects.all()
-    route_counts = {}
-    today = datetime.today()
-    
-    if request.method == 'POST':
-        start_date = request.POST.get('start_date')
-        # print("start_date",start_date)
-        end_date = request.POST.get('end_date')
-        # print("end_date",end_date)
-        selected_date = request.POST.get('date')
-        selected_product_id = request.POST.get('selected_product_id')
-        # print("selected_product_id",selected_product_id)
-        if start_date and end_date:
-            customersupplyitems = customersupplyitems.filter(customer_supply__created_date__range=[start_date, end_date])
-        elif selected_date:
-            customersupplyitems = customersupplyitems.filter(customer_supply__created_date=selected_date)
-        else:
-            customersupplyitems = CustomerSupplyItems.objects.filter(customer_supply__created_date=timezone.now().date())
-        # print("customersupplyitemsHHHHHHHHHHHHHHHHHHHH",customersupplyitems)
-        
-        if selected_product_id:
-            selected_product = ProdutItemMaster.objects.get(id=selected_product_id)
-            customersupplyitems = customersupplyitems.filter(product=selected_product)
-    
+    today = datetime.today().date()
+
+    if start_date and end_date:
+        customersupplyitems = customersupplyitems.filter(customer_supply__created_date__range=[start_date, end_date], product=selected_product,customer_supply__customer__routes__route_name=route_filter)
+        # coupons_collected = coupons_collected.filter(customer_supply__created_date__range=[start_date, end_date],customer_supply__customersales_type='CASH COUPON')
+        coupons_collected = coupons_collected.filter(customer_supply__created_date__range=[start_date, end_date], customer_supply__customer__sales_type='CASH COUPON')
+
+        print("coupons_collected", coupons_collected)
+        filter_data['start_date'] = start_date
+        filter_data['end_date'] = end_date
     else:
-        customersupplyitems = CustomerSupplyItems.objects.filter(customer_supply__created_date=timezone.now().date())
-    
-    total_quantity = customersupplyitems.aggregate(total_quantity=Sum('quantity'))['total_quantity']
-    print("total_quantity",total_quantity)
-    total_amount = customersupplyitems.aggregate(total_amount=Sum('amount'))['total_amount']
-    print("total_amount",total_amount)
+        customersupplyitems = customersupplyitems.filter(customer_supply__created_date=timezone.now().date(), product=selected_product,customer_supply__customer__routes__route_name=route_filter)
+        coupons_collected = coupons_collected.filter(customer_supply__created_date=timezone.now().date(),customer_supply__customer__sales_type='CASH COUPON')
+        print("coupons_collected", coupons_collected)
+        filter_data['start_date'] = today
+        filter_data['end_date'] = today
 
-    # Initialize dictionary to store routes for each salesman
-    salesman_routes = {}
-
-    # Get route for each salesman
-    for route in routes:
-        van_route = Van_Routes.objects.filter(routes=route).first()
-        if van_route and van_route.van:
-            salesman = van_route.van.salesman
-            print("salesman",salesman)
-            # Check if salesman exists in CustomerSupply
-            if CustomerSupplyItems.objects.filter(customer_supply__salesman=salesman).exists():
-                print("")
-                salesman_routes[salesman.username] = route.route_name
-            print("salesman_routes",salesman_routes)
     context = {
-        'customersupplyitems': customersupplyitems, 
-        'products': products, 
-        'route_counts': route_counts, 
+        'customersupplyitems': customersupplyitems,
+        'products': products,
         'today': today,
-        'start_date': start_date, 
-        'end_date': end_date, 
-        'selected_date': selected_date, 
-        'selected_product_id': selected_product_id, 
+        'filter_data': filter_data,
+        'selected_date': selected_date,
+        'selected_product_id': selected_product_id,
         'selected_product': selected_product,
-        'total_quantity': total_quantity,
-        'total_amount': total_amount,
-        'salesman_routes':salesman_routes,
+        'coupons_collected': coupons_collected,
+        'route_li': route_li,
     }
     return render(request, template, context)
 
-def product_route_salesreport_detail_view(request, customersupplyitem_id):
-    customersupplyitem = get_object_or_404(CustomerSupplyItems, id=customersupplyitem_id)
-    return render(request, 'sales_management/product_route_salesreport_detail.html', {'customersupplyitem': customersupplyitem}) 
-
-def print_product_sales(request):
-    # Retrieve sales Route data
-    routes = RouteMaster.objects.all()
-
-    # Retrieve sales report data
-    customer_supplies = CustomerSupplyItems.objects.all()
-    # Check if customer_supplies is not empty
-    if customer_supplies:
-        # Create the HTTP response with PDF content type and attachment filename
-        response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="sales_report.pdf"'
-
-        # Create a PDF document
-        pdf_buffer = BytesIO()
-        pdf = SimpleDocTemplate(pdf_buffer, pagesize=letter)
-        data = []
-
-        # Add headers
-        headers = ['Sl No','Ref/Invoice No','Route', 'Salesman', 'Customer Name', 'Product', 'Quantity', 'Amount']
-        data.append(headers)
-
-        total_quantity = 0
-        total_amount = 0
-    # Initialize dictionary to store routes for each salesman
-    salesman_routes = {}
-
-    # Get route for each salesman
-    for route in routes:
-        van_route = Van_Routes.objects.filter(routes=route).first()
-        if van_route and van_route.van:
-            salesman = van_route.van.salesman
-            print("salesman",salesman)
-            # Check if salesman exists in CustomerSupply
-            if CustomerSupplyItems.objects.filter(customer_supply__salesman=salesman).exists():
-                print("")
-                salesman_routes[salesman.username] = route.route_name
-            print("salesman_routes",salesman_routes)
-
-        # Add data to the PDF document
-        sl_no = 1
-        for supply in customer_supplies:
-            # Append data for each supply
-            data.append([
-                sl_no,
-                supply.customer_supply.reference_number,
-                salesman_routes.get(supply.customer_supply.salesman.username, 'Not Assigned'),  # Route
-                supply.customer_supply.salesman.username,
-                supply.customer_supply.customer.customer_name,
-                supply.product,
-                supply.quantity,
-                supply.amount,
-            ])
-            # Update total quantity and amount
-            total_quantity += supply.quantity
-            total_amount += supply.amount
-            sl_no += 1
-
-        # Add footer with total quantity and amount
-        footer = ['Total', '', '', '','','', total_quantity, total_amount]
-        data.append(footer)
-
-        table = Table(data)
-        style = TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                            ('GRID', (0, 0), (-1, -1), 1, colors.black)])
-        table.setStyle(style)
-
-        # Add the table to the PDF document
-        elements = [table]
-        pdf.build(elements)
-
-        # Get the value of the BytesIO buffer and write it to the response
-        pdf_value = pdf_buffer.getvalue()
-        pdf_buffer.close()
-        response.write(pdf_value)
-
-        return response
-    else:
-        return HttpResponse("No data available for sales report.")
 
 def download_product_sales_excel(request):
-    # Retrieve sales report data
-    customer_supplies = CustomerSupplyItems.objects.all()
-    # Retrieve routes 
+    # Retrieve filter parameters from the request
+    start_date = request.POST.get('start_date')
+    end_date = request.POST.get('end_date')
+    route_name = request.POST.get('route_name')
 
-    routes = RouteMaster.objects.all()
+    # Apply filtering to the queryset based on the parameters
+    customersupplyitems = CustomerSupplyItems.objects.all()
+    if start_date and end_date:
+        customersupplyitems = customersupplyitems.filter(customer_supply__created_date__range=[start_date, end_date], customer_supply__customer__routes__route_name=route_name)
 
-    # Initialize dictionary to store routes for each salesman
-    salesman_routes = {}
 
-    # Get route for each salesman
-    for route in routes:
-        van_route = Van_Routes.objects.filter(routes=route).first()
-        if van_route and van_route.van:
-            salesman = van_route.van.salesman
-            # Check if salesman exists in CustomerSupply
-            if CustomerSupplyItems.objects.filter(customer_supply__salesman=salesman).exists():
-                salesman_routes[salesman.username] = route.route_name
-
-    # Create the HttpResponse object with Excel content type and attachment filename
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="sales_report.xlsx"'
+    response['Content-Disposition'] = 'attachment; filename="product_sales_report.xlsx"'
 
     # Create a new Excel workbook and add a worksheet
     workbook = xlsxwriter.Workbook(response)
     worksheet = workbook.add_worksheet()
 
-    # Define cell formats
-    bold_format = workbook.add_format({'bold': True})
+    # Define column headers
+    headers = [
+        'Route Name',
+        'Customer Name',
+        'Mode of Supply',
+        'Quantity',
+        'Empty Bottle Collected',
+        'Coupon Collected',
+        'Amount Collected',
+        'Ref/Invoice No',
+        'Time of Supply',
+    ]
 
-    # Write headers
-    headers = ['Sl No','Ref/Invoice No','Route', 'Salesman', 'Customer Name', 'Product', 'Quantity', 'Amount']
+    # Write column headers
     for col, header in enumerate(headers):
-        worksheet.write(0, col, header, bold_format)
+        worksheet.write(0, col, header)
 
     # Write data rows
-    for row, supply in enumerate(customer_supplies, start=1):
-        worksheet.write(row, 0, row)  # Sl No
-        worksheet.write(row, 1, supply.customer_supply.reference_number)  # reference number
-        worksheet.write(row, 2, salesman_routes.get(supply.customer_supply.salesman.username, 'Not Assigned'))  # Route
-        worksheet.write(row, 3, supply.customer_supply.salesman.username)  # Salesman
-        worksheet.write(row, 4, supply.customer_supply.customer.customer_name)  # Customer Name
-        worksheet.write(row, 5, supply.product.product_name)  # Product
-        worksheet.write(row, 6, supply.quantity)  # Quantity
-        worksheet.write(row, 7, supply.amount)  # Amount
-
-    # Calculate and write total quantity and amount
-    total_quantity = sum(supply.quantity for supply in customer_supplies)
-    total_amount = sum(supply.amount for supply in customer_supplies)
-    worksheet.write(len(customer_supplies) + 1, 6, total_quantity, bold_format)  # Total Quantity
-    worksheet.write(len(customer_supplies) + 1, 7, total_amount, bold_format)  # Total Amount
+    row = 1
+    for customersupplyitem in customersupplyitems:
+        worksheet.write(row, 0, customersupplyitem.customer_supply.customer.routes.route_name)
+        worksheet.write(row, 1, customersupplyitem.customer_supply.customer.customer_name)
+        worksheet.write(row, 2, customersupplyitem.customer_supply.customer.sales_type)
+        worksheet.write(row, 3, customersupplyitem.quantity)
+        worksheet.write(row, 4, customersupplyitem.customer_supply.collected_empty_bottle)
+        worksheet.write(row, 5, customersupplyitem.customer_supply.collected_empty_bottle)
+        worksheet.write(row, 6, customersupplyitem.amount)
+        worksheet.write(row, 7, customersupplyitem.customer_supply.reference_number)
+        worksheet.write(row, 8, customersupplyitem.customer_supply.created_date.strftime('%Y-%m-%d %H:%M:%S'))
+        row += 1
 
     # Close the workbook
     workbook.close()
@@ -1615,6 +1528,8 @@ def customerSales_report(request):
     total_net_payable = 0
     total_vat = 0
     total_grand_total = 0
+    total_amount_recieved =0
+
 
     start_date_str = request.GET.get('start_date')
     end_date_str = request.GET.get('end_date')
@@ -1637,6 +1552,8 @@ def customerSales_report(request):
         total_net_payable += sale.customer_supply.net_payable
         total_vat += sale.customer_supply.vat
         total_grand_total += sale.customer_supply.grand_total
+        total_amount_recieved +=sale.customer_supply.amount_recieved
+
 
     context = {
         'customersales': customersales,
@@ -1645,6 +1562,8 @@ def customerSales_report(request):
         'total_net_payable': total_net_payable,
         'total_vat': total_vat,
         'total_grand_total': total_grand_total,
+        'total_amount_recieved' :total_amount_recieved,
+
         'filter_data': filter_data,
         
     }
@@ -1667,6 +1586,8 @@ def customerSales_Excel_report(request):
     total_net_payable = 0
     total_vat = 0
     total_grand_total = 0
+    total_amount_recieved = 0
+
 
     
     # Initialize dictionary to store routes for each salesman
@@ -1692,7 +1613,7 @@ def customerSales_Excel_report(request):
     bold_format = workbook.add_format({'bold': True})
 
     # Write headers
-    headers = ['Ref/Invoice No', 'Date & Time', 'Customer Name', 'Building Name/Room No/Floor No', 'Route', 'Salesman', 'Amount', 'Discount', 'Net Taxable', 'Vat Amount', 'Grand Total']
+    headers = ['Ref/Invoice No', 'Date & Time', 'Customer Name', 'Building Name/Room No/Floor No','SalesType', 'Route', 'Salesman', 'Amount', 'Discount', 'Net Taxable', 'Vat Amount', 'Grand Total','Amount Collected']
     for col, header in enumerate(headers):
         worksheet.write(0, col, header, bold_format)
 
@@ -1703,13 +1624,16 @@ def customerSales_Excel_report(request):
         worksheet.write(row, 1, str(customersale.customer_supply.created_date))
         worksheet.write(row, 2, customersale.customer_supply.customer.customer_name)
         worksheet.write(row, 3, f"{customersale.customer_supply.customer.building_name}/{customersale.customer_supply.customer.door_house_no}/{customersale.customer_supply.customer.floor_no}")
-        worksheet.write(row, 4, salesman_routes.get(customersale.customer_supply.salesman.username, 'Not Assigned'))
-        worksheet.write(row, 5, customersale.customer_supply.salesman.username)
-        worksheet.write(row, 6, customersale.amount)
-        worksheet.write(row, 7, customersale.customer_supply.discount)
-        worksheet.write(row, 8, customersale.customer_supply.net_payable)
-        worksheet.write(row, 9, customersale.customer_supply.vat)
-        worksheet.write(row, 10, customersale.customer_supply.grand_total)
+        worksheet.write(row, 4, customersale.customer_supply.customer.sales_type)
+        worksheet.write(row, 5, customersale.customer_supply.customer.routes.route_name)
+        worksheet.write(row, 6, customersale.customer_supply.salesman.username)
+        worksheet.write(row, 7, customersale.amount)
+        worksheet.write(row, 8, customersale.customer_supply.discount)
+        worksheet.write(row, 9, customersale.customer_supply.net_payable)
+        worksheet.write(row, 10, customersale.customer_supply.vat)
+        worksheet.write(row, 11, customersale.customer_supply.grand_total)
+        worksheet.write(row, 12, customersale.customer_supply.amount_recieved)
+
         row += 1
 
 
@@ -1720,14 +1644,16 @@ def customerSales_Excel_report(request):
         total_net_payable += sale.customer_supply.net_payable
         total_vat += sale.customer_supply.vat
         total_grand_total += sale.customer_supply.grand_total
-    
+        total_amount_recieved += sale.customer_supply.amount_recieved
      # Write totals
-    worksheet.write(row, 5, 'Total:')
-    worksheet.write(row, 6, total_amount)
-    worksheet.write(row, 7, total_discount)
-    worksheet.write(row, 8, total_net_payable)
-    worksheet.write(row, 9, total_vat)
-    worksheet.write(row, 10, total_grand_total)
+    worksheet.write(row, 6, 'Total:')
+    worksheet.write(row, 7, total_amount)
+    worksheet.write(row, 8, total_discount)
+    worksheet.write(row, 9, total_net_payable)
+    worksheet.write(row, 10, total_vat)
+    worksheet.write(row, 11, total_grand_total)
+    worksheet.write(row, 12, total_amount_recieved)
+
 
     # Close the workbook
     workbook.close()
@@ -1764,8 +1690,6 @@ def collectionreport(request):
         selected_route_id = request.POST.get('route_name')
         if start_date and end_date:
             collection_payments = collection_payments.filter(collection_payment__created_date__range=[start_date, end_date])
-        elif selected_date:
-            collection_payments = collection_payments.filter(collection_payment__created_date=selected_date)
         
         if selected_route_id:
             selected_route = RouteMaster.objects.get(route_name=selected_route_id)
