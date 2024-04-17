@@ -1299,17 +1299,17 @@ class AssignStaffCoupon_API(APIView):
             return Response(serializer.data)
     def post(self,request):
 
-        alloted_quantity = int(request.data.get('alloted_quantity', 0))
+        alloted_quantity = Decimal(request.data.get('alloted_quantity', 0))
         coupon_request=request.data.get('coupon_request')
         coupon_request_data = CouponRequest.objects.values('quantity').get(coupon_request_id=coupon_request)
-        quantity = int(coupon_request_data['quantity'])
+        quantity = Decimal(coupon_request_data['quantity'])
         remaining_quantity=quantity- alloted_quantity
 
 
         data ={
            "alloted_quantity":alloted_quantity ,
            "quantity":quantity,
-           'remaining_quantity': int(coupon_request_data['quantity']) - int(request.data.get('alloted_quantity', 0)),
+           'remaining_quantity': Decimal(coupon_request_data['quantity']) - Decimal(request.data.get('alloted_quantity', 0)),
            'status': 'Pending' if remaining_quantity > 0 else 'Closed',
            'coupon_request':coupon_request,
            'created_by': str(request.user.id),
@@ -1730,7 +1730,7 @@ class Staff_New_Order(APIView):
                     product_dict = defaultdict(int)
                     for data in data_list:
                         product_id = data.get("product_id")
-                        count = int(data.get("count", 0))
+                        count = Decimal(data.get("count", 0))
                         product_dict[product_id] += count
 
                     # Create order details for each product
@@ -2130,7 +2130,7 @@ class CustomerCouponRecharge(APIView):
                     customer_coupon = CustomerCoupon.objects.create(customer=customer, salesman=salesman, **coupon_data)
                     coupon_instances.append(customer_coupon)
                     
-                    balance_amount = int(coupon_data.pop("balance"))
+                    balance_amount = Decimal(coupon_data.pop("balance"))
                     
                     if balance_amount != 0 :
                         
@@ -2148,7 +2148,7 @@ class CustomerCouponRecharge(APIView):
 
                         try:
                             outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer,product_type="amount")
-                            outstanding_instance.value += int(outstanding_amount.amount)
+                            outstanding_instance.value += Decimal(outstanding_amount.amount)
                             outstanding_instance.save()
                         except:
                             outstanding_instance = CustomerOutstandingReport.objects.create(
@@ -2186,7 +2186,7 @@ class CustomerCouponRecharge(APIView):
                                     count=0
                                 )
 
-                            customer_coupon_stock.count += int(coupon.no_of_leaflets)
+                            customer_coupon_stock.count += Decimal(coupon.no_of_leaflets)
                             customer_coupon_stock.save()
                             
                             van_coupon_stock = VanCouponStock.objects.get(coupon=coupon)
@@ -2467,18 +2467,18 @@ class create_customer_supply(APIView):
                     )
                     
                     if suply_items.product.product_name == "5 Gallon" :
-                        total_fivegallon_qty += int(suply_items.quantity)
+                        total_fivegallon_qty += Decimal(suply_items.quantity)
                 
                 # empty bottle calculate
-                if total_fivegallon_qty < int(customer_supply.collected_empty_bottle) :
-                    balance_empty_bottle = int(collected_empty_bottle) - total_fivegallon_qty
+                if total_fivegallon_qty < Decimal(customer_supply.collected_empty_bottle) :
+                    balance_empty_bottle = Decimal(collected_empty_bottle) - total_fivegallon_qty
                     if CustomerOutstandingReport.objects.filter(customer=customer_supply.customer,product_type="emptycan").exists():
                         outstanding_instance = CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="emptycan")
-                        outstanding_instance.value -= int(balance_empty_bottle)
+                        outstanding_instance.value -= Decimal(balance_empty_bottle)
                         outstanding_instance.save()
                 
-                elif total_fivegallon_qty > int(customer_supply.collected_empty_bottle) :
-                    balance_empty_bottle = total_fivegallon_qty - int(customer_supply.collected_empty_bottle)
+                elif total_fivegallon_qty > Decimal(customer_supply.collected_empty_bottle) :
+                    balance_empty_bottle = total_fivegallon_qty - Decimal(customer_supply.collected_empty_bottle)
                     customer_outstanding = CustomerOutstanding.objects.create(
                         customer=customer_supply.customer,
                         product_type="emptycan",
@@ -2493,7 +2493,7 @@ class create_customer_supply(APIView):
 
                     try:
                         outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="emptycan")
-                        outstanding_instance.value += int(outstanding_product.empty_bottle)
+                        outstanding_instance.value += Decimal(outstanding_product.empty_bottle)
                         outstanding_instance.save()
                     except:
                         outstanding_instance = CustomerOutstandingReport.objects.create(
@@ -2515,6 +2515,7 @@ class create_customer_supply(APIView):
                     customer_supply_stock.save()
                     
                     if Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CASH COUPON" :
+                        print("cash coupon")
                         total_coupon_collected = request.data.get('total_coupon_collected')
                         collected_coupon_ids = request.data.get('collected_coupon_ids')
                         
@@ -2529,11 +2530,12 @@ class create_customer_supply(APIView):
                             
                             if CustomerCouponStock.objects.filter(customer__pk=customer_supply_data['customer'],coupon_method="manual",coupon_type_id=leaflet_instance.coupon.coupon_type).exists() :
                                 customer_stock = CustomerCouponStock.objects.get(customer__pk=customer_supply_data['customer'],coupon_method="manual",coupon_type_id=leaflet_instance.coupon.coupon_type)
-                                customer_stock.count -= int(len(collected_coupon_ids))
+                                customer_stock.count -= Decimal(len(collected_coupon_ids))
                                 customer_stock.save()
                                 
                         if total_fivegallon_qty < len(collected_coupon_ids):
-                            balance_coupon = int(total_fivegallon_qty) - int(len(collected_coupon_ids))
+                            print("total_fivegallon_qty < len(collected_coupon_ids)", total_fivegallon_qty, "------------------------", len(collected_coupon_ids))
+                            balance_coupon = Decimal(total_fivegallon_qty) - Decimal(len(collected_coupon_ids))
                             
                             customer_outstanding = CustomerOutstanding.objects.create(
                                 customer=customer_supply.customer,
@@ -2551,7 +2553,7 @@ class create_customer_supply(APIView):
 
                             try:
                                 outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="coupons")
-                                outstanding_instance.value += int(outstanding_coupon.count)
+                                outstanding_instance.value += Decimal(outstanding_coupon.count)
                                 outstanding_instance.save()
                             except:
                                 outstanding_instance = CustomerOutstandingReport.objects.create(
@@ -2560,11 +2562,18 @@ class create_customer_supply(APIView):
                                     customer=outstanding_coupon.customer_outstanding.customer
                                 )
                         
-                        elif total_fivegallon_qty > len(collected_coupon_ids):
+                        elif total_fivegallon_qty > len(collected_coupon_ids) :
                             balance_coupon = total_fivegallon_qty - len(collected_coupon_ids)
-                            outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="coupons")
-                            outstanding_instance.value += int(balance_coupon)
-                            outstanding_instance.save()
+                            try :
+                                outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="coupons")
+                                outstanding_instance.value += Decimal(balance_coupon)
+                                outstanding_instance.save()
+                            except:
+                                outstanding_instance=CustomerOutstandingReport.objects.create(
+                                    product_type="coupons",
+                                    value=balance_coupon,
+                                    customer=customer_supply.customer,
+                                    )
                             
                     elif Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CREDIT COUPON" :
                         pass
@@ -2573,9 +2582,9 @@ class create_customer_supply(APIView):
                             balance_amount = customer_supply.subtotal - customer_supply.amount_recieved
                             
                             customer_outstanding = CustomerOutstanding.objects.create(
-                                customer=customer_supply.customer,
                                 product_type="amount",
                                 created_by=request.user.id,
+                                customer=customer_supply.customer,
                             )
 
                             outstanding_amount = OutstandingAmount.objects.create(
@@ -2586,7 +2595,7 @@ class create_customer_supply(APIView):
 
                             try:
                                 outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="amount")
-                                outstanding_instance.value += int(outstanding_amount.amount)
+                                outstanding_instance.value += Decimal(outstanding_amount.amount)
                                 outstanding_instance.save()
                             except:
                                 outstanding_instance = CustomerOutstandingReport.objects.create(
@@ -2599,7 +2608,7 @@ class create_customer_supply(APIView):
                             balance_amount = customer_supply.amount_recieved - customer_supply.subtotal
                             
                             outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="amount")
-                            outstanding_instance.value -= int(balance_amount)
+                            outstanding_instance.value -= Decimal(balance_amount)
                             outstanding_instance.save()
                             
                     # elif Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CREDIT" :
@@ -2854,7 +2863,7 @@ class OutstandingAmountAPI(APIView):
             custody_items = CustodyCustomItems.objects.filter(customer=customer_id)
             total_amount = custody_items.aggregate(total_amount=Sum('amount'))['total_amount']
             amount_paid = request.data['amount_paid']
-            amount_paid = int(amount_paid)
+            amount_paid = Decimal(amount_paid)
             balance = total_amount - amount_paid
             product = custody_items.first().product
             

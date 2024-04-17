@@ -315,9 +315,10 @@ class SupplyItemCustomersSerializer(serializers.ModelSerializer):
     products = serializers.SerializerMethodField()
     pending_to_return = serializers.SerializerMethodField()
     coupon_details = serializers.SerializerMethodField()
+    is_supplied = serializers.SerializerMethodField()
     class Meta:
         model = Customers
-        fields = ['customer_id','customer_name','routes','sales_type','products','pending_to_return','coupon_details']
+        fields = ['customer_id','customer_name','routes','sales_type','products','pending_to_return','coupon_details','is_supplied']
         
     def get_products(self, obj):
         fivegallon = ProdutItemMaster.objects.get(product_name="5 Gallon")
@@ -373,6 +374,12 @@ class SupplyItemCustomersSerializer(serializers.ModelSerializer):
             'manual_coupons': manual_coupons,
             'leafs' : leafs,   
         }
+        
+    def get_is_supplied(self,obj):
+        status = False
+        if CustomerSupply.objects.filter(customer=obj,created_date__date=datetime.today().date()).exists() :
+            status = True
+        return status
 
 class CustomerSupplySerializer(serializers.ModelSerializer):
     
