@@ -65,6 +65,7 @@
                                         <th>Ref/Invoice No</th>
                                         <th>Customer Name</th>
                                         <th>Building Name/Room No/Floor No</th>
+                                        <th>Customer Sales Type</th>
                                         <th>Route</th>
                                         <th>Salesman</th>
                                         <th>Amount</th>
@@ -72,6 +73,7 @@
                                         <th>Net Taxable</th>
                                         <th>Vat Amount</th>
                                         <th>Grand Total </th>
+                                        <th>Amount Collected </th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -83,13 +85,16 @@
                                             <td>{{ customersale.customer_supply.reference_number }}</td>
                                             <td>{{ customersale.customer_supply.customer.customer_name }}</td>
                                             <td>{{ customersale.customer_supply.customer.building_name }}/ {{ customersale.customer_supply.customer.door_house_no }}/ {{ customersale.customer_supply.customer.floor_no }}</td>
-                                            <td>{{ customersale.get_salesman_route }}</td>
+                                            <td>{{ customersale.customer_supply.customer.sales_type }}</td>
+                                            <td>{{ customersale.customer_supply.customer.routes.route_name }}</td>
                                             <td>{{ customersale.customer_supply.salesman.username }}</td>
                                             <td>{{ customersale.amount }}</td>
                                             <td>{{ customersale.customer_supply.discount }}</td>
                                             <td>{{ customersale.customer_supply.net_payable }}</td>
                                             <td>{{ customersale.customer_supply.vat}}</td>
                                             <td>{{ customersale.customer_supply.grand_total}}</td>
+                                            <td>{{ customersale.customer_supply.amount_recieved }}</td>
+
                                             <td>
                                                 <div class="g-2">
                                                     <a href="{% url 'customerSales_Detail_report' customersale.id %}" aria-label="anchor" class="btn  btn-warning-light btn-sm" data-bs-toggle="tooltip" data-bs-original-title="View">
@@ -105,12 +110,14 @@
                                 <!-- Table Footer -->
                                 <tfoot>
                                     <tr>
-                                        <td colspan="7" style="text-align: right;">Total:</td>
+                                        <td colspan="8" style="text-align: right;">Total:</td>
                                         <td>{{ total_amount }}</td>
                                         <td>{{ total_discount }}</td>
                                         <td>{{ total_net_payable }}</td>
                                         <td>{{ total_vat }}</td>
                                         <td>{{ total_grand_total }}</td>
+                                        <td>{{ total_amount_recieved }}</td>
+
                                     </tr>
                                 </tfoot>
 
@@ -134,6 +141,7 @@
                 <th rowspan="2">Date & Time</th>
                 <th rowspan="2">Customer Name</th>
                 <th rowspan="2">Building Name/Room No/Floor No</th>
+                <th rowspan="2">Customer Sales Type</th>
                 <th rowspan="2">Route</th>
                 <th rowspan="2">Salesman</th>
                 <th rowspan="2">Amount</th>
@@ -141,6 +149,8 @@
                 <th rowspan="2">Net Taxable</th>
                 <th rowspan="2">Vat Amount</th>
                 <th rowspan="2">Grand Total </th>
+                <th rowspan="2">Amount Collected </th>
+
             </tr>
         </thead>
         <tbody>
@@ -151,25 +161,30 @@
                     <td>{{ customersale.customer_supply.created_date }}</td>
                     <td>{{ customersale.customer_supply.customer.customer_name }}</td>
                     <td>{{ customersale.customer_supply.customer.building_name }}/ {{ customersale.customer_supply.customer.door_house_no }}/ {{ customersale.customer_supply.customer.floor_no }}</td>
-                    <td>{{ salesman_routes|default:"Not Assigned" }}</td>
+                    <td>{{ customersale.customer_supply.customer.sales_type }}</td>
+                    <td>{{ customersale.customer_supply.customer.routes.route_name }}</td>
                     <td>{{ customersale.customer_supply.salesman.username }}</td>
                     <td>{{ customersale.amount }}</td>
                     <td>{{ customersale.customer_supply.discount }}</td>
                     <td>{{ customersale.customer_supply.net_payable }}</td>
                     <td>{{ customersale.customer_supply.vat}}</td>
                     <td>{{ customersale.customer_supply.grand_total}}</td>
+                    <td>{{ customersale.customer_supply.amount_recieved}}</td>
+
                 </tr>
             {% endfor %}
         </tbody>
         <!-- Table Footer -->
         <tfoot>
             <tr>
-                <td colspan="7" style="text-align: right;">Total:</td>
+                <td colspan="8" style="text-align: right;">Total:</td>
                 <td>{{ total_amount }}</td>
                 <td>{{ total_discount }}</td>
                 <td>{{ total_net_payable }}</td>
                 <td>{{ total_vat }}</td>
                 <td>{{ total_grand_total }}</td>
+                <td>{{ total_amount_recieved }}</td>
+
             </tr>
         </tfoot>
     </table>
