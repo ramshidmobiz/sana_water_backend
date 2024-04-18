@@ -132,8 +132,7 @@
                                         <td>{{ customersupplyitem.customer_supply.customer.sales_type }}</td>
                                         <td>{{ customersupplyitem.quantity }}</td>
                                         <td>{{ customersupplyitem.customer_supply.collected_empty_bottle }}</td>
-                                        <td>{{ customersupplyitem.collected_empty_bottle }}</td>
-
+                                        <td>{{ customersupplyitem.leaf_count }}</td>
                                         <td>{{ customersupplyitem.amount }}</td>
                                         <td>{{ customersupplyitem.customer_supply.reference_number}}</td>
                                         <td>{{ customersupplyitem.customer_supply.created_date|date}}</td>
@@ -191,9 +190,6 @@
                     <td>{{ customersupplyitem.amount }}</td>
                     <td>{{ customersupplyitem.customer_supply.reference_number}}</td>
                     <td>{{ customersupplyitem.customer_supply.created_date|date}}</td>
-
-
-                    
                 </tr>
             {% endfor %}
         </tbody>

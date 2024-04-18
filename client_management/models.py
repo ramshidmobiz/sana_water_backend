@@ -7,6 +7,7 @@ from accounts.models import *
 from coupon_management.models import COUPON_METHOD_CHOICES, Coupon, CouponLeaflet, CouponType, NewCoupon
 from product.models import *
 from django.http import HttpResponse
+from django.db.models import Count
 
 COUPON_TYPE = (
     ('cash_coupon','Cash Coupon'),
@@ -326,6 +327,9 @@ class CustomerSupplyItems(models.Model):
             
         def __str__(self):
             return str(self.customer_supply)
+        
+        def leaf_count(self):
+            return CustomerSupplyCoupon.objects.filter(customer_supply=self.customer_supply).aggregate(Count('leaf'))['leaf__count']
         
 class CustomerSupplyCoupon(models.Model):
         id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
