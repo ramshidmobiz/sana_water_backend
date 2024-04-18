@@ -143,6 +143,11 @@ class VanCouponStock(models.Model):
     
 class OffloadVan(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created_by = models.CharField(max_length=30, blank=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_by = models.CharField(max_length=20, null=True, blank=True)
+    modified_date = models.DateTimeField(auto_now=True ,blank=True, null=True)
+    
     van = models.ForeignKey(Van, on_delete=models.CASCADE)
     product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=0)
