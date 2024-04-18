@@ -312,7 +312,7 @@ class CustomerSupply(models.Model):
         class Meta:
             ordering = ('-created_date',)
         def __str__(self):
-            return self.customer
+            return str(self.customer)
 
 class CustomerSupplyItems(models.Model):
         id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -325,7 +325,7 @@ class CustomerSupplyItems(models.Model):
             ordering = ('-id',)
             
         def __str__(self):
-            return self.customer_supply
+            return str(self.customer_supply)
         
 class CustomerSupplyCoupon(models.Model):
         id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -336,7 +336,7 @@ class CustomerSupplyCoupon(models.Model):
             ordering = ('-id',)
             
         def __str__(self):
-            return self.customer_supply
+            return str(self.customer_supply)
         
 class CustomerSupplyStock(models.Model):
         id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -348,7 +348,7 @@ class CustomerSupplyStock(models.Model):
             ordering = ('-id',)
             
         def __str__(self):
-            return self.product
+            return str(self.product)
         
 
 
