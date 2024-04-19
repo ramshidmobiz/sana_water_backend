@@ -3220,6 +3220,10 @@ class AddCollectionPayment(APIView):
                         collection_payment=collection_payment
                     )
                     
+                    outstanding_instance = CustomerOutstandingReport.objects.get(customer=customer, product_type="amount")
+                    outstanding_instance.value -= payment_amount
+                    outstanding_instance.save()
+                    
                     # Update the remaining amount
                     remaining_amount -= payment_amount
                     
@@ -3232,30 +3236,31 @@ class AddCollectionPayment(APIView):
                     break
             
             # If there is remaining amount after paying all invoices, adjust it with the outstanding balance
-            # if remaining_amount > Decimal('0') :
             print("after brke")
-            customer_outstanding = CustomerOutstanding.objects.create(
-                        product_type="amount",
-                        created_by=request.user.id,
-                        customer=customer,
-                    )
+            if remaining_amount != Decimal('0') :
+                print("!= 0")
+                customer_outstanding = CustomerOutstanding.objects.create(
+                            product_type="amount",
+                            created_by=request.user.id,
+                            customer=customer,
+                        )
 
-            outstanding_amount = OutstandingAmount.objects.create(
-                    amount=remaining_amount,
-                    customer_outstanding=customer_outstanding,
-                )
-            
-            if CustomerOutstandingReport.objects.filter(customer=customer, product_type="amount").exists():
-                    # Update the outstanding balance
-                    outstanding_instance = CustomerOutstandingReport.objects.get(customer=customer, product_type="amount")
-                    outstanding_instance.value -= remaining_amount
-                    outstanding_instance.save()
-            else:
-                CustomerOutstandingReport.objects.create(
-                    customer=customer, 
-                    product_type="amount",
-                    value=remaining_amount,
+                outstanding_amount = OutstandingAmount.objects.create(
+                        amount=remaining_amount,
+                        customer_outstanding=customer_outstanding,
                     )
+                
+                if CustomerOutstandingReport.objects.filter(customer=customer, product_type="amount").exists():
+                        # Update the outstanding balance
+                        outstanding_instance = CustomerOutstandingReport.objects.get(customer=customer, product_type="amount")
+                        outstanding_instance.value -= remaining_amount
+                        outstanding_instance.save()
+                else:
+                    CustomerOutstandingReport.objects.create(
+                        customer=customer, 
+                        product_type="amount",
+                        value=remaining_amount,
+                        )
     
         return Response({"message": "Collection payment saved successfully."}, status=status.HTTP_201_CREATED)
 
