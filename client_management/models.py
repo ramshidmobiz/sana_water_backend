@@ -281,7 +281,7 @@ class OutstandingCoupon(models.Model):
 class CustomerOutstandingReport(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     product_type = models.CharField(max_length=200, choices=PRODUCT_TYPES)
-    value = models.IntegerField(default=0)
+    value = models.DecimalField(default=0, max_digits=10, decimal_places=2)
     customer = models.ForeignKey('accounts.Customers', on_delete=models.CASCADE)
     class Meta:
         ordering = ('-id',)
