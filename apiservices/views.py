@@ -21,6 +21,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.hashers import make_password, check_password
+from django.db.models import Sum, Value, DecimalField
 ######rest framwework section
 from rest_framework import status
 from rest_framework.views import APIView
@@ -3011,9 +3012,9 @@ class customer_outstanding(APIView):
         serialized_data = CustomerOutstandingSerializer(customers, many=True)
         
         customer_outstanding = CustomerOutstandingReport.objects.filter(customer__in=customers)
-        total_amount = customer_outstanding.filter(product_type="amount").aggregate(total=Coalesce(Sum('value'), Value(0)))['total']
-        total_coupons = customer_outstanding.filter(product_type="coupons").aggregate(total=Coalesce(Sum('value'), Value(0)))['total']
-        total_emptycan = customer_outstanding.filter(product_type="emptycan").aggregate(total=Coalesce(Sum('value'), Value(0)))['total']
+        total_amount = customer_outstanding.filter(product_type="amount").aggregate(total=Sum('value', output_field=DecimalField()))['total']
+        total_coupons = customer_outstanding.filter(product_type="coupons").aggregate(total=Sum('value', output_field=DecimalField()))['total']
+        total_emptycan = customer_outstanding.filter(product_type="emptycan").aggregate(total=Sum('value', output_field=DecimalField()))['total']
 
         return Response({
             'status': True,
