@@ -1,5 +1,4 @@
-from django.db.models import Sum, Subquery,Value
-from django.db.models.functions import Coalesce
+from django.db.models import Sum, Value, DecimalField
 from rest_framework import serializers
 #from . models import *
 from rest_framework.generics import ListAPIView
@@ -343,7 +342,7 @@ class SupplyItemCustomersSerializer(serializers.ModelSerializer):
         #     custody_custom__customer=obj
         # ).aggregate(total_quantity=Sum('quantity'))['total_quantity']
         
-        total_coupons = CustomerOutstandingReport.objects.filter(customer=obj,product_type="emptycan").aggregate(total=Coalesce(Sum('value'), Value(0)))['total']
+        total_coupons = CustomerOutstandingReport.objects.filter(customer=obj,product_type="emptycan").aggregate(total=Sum('value', output_field=DecimalField()))['total']
         
         return total_coupons
     
