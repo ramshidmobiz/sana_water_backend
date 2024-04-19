@@ -368,6 +368,7 @@ def customer_list_excel(request):
         'Mobile No': [customer.mobile_no for customer in user_li],
         'Building Name': [customer.building_name for customer in user_li],
         'House No': [customer.door_house_no if customer.door_house_no else 'Nil' for customer in user_li],
+        'Number of Bottles': [customer.no_of_bottles_required if customer.no_of_bottles_required else '' for customer in user_li],
         'Next Visit date': ['' for customer in user_li],
         'Sales Type': [customer.sales_type for customer in user_li],
 
@@ -382,13 +383,13 @@ def customer_list_excel(request):
         table_border_format = workbook.add_format({'border':1})
         worksheet.conditional_format(4, 0, len(df.index)+4, len(df.columns) - 1, {'type':'cell', 'criteria': '>', 'value':0, 'format':table_border_format})
         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 16, 'border': 1})
-        worksheet.merge_range('A1:J2', f'National Water', merge_format)
+        worksheet.merge_range('A1:K2', f'National Water', merge_format)
         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
-        worksheet.merge_range('A3:J3', f'    Customer List   ', merge_format)
+        worksheet.merge_range('A3:K3', f'    Customer List   ', merge_format)
         # worksheet.merge_range('E3:H3', f'Date: {def_date}', merge_format)
         # worksheet.merge_range('I3:M3', f'Total bottle: {total_bottle}', merge_format)
         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
-        worksheet.merge_range('A4:J4', '', merge_format)
+        worksheet.merge_range('A4:K4', '', merge_format)
     
     filename = f"Customer List.xlsx"
     response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
