@@ -1269,20 +1269,17 @@ def product_route_salesreport(request):
     template = 'sales_management/product_route_salesreport.html'
     filter_data = {}
 
-    start_date = request.POST.get('start_date')
-    end_date = request.POST.get('end_date')
-    selected_date = request.POST.get('date')
-    selected_product_id = request.POST.get('selected_product_id')
-    print("selected_product_id", selected_product_id)
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    selected_product_id = request.GET.get('selected_product_id')
 
     selected_product = None
     if selected_product_id:
         selected_product = get_object_or_404(ProdutItemMaster, id=selected_product_id)
+        filter_data["product_id"]=selected_product.pk
 
     query = request.GET.get("q")
-    print("query",query)
-    route_filter = request.POST.get('route_name')  # Modify to use POST instead of GET
-    print("route_filter",route_filter)
+    route_filter = request.GET.get('route_name')  # Modify to use POST instead of GET
 
     # Start with all customers
     user_li = Customers.objects.all()
@@ -1299,10 +1296,11 @@ def product_route_salesreport(request):
             Q(location__location_name__icontains=query) |
             Q(building_name__icontains=query)
         )
-        print("user_li",user_li)
+        # print("user_li",user_li)
 
     if route_filter:
         user_li = user_li.filter(routes__route_name=route_filter)
+        filter_data["route_name"]=route_filter
 
     # Get all route names for the dropdown
     route_li = RouteMaster.objects.all()
@@ -1316,25 +1314,19 @@ def product_route_salesreport(request):
         customersupplyitems = customersupplyitems.filter(customer_supply__created_date__range=[start_date, end_date], product=selected_product,customer_supply__customer__routes__route_name=route_filter)
         # coupons_collected = coupons_collected.filter(customer_supply__created_date__range=[start_date, end_date],customer_supply__customersales_type='CASH COUPON')
         coupons_collected = coupons_collected.filter(customer_supply__created_date__range=[start_date, end_date], customer_supply__customer__sales_type='CASH COUPON')
-
-        print("coupons_collected", coupons_collected)
         filter_data['start_date'] = start_date
         filter_data['end_date'] = end_date
     else:
         customersupplyitems = customersupplyitems.filter(customer_supply__created_date=timezone.now().date(), product=selected_product,customer_supply__customer__routes__route_name=route_filter)
         coupons_collected = coupons_collected.filter(customer_supply__created_date=timezone.now().date(),customer_supply__customer__sales_type='CASH COUPON')
-        print("coupons_collected", coupons_collected)
         filter_data['start_date'] = today
         filter_data['end_date'] = today
 
     context = {
-        'customersupplyitems': customersupplyitems,
+        'customersupplyitems': customersupplyitems.order_by("-customer_supply__created_date"),
         'products': products,
         'today': today,
         'filter_data': filter_data,
-        'selected_date': selected_date,
-        'selected_product_id': selected_product_id,
-        'selected_product': selected_product,
         'coupons_collected': coupons_collected,
         'route_li': route_li,
     }
