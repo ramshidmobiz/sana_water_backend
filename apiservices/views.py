@@ -2325,49 +2325,50 @@ class CustodyCustomItemAPI(APIView):
 
     def post(self, request, *args, **kwargs):
         try:
-            customer_id = request.data['customer_id']
-            product_id = request.data['product_id']
-            serial_number = request.data['serialnumber']
-            quantity = request.data['quantity']
-            deposit_type = request.data['deposit_type']
-            agreement_number = request.data['agreement_no']
-            amount = request.data['amount']
+            custody_custom_data = request.data.get('custody_custom', {})
+            custody_items_data = request.data.get('custody_items', [])
 
-            product_instance = get_object_or_404(ProdutItemMaster, id=product_id)
-
-            custody_custom, _ = CustodyCustom.objects.get_or_create(
-                customer_id=customer_id,
-                agreement_no=agreement_number,
-                deposit_type=deposit_type
+            # Create or update CustodyCustom instance
+            custody_custom_instance, _ = CustodyCustom.objects.update_or_create(
+                agreement_no=custody_custom_data.get('agreement_no'),
+                defaults=custody_custom_data
             )
 
-            existing_custody_item = CustodyCustomItems.objects.filter(
-                custody_custom=custody_custom,
-                product=product_instance,
-                
-            ).first()
+            # Create CustodyCustomItems instances
+            for item_data in custody_items_data:
+                CustodyCustomItems.objects.create(custody_custom=custody_custom_instance, **item_data)
 
-            if existing_custody_item:
-               
-                existing_custody_item.quantity += quantity
-                existing_custody_item.serialnumber = existing_custody_item.serialnumber  + ',' + serial_number
-                existing_custody_item.save()
-                custody_item = existing_custody_item
+            # Update or create CustomerCustodyStock instances
+            customer = custody_custom_instance.customer
+            for item_data in custody_items_data:
+                product_id = item_data.get('product')
+                serialnumber = item_data.get('serialnumber')
+                amount = item_data.get('amount')
 
-            else:
-                custody_item = CustodyCustomItems.objects.create(
-                    custody_custom=custody_custom,
-                    product=product_instance,
-                    amount=amount,
-                    serialnumber=serial_number,
-                    quantity=quantity
-                )
+                # Try to get existing stock instance
+                try:
+                    stock_instance = CustomerCustodyStock.objects.get(customer=customer, product_id=product_id)
+                    # If agreement number already exists, append using comma
+                    if custody_custom_data['agreement_no'] in stock_instance.agreement_no:
+                        stock_instance.agreement_no += ', ' + custody_custom_data['agreement_no']
+                    else:
+                        stock_instance.agreement_no += ', ' + custody_custom_data['agreement_no']
+                    stock_instance.serialnumber += ', ' + serialnumber
+                    stock_instance.amount += amount
+                    stock_instance.save()
+                except CustomerCustodyStock.DoesNotExist:
+                    CustomerCustodyStock.objects.create(
+                        customer=customer,
+                        agreement_no=custody_custom_data.get('agreement_no'),
+                        deposit_type=custody_custom_data.get('deposit_type'),
+                        reference_no=custody_custom_data.get('reference_no'),
+                        product_id=product_id,
+                        quantity=item_data.get('quantity'),
+                        serialnumber=serialnumber,
+                        amount=amount
+                    )
 
-            serializer = self.serializer_class(custody_item)
-           
-
-            
-            return Response({"status": True, "data": serializer.data, "message": "Data saved successfully!"})
+            return Response({"status": True, "message": "Data saved successfully!"})
         except Exception as e:
             print(e)
             return Response({"status": False, "message": str(e)})
