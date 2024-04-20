@@ -1990,14 +1990,15 @@ class ScheduleByRoute(APIView):
 
     def get(self, request, date_str, route_id, trip):
         route = RouteMaster.objects.get(route_id=route_id)
-        print(route)
+        # print(route)
         todays_customers = find_customers(request, date_str, route_id)
 
         if todays_customers:
             customers = [customer for customer in todays_customers if customer['trip'] == trip.capitalize()]
-            print(customers)
+            # print(customers)
 
             totale_bottle=0
+            is_supplied = False
             for customer in customers:
                 totale_bottle+=customer['no_of_bottles']
             return Response({

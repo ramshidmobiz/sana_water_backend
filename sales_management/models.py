@@ -1,5 +1,7 @@
 from django.db import models
 from django.db import models
+from django.db.models import Sum,DecimalField
+
 from accounts.models import Customers, CustomUser
 from client_management.models import CustomerSupply
 from invoice_management.models import Invoice
@@ -157,6 +159,44 @@ class CollectionPayment(models.Model):
 
     def __str__(self):
         return str(self.customer)
+    
+    def total_amount(self):
+        return CollectionItems.objects.filter(collection_payment=self).aggregate(total=Sum('amount', output_field=DecimalField()))['total'] or 0
+    
+    def total_discounts(self):
+        collection_items = self.collectionitems_set.all()
+
+        total_discount = 0
+
+        for item in collection_items:
+            invoice = item.invoice
+            total_discount += invoice.discount
+        return total_discount
+    
+    def total_net_taxeble(self):
+        collection_items = self.collectionitems_set.all()
+
+        total_net_taxable = 0
+
+        for item in collection_items:
+            invoice = item.invoice
+            total_net_taxable += invoice.net_taxable
+        return total_net_taxable
+    
+    def total_vat(self):
+        collection_items = self.collectionitems_set.all()
+
+        total_vat = 0
+
+        for item in collection_items:
+            invoice = item.invoice
+            total_vat += invoice.vat
+        return total_vat
+    
+    def collected_amount(self):
+        return CollectionItems.objects.filter(collection_payment=self).aggregate(total=Sum('amount_received', output_field=DecimalField()))['total'] or 0
+    
+    
     
 class CollectionItems(models.Model):
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE)

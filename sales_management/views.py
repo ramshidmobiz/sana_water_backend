@@ -1,6 +1,8 @@
 # views.py
 import json
 import random
+from datetime import datetime, timedelta
+
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse, reverse_lazy
@@ -1489,7 +1491,6 @@ def yearmonthsalesreport(request):
 
 #     return render(request, 'sales_management/yearmonthsalesreportview.html', context)
 
-from datetime import datetime
 def yearmonthsalesreportview(request, route_id):
     route = RouteMaster.objects.get(route_id=route_id)
     current_year = datetime.now().year
@@ -1520,16 +1521,13 @@ def yearmonthsalesreportview(request, route_id):
 
 def customerSales_report(request):
     filter_data = {}
-    customersales = CustomerSupplyItems.objects.all()
-
-    # Initialize totals
+    
     total_amount = 0
     total_discount = 0
     total_net_payable = 0
     total_vat = 0
     total_grand_total = 0
-    total_amount_recieved =0
-
+    total_amount_recieved = 0
 
     start_date_str = request.GET.get('start_date')
     end_date_str = request.GET.get('end_date')
@@ -1537,26 +1535,116 @@ def customerSales_report(request):
     if start_date_str and end_date_str:
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-        customersales = customersales.filter(customer_supply__created_date__date__range=[start_date, end_date])
-        filter_data['start_date'] = start_date
-        filter_data['end_date'] = end_date
-    else:
-        customersales = customersales.filter(customer_supply__created_date__date=datetime.today().date())
-        filter_data['start_date'] = datetime.today().date()
-        filter_data['end_date'] = datetime.today().date()
+    else :
+        start_date = datetime.today().date()
+        end_date = datetime.today().date()
+    # print(start_date,end_date)
+    filter_data = {
+        'start_date': start_date.strftime('%Y-%m-%d'),
+        'end_date': end_date.strftime('%Y-%m-%d'),
+    }
+    
+    sales = CustomerSupply.objects.select_related('customer', 'salesman').filter(
+        created_date__date__gte=start_date,  # Assuming start_date and end_date are provided
+        created_date__date__lte=end_date
+    ).exclude(customer__sales_type__in=["CASH COUPON","CREDIT"]).order_by("-created_date")
+
+    # Query CustomerCoupon data
+    coupons = CustomerCoupon.objects.select_related('customer', 'salesman').filter(
+        created_date__date__gte=start_date,  # Assuming start_date and end_date are provided
+        created_date__date__lte=end_date
+    ).order_by("-created_date")
+
+    # Query CollectionPayment data
+    collections = CollectionPayment.objects.select_related('customer', 'salesman').filter(
+        created_date__date__gte=start_date,  # Assuming start_date and end_date are provided
+        created_date__date__lte=end_date
+    ).order_by("-created_date")
+
+    # Organize the data for rendering in the template
+    sales_report_data = []
+
+    # Process CustomerSupply data
+    for sale in sales:
+        sales_report_data.append({
+            'date': sale.created_date.date(),
+            'ref_invoice_no': sale.reference_number,
+            'customer_name': sale.customer.customer_name,
+            'building_name':sale.customer.building_name,
+            'sales_type':sale.customer.sales_type,
+            'route_name':sale.customer.routes.route_name,
+            'salesman':sale.customer.sales_staff.get_fullname(),
+            'amount': sale.grand_total,
+            'discount': sale.discount,
+            'net_taxable': sale.subtotal,
+            'vat_amount': sale.vat,
+            'grand_total': sale.grand_total,
+            'amount_collected': sale.amount_recieved,
+        })
         
-    # Calculate totals
-    for sale in customersales:
-        total_amount += sale.amount
-        total_discount += sale.customer_supply.discount
-        total_net_payable += sale.customer_supply.net_payable
-        total_vat += sale.customer_supply.vat
-        total_grand_total += sale.customer_supply.grand_total
-        total_amount_recieved +=sale.customer_supply.amount_recieved
+        total_amount += sale.grand_total
+        total_discount += sale.discount
+        total_net_payable += sale.net_payable
+        total_vat += sale.vat
+        total_grand_total += sale.grand_total
+        total_amount_recieved += sale.amount_recieved
 
+    # Process CustomerCoupon data
+    for coupon in coupons:
+        sales_report_data.append({
+            'date': coupon.created_date.date(),
+            'ref_invoice_no': coupon.reference_number,
+            'customer_name': coupon.customer.customer_name,
+            'building_name':coupon.customer.building_name,
+            'sales_type':coupon.customer.sales_type,
+            'route_name':coupon.customer.routes.route_name,
+            'salesman':coupon.customer.sales_staff.get_fullname(),
+            # Add other fields as needed from CustomerCoupon model
+            'amount': coupon.grand_total,
+            'discount': coupon.discount,
+            'net_taxable': coupon.net_amount,
+            'vat_amount': Tax.objects.get(name="VAT").percentage,
+            'grand_total': coupon.grand_total,
+            'amount_collected': coupon.amount_recieved,
+        })
+        
+        total_amount += coupon.grand_total
+        total_discount += coupon.discount
+        total_net_payable += coupon.net_amount
+        total_vat += Tax.objects.get(name="VAT").percentage
+        total_grand_total += coupon.grand_total
+        total_amount_recieved += coupon.amount_recieved
 
+    # Process CollectionPayment data
+    for collection in collections:
+        sales_report_data.append({
+            'date': collection.created_date.date(),
+            'ref_invoice_no': "",
+            'customer_name': collection.customer.customer_name,
+            'building_name':collection.customer.building_name,
+            'sales_type':collection.customer.sales_type,
+            'route_name':collection.customer.routes.route_name,
+            'salesman':collection.customer.sales_staff.get_fullname(),
+            # Add other fields as needed from CollectionPayment model
+            'amount': collection.total_amount(),
+            'discount': collection.total_discounts(),
+            'net_taxable': collection.total_net_taxeble(),
+            'vat_amount': collection.total_vat(),
+            'grand_total': collection.total_amount(),
+            'amount_collected': collection.collected_amount(),
+            # Add other necessary data
+        })
+        
+        total_amount += collection.total_amount()
+        total_discount += collection.total_discounts()
+        total_net_payable += collection.total_net_taxeble()
+        total_vat += collection.total_vat()
+        total_grand_total += collection.total_amount()
+        total_amount_recieved += collection.collected_amount()
+
+        
     context = {
-        'customersales': customersales,
+        'customersales': sales_report_data,
         'total_amount': total_amount,
         'total_discount': total_discount,
         'total_net_payable': total_net_payable,
@@ -1677,35 +1765,41 @@ def collectionreport(request):
     selected_route_id = None
     selected_route = None
     template = 'sales_management/collection_report.html'
-    collection_payments = CollectionItems.objects.select_related('invoice','collection_payment', 'collection_payment__customer', 'collection_payment__customer__routes').all()
-    # print("collection_payments",collection_payments)
+    
+    collection_payments = CollectionItems.objects.all()
+    
     routes = RouteMaster.objects.all()
     route_counts = {}
     today = datetime.today()
     
-    if request.method == 'POST':
-        start_date = request.POST.get('start_date')
-        end_date = request.POST.get('end_date')
-        selected_date = request.POST.get('date')
-        selected_route_id = request.POST.get('route_name')
-        if start_date and end_date:
-            collection_payments = collection_payments.filter(collection_payment__created_date__range=[start_date, end_date])
-        
-        if selected_route_id:
-            selected_route = RouteMaster.objects.get(route_name=selected_route_id)
-            collection_payments = collection_payments.filter(collection_payment__customer__routes__route_name=selected_route)
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    if start_date_str and end_date_str:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+    else:
+        start_date = datetime.today().date()
+        end_date = datetime.today().date() + timedelta(days=1)
+
+    filter_data = {
+        'start_date': start_date.strftime('%Y-%m-%d'),
+        'end_date': end_date.strftime('%Y-%m-%d'),
+    }
+            
+    collection_payments = collection_payments.filter(collection_payment__created_date__range=[start_date, end_date])
+    
+    if selected_route_id:
+        selected_route = RouteMaster.objects.get(route_name=selected_route_id)
+        collection_payments = collection_payments.filter(collection_payment__customer__routes__route_name=selected_route)
+        filter_data = {'selected_route': selected_route}
     
     context = {
         'collection_payments': collection_payments, 
         'routes': routes, 
         'route_counts': route_counts, 
         'today': today,
-        'start_date': start_date, 
-        'end_date': end_date, 
-        'selected_date': selected_date, 
-        'selected_route_id': selected_route_id, 
-        'selected_route': selected_route,
-        
+        'filter_data': filter_data,
     }
     return render(request, template, context)
 
