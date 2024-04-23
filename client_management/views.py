@@ -1,6 +1,7 @@
 import uuid
 import json
 import datetime
+from van_management.models import *
 
 from django.views import View
 from django.db.models import Q, Sum, Count
@@ -1241,3 +1242,102 @@ def customer_count(request):
     }
     # print('total customers:', total_customers)
     return render(request, 'client_management/customer_count.html', context)
+
+def bottle_count(request):
+    customers = Customers.objects.all()
+    route = RouteMaster.objects.all()
+    bottle_counts = []
+
+    for customer in customers:
+        route_name = customer.routes.route_name if customer.routes else "Unknown Route"
+
+        total_bottle_count = CustomerSupplyItems.objects.filter(customer_supply__customer=customer)\
+                                                        .aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+
+        last_supplied_count = CustomerSupplyItems.objects.filter(customer_supply__customer=customer)\
+                                                          .order_by('-customer_supply__created_date')\
+                                                          .values_list('quantity', flat=True).first() or 0
+
+
+        custody_item_count = CustodyCustomItems.objects.filter(custody_custom__customer=customer)\
+                                                   .aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+        pending_count = CustomerSupply.objects.filter(customer=customer.customer_id)\
+                                                   .aggregate(total_quantity=Sum('allocate_bottle_to_pending'))['total_quantity'] or 0
+
+
+        final_bottle_count = pending_count + last_supplied_count + custody_item_count 
+
+
+        bottle_counts.append({
+            'route_name': route_name,
+            'bottle_count': final_bottle_count,
+            'route':route
+        })
+
+    context = {
+        'bottle_counts': bottle_counts,
+    }
+
+    return render(request, 'client_management/bottle_count.html', context)
+    
+
+def route_details(request, route_id):
+    route = RouteMaster.objects.get(pk=route_id)
+
+    van_routes = Van_Routes.objects.filter(routes=route)
+
+    fresh_stock = {}
+    empty_stock = {}
+    for van_route in van_routes:
+        fresh_stock_count = VanProductItems.objects.filter(van_stock__van=van_route.van, van_stock__stock_type='opening_stock').aggregate(total_quantity=Sum('count'))['total_quantity'] or 0
+        fresh_stock[van_route.van.van_make] = fresh_stock_count
+
+        # empty_stock_count = VanProductItems.objects.filter(van_stock__van=van_route.van, van_stock__stock_type='empty').aggregate(total_quantity=Sum('count'))['total_quantity'] or 0
+        # empty_stock[van_route.van.van_make] = empty_stock_count
+
+    customers = Customers.objects.all()
+    route = RouteMaster.objects.all()
+    bottle_counts = []
+
+    for customer in customers:
+        route_name = customer.routes.route_name if customer.routes else "Unknown Route"
+
+        total_bottle_count = CustomerSupply.objects.filter(customer=customer.customer_id)\
+                                                    .aggregate(total_quantity=Sum('allocate_bottle_to_custody'))['total_quantity'] or 0
+        
+        last_supplied_count = CustomerSupplyItems.objects.filter(customer_supply__customer=customer.customer_id)\
+                                                      .order_by('-customer_supply__created_date')\
+                                                      .values_list('quantity', flat=True).first() or 0
+
+        pending_count = CustomerSupply.objects.filter(customer=customer.customer_id)\
+                                                   .aggregate(total_quantity=Sum('allocate_bottle_to_pending'))['total_quantity'] or 0
+
+        outstanding = OutstandingProduct.objects.filter(customer=customer.customer_id)\
+                                                   .aggregate(total_quantity=Sum('empty_bottle'))['total_quantity'] or 0
+        
+
+
+        custody_item_count = CustodyCustomItems.objects.filter(custody_custom__customer=customer)\
+                                                   .aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+
+        final_bottle_count = total_bottle_count + last_supplied_count + pending_count 
+        print("final_bottle_count",final_bottle_count)
+
+
+        bottle_counts.append({
+            'route_name': route_name,
+            'bottle_count': final_bottle_count,
+            'route':route,
+            'outstanding':outstanding,
+            'pending_count':pending_count,
+            'custody_item_count': custody_item_count
+        })
+    context = {
+        'route': route,
+        'fresh_stock': fresh_stock,
+        # 'empty_stock': empty_stock,
+        'bottle_count':bottle_counts
+    }
+
+    return render(request, 'client_management/route_details.html', context)
+    

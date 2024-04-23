@@ -92,6 +92,7 @@
                                         <th scope="col">Mobile No</th>
                                         <th scope="col">Building Name/<br>House No</th>
                                         <th scope="col">Next Visit <br>Date</th>
+                                        <th scope="col">Bottle Stock</th>
                                         <th scope="col">Sales Type</th>
                                         <th scope="col">Actions</th>
                                     </tr>
@@ -111,6 +112,8 @@
                                             <td style="text-align:left;">{{data.building_name}},<br> {{data.door_house_no}}</td>
                                             {% get_next_visit_day data.pk as next_visit_date %}
                                             <td style="text-align:left;">{{next_visit_date}}</td>
+                                            {% bottle_stock data.pk as final_bottle_count %}
+                                            <td style="text-align:left;">{{final_bottle_count}}</td>
                                             <td style="text-align:left;">{{data.sales_type}}</td>
                                            
                                             <td>

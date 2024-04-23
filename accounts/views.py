@@ -29,7 +29,8 @@ import pandas as pd
 from io import BytesIO
 from reportlab.pdfgen import canvas
 from datetime import datetime, timedelta
-
+from client_management.models import *
+from django.db.models import Q, Sum, Count
 
 # Create your views here.
 def user_login(request):
@@ -229,7 +230,22 @@ class Customer_List(View):
 
         # Start with all customers
         user_li = Customers.objects.all()
+        for customer in user_li:
+            customer_id = customer.customer_id
+            # total_bottle_count = CustomerSupplyItems.objects.filter(customer_supply__customer=customer_id)\
+            #                                             .aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+            
+            # last_supplied_count = CustomerSupplyItems.objects.filter(customer_supply__customer=customer_id)\
+            #                                               .order_by('-customer_supply__created_date')\
+            #                                               .values_list('quantity', flat=True).first() or 0
 
+
+            # pending_count = CustodyCustomItems.objects.filter(custody_custom__customer=customer_id)\
+            #                                            .aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+
+            # final_bottle_count = total_bottle_count + last_supplied_count + pending_count 
+            # print("final_bottle_count",final_bottle_count)
+            
         # Apply filters if they exist
         if query:
             user_li = user_li.filter(
@@ -246,13 +262,16 @@ class Customer_List(View):
 
         # Get all route names for the dropdown
         route_li = RouteMaster.objects.all()
-
+        
         context = {
             'user_li': user_li.order_by("-created_date"),
             'route_li': route_li,
             'route_filter': route_filter,
             'q': query,
         }
+
+
+
         return render(request, self.template_name, context)
 
 def create_customer(request):
@@ -334,10 +353,13 @@ def delete_customer(request,pk):
     
     return HttpResponse(json.dumps(response_data), content_type='application/javascript')
 
+from accounts.templatetags.accounts_templatetags import get_next_visit_day
+
 def customer_list_excel(request):
     query = request.GET.get("q")
     route_filter = request.GET.get('route_name')
     user_li = Customers.objects.all()
+
     # Apply filters if they exist
     if query and query != '' and query != 'None':
         user_li = user_li.filter(
@@ -355,25 +377,51 @@ def customer_list_excel(request):
 
     # Get all route names for the dropdown
     route_li = RouteMaster.objects.all()
-    serial_number = 1
-    for customer in user_li:
-        customer.serial_number = serial_number
-        serial_number += 1
+    
     data = {
-        'Serial Number': [customer.serial_number for customer in user_li],
-        'Customer ID': [customer.custom_id for customer in user_li],
-        'Customer name': [customer.customer_name for customer in user_li],
-        'Route': [customer.routes.route_name if customer.routes else '' for customer in user_li],
-        'Location': [customer.location.location_name for customer in user_li],
-        'Mobile No': [customer.mobile_no for customer in user_li],
-        'Building Name': [customer.building_name for customer in user_li],
-        'House No': [customer.door_house_no if customer.door_house_no else 'Nil' for customer in user_li],
-        'Number of Bottles': [customer.no_of_bottles_required if customer.no_of_bottles_required else '' for customer in user_li],
-        'Next Visit date': ['' for customer in user_li],
-        'Sales Type': [customer.sales_type for customer in user_li],
-
+        'Serial Number': [],
+        'Customer ID': [],
+        'Customer name': [],
+        'Route': [],
+        'Location': [],
+        'Mobile No': [],
+        'Building Name': [],
+        'House No': [],
+        'Bottles stock': [],
+        'Next Visit date': [],  # Create an empty list for next visit dates
+        'Sales Type': [],
     }
+
+    for serial_number, customer in enumerate(user_li, start=1):
+        next_visit_date = get_next_visit_day(customer.pk)
+        customer_id = customer.customer_id
+        total_bottle_count = CustomerSupply.objects.filter(customer=customer.customer_id)\
+                                                    .aggregate(total_quantity=Sum('allocate_bottle_to_custody'))['total_quantity'] or 0
+        
+        last_supplied_count = CustomerSupplyItems.objects.filter(customer_supply__customer=customer.customer_id)\
+                                                      .order_by('-customer_supply__created_date')\
+                                                      .values_list('quantity', flat=True).first() or 0
+
+        pending_count = CustomerSupply.objects.filter(customer=customer.customer_id)\
+                                                   .aggregate(total_quantity=Sum('allocate_bottle_to_pending'))['total_quantity'] or 0
+
+        final_bottle_count = total_bottle_count + last_supplied_count + pending_count 
+        print("final_bottle_count",final_bottle_count)
+        data['Serial Number'].append(serial_number)
+        data['Customer ID'].append(customer.custom_id)
+        data['Customer name'].append(customer.customer_name)
+        data['Route'].append(customer.routes.route_name if customer.routes else '')
+        data['Location'].append(customer.location.location_name)
+        data['Mobile No'].append(customer.mobile_no)
+        data['Building Name'].append(customer.building_name)
+        data['House No'].append(customer.door_house_no if customer.door_house_no else 'Nil')
+        data['Bottles stock'].append(final_bottle_count)
+        data['Next Visit date'].append(next_visit_date)
+        data['Sales Type'].append(customer.sales_type)
+
     df = pd.DataFrame(data)
+
+    # Excel writing code...
 
     buffer = BytesIO()
     with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:

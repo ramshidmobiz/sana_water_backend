@@ -222,11 +222,12 @@ class ProdutItemMasterSerializerr(serializers.ModelSerializer):
 class CustodyCustomItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.product_name.product_name', read_only=True)
     deposit_type = serializers.CharField(source='custody_custom.deposit_type', read_only=True)
-    agreement_number = serializers.CharField(source='custody_custom.agreement_no', read_only=True)
-    
+    agreement_no = serializers.CharField(source='custody_custom.agreement_no', read_only=True)  
+    reference_no = serializers.CharField(source='custody_custom.reference_no', read_only=True)
+
     class Meta:
         model = CustodyCustomItems
-        fields = ['id', 'custody_custom', 'product', 'product_name', 'quantity', 'serialnumber', 'amount', 'deposit_type', 'agreement_number']
+        fields = ['id', 'custody_custom', 'product', 'product_name', 'quantity', 'serialnumber', 'amount', 'deposit_type', 'agreement_no', 'reference_no']
 
 class SupplyItemFiveCanWaterProductGetSerializer(serializers.ModelSerializer):
     rate = serializers.SerializerMethodField()
@@ -808,13 +809,16 @@ class CollectionPaymentSerializer(serializers.ModelSerializer):
 class CustodyCustomSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustodyCustom
-        fields = ['customer', 'agreement_no', 'deposit_type']
+        fields = ['customer', 'agreement_no', 'deposit_type','reference_no']
 class CustodyCustomItemsSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.product_name.product_name', read_only=True)
+    deposit_type = serializers.CharField(source='custody_custom.deposit_type', read_only=True)
+    agreement_no = serializers.CharField(source='custody_custom.agreement_no', read_only=True)  
+    reference_no = serializers.CharField(source='custody_custom.reference_no', read_only=True)
 
     class Meta:
         model = CustodyCustomItems
-        fields = ['id', 'custody_custom', 'product', 'product_name', 'quantity', 'serialnumber', 'amount']
+        fields = ['id', 'custody_custom', 'product', 'product_name', 'quantity', 'serialnumber', 'amount','reference_no','agreement_no','deposit_type']
 
 # class EmergencyCustomersSerializer(serializers.ModelSerializer):
 #     class Meta:
@@ -830,3 +834,32 @@ class EmergencyCustomersSerializer(serializers.ModelSerializer):
     class Meta:
         model = DiffBottlesModel
         fields = ['customer', 'quantity_required', 'assign_this_to', 'mode', 'request_type', 'delivery_date']
+
+
+#----------------------New sales Report-------------
+
+class NewSalesCustomerSupplySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerSupply
+        fields = '__all__'
+
+class NewSalesCustomerCouponSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerCoupon
+        fields = '__all__'
+
+class NewSalesCollectionPaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CollectionPayment
+        fields = '__all__'
+        
+        
+class CustomerCustodySerializer(serializers.Serializer):
+    customer = serializers.SerializerMethodField() 
+    agreement_no = serializers.SerializerMethodField() 
+    total_amount = serializers.SerializerMethodField() 
+    deposit_type = serializers.SerializerMethodField() 
+    reference_no = serializers.SerializerMethodField() 
+    product = serializers.SerializerMethodField() 
+    quantity = serializers.SerializerMethodField() 
+    serialnumber = serializers.SerializerMethodField() 

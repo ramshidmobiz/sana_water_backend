@@ -2318,60 +2318,63 @@ class GetProductAPI(APIView):
 #                 )
 
 
-class CustodyCustomItemAPI(APIView):
-    authentication_classes = [BasicAuthentication]
-    permission_classes = [IsAuthenticated]
-    serializer_class = CustodyCustomItemSerializer
+class CustodyCustomAPIView(APIView):
+    def post(self, request):
+        serializer = CustomerCustodySerializer(data=request.data)
+        if serializer.is_valid():
+            custody_custom_data = serializer.validated_data
+            # Extract data from custody_custom_data
+            customer = Customers.objects.get(pk=custody_custom_data.get('customer'))
+            agreement_no = custody_custom_data.get('agreement_no')
+            total_amount = custody_custom_data.get('total_amount')
+            deposit_type = custody_custom_data.get('deposit_type')
+            reference_no = custody_custom_data.get('reference_no')
+            product =  ProdutItemMaster.objects.get(pk=custody_custom_data.get('product_id'))
+            quantity =  custody_custom_data.get('quantity')
+            serialnumber =  custody_custom_data.get('serialnumber')
+            
 
-    def post(self, request, *args, **kwargs):
-        try:
-            custody_custom_data = request.data.get('custody_custom', {})
-            custody_items_data = request.data.get('custody_items', [])
-
-            # Create or update CustodyCustom instance
-            custody_custom_instance, _ = CustodyCustom.objects.update_or_create(
-                agreement_no=custody_custom_data.get('agreement_no'),
-                defaults=custody_custom_data
+            # Create CustodyCustom instance
+            custody_custom_instance = CustodyCustom.objects.create(
+                customer=customer,
+                agreement_no=agreement_no,
+                total_amount=total_amount,
+                deposit_type=deposit_type,
+                reference_no=reference_no
             )
 
             # Create CustodyCustomItems instances
-            for item_data in custody_items_data:
-                CustodyCustomItems.objects.create(custody_custom=custody_custom_instance, **item_data)
+            # for item_data in items_data:
+            CustodyCustomItems.objects.create(
+                custody_custom=custody_custom_instance,
+                product=product,
+                quantity=quantity,
+                serialnumber=serialnumber,
+                amount=total_amount
+            )
 
-            # Update or create CustomerCustodyStock instances
-            customer = custody_custom_instance.customer
-            for item_data in custody_items_data:
-                product_id = item_data.get('product')
-                serialnumber = item_data.get('serialnumber')
-                amount = item_data.get('amount')
+            # Update CustomerCustodyStock instances
+            # for item_data in items_data:
+            try:
+                stock_instance = CustomerCustodyStock.objects.get(customer=customer, product=product)
+                stock_instance.agreement_no += ', ' + agreement_no
+                stock_instance.serialnumber += ', ' + serialnumber
+                stock_instance.amount += total_amount
+                stock_instance.save()
+            except CustomerCustodyStock.DoesNotExist:
+                CustomerCustodyStock.objects.create(
+                    customer=customer,
+                    agreement_no=agreement_no,
+                    deposit_type=deposit_type,
+                    reference_no=reference_no,
+                    product=product,
+                    quantity=quantity,
+                    serialnumber=serialnumber,
+                    amount=total_amount
+                )
 
-                # Try to get existing stock instance
-                try:
-                    stock_instance = CustomerCustodyStock.objects.get(customer=customer, product_id=product_id)
-                    # If agreement number already exists, append using comma
-                    if custody_custom_data['agreement_no'] in stock_instance.agreement_no:
-                        stock_instance.agreement_no += ', ' + custody_custom_data['agreement_no']
-                    else:
-                        stock_instance.agreement_no += ', ' + custody_custom_data['agreement_no']
-                    stock_instance.serialnumber += ', ' + serialnumber
-                    stock_instance.amount += amount
-                    stock_instance.save()
-                except CustomerCustodyStock.DoesNotExist:
-                    CustomerCustodyStock.objects.create(
-                        customer=customer,
-                        agreement_no=custody_custom_data.get('agreement_no'),
-                        deposit_type=custody_custom_data.get('deposit_type'),
-                        reference_no=custody_custom_data.get('reference_no'),
-                        product_id=product_id,
-                        quantity=item_data.get('quantity'),
-                        serialnumber=serialnumber,
-                        amount=amount
-                    )
-
-            return Response({"status": True, "message": "Data saved successfully!"})
-        except Exception as e:
-            print(e)
-            return Response({"status": False, "message": str(e)})
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class supply_product(APIView):
@@ -3297,3 +3300,99 @@ class EmergencyCustomersAPI(APIView):
         else:
             return Response({'status': False,'message': 'No data found'}, status=400)
 
+#--------------------New sales Report -------------------------------
+class CustomerSalesReportAPI(APIView):
+    # authentication_classes = [BasicAuthentication]
+    # permission_classes = [IsAuthenticated]
+    def get(self, request):
+        filter_data = {}
+
+        total_amount = 0
+        total_discount = 0
+        total_net_payable = 0
+        total_vat = 0
+        total_grand_total = 0
+        total_amount_received = 0
+
+        start_date_str = request.data.get('start_date')
+        print("start_date_str",start_date_str)
+        end_date_str = request.data.get('end_date')
+        print("end_date_str",end_date_str)
+
+        if start_date_str and end_date_str:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        else:
+            start_date = datetime.today().date()
+            end_date = datetime.today().date()
+
+        filter_data = {
+            'start_date': start_date.strftime('%Y-%m-%d'),
+            'end_date': end_date.strftime('%Y-%m-%d'),
+        }
+
+        sales = CustomerSupply.objects.select_related('customer', 'salesman').filter(
+            created_date__date__gte=start_date,
+            created_date__date__lte=end_date
+        ).exclude(customer__sales_type__in=["CASH COUPON", "CREDIT"]).order_by("-created_date")
+
+        coupons = CustomerCoupon.objects.select_related('customer', 'salesman').filter(
+            created_date__date__gte=start_date,
+            created_date__date__lte=end_date
+        ).order_by("-created_date")
+
+        collections = CollectionPayment.objects.select_related('customer', 'salesman').filter(
+            created_date__date__gte=start_date,
+            created_date__date__lte=end_date
+        ).order_by("-created_date")
+
+        sales_report_data = []
+
+        # Process CustomerSupply data
+        for sale in sales:
+            serialized_sale = NewSalesCustomerSupplySerializer(sale).data
+            sales_report_data.append(serialized_sale)
+
+            total_amount += sale.grand_total
+            total_discount += sale.discount
+            total_net_payable += sale.net_payable
+            total_vat += sale.vat
+            total_grand_total += sale.grand_total
+            total_amount_received += sale.amount_recieved
+
+        # Process CustomerCoupon data
+        for coupon in coupons:
+            serialized_coupon = NewSalesCustomerCouponSerializer(coupon).data
+            sales_report_data.append(serialized_coupon)
+
+            total_amount += coupon.grand_total
+            total_discount += coupon.discount
+            total_net_payable += coupon.net_amount
+            total_vat += Tax.objects.get(name="VAT").percentage
+            total_grand_total += coupon.grand_total
+            total_amount_received += coupon.amount_recieved
+
+        # Process CollectionPayment data
+        for collection in collections:
+            serialized_collection = NewSalesCollectionPaymentSerializer(collection).data
+            sales_report_data.append(serialized_collection)
+
+            total_amount += collection.total_amount()
+            total_discount += collection.total_discounts()
+            total_net_payable += collection.total_net_taxeble()
+            total_vat += collection.total_vat()
+            total_grand_total += collection.total_amount()
+            total_amount_received += collection.collected_amount()
+
+        response_data = {
+            'customersales': sales_report_data,
+            'total_amount': total_amount,
+            'total_discount': total_discount,
+            'total_net_payable': total_net_payable,
+            'total_vat': total_vat,
+            'total_grand_total': total_grand_total,
+            'total_amount_received': total_amount_received,
+            'filter_data': filter_data,
+        }
+
+        return Response(response_data)

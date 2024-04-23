@@ -246,6 +246,7 @@ from .models import *
 #             'serialnumber': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
            
 #         }
+
 class CustodyCustomForm(forms.ModelForm):
     class Meta:
         model = CustodyCustom
@@ -271,7 +272,7 @@ class CustodyCustomItemForm(forms.ModelForm):
         }
 
 
-#------------------- Customer Supply
+#------------------- Customer Supply------------------
 class CustomerSupplyForm(forms.ModelForm):
 
     class Meta:

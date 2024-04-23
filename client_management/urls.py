@@ -57,5 +57,9 @@ urlpatterns = [
 
         # Customer count
         path('customer_count', customer_count, name="customer_count"),
+
+        path('bottle_count', bottle_count, name="bottle_count"),
+        path('route_details/<int:route_id>', route_details, name='route_details')
+
     
 ]

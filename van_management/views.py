@@ -889,22 +889,31 @@ class VanStockList(View):
         instances = VanCouponStock.objects.all()
         van_stock = VanProductStock.objects.all()
         requested_quantity=CustomerSupply.objects.all()
-        issued=Staff_IssueOrders.objects.all()
+        issued_orders = Staff_IssueOrders.objects.filter(salesman_id=request.user.id)
+        print("issued_orders",issued_orders)
         offload=OffloadVan.objects.all()
-        
         morning_stock_count=0
         evening_stock_count=0
+        salesman_id=request.user.id
+        print("salesman_id",salesman_id)
         if request.user.is_authenticated and request.user.user_type == "Salesman":
             instances = instances.filter(van__salesman_id=request.user.id)
             van_stock = van_stock.filter(van__salesman_id=request.user.id)
-            morning_stocks = VanStock.objects.filter(van__salesman_id=request.user.id,created_date__time__lt=time(12, 0, 0))
-            morning_stock_count = morning_stocks.filter(van__salesman_id=request.user.id).count()
+            for v in van_stock:
+                pro=v.product.id
+                print("pro",pro)
+                morning_stocks = van_stock.filter(product=pro,van__created_date__time__lt=time(12, 0, 0))
+                
+                morning_stock_count = morning_stocks.filter(van__salesman_id=request.user.id,).count()
+            #    o morning_stocks = VanStock.objects.filter(van__salesman_id=request.user.id,created_date__time__lt=time(12, 0, 0))
+            #     mrning_stock_count = morning_stocks.filter(van__salesman_id=request.user.id,).count()
+                print("morning_stock_count",morning_stock_count)
             evening_stocks = VanStock.objects.filter(van__salesman_id=request.user.id,created_date__time__gte=time(12, 0, 0))
             evening_stock_count = evening_stocks.filter(van__salesman_id=request.user.id).count()
 
-        # requested_quantity=requested_quantity.filter(salesman__salesman_id=request.user.id)
-        issued=issued.filter(salesman_id=request.user.id)
-        offload=offload.filter(van__salesman_id=request.user.id)
+            # requested_quantity=requested_quantity.filter(salesman__salesman_id=request.user.id)
+        
+        offload=offload.filter(van__salesman_id=salesman_id)
        
         van_coupon_counts = instances.values('van__van_make', 'coupon__coupon_type__coupon_type_name').annotate(
             coupon_count=Sum('count')
@@ -915,7 +924,7 @@ class VanStockList(View):
             van_coupon['opening_stock'] = van_coupon['coupon_count']
     
         context = {'van_stock': van_stock, 'van_coupon_counts': van_coupon_counts,
-                   'issued':issued,'morning_stock_count': morning_stock_count,
+                   'issued_orders':issued_orders,'morning_stock_count': morning_stock_count,
             'evening_stock_count': evening_stock_count}
         return render(request, 'van_management/vanstock.html', context)
     

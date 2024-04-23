@@ -17,4 +17,3 @@ def get_empty_bottles(salesman):
         return CustomerSupply.objects.filter(salesman=salesman,created_date__date=datetime.today().date()).aggregate(total=Coalesce(Sum('collected_empty_bottle'), Value(0)))['total']
     except CustomerSupply.DoesNotExist:
         return 0
-
