@@ -863,3 +863,11 @@ class CustomerCustodySerializer(serializers.Serializer):
     product = serializers.SerializerMethodField() 
     quantity = serializers.SerializerMethodField() 
     serialnumber = serializers.SerializerMethodField() 
+
+
+
+class CreditNoteSerializer(serializers.ModelSerializer):
+   
+    class Meta:
+        model = Invoice
+        fields = ['customer', 'invoice_no', 'invoice_type', 'amout_recieved']

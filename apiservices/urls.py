@@ -155,4 +155,6 @@ urlpatterns = [
     #--------------------New sales Report -------------------------------
     path('customer_sales_report_api/', CustomerSalesReportAPI.as_view(), name='customer_sales_report'),
 
+    path('creditnote/', CreditNoteAPI.as_view(), name='creditnote'),
+
 ]

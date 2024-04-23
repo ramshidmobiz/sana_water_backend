@@ -3396,3 +3396,19 @@ class CustomerSalesReportAPI(APIView):
         }
 
         return Response(response_data)
+    
+
+
+class CreditNoteAPI(APIView):
+    # authentication_classes = [BasicAuthentication]
+    # permission_classes = [IsAuthenticated]
+    def get(self, request, *args, **kwargs):
+        
+        credit_invoices = Invoice.objects.filter(invoice_type='credit_invoive')
+        print(credit_invoices,"credit_invoices")
+        if credit_invoices.exists():
+            serialized = CreditNoteSerializer(credit_invoices, many=True)
+            return Response({'status': True,'data': serialized.data}, status=status.HTTP_200_OK)
+        else:
+            return Response({'status': False,'message': 'No data found'}, status=400)
+
