@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block title %} Bottle Count Report {% endblock %}
-{% load accounts_templatetags %}
+{% load client_templatetags %}
 {% block content %}
 <!-- Page Header -->
 <div class="page-header-breadcrumb d-md-flex d-block align-items-center justify-content-between ">
@@ -21,98 +21,14 @@
                             Bottle Count Report
                         </div>
                     </div>
-
-                    {% comment %} <div class="" >
-                        <form method="post">
-                            {% csrf_token %}
-                            <div class="row mt-3">
-                                <div class="row col-md-6">
-                                    <div id="datePeriodDiv" class="row col-12">
-                                        <div class="col-md-5">
-                                            <label for="start_date">From Date:</label>
-                                            <input type="date" class="form-control" id="start_date" name="start_date" value="{{ filter_data.start_date }}" >
-                                        </div>
-                                        <div class="col-md-5">
-                                            <label for="end_date">To Date:</label>
-                                            <input type="date" class="form-control" id="end_date" name="end_date" value="{{ filter_data.end_date }}" >
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row col-md-6" style="">
-                                    <div class="col-md-3 col-form-label text-end">
-                                        <p>Product</p>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <select name="selected_product_id" id="product" class="form-select" style="width:100%">
-                                            <option value="" {% if not selected_product_id %}selected{% endif %}>-----------------------------</option>
-                                            {% if selected_product %}
-                                                <option value="{{ selected_product_id }}" selected>{{ selected_product }}</option>
-                                            {% endif %}
-                                            {% for product in products %}
-                                                <option value="{{ product.id }}">{{ product.product_name }}</option>
-                                            {% endfor %}
-                                        </select>
-                                        
-                                    </div>
-                                    <div class="col-md-4">
-
-                                    <select name="route_name" class="form-select">
-                                        <option value="">All Routes</option>
-                                        {% for route in route_li %}
-                                            <option value="{{ route.route_name }}">{{ route.route_name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    </div>
-
-                                    <div class="col-md-5 text-end">
-                                        <input type="submit" class="btn btn-primary btn-sm" value="Apply Filter">
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick="resetFilters()">Reset Filter</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </form>
-                        
-                    </div> {% endcomment %}
-                    <div class="row" style=" align-items: center;">
-                        <div class="col-md-6 text-center"> <!-- Column for the text, taking half the width -->
-                            <!-- Add your text here -->
-                            <!-- <h6>Date: {% if start_date and end_date %}{{ start_date }} -> {{ end_date }}{% elif selected_date %}{{ selected_date }}{% else %}{{ today|date:"Y-m-d" }}{% endif %}</h6> -->
-                        </div>
-                        <div class="col-4"></div>
-                        <!-- <div class="col-md-2"> 
-                            <div class="ms-auto">
-                                <a href="{% url 'filter_route' action="change" %}">
-                                    <button type="button" class="btn btn-success btn-wave text-end d-flex me-4 my-auto">
-                                        <i class="bi bi-plus-circle me-1"></i>Create
-                                    </button>
-                                </a>
-                            </div>
-                        </div> -->
-                    </div>
                     <div class="card-body">
-                        {% comment %} <div style="float:right;padding:10px 0px">
-                                        
-                            <div class="input-group">
-                                
-                                <a href="{% url 'download_product_sales_excel' %}?start_date={{ filter_data.start_date }}&route_name={{ route.route_name }}&end_date={{ filter_data.end_date }}" class="btn btn-outline-success" style="width: 7em;"><i class="fas fa-file-excel"></i> Excel</a>
-
-                            </div>
-                           
-                        </div>
-                        <div style="float:right;padding:10px 0px">
-                            <a  onclick="printDiv('printArea'); return false;" class="btn btn-outline-success " style="width: 7em;">
-                                <i class="fas fa-print"></i> Print
-                            </a>
-
-                        </div> {% endcomment %}
                         <table id="datatable-basic" class="table table-bordered text-wrap " style="width: 100%">
                             <thead>
                                 <tr>
                                     <th rowspan="2">Sl No</th>
                                     <th rowspan="2">Route Name</th>
                                     <th rowspan="2">Bottle Count</th>
-                                    {% comment %} <th rowspan="2">Actions</th> {% endcomment %}
+                                    <th rowspan="2">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -121,33 +37,33 @@
                                 {% for instance in instances %}
                                     <tr>
                                         <td>{{ forloop.counter }}</td>
-                                        <td>{{ instance.routes.route_name }}</td>
-                                        {% bottle_stock instance.pk as total_count %}
+                                        <td>{{ instance.route_name }}</td>
+                                        {% route_wise_bottle_count instance.pk as total_count %}
                                         <td>{{ total_count }}</td>
-                                        {% comment %} <td>
+                                        <td>
                                             <div class="g-2">
-                                                <a href="{% url 'route_details' route_id  %}" aria-label="anchor" class="btn btn-warning-light btn-sm" data-bs-toggle="tooltip" data-bs-original-title="View">
+                                                <a href="{% url 'bottle_count_route_wise' instance.pk  %}" aria-label="anchor" class="btn btn-warning-light btn-sm" data-bs-toggle="tooltip" data-bs-original-title="View">
                                                     <span class="bi bi-eye fs-14"></span>
                                                 </a>
                                             </div>
-                                        </td> {% endcomment %}
+                                        </td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                         {% get_pages %}
-                                <div class="clearfix"></div>
-                                <div class="row pagi my-3">
-                                    <div class="col-sm-6 col-xs-6 tot my-pagination">
-                                        <div class="m-t-10 text-start">
-                                            Showing {{title}}
-                                            <span class="current_page_index">{{ pages.current_start_index }}</span> - <span
-                                            class="current_end_status">{{ pages.current_end_index }}</span> of <span
-                                            class="total_count">{{ pages.total_count }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-6 col-xs-6 text-end pagination-btn-div">{% show_pages %}</div>
+                        <div class="clearfix"></div>
+                        <div class="row pagi my-3">
+                            <div class="col-sm-6 col-xs-6 tot my-pagination">
+                                <div class="m-t-10 text-start">
+                                    Showing {{title}}
+                                    <span class="current_page_index">{{ pages.current_start_index }}</span> - <span
+                                    class="current_end_status">{{ pages.current_end_index }}</span> of <span
+                                    class="total_count">{{ pages.total_count }}</span>
                                 </div>
+                            </div>
+                            <div class="col-sm-6 col-xs-6 text-end pagination-btn-div">{% show_pages %}</div>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -59,7 +59,7 @@ urlpatterns = [
         path('customer_count', customer_count, name="customer_count"),
 
         path('bottle_count', bottle_count, name="bottle_count"),
-        path('route_details/<int:route_id>', route_details, name='route_details')
+        path('bottle-count-route-wise/<uuid:route_id>', bottle_count_route_wise, name='bottle_count_route_wise')
 
     
 ]
