@@ -123,7 +123,7 @@ urlpatterns = [
     
     path('myclient/',Myclient_API.as_view()),
     path('get_products/', GetProductAPI.as_view(), name='get_products'),
-    path('custody_tems/', CustodyCustomItemAPI.as_view(), name='custody_tems'),
+    path('add_custody_items/', CustodyCustomAPIView.as_view(), name='custody_item_add'),
     path('custody_item_list/' ,CustodyCustomItemListAPI.as_view(), name='custody_item_list'),
     path('custody_item_return/', CustodyItemReturnAPI.as_view(), name='custody_item_return'),
 
