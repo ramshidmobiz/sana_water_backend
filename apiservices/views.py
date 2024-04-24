@@ -1994,16 +1994,23 @@ class ScheduleByRoute(APIView):
         todays_customers = find_customers(request, date_str, route_id)
 
         if todays_customers:
-            customers = [customer for customer in todays_customers if customer['trip'] == trip.capitalize()]
+            customers = [
+                customer for customer in todays_customers 
+                if customer['trip'] == trip.capitalize()
+                ]
             # print(customers)
 
             totale_bottle=0
             is_supplied = False
             for customer in customers:
                 totale_bottle+=customer['no_of_bottles']
+                
+                is_supplied = CustomerSupply.objects.filter(customer=customer, created_date__date=datetime.today().date()).exists()
+                
             return Response({
                 'def_date': date_str,
                 'totale_bottle':totale_bottle,
+                'is_supplied': is_supplied,
                 'route': {
                     'route_id': route.route_id,
                     'route_name': route.route_name,
@@ -2634,34 +2641,42 @@ class create_customer_supply(APIView):
                             
                     # elif Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CREDIT" :
                         # pass
-                        
-                random_part = str(random.randint(1000, 9999))
-                invoice_number = f'WTR-{random_part}'
-
-                # Create the invoice
-                invoice = Invoice.objects.create(
-                    invoice_no=invoice_number,
-                    created_date=datetime.today(),
-                    net_taxable=customer_supply.net_payable,
-                    vat=customer_supply.vat,
-                    discount=customer_supply.discount,
-                    amout_total=customer_supply.subtotal,
-                    amout_recieved=customer_supply.amount_recieved,
-                    customer=customer_supply.customer,
-                    reference_no=reference_no
-                )
-
-                # Create invoice items
-                for item_data in supply_items:
-                    item = CustomerSupplyItems.objects.get(pk=item_data.pk)
-                    InvoiceItems.objects.create(
-                        category=item.product.category,
-                        product_items=item.product,
-                        qty=item.quantity,
-                        rate=item.amount,
-                        invoice=invoice,
-                        remarks='invoice genereted from supply items reference no : ' + invoice.reference_no
+                invoice_generated = False
+                
+                if customer_supply.customer.sales_type == "CASH" or customer_supply.customer.sales_type == "CREDIT":
+                    invoice_generated = True
+                    
+                    random_part = str(random.randint(1000, 9999))
+                    invoice_number = f'WTR-{random_part}'
+                    
+                    # Create the invoice
+                    invoice = Invoice.objects.create(
+                        invoice_no=invoice_number,
+                        created_date=datetime.today(),
+                        net_taxable=customer_supply.net_payable,
+                        vat=customer_supply.vat,
+                        discount=customer_supply.discount,
+                        amout_total=customer_supply.subtotal,
+                        amout_recieved=customer_supply.amount_recieved,
+                        customer=customer_supply.customer,
+                        reference_no=reference_no
                     )
+                    
+                    if customer_supply.customer.sales_type == "CREDIT":
+                        invoice.invoice_type = "credit_invoive"
+                        invoice.save()
+
+                    # Create invoice items
+                    for item_data in supply_items:
+                        item = CustomerSupplyItems.objects.get(pk=item_data.pk)
+                        InvoiceItems.objects.create(
+                            category=item.product.category,
+                            product_items=item.product,
+                            qty=item.quantity,
+                            rate=item.amount,
+                            invoice=invoice,
+                            remarks='invoice genereted from supply items reference no : ' + invoice.reference_no
+                        )
 
                 DiffBottlesModel.objects.filter(
                     delivery_date__date=date.today(),
@@ -2669,12 +2684,20 @@ class create_customer_supply(APIView):
                     customer=customer_supply.customer_id
                     ).update(status='supplied')
 
-                if invoice:
+                if invoice_generated:
                     response_data = {
                         "status": "true",
                         "title": "Successfully Created",
                         "message": "Customer Supply created successfully and Invoice generated.",
                         "invoice_id": str(invoice.invoice_no)
+                    }
+                    return Response(response_data, status=status.HTTP_201_CREATED)
+                
+                else:
+                    response_data = {
+                        "status": "true",
+                        "title": "Successfully Created",
+                        "message": "Customer Supply created successfully.",
                     }
                     return Response(response_data, status=status.HTTP_201_CREATED)
 
@@ -3301,6 +3324,7 @@ class EmergencyCustomersAPI(APIView):
             return Response({'status': False,'message': 'No data found'}, status=400)
 
 #--------------------New sales Report -------------------------------
+#--------------------New sales Report -------------------------------
 class CustomerSalesReportAPI(APIView):
     # authentication_classes = [BasicAuthentication]
     # permission_classes = [IsAuthenticated]
@@ -3351,6 +3375,8 @@ class CustomerSalesReportAPI(APIView):
         # Process CustomerSupply data
         for sale in sales:
             serialized_sale = NewSalesCustomerSupplySerializer(sale).data
+            serialized_sale['customer_name'] = sale.customer.customer_name
+            serialized_sale['building_name'] = sale.customer.building_name
             sales_report_data.append(serialized_sale)
 
             total_amount += sale.grand_total
@@ -3363,6 +3389,8 @@ class CustomerSalesReportAPI(APIView):
         # Process CustomerCoupon data
         for coupon in coupons:
             serialized_coupon = NewSalesCustomerCouponSerializer(coupon).data
+            serialized_coupon['customer_name'] = coupon.customer.customer_name
+            serialized_coupon['building_name'] = coupon.customer.building_name
             sales_report_data.append(serialized_coupon)
 
             total_amount += coupon.grand_total
@@ -3375,6 +3403,8 @@ class CustomerSalesReportAPI(APIView):
         # Process CollectionPayment data
         for collection in collections:
             serialized_collection = NewSalesCollectionPaymentSerializer(collection).data
+            serialized_collection['customer_name'] = collection.customer.customer_name
+            serialized_collection['building_name'] = collection.customer.building_name
             sales_report_data.append(serialized_collection)
 
             total_amount += collection.total_amount()
@@ -3396,7 +3426,6 @@ class CustomerSalesReportAPI(APIView):
         }
 
         return Response(response_data)
-    
 
 
 class CreditNoteAPI(APIView):
@@ -3412,3 +3441,79 @@ class CreditNoteAPI(APIView):
         else:
             return Response({'status': False,'message': 'No data found'}, status=400)
 
+class DashboardAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, route_id, trip):
+        date_str = str(datetime.today().date())
+        
+        todays_customers = find_customers(request, date_str, route_id)
+        today_customers_count = 0
+        
+        if todays_customers:
+            for customer in todays_customers:
+                if customer['trip'] == trip.capitalize():
+                    today_customers_count += 1
+                
+        supplied_customers_count = CustomerSupply.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date()).count()
+        
+        temperary_schedule_unsupply_count = DiffBottlesModel.objects.filter(customer__routes__pk=route_id,status="pending",delivery_date__date=datetime.today().date()).count()
+        temperary_schedule_supplied_count = DiffBottlesModel.objects.filter(customer__routes__pk=route_id,status="supplied",delivery_date__date=datetime.today().date()).count()
+        
+        coupon_sale_count = CustomerCouponItems.objects.filter(customer_coupon__customer__routes__pk=route_id,customer_coupon__created_date__date=datetime.today().date()).count()
+        empty_bottle_count = CustomerSupply.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date()).aggregate(total=Sum('collected_empty_bottle'))['total'] or 0
+        
+        van_route = Van_Routes.objects.get(routes__pk=route_id,van__salesman=request.user)
+        filled_bottle_count = VanProductStock.objects.filter(van=van_route.van,product__product_name="5 Gallon",stock_type__in=["opening_stock", "closing"]).aggregate(total_count=Sum('count'))['total_count'] or 0
+        
+        used_coupon_count = CustomerSupplyCoupon.objects.filter(customer_supply__customer__routes__pk=route_id,customer_supply__created_date__date=datetime.today().date()).aggregate(leaf_count=Count('leaf'))['leaf_count']
+        
+        cash_in_hand = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date()).aggregate(total_amount=Sum('amout_recieved'))['total_amount'] or 0
+        
+        cash_sale_total_amount = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date(),invoice_type="cash_invoice").aggregate(total_amount=Sum('amout_total'))['total_amount'] or 0
+        cash_sale_amount_recieved = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date(),invoice_type="cash_invoice").aggregate(total_amount=Sum('amout_recieved'))['total_amount'] or 0
+        
+        credit_sale_total_amount = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date(),invoice_type="credit_invoice").aggregate(total_amount=Sum('amout_total'))['total_amount'] or 0
+        credit_sale_amount_recieved = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date(),invoice_type="credit_invoive").aggregate(total_amount=Sum('amout_recieved'))['total_amount'] or 0
+        
+        data = {
+            'today_schedule': {
+                'today_customers_count': today_customers_count,
+                'supplied_customers_count': supplied_customers_count
+                },
+            'temporary_schedule': {
+                'unsupplied_count': temperary_schedule_unsupply_count,
+                'supplied_count': temperary_schedule_supplied_count,
+                },
+            'coupon_sale_count': coupon_sale_count,
+            'empty_bottle_count': empty_bottle_count,
+            'filled_bottle_count': filled_bottle_count,
+            'used_coupon_count': used_coupon_count,
+            'cash_in_hand': cash_in_hand,
+            'cash_sale': {
+                'cash_sale_total_amount': cash_sale_total_amount,
+                'cash_sale_amount_recieved': cash_sale_amount_recieved,
+            },
+            'credit_sale': {
+                'credit_sale_total_amount': credit_sale_total_amount,
+                'credit_sale_amount_recieved': credit_sale_amount_recieved,
+            },
+        }
+        
+        return Response({'status': True, 'data': data}, status=status.HTTP_200_OK)
+class CollectionReportAPI(APIView):
+    # authentication_classes = [BasicAuthentication]
+    # permission_classes = [IsAuthenticated]
+    def get(self, request, *args, **kwargs):
+        salesman_id = self.kwargs.get('salesman_id')  # Retrieve the salesman_id from URL parameters
+        
+        if salesman_id is not None:
+            collection_items = CollectionItems.objects.filter(collection_payment__salesman_id=salesman_id).select_related('collection_payment__customer')
+            if collection_items.exists():
+                serialized_data = CollectionReportSerializer(collection_items, many=True).data
+                return Response({'status': True, 'data': serialized_data}, status=status.HTTP_200_OK)
+            else:
+                return Response({'status': False, 'message': 'No data found'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'status': False, 'message': 'Salesman ID is required'}, status=status.HTTP_400_BAD_REQUEST)

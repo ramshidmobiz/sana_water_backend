@@ -156,5 +156,8 @@ urlpatterns = [
     path('customer_sales_report_api/', CustomerSalesReportAPI.as_view(), name='customer_sales_report'),
 
     path('creditnote/', CreditNoteAPI.as_view(), name='creditnote'),
+    
+    path('dashboard/<uuid:route_id>/<str:trip>/', DashboardAPI.as_view(), name='dashboard'),
+    path('collectionreport/<int:salesman_id>/', CollectionReportAPI.as_view(), name='collectionreport'),
 
 ]
