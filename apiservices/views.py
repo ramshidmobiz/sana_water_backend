@@ -2005,7 +2005,7 @@ class ScheduleByRoute(APIView):
             for customer in customers:
                 totale_bottle+=customer['no_of_bottles']
                 
-                is_supplied = CustomerSupply.objects.filter(customer=customer, created_date__date=datetime.today().date()).exists()
+                is_supplied = CustomerSupply.objects.filter(customer__pk=customer["customer_id"], created_date__date=datetime.today().date()).exists()
                 
             return Response({
                 'def_date': date_str,
