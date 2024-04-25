@@ -1995,9 +1995,13 @@ class ScheduleByRoute(APIView):
 
         if todays_customers:
             customers = [
-                customer for customer in todays_customers 
+                {
+                    **customer,
+                    'is_supplied': CustomerSupply.objects.filter(customer__pk=customer["customer_id"], created_date__date=datetime.today().date()).exists()
+                }
+                for customer in todays_customers 
                 if customer['trip'] == trip.capitalize()
-                ]
+            ]
             # print(customers)
 
             totale_bottle=0
@@ -2005,12 +2009,9 @@ class ScheduleByRoute(APIView):
             for customer in customers:
                 totale_bottle+=customer['no_of_bottles']
                 
-                is_supplied = CustomerSupply.objects.filter(customer__pk=customer["customer_id"], created_date__date=datetime.today().date()).exists()
-                
             return Response({
                 'def_date': date_str,
                 'totale_bottle':totale_bottle,
-                'is_supplied': is_supplied,
                 'route': {
                     'route_id': route.route_id,
                     'route_name': route.route_name,

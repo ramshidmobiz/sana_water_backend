@@ -867,7 +867,29 @@ class CustomerCustodySerializer(serializers.Serializer):
 
 
 class CreditNoteSerializer(serializers.ModelSerializer):
+    customer_name = serializers.SerializerMethodField()
+
    
     class Meta:
         model = Invoice
-        fields = ['customer', 'invoice_no', 'invoice_type', 'amout_recieved']
+        fields = ['id','customer','customer_name', 'invoice_no', 'invoice_type','invoice_status','amout_total', 'amout_recieved']
+
+    def get_customer_name(self, obj):
+        return obj.customer.customer_name
+    
+class CollectionReportSerializer(serializers.ModelSerializer):
+    customer_id = serializers.SerializerMethodField()
+    customer_name = serializers.SerializerMethodField()
+    receipt_no = serializers.CharField(source='invoice.reference_no')
+    mode_of_payment = serializers.CharField(source='collection_payment.payment_method')
+    collected_amount = serializers.DecimalField(source='amount_received', max_digits=10, decimal_places=2)
+
+    class Meta:
+        model = CollectionItems
+        fields = ['customer_id', 'customer_name', 'receipt_no', 'mode_of_payment', 'collected_amount']
+
+    def get_customer_id(self, obj):
+        return obj.collection_payment.customer.customer_id
+
+    def get_customer_name(self, obj):
+        return obj.collection_payment.customer.customer_name
