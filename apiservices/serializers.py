@@ -893,3 +893,16 @@ class CollectionReportSerializer(serializers.ModelSerializer):
 
     def get_customer_name(self, obj):
         return obj.collection_payment.customer.customer_name
+
+class CouponSupplyCountSerializer(serializers.ModelSerializer):
+    customer__customer_name = serializers.CharField()  
+    manual_coupon_paid_count = serializers.IntegerField()
+    manual_coupon_free_count = serializers.IntegerField()
+    digital_coupon_paid_count = serializers.IntegerField()
+    digital_coupon_free_count = serializers.IntegerField()
+    total_amount_collected = serializers.DecimalField(max_digits=10, decimal_places=2)
+    payment_type = serializers.ChoiceField(choices=PAYMENT_METHOD)  # Use ChoiceField for dropdown with choices
+
+    class Meta:
+        model = CustomerCoupon
+        fields = ['customer__customer_name', 'manual_coupon_paid_count', 'manual_coupon_free_count', 'digital_coupon_paid_count', 'digital_coupon_free_count', 'total_amount_collected', 'payment_type']

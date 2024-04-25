@@ -160,4 +160,7 @@ urlpatterns = [
     path('dashboard/<uuid:route_id>/<str:trip>/', DashboardAPI.as_view(), name='dashboard'),
     path('collectionreport/<int:salesman_id>/', CollectionReportAPI.as_view(), name='collectionreport'),
 
+    path('coupon_supply_count/', CouponSupplyCountAPIView.as_view(), name='coupon_supply_count'),
+
+
 ]

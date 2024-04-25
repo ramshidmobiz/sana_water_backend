@@ -3518,3 +3518,34 @@ class CollectionReportAPI(APIView):
                 return Response({'status': False, 'message': 'No data found'}, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({'status': False, 'message': 'Salesman ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+#----------------------Coupon Supply Report
+class CouponSupplyCountAPIView(APIView):
+    # authentication_classes = [BasicAuthentication]
+    # permission_classes = [IsAuthenticated]
+    def get(self, request):
+
+        start_date = request.data.get('start_date')
+        end_date = request.data.get('end_date')
+        
+        if not (start_date and end_date):
+            start_datetime = datetime.today().date()
+            end_datetime = datetime.today().date()
+            # return Response({"error": "Both start_date and end_date are required."}, status=400)
+        else:
+            start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+            end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
+        
+        coupon_counts = CustomerCoupon.objects.filter(created_date__date__range=[start_datetime, end_datetime]) \
+            .values('customer__customer_name', 'customer__coupon_count','payment_type') \
+            .annotate(
+                manual_coupon_paid_count=Count('id', filter=models.Q(payment_type='manual')),
+                manual_coupon_free_count=Count('id', filter=models.Q(payment_type='manual', amount_recieved=0)),
+                digital_coupon_paid_count=Count('id', filter=models.Q(payment_type='digital')),
+                digital_coupon_free_count=Count('id', filter=models.Q(payment_type='digital', amount_recieved=0)),
+                total_amount_collected=Sum('amount_recieved')
+            )
+        print("coupon_counts",coupon_counts)
+
+        serializer = CouponSupplyCountSerializer(coupon_counts, many=True)
+        return Response({'status': True, 'data': serializer.data}, status=status.HTTP_200_OK)
