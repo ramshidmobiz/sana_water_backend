@@ -365,7 +365,7 @@ class SupplyItemCustomersSerializer(serializers.ModelSerializer):
                 manual_coupons = customer_coupon_stock_manual.aggregate(total_count=Sum('count'))['total_count']
             
             coupon_ids_queryset = CustomerCouponItems.objects.filter(customer_coupon__customer=obj).values_list('coupon__pk', flat=True)
-            coupon_leafs = CouponLeaflet.objects.filter(used=False,coupon__pk__in=list(coupon_ids_queryset)).order_by("-leaflet_name")
+            coupon_leafs = CouponLeaflet.objects.filter(used=False,coupon__pk__in=list(coupon_ids_queryset)).order_by("leaflet_name")
             leafs = CouponLeafSerializer(coupon_leafs, many=True).data
             
         return {
