@@ -2328,18 +2328,21 @@ class GetProductAPI(APIView):
 
 class CustodyCustomAPIView(APIView):
     def post(self, request):
-        serializer = CustomerCustodySerializer(data=request.data)
-        if serializer.is_valid():
-            custody_custom_data = serializer.validated_data
+        # serializer = CustomerCustodySerializer(data=request.data)
+        # if serializer.is_valid():
+            # custody_custom_data = serializer.validated_data
             # Extract data from custody_custom_data
-            customer = Customers.objects.get(pk=custody_custom_data.get('customer'))
-            agreement_no = custody_custom_data.get('agreement_no')
-            total_amount = custody_custom_data.get('total_amount')
-            deposit_type = custody_custom_data.get('deposit_type')
-            reference_no = custody_custom_data.get('reference_no')
-            product =  ProdutItemMaster.objects.get(pk=custody_custom_data.get('product_id'))
-            quantity =  custody_custom_data.get('quantity')
-            serialnumber =  custody_custom_data.get('serialnumber')
+            # print(request.data)
+        try:
+            customer = Customers.objects.get(customer_id=request.data['customer_id'])
+            agreement_no = request.data['agreement_no']
+            total_amount = request.data['total_amount']
+            deposit_type = request.data['deposit_type']
+            reference_no = request.data['reference_no']
+            product =  ProdutItemMaster.objects.get(id=request.data['product_id'])
+            quantity =  request.data['quantity']
+            serialnumber =  request.data['serialnumber']
+            # pri
             
 
             # Create CustodyCustom instance
@@ -2364,7 +2367,7 @@ class CustodyCustomAPIView(APIView):
             # Update CustomerCustodyStock instances
             # for item_data in items_data:
             try:
-                stock_instance = CustomerCustodyStock.objects.get(customer=customer, product=product)
+                stock_instance = CustomerCustodyStock.objects.filter(customer=customer, product=product).first()
                 stock_instance.agreement_no += ', ' + agreement_no
                 stock_instance.serialnumber += ', ' + serialnumber
                 stock_instance.amount += total_amount
@@ -2380,9 +2383,11 @@ class CustodyCustomAPIView(APIView):
                     serialnumber=serialnumber,
                     amount=total_amount
                 )
+            return Response({'status': True,'message': 'Created Succesfully'})
+        except Exception as e:
+                print(e)
+                return Response({'status': False,'data':str(e), 'message': 'Something went wrong!'})
 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class supply_product(APIView):
@@ -3504,8 +3509,8 @@ class DashboardAPI(APIView):
         
         return Response({'status': True, 'data': data}, status=status.HTTP_200_OK)
 class CollectionReportAPI(APIView):
-    # authentication_classes = [BasicAuthentication]
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request, *args, **kwargs):
         salesman_id = self.kwargs.get('salesman_id')  # Retrieve the salesman_id from URL parameters
         
@@ -3521,12 +3526,16 @@ class CollectionReportAPI(APIView):
         
 #----------------------Coupon Supply Report
 class CouponSupplyCountAPIView(APIView):
-    # authentication_classes = [BasicAuthentication]
-    # permission_classes = [IsAuthenticated]
-    def get(self, request):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get(self, request, *args, **kwargs):
 
+        salesman_id = self.kwargs.get('salesman_id')  
+        # print("salesman_id",salesman_id)
         start_date = request.data.get('start_date')
+        # print("start_date",start_date)
         end_date = request.data.get('end_date')
+        # print("end_date",end_date)
         
         if not (start_date and end_date):
             start_datetime = datetime.today().date()
@@ -3536,7 +3545,7 @@ class CouponSupplyCountAPIView(APIView):
             start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
             end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
         
-        coupon_counts = CustomerCoupon.objects.filter(created_date__date__range=[start_datetime, end_datetime]) \
+        coupon_counts = CustomerCoupon.objects.filter(salesman_id=salesman_id,created_date__range=[start_datetime, end_datetime]) \
             .values('customer__customer_name', 'customer__coupon_count','payment_type') \
             .annotate(
                 manual_coupon_paid_count=Count('id', filter=models.Q(payment_type='manual')),
@@ -3549,3 +3558,101 @@ class CouponSupplyCountAPIView(APIView):
 
         serializer = CouponSupplyCountSerializer(coupon_counts, many=True)
         return Response({'status': True, 'data': serializer.data}, status=status.HTTP_200_OK)
+
+class RedeemedHistoryAPI(APIView):
+    def get(self, request, *args, **kwargs):
+        customer_coupon_counts = []
+        customers = Customers.objects.all()
+        # print(customers)
+
+        for customer in customers:
+            digital_count = CustomerSupplyCoupon.objects.filter(customer_supply__customer=customer, leaf__coupon__coupon_method='digital').count()
+
+            manual_count = CustomerSupplyCoupon.objects.filter(customer_supply__customer=customer, leaf__coupon__coupon_method='manual').count()
+
+            customer_coupon_counts.append({
+                'customer_name': customer.customer_name,
+                'building_name': customer.building_name,
+                'digital_coupons_count': digital_count,
+                'manual_coupons_count': manual_count
+            })
+            # print(customer_coupon_counts,'customer_coupon_counts')
+
+        serializer = CustomerCouponCountsSerializer(data=customer_coupon_counts, many=True)
+        serializer.is_valid()
+
+
+# VisitReportAPI
+# Coupon Consumption Report
+class CouponConsumptionReport(APIView):
+        
+
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get(self, request, *args, **kwargs):
+
+        salesman_id = self.kwargs.get('salesman_id')  
+        # print("salesman_id",salesman_id)
+        start_date = request.data.get('start_date')
+        # print("start_date",start_date)
+        end_date = request.data.get('end_date')
+        # print("end_date",end_date)
+        
+        if not (start_date and end_date):
+            start_datetime = datetime.today().date()
+            end_datetime = datetime.today().date()
+        else:
+            start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+            end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
+        customers = Customers.objects.all()
+        # print("customers",customers)
+
+        for customer in customers:
+        # Query to get customer name and total quantity collected for digital and manual coupons
+            report_data = CustomerSupplyCoupon.objects.annotate(
+                total_digital_quantity=Sum('leaf__coupon__no_of_leaflets', filter=models.Q(customer_supply__salesman_id=salesman_id,customer_supply__created_date__range=[start_datetime, end_datetime],customer_supply__customer__customer_name=customer,leaf__coupon__coupon_method='digital')),
+                total_manual_quantity=Sum('leaf__coupon__no_of_leaflets', filter=models.Q(customer_supply__salesman_id=salesman_id,customer_supply__created_date__range=[start_datetime, end_datetime],customer_supply__customer__customer_name=customer,leaf__coupon__coupon_method='manual'))
+            ).values('customer_supply__customer__customer_name', 'total_digital_quantity', 'total_manual_quantity')
+            
+             
+        # print("report_data",report_data)
+
+        serializer = CouponConsumptionReportSerializer(report_data, many=True)
+        return Response(serializer.data)
+
+
+
+
+from django.utils.timezone import make_aware
+
+class StockMovementReportAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        salesman_id = self.kwargs.get('salesman_id')
+        from_date = request.GET.get('from_date')
+        to_date = request.GET.get('to_date')
+
+        if not (from_date and to_date):
+            return Response({'status': False, 'message': 'Please provide both from_date and to_date'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            from_date = make_aware(datetime.strptime(from_date, '%Y-%m-%d'))
+            to_date = make_aware(datetime.strptime(to_date, '%Y-%m-%d'))
+        except ValueError:
+            return Response({'status': False, 'message': 'Invalid date format'}, status=status.HTTP_400_BAD_REQUEST)
+
+        stock_movement = VanProductItems.objects.filter(
+            van_stock__van__salesman_id=salesman_id,
+            van_stock__created_date__range=(from_date, to_date)
+        ).select_related('van_stock__van')
+
+        if stock_movement.exists():
+            total_sale_amount = stock_movement.aggregate(total_sale=Sum(F('count') * F('product__rate')))['total_sale']
+            serialized_data = StockMovementReportSerializer(stock_movement, many=True).data
+            return Response({'status': True, 'data': serialized_data, 'total_sale_amount': total_sale_amount}, status=status.HTTP_200_OK)
+        else:
+            return Response({'status': False, 'message': 'No data found'}, status=status.HTTP_400_BAD_REQUEST)
+# class VisitReportAPI(APIView):
+#     def get()

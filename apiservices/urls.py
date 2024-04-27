@@ -160,7 +160,15 @@ urlpatterns = [
     path('dashboard/<uuid:route_id>/<str:trip>/', DashboardAPI.as_view(), name='dashboard'),
     path('collectionreport/<int:salesman_id>/', CollectionReportAPI.as_view(), name='collectionreport'),
 
-    path('coupon_supply_count/', CouponSupplyCountAPIView.as_view(), name='coupon_supply_count'),
+    path('coupon_supply_count/<int:salesman_id>/', CouponSupplyCountAPIView.as_view(), name='coupon_supply_count'),
+
+    path('redeemed_history/', RedeemedHistoryAPI.as_view(), name='redeemed_history'),
+
+    # path('visit_report/', VisitReportAPI.as_view(), name='visit_report'),
+    path('coupon_consumption_report/<int:salesman_id>/', CouponConsumptionReport.as_view(), name='coupon_consumption_report'),
+    path('stockmovementreport/<str:salesman_id>/', StockMovementReportAPI.as_view(), name='stock_movement_report'),
+
+    # path('visit_report/', VisitReportAPI.as_view(), name='visit_report'),
 
 
 ]

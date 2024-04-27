@@ -906,3 +906,29 @@ class CouponSupplyCountSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomerCoupon
         fields = ['customer__customer_name', 'manual_coupon_paid_count', 'manual_coupon_free_count', 'digital_coupon_paid_count', 'digital_coupon_free_count', 'total_amount_collected', 'payment_type']
+
+
+class CustomerCouponCountsSerializer(serializers.Serializer):
+    customer_name = serializers.CharField()
+    building_name = serializers.CharField()
+    digital_coupons_count = serializers.IntegerField()
+    manual_coupons_count = serializers.IntegerField()
+
+class CouponConsumptionReportSerializer(serializers.Serializer):
+    customer_supply__customer__customer_name = serializers.CharField()
+    total_digital_quantity = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_manual_quantity = serializers.DecimalField(max_digits=10, decimal_places=2)
+    
+    
+class StockMovementReportSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.product_name')
+    count = serializers.IntegerField()
+    rate = serializers.DecimalField(source='product.rate', max_digits=10, decimal_places=2)
+    total_amount = serializers.SerializerMethodField()
+
+    def get_total_amount(self, obj):
+        return obj.count * obj.product.rate
+
+    class Meta:
+        model = VanProductItems
+        fields = ['product_name', 'count', 'rate', 'total_amount']
