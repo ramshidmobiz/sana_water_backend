@@ -168,7 +168,7 @@ urlpatterns = [
     path('coupon_consumption_report/<int:salesman_id>/', CouponConsumptionReport.as_view(), name='coupon_consumption_report'),
     path('stockmovementreport/<str:salesman_id>/', StockMovementReportAPI.as_view(), name='stock_movement_report'),
 
-    # path('visit_report/', VisitReportAPI.as_view(), name='visit_report'),
+    path('visit_report/', VisitReportAPI.as_view(), name='visit_report'),
 
 
 ]

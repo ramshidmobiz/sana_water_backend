@@ -3654,5 +3654,31 @@ class StockMovementReportAPI(APIView):
             return Response({'status': True, 'data': serialized_data, 'total_sale_amount': total_sale_amount}, status=status.HTTP_200_OK)
         else:
             return Response({'status': False, 'message': 'No data found'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
 # class VisitReportAPI(APIView):
-#     def get()
+#     def get(self, request, *args, **kwargs):
+#         salesman_id = self.kwargs.get('salesman_id')
+#         date_str = str(datetime.today().date())
+#         user_type = 'Salesman'
+
+#         today_visits = Customers.objects.filter(sales_staff__user_type=user_type, sales_staff_id=salesman_id, visit_schedule=date_str)
+
+#         print('today_visits', today_visits)
+       
+#         customers_list = []
+
+#         for customer in today_visits:
+#                 supplied_customer = CustomerSupply.objects.filter(customer=customer,created_date__date=datetime.today().date())
+
+class VisitReportAPI(APIView):
+    def get(self, request, *args, **kwargs):
+        salesman_id = self.kwargs.get('salesman_id')
+        date_str = str(datetime.today().date())
+        
+        today_visits = CustomerSupply.objects.filter(salesman_id=salesman_id, created_date__date=date_str)
+        
+        serializer = CustomerSupplySerializers(today_visits, many=True)
+
+        return Response(serializer.data)
