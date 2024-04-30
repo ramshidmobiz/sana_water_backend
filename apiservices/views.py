@@ -3722,3 +3722,31 @@ class VisitReportAPI(APIView):
         serializer = CustomerSupplySerializers(today_visits, many=True)
 
         return Response(serializer.data)
+
+class CustomerStatementReport(APIView):
+    def get(self, request):
+        try:
+            # Retrieve all customer details
+            customer_details = Customers.objects.all()
+            serializer = CustomersStatementSerializer(customer_details, many=True).data
+
+            # Check if 'detail' parameter is passed
+            detail_param = request.query_params.get('detail', 'false').lower() == 'true'
+            print("detail_param:", detail_param)
+
+            # If 'detail' parameter is true, fetch outstanding details for each customer
+            if detail_param:
+                for customer in serializer:
+                    customer_id = customer['customer_id']
+                    # Retrieve outstanding details for the current customer
+                    outstanding_details = CustomerOutstanding.objects.filter(customer__customer_id=customer_id)
+                    outstanding_serializer = CustomerOutstandingSerializer(outstanding_details, many=True).data
+                    # Attach outstanding details to customer data
+                    customer['outstanding_details'] = outstanding_serializer
+                    # print("Customer ID:", customer_id)
+                    # print("Outstanding Details:", outstanding_serializer)
+
+            return Response(serializer)
+        except Exception as e:
+            print("Error:", str(e))
+            return Response({"error": str(e)})

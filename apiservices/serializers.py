@@ -932,3 +932,25 @@ class StockMovementReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = VanProductItems
         fields = ['product_name', 'count', 'rate', 'total_amount']
+
+class CustomerSupplySerializers(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerSupply
+        fields = '__all__'
+
+class CustomersStatementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Customers
+        fields = ['customer_id','customer_name','building_name','door_house_no','floor_no','customer_type','sales_type']
+
+class OutstandingAmountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OutstandingAmount
+        fields = '__all__'
+
+class CustomerOutstandingSerializer(serializers.ModelSerializer):
+    outstandingamount_set = OutstandingAmountSerializer(many=True)
+
+    class Meta:
+        model = CustomerOutstanding
+        fields = '__all__'
