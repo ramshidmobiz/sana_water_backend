@@ -2141,6 +2141,7 @@ class CustomerCouponRecharge(APIView):
                     coupon_instances.append(customer_coupon)
                     
                     balance_amount = Decimal(coupon_data.pop("balance"))
+                    coupon_method = coupon_data.pop("coupon_method")
                     
                     if balance_amount != 0 :
                         
@@ -2168,40 +2169,59 @@ class CustomerCouponRecharge(APIView):
                             )
 
                     # Create CustomerCouponItems instances
-                    for item_data in items_data:
-                        coupon = NewCoupon.objects.get(pk=item_data.pop("coupon"))
-                        items = CustomerCouponItems.objects.create(
-                            customer_coupon=customer_coupon,
-                            coupon=coupon,
-                            rate=item_data.pop("rate")
-                        )
+                    if coupon_method == "manual":
+                        for item_data in items_data:
+                            coupon = NewCoupon.objects.get(pk=item_data.pop("coupon"))
+                            items = CustomerCouponItems.objects.create(
+                                customer_coupon=customer_coupon,
+                                coupon=coupon,
+                                rate=item_data.pop("rate")
+                            )
 
-                        # Update CustomerCouponStock based on coupons
-                        for coupon_instance in coupon_instances:
-                            coupon_method = coupon.coupon_method
-                            customer_id = customer
-                            coupon_type_id = CouponType.objects.get(pk=coupon.coupon_type_id)
+                            # Update CustomerCouponStock based on coupons
+                            for coupon_instance in coupon_instances:
+                                coupon_method = coupon.coupon_method
+                                customer_id = customer
+                                coupon_type_id = CouponType.objects.get(pk=coupon.coupon_type_id)
 
-                            try:
-                                customer_coupon_stock = CustomerCouponStock.objects.get(
-                                    coupon_method=coupon_method,
-                                    customer_id=customer_id.pk,
-                                    coupon_type_id=coupon_type_id
-                                )
-                            except CustomerCouponStock.DoesNotExist:
-                                customer_coupon_stock = CustomerCouponStock.objects.create(
-                                    coupon_method=coupon_method,
-                                    customer_id=customer_id.pk,
-                                    coupon_type_id=coupon_type_id,
-                                    count=0
-                                )
+                                try:
+                                    customer_coupon_stock = CustomerCouponStock.objects.get(
+                                        coupon_method=coupon_method,
+                                        customer_id=customer_id.pk,
+                                        coupon_type_id=coupon_type_id
+                                    )
+                                except CustomerCouponStock.DoesNotExist:
+                                    customer_coupon_stock = CustomerCouponStock.objects.create(
+                                        coupon_method=coupon_method,
+                                        customer_id=customer_id.pk,
+                                        coupon_type_id=coupon_type_id,
+                                        count=0
+                                    )
 
-                            customer_coupon_stock.count += Decimal(coupon.no_of_leaflets)
+                                customer_coupon_stock.count += Decimal(coupon.no_of_leaflets)
+                                customer_coupon_stock.save()
+                                
+                                van_coupon_stock = VanCouponStock.objects.get(coupon=coupon)
+                                van_coupon_stock.count -= 1
+                                van_coupon_stock.save()
+                                
+                    elif coupon_method == "digital":
+                        digital_coupon_data = request.data.get('digital_coupon', {})
+                        try:
+                            customer_coupon_stock = CustomerCouponStock.objects.get(
+                                coupon_method=coupon_method,
+                                customer_id=customer_id.pk,
+                                coupon_type_id=coupon_type_id
+                            )
+                        except CustomerCouponStock.DoesNotExist:
+                            customer_coupon_stock = CustomerCouponStock.objects.create(
+                                coupon_method=coupon_method,
+                                customer_id=customer_id.pk,
+                                coupon_type_id=CouponType.objects.get(coupon_type_name="Other"),
+                                count=0
+                            )
+                            customer_coupon_stock.count += Decimal(digital_coupon_data.pop("count"))
                             customer_coupon_stock.save()
-                            
-                            van_coupon_stock = VanCouponStock.objects.get(coupon=coupon)
-                            van_coupon_stock.count -= 1
-                            van_coupon_stock.save()
                     
                     random_part = str(random.randint(1000, 9999))
                     invoice_number = f'WTR-{random_part}'
@@ -3483,7 +3503,10 @@ class DashboardAPI(APIView):
         credit_sale_total_amount = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date(),invoice_type="credit_invoice").aggregate(total_amount=Sum('amout_total'))['total_amount'] or 0
         credit_sale_amount_recieved = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date(),invoice_type="credit_invoive").aggregate(total_amount=Sum('amout_recieved'))['total_amount'] or 0
         
+        expences = Expense.objects.filter(van__salesman__pk=request.user.pk).aggregate(total_amount=Sum('amount'))['total_amount'] or 0
+        
         data = {
+            'date': date_str,
             'today_schedule': {
                 'today_customers_count': today_customers_count,
                 'supplied_customers_count': supplied_customers_count
@@ -3505,6 +3528,7 @@ class DashboardAPI(APIView):
                 'credit_sale_total_amount': credit_sale_total_amount,
                 'credit_sale_amount_recieved': credit_sale_amount_recieved,
             },
+            'expences': expences,
         }
         
         return Response({'status': True, 'data': data}, status=status.HTTP_200_OK)

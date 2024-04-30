@@ -214,6 +214,7 @@ class CustomerCoupon(models.Model):
     total_payeble = models.DecimalField(default=0, max_digits=10, decimal_places=2)
     balance = models.DecimalField(default=0, max_digits=10, decimal_places=2)
     reference_number = models.CharField(max_length=100)
+    coupon_method = models.CharField(max_length=10,choices=COUPON_METHOD_CHOICES,default='manual')
     
     created_by = models.CharField(max_length=30, blank=True)
     created_date = models.DateTimeField(auto_now_add=True)
