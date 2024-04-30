@@ -3516,7 +3516,7 @@ class DashboardAPI(APIView):
         cash_sale_total_amount = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date(),invoice_type="cash_invoice").aggregate(total_amount=Sum('amout_total'))['total_amount'] or 0
         cash_sale_amount_recieved = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date(),invoice_type="cash_invoice").aggregate(total_amount=Sum('amout_recieved'))['total_amount'] or 0
         
-        credit_sale_total_amount = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date(),invoice_type="credit_invoice").aggregate(total_amount=Sum('amout_total'))['total_amount'] or 0
+        credit_sale_total_amount = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date(),invoice_type="credit_invoive").aggregate(total_amount=Sum('amout_total'))['total_amount'] or 0
         credit_sale_amount_recieved = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date(),invoice_type="credit_invoive").aggregate(total_amount=Sum('amout_recieved'))['total_amount'] or 0
         
         expences = Expense.objects.filter(van__salesman__pk=request.user.pk).aggregate(total_amount=Sum('amount'))['total_amount'] or 0
