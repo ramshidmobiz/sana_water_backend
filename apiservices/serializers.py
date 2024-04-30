@@ -932,9 +932,3 @@ class StockMovementReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = VanProductItems
         fields = ['product_name', 'count', 'rate', 'total_amount']
-
-
-class CustomerSupplySerializers(serializers.ModelSerializer):
-    class Meta:
-        model = CustomerSupply
-        fields = '__all__'

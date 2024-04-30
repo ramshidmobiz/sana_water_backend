@@ -2135,7 +2135,6 @@ class CustomerCouponRecharge(APIView):
                 for coupon_data in coupons_data:
                     customer = Customers.objects.get(pk=coupon_data.pop("customer"))
                     salesman = CustomUser.objects.get(pk=coupon_data.pop("salesman"))
-                    items_data = coupon_data.pop('items', [])
                     
                     customer_coupon = CustomerCoupon.objects.create(customer=customer, salesman=salesman, **coupon_data)
                     coupon_instances.append(customer_coupon)
@@ -2170,6 +2169,8 @@ class CustomerCouponRecharge(APIView):
 
                     # Create CustomerCouponItems instances
                     if coupon_method == "manual":
+                        items_data = coupon_data.pop('items', [])
+                        
                         for item_data in items_data:
                             coupon = NewCoupon.objects.get(pk=item_data.pop("coupon"))
                             items = CustomerCouponItems.objects.create(
@@ -2210,18 +2211,18 @@ class CustomerCouponRecharge(APIView):
                         try:
                             customer_coupon_stock = CustomerCouponStock.objects.get(
                                 coupon_method=coupon_method,
-                                customer_id=customer_id.pk,
-                                coupon_type_id=coupon_type_id
+                                customer_id=customer.pk,
+                                coupon_type_id=CouponType.objects.get(coupon_type_name="Other")
                             )
                         except CustomerCouponStock.DoesNotExist:
                             customer_coupon_stock = CustomerCouponStock.objects.create(
                                 coupon_method=coupon_method,
-                                customer_id=customer_id.pk,
+                                customer_id=customer.pk,
                                 coupon_type_id=CouponType.objects.get(coupon_type_name="Other"),
                                 count=0
                             )
-                            customer_coupon_stock.count += Decimal(digital_coupon_data.pop("count"))
-                            customer_coupon_stock.save()
+                        customer_coupon_stock.count += digital_coupon_data.get("count")
+                        customer_coupon_stock.save()
                     
                     random_part = str(random.randint(1000, 9999))
                     invoice_number = f'WTR-{random_part}'
@@ -2262,8 +2263,6 @@ class CustomerCouponRecharge(APIView):
                 cheque_payment_instance = None
                 if payment_data.get('payment_type') == 'cheque':
                     cheque_payment_instance = ChequeCouponPayment.objects.create(**payment_data)
-                    
-                
 
                 return Response({"message": "Recharge successful"}, status=status.HTTP_200_OK)
 
@@ -2413,8 +2412,6 @@ class CustodyCustomAPIView(APIView):
 class supply_product(APIView):
     def get(self, request, *args, **kwargs):
         route_id = request.GET.get("route_id")
-        CustomerCouponStock.objects.update(coupon_method="manual")
-        NewCoupon.objects.update(coupon_method="manual")
         customers = Customers.objects.all()
 
         if route_id:

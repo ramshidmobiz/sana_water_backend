@@ -54,8 +54,9 @@
                                     <div class="col d-flex align-items-end justify-content-end">
                                         <input type="submit" class="btn btn-primary btn-sm mx-1" value="Apply Filter">
                                         <button type="button" class="btn btn-secondary btn-sm mx-1" onclick="resetFilters()" style="width:max-content">Reset Filter</button>
-                                        <a href="{% url 'download_product_sales_excel' %}?start_date={{ filter_data.start_date }}&route_name={{ route.route_name }}&end_date={{ filter_data.end_date }}" class="btn btn-outline-success mx-1"><i class="fas fa-file-excel"></i> Excel</a>
-                                        <a onclick="printDiv('printArea'); return false;" class="btn btn-outline-success mx-1"><i class="fas fa-print"></i> Print</a>
+                                        <a href="{% url 'download_product_sales_excel' %}?start_date={{ filter_data.start_date }}&end_date={{ filter_data.end_date }}&route_name={{ filter_data.route_name }}&selected_product_id={{ filter_data.product_id }}" class="btn btn-outline-success"><i class="fas fa-file-excel"></i>Excel</a>
+                                        <a href="{% url 'download_product_sales_print' %}?start_date={{ filter_data.start_date }}&end_date={{ filter_data.end_date }}&route_name={{ filter_data.route_name }}&selected_product_id={{ filter_data.product_id }}" class="btn btn-outline-success"><i class="fas fa-file-excel"></i>Print</a>
+
                                     </div>
                                 </div>
                             </div>
@@ -85,7 +86,7 @@
                                     {% for customersupplyitem in customersupplyitems %}
                                         <tr>
                                             <td>{{ forloop.counter }}</td>
-                                            <td>{{ customersupplyitem.customer_supply.created_date}}</td>
+                                            <td>{{ customersupplyitem.customer_supply.created_date|date}}</td>
                                             <td>{{ customersupplyitem.customer_supply.reference_number}}</td>
                                             <td>{{ customersupplyitem.customer_supply.customer.routes.route_name }}</td>
                                             <td>{{ customersupplyitem.customer_supply.customer.customer_name }}</td>
@@ -121,58 +122,6 @@
 </div>
 
 
-<div id="printArea"  style="display: none; padding: 10em;">
-    <div style="margin-top: 4em; ">
-        <h3 style="text-align: center; ;">Sana Water</h3>
-    </div>
-
-
-    <table class="table table-bordered text-wrap " style="width: 100%; margin-top: 1em;">
-        <thead>
-            <tr>
-                <th scope="col" style="border-bottom: 1; max-width: 5em;">Sl No</th>
-                <th scope="col" style="border-bottom: 1; ">Route Name</th>
-                <th scope="col" style="border-bottom: 1;">Customer Name</th>
-                <th scope="col" style="border-bottom: 1;">Mode of Supply</th>
-                <th scope="col" style="border-bottom: 1;">Quantity</th>
-                <th scope="col" style="border-bottom: 1; ">Empty Bottle Collected</th>
-                <th scope="col" style="border-bottom: 1; ">Coupon Collected</th>
-                <th scope="col" style="border-bottom: 1; ">Amount Collected</th>
-                <th scope="col" style="border-bottom: 1; ">Ref/Invoice No</th>
-                <th scope="col" style="border-bottom: 1; ">Time of Supply</th>
-
-            </tr>
-        </thead>
-        <tbody>
-            {% for customersupplyitem in customersupplyitems %}
-            
-                <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ customersupplyitem.customer_supply.customer.routes.route_name }}</td>
-                    <td>{{ customersupplyitem.customer_supply.customer.customer_name }}</td>
-                    <td>{{ customersupplyitem.customer_supply.customer.sales_type }}</td>
-                    <td>{{ customersupplyitem.quantity }}</td>
-                    <td>{{ customersupplyitem.customer_supply.collected_empty_bottle }}</td>
-                    <td>{{ customersupplyitem.collected_empty_bottle }}</td>
-                    <td>{{ customersupplyitem.amount }}</td>
-                    <td>{{ customersupplyitem.customer_supply.reference_number}}</td>
-                    <td>{{ customersupplyitem.customer_supply.created_date|date}}</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-        </table>
-</div>
-
-
-<script>
-    function printDiv(divName) {
-        var printContents = document.getElementById(divName).innerHTML;
-        var originalContents = document.body.innerHTML;
-        document.body.innerHTML = printContents;
-        window.print();
-        document.body.innerHTML = originalContents;
-    }
-</script>
 
 
 
