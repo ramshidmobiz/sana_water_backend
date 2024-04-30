@@ -2135,6 +2135,7 @@ class CustomerCouponRecharge(APIView):
                 for coupon_data in coupons_data:
                     customer = Customers.objects.get(pk=coupon_data.pop("customer"))
                     salesman = CustomUser.objects.get(pk=coupon_data.pop("salesman"))
+                    items_data = coupon_data.pop('items', [])
                     
                     customer_coupon = CustomerCoupon.objects.create(customer=customer, salesman=salesman, **coupon_data)
                     coupon_instances.append(customer_coupon)
@@ -2169,7 +2170,6 @@ class CustomerCouponRecharge(APIView):
 
                     # Create CustomerCouponItems instances
                     if coupon_method == "manual":
-                        items_data = coupon_data.pop('items', [])
                         
                         for item_data in items_data:
                             coupon = NewCoupon.objects.get(pk=item_data.pop("coupon"))
