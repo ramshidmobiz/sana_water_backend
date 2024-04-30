@@ -169,6 +169,8 @@ urlpatterns = [
     path('stockmovementreport/<str:salesman_id>/', StockMovementReportAPI.as_view(), name='stock_movement_report'),
 
     path('visit_report/', VisitReportAPI.as_view(), name='visit_report'),
+    path('nonvisited_report/', NonVisitedReportAPI.as_view(), name='nonvisited_report'),
+
     path('customer_statement/', CustomerStatementReport.as_view(), name='customer-customer_statement'),
 
 

@@ -3713,15 +3713,73 @@ class StockMovementReportAPI(APIView):
 #                 supplied_customer = CustomerSupply.objects.filter(customer=customer,created_date__date=datetime.today().date())
 
 class VisitReportAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    
     def get(self, request, *args, **kwargs):
-        salesman_id = self.kwargs.get('salesman_id')
-        date_str = str(datetime.today().date())
-        
-        today_visits = CustomerSupply.objects.filter(salesman_id=salesman_id, created_date__date=date_str)
-        
-        serializer = CustomerSupplySerializers(today_visits, many=True)
+        try:
+            user_id = request.user.id
+            print("user_id", user_id)
+            customer_objs = Customers.objects.filter(sales_staff=user_id)
 
-        return Response(serializer.data)
+            date_str = str(datetime.today().date())
+            serialized_data = []
+            for customer_obj in customer_objs:
+                today_visits = CustomerSupply.objects.filter(salesman=customer_obj.sales_staff, created_date__date=date_str, customer=customer_obj)
+                serializer = CustomerSupplySerializers(today_visits, many=True)
+                serialized_data.append({
+                    'customer': customer_obj.customer_id,
+                    'customer_name': customer_obj.customer_name,
+                    'today_visits': serializer.data
+                })
+
+            return Response({'status': True, 'data': serialized_data, 'message': 'Customer products list passed!'})
+        
+        except Exception as e:
+            return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class NonVisitedReportAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        try:
+            user_id = request.user.id
+            print("user_id", user_id)
+            
+            customer_objs = Customers.objects.filter(sales_staff=user_id)
+            
+            date_str = str(datetime.today().date())
+            non_visited_customers = []
+            
+            for customer_obj in customer_objs:
+                if not CustomerSupply.objects.filter(customer=customer_obj, created_date__date=date_str).exists():
+                    non_visited_customers.append(customer_obj)
+            
+            serializer = CustomerSerializer(non_visited_customers, many=True)
+            
+            return Response({'status': True, 'data': serializer.data, 'message': 'Non-visited customers listed successfully!'})
+        
+        except Exception as e:
+            return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    
+    # def get(self, request, *args, **kwargs):
+    #     try:
+    #         user_id = request.user.id
+    #         print("user_id", user_id)
+            
+    #         customer_objs = Customers.objects.filter(sales_staff=user_id)
+            
+    #         non_visited_customers = customer_objs.exclude(customersupply__salesman=user_id, customersupply__created_date__date=datetime.today().date())
+            
+    #         serializer = CustomerSerializer(non_visited_customers, many=True)
+            
+    #         return Response({'status': True, 'data': serializer.data, 'message': 'Non-visited customers listed successfully!'})
+        
+    #     except Exception as e:
+    #         return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class CustomerStatementReport(APIView):
     def get(self, request):
