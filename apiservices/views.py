@@ -2557,63 +2557,82 @@ class create_customer_supply(APIView):
                     if Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CASH COUPON" :
                         # print("cash coupon")
                         total_coupon_collected = request.data.get('total_coupon_collected')
-                        collected_coupon_ids = request.data.get('collected_coupon_ids')
                         
-                        for c_id in collected_coupon_ids:
-                            customer_supply_coupon = CustomerSupplyCoupon.objects.create(
-                                customer_supply=customer_supply,
-                            )
-                            leaflet_instance = CouponLeaflet.objects.get(pk=c_id)
-                            customer_supply_coupon.leaf.add(leaflet_instance)
-                            leaflet_instance.used=True
-                            leaflet_instance.save()
+                        if request.data.get('coupon_method') == "manual" :
+                            collected_coupon_ids = request.data.get('collected_coupon_ids')
                             
-                            if CustomerCouponStock.objects.filter(customer__pk=customer_supply_data['customer'],coupon_method="manual",coupon_type_id=leaflet_instance.coupon.coupon_type).exists() :
-                                customer_stock = CustomerCouponStock.objects.get(customer__pk=customer_supply_data['customer'],coupon_method="manual",coupon_type_id=leaflet_instance.coupon.coupon_type)
-                                customer_stock.count -= Decimal(len(collected_coupon_ids))
-                                customer_stock.save()
-                                
-                        if total_fivegallon_qty < len(collected_coupon_ids):
-                            # print("total_fivegallon_qty < len(collected_coupon_ids)", total_fivegallon_qty, "------------------------", len(collected_coupon_ids))
-                            balance_coupon = Decimal(total_fivegallon_qty) - Decimal(len(collected_coupon_ids))
-                            
-                            customer_outstanding = CustomerOutstanding.objects.create(
-                                customer=customer_supply.customer,
-                                product_type="coupons",
-                                created_by=request.user.id,
-                            )
-                            
-                            customer_coupon = CustomerCouponStock.objects.filter(customer__pk=customer_supply_data['customer'],coupon_method="manual").first()
-                            outstanding_coupon = OutstandingCoupon.objects.create(
-                                count=balance_coupon,
-                                customer_outstanding=customer_outstanding,
-                                coupon_type=customer_coupon.coupon_type_id
-                            )
-                            outstanding_instance = ""
-
-                            try:
-                                outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="coupons")
-                                outstanding_instance.value += Decimal(outstanding_coupon.count)
-                                outstanding_instance.save()
-                            except:
-                                outstanding_instance = CustomerOutstandingReport.objects.create(
-                                    product_type='coupons',
-                                    value=outstanding_coupon.count,
-                                    customer=outstanding_coupon.customer_outstanding.customer
+                            for c_id in collected_coupon_ids:
+                                customer_supply_coupon = CustomerSupplyCoupon.objects.create(
+                                    customer_supply=customer_supply,
                                 )
-                        
-                        elif total_fivegallon_qty > len(collected_coupon_ids) :
-                            balance_coupon = total_fivegallon_qty - len(collected_coupon_ids)
-                            try :
-                                outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="coupons")
-                                outstanding_instance.value += Decimal(balance_coupon)
-                                outstanding_instance.save()
-                            except:
-                                outstanding_instance=CustomerOutstandingReport.objects.create(
-                                    product_type="coupons",
-                                    value=balance_coupon,
+                                leaflet_instance = CouponLeaflet.objects.get(pk=c_id)
+                                customer_supply_coupon.leaf.add(leaflet_instance)
+                                leaflet_instance.used=True
+                                leaflet_instance.save()
+                                
+                                if CustomerCouponStock.objects.filter(customer__pk=customer_supply_data['customer'],coupon_method="manual",coupon_type_id=leaflet_instance.coupon.coupon_type).exists() :
+                                    customer_stock = CustomerCouponStock.objects.get(customer__pk=customer_supply_data['customer'],coupon_method="manual",coupon_type_id=leaflet_instance.coupon.coupon_type)
+                                    customer_stock.count -= Decimal(len(collected_coupon_ids))
+                                    customer_stock.save()
+                                    
+                            if total_fivegallon_qty < len(collected_coupon_ids):
+                                # print("total_fivegallon_qty < len(collected_coupon_ids)", total_fivegallon_qty, "------------------------", len(collected_coupon_ids))
+                                balance_coupon = Decimal(total_fivegallon_qty) - Decimal(len(collected_coupon_ids))
+                                
+                                customer_outstanding = CustomerOutstanding.objects.create(
                                     customer=customer_supply.customer,
+                                    product_type="coupons",
+                                    created_by=request.user.id,
+                                )
+                                
+                                customer_coupon = CustomerCouponStock.objects.filter(customer__pk=customer_supply_data['customer'],coupon_method="manual").first()
+                                outstanding_coupon = OutstandingCoupon.objects.create(
+                                    count=balance_coupon,
+                                    customer_outstanding=customer_outstanding,
+                                    coupon_type=customer_coupon.coupon_type_id
+                                )
+                                outstanding_instance = ""
+
+                                try:
+                                    outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="coupons")
+                                    outstanding_instance.value += Decimal(outstanding_coupon.count)
+                                    outstanding_instance.save()
+                                except:
+                                    outstanding_instance = CustomerOutstandingReport.objects.create(
+                                        product_type='coupons',
+                                        value=outstanding_coupon.count,
+                                        customer=outstanding_coupon.customer_outstanding.customer
                                     )
+                            
+                            elif total_fivegallon_qty > len(collected_coupon_ids) :
+                                balance_coupon = total_fivegallon_qty - len(collected_coupon_ids)
+                                try :
+                                    outstanding_instance=CustomerOutstandingReport.objects.get(customer=customer_supply.customer,product_type="coupons")
+                                    outstanding_instance.value += Decimal(balance_coupon)
+                                    outstanding_instance.save()
+                                except:
+                                    outstanding_instance=CustomerOutstandingReport.objects.create(
+                                        product_type="coupons",
+                                        value=balance_coupon,
+                                        customer=customer_supply.customer,
+                                        )
+                                    
+                        elif request.data.get('coupon_method') == "digital" :
+                            try : 
+                                customer_coupon_digital = CustomerSupplyDigitalCoupon.objects.get(
+                                    customer_supply=customer_supply,
+                                    )
+                            except:
+                                customer_coupon_digital = CustomerSupplyDigitalCoupon.objects.create(
+                                    customer_supply=customer_supply,
+                                    count = 0,
+                                    )
+                            customer_coupon_digital.count += total_coupon_collected
+                            customer_coupon_digital.save()
+                            
+                            customer_stock = CustomerCouponStock.objects.get(customer__pk=customer_supply_data['customer'],coupon_method="digital",coupon_type_id__coupon_type_name="Other")
+                            customer_stock.count -= Decimal(total_coupon_collected)
+                            customer_stock.save()
                             
                     elif Customers.objects.get(pk=customer_supply_data['customer']).sales_type == "CREDIT COUPON" :
                         pass

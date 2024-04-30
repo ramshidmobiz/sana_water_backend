@@ -385,6 +385,17 @@ class CustomerSupplyCoupon(models.Model):
         def __str__(self):
             return str(self.customer_supply)
         
+class CustomerSupplyDigitalCoupon(models.Model):
+        id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+        customer_supply = models.ForeignKey(CustomerSupply,on_delete = models.CASCADE)
+        count = models.PositiveIntegerField()
+
+        class Meta:
+            ordering = ('-id',)
+            
+        def __str__(self):
+            return str(self.customer_supply)
+        
 class CustomerSupplyStock(models.Model):
         id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
         product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True,blank=True)
