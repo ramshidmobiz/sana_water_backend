@@ -943,14 +943,18 @@ class CustomersStatementSerializer(serializers.ModelSerializer):
         model = Customers
         fields = ['customer_id','customer_name','building_name','door_house_no','floor_no','customer_type','sales_type']
 
-class OutstandingAmountSerializer(serializers.ModelSerializer):
+class CustomerOutstandingAmountSerializer(serializers.ModelSerializer):
     class Meta:
         model = OutstandingAmount
         fields = '__all__'
 
-class CustomerOutstandingSerializer(serializers.ModelSerializer):
-    outstandingamount_set = OutstandingAmountSerializer(many=True)
+class OutstandingSerializer(serializers.ModelSerializer):
+    outstandingamount_set = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomerOutstanding
         fields = '__all__'
+        
+    def get_outstandingamount_set(self, obj):
+        instances = OutstandingAmount.objects.filter(customer_outstanding__pk=obj.pk)
+        return CustomerOutstandingAmountSerializer(instances, many=True).data
