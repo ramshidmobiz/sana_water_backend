@@ -3829,9 +3829,96 @@ class ExpenseReportAPI(APIView):
                 
             expenses = Expense.objects.filter(van__salesman__pk=user_id,expense_date=date_str)
             
-            serialized_data = SalesmanExpensesSerializer(expenses, many=True)
+            serialized_data = SalesmanExpensesSerializer(expenses, many=True).data
 
             return Response({'status': True, 'data': serialized_data, 'message': 'Customer products list passed!'})
         
         except Exception as e:
             return Response({'status': False, 'data': str(e), 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
+class CashSaleReportAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        try:
+            user_id = request.user.id
+            if request.GET.get('date'):
+                date_str = request.GET.get('date')
+            else:
+                date_str = datetime.today().date()
+                
+            cashsale = Invoice.objects.filter(invoice_type="cash_invoice", created_date=date_str)
+            serialized_data = CashSaleSerializer(cashsale, many=True).data
+            
+            return Response({'status': True, 'data': serialized_data, 'message': 'Cash Sales report passed!'})
+        
+        except Exception as e:
+            return Response({'status': False, 'data': str(e), 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        
+class CreditSaleReportAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        try:
+            user_id = request.user.id
+            if request.GET.get('date'):
+                date_str = request.GET.get('date')
+            else:
+                date_str = datetime.today().date()
+                
+            creditsale = Invoice.objects.filter(invoice_type="credit_invoive", created_date=date_str)
+            serialized_data = CreditSaleSerializer(creditsale, many=True).data
+            
+            return Response({'status': True, 'data': serialized_data, 'message': 'Credit Sales report passed!'})
+        
+        except Exception as e:
+            return Response({'status': False, 'data': str(e), 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)        
+        
+
+class VisitStatisticsAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        try:
+            user_id = request.user.id
+            print("user_id", user_id)
+            
+            today_date = timezone.now().date()
+            #new customers created
+            salesman_customers_count = Customers.objects.filter(
+                created_date__date=today_date, 
+                sales_staff_id=user_id
+            ).count()
+            #emergency supply
+            emergency_customers = DiffBottlesModel.objects.filter(created_date__date=today_date, assign_this_to_id=user_id).count()
+            #actual visit
+            visited_customers = CustomerSupply.objects.filter(salesman_id=user_id, created_date__date=today_date).count()
+            
+            visited_serializer = CustomerSupplySerializer(visited_customers, many=True)
+            #non visit
+            # non_visited_customers = Customers.objects.exclude(customer_supply__salesman_id=user_id, customer_supply__created_date__date=today_date)
+            non_visited_customers = Customers.objects.annotate(num_visits=Count('customer_supply')).filter(num_visits=0)
+
+            visited_serializer = CustomerSupplySerializer(CustomerSupply.objects.filter(salesman_id=user_id, created_date__date=today_date), many=True)
+            non_visited_serializer = CustomersSerializer(non_visited_customers, many=True)
+            
+            return Response({
+                'new_customers_count': salesman_customers_count,
+                'emergency_supply_count': emergency_customers,
+                'visited_customers_count': visited_customers,
+                'visited_customers': visited_serializer.data,
+                'non_visited_customers': non_visited_serializer.data,
+                'status': True,
+                'message': 'Visited and non-visited customers retrieved successfully!'
+            })
+        
+        except Exception as e:
+            return Response({
+                'status': False,
+                'data': str(e),
+                'message': 'Something went wrong!'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

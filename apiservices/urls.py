@@ -174,4 +174,10 @@ urlpatterns = [
     path('customer_statement/', CustomerStatementReport.as_view(), name='customer-customer_statement'),
     
     path('salesman-expenses/', ExpenseReportAPI.as_view(), name='salesman_expences'),
+    path('dsr-cashsales/', CashSaleReportAPI.as_view(), name='cash_sale_report'),
+    path('dsr-creditsales/', CreditSaleReportAPI.as_view(), name='credit_sale_report'),
+
+    path('visit_statistics/', VisitStatisticsAPI.as_view(), name='visit_statistics'),
+
+
 ]

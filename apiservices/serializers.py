@@ -968,3 +968,27 @@ class SalesmanExpensesSerializer(serializers.ModelSerializer):
     
     def get_head_name(self,obj):
         return obj.expence_type.name
+    
+class CashSaleSerializer(serializers.ModelSerializer):
+    customer_name = serializers.SerializerMethodField()
+    building_name = serializers.SerializerMethodField()
+    class Meta:
+        model = Invoice
+        fields = ['reference_no','customer_name','net_taxable','vat','amout_total']
+    
+    def get_customer_name(self, obj):
+        return obj.customer.customer_name
+    def get_building_name(self, obj):
+        return obj.customer.building_name            
+    
+class CreditSaleSerializer(serializers.ModelSerializer):
+    customer_name = serializers.SerializerMethodField()
+    building_name = serializers.SerializerMethodField()
+    class Meta:
+        model = Invoice
+        fields = ['reference_no','customer_name','net_taxable','vat','amout_total']
+    
+    def get_customer_name(self, obj):
+        return obj.customer.customer_name
+    def get_building_name(self, obj):
+        return obj.customer.building_name                
