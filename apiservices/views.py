@@ -3808,3 +3808,25 @@ class CustomerStatementReport(APIView):
         except Exception as e:
             print("Error:", str(e))
             return Response({"error": str(e)})
+
+
+class ExpenseReportAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        try:
+            user_id = request.user.id
+            if request.GET.get('date'):
+                date_str = request.GET.get('date')
+            else:
+                date_str = datetime.today().date()
+                
+            expenses = Expense.objects.filter(van__salesman__pk=user_id,expense_date=date_str)
+            
+            serialized_data = SalesmanExpensesSerializer(expenses, many=True)
+
+            return Response({'status': True, 'data': serialized_data, 'message': 'Customer products list passed!'})
+        
+        except Exception as e:
+            return Response({'status': False, 'data': str(e), 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -172,7 +172,6 @@ urlpatterns = [
     path('nonvisited_report/', NonVisitedReportAPI.as_view(), name='nonvisited_report'),
 
     path('customer_statement/', CustomerStatementReport.as_view(), name='customer-customer_statement'),
-
-
-
+    
+    path('salesman-expenses/', ExpenseReportAPI.as_view(), name='salesman_expences'),
 ]

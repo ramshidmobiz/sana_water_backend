@@ -958,3 +958,13 @@ class OutstandingSerializer(serializers.ModelSerializer):
     def get_outstandingamount_set(self, obj):
         instances = OutstandingAmount.objects.filter(customer_outstanding__pk=obj.pk)
         return CustomerOutstandingAmountSerializer(instances, many=True).data
+    
+class SalesmanExpensesSerializer(serializers.ModelSerializer):
+    head_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Expense
+        fields = ['head_name','amount']
+    
+    def get_head_name(self,obj):
+        return obj.expence_type.name
