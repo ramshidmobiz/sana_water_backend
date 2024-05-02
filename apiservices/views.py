@@ -3488,7 +3488,12 @@ class DashboardAPI(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request, route_id, trip):
-        date_str = str(datetime.today().date())
+        if request.GET.get("date_str"):
+            date_str = request.GET.get("date_str")
+        else :
+            date_str = str(datetime.today().date())
+            
+        date = datetime.strptime(date_str, '%Y-%m-%d')
         
         todays_customers = find_customers(request, date_str, route_id)
         today_customers_count = 0
@@ -3498,26 +3503,26 @@ class DashboardAPI(APIView):
                 if customer['trip'] == trip.capitalize():
                     today_customers_count += 1
                 
-        supplied_customers_count = CustomerSupply.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date()).count()
+        supplied_customers_count = CustomerSupply.objects.filter(customer__routes__pk=route_id,created_date__date=date).count()
         
-        temperary_schedule_unsupply_count = DiffBottlesModel.objects.filter(customer__routes__pk=route_id,status="pending",delivery_date__date=datetime.today().date()).count()
-        temperary_schedule_supplied_count = DiffBottlesModel.objects.filter(customer__routes__pk=route_id,status="supplied",delivery_date__date=datetime.today().date()).count()
+        temperary_schedule_unsupply_count = DiffBottlesModel.objects.filter(customer__routes__pk=route_id,status="pending",delivery_date__date=date).count()
+        temperary_schedule_supplied_count = DiffBottlesModel.objects.filter(customer__routes__pk=route_id,status="supplied",delivery_date__date=date).count()
         
-        coupon_sale_count = CustomerCouponItems.objects.filter(customer_coupon__customer__routes__pk=route_id,customer_coupon__created_date__date=datetime.today().date()).count()
-        empty_bottle_count = CustomerSupply.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date()).aggregate(total=Sum('collected_empty_bottle'))['total'] or 0
+        coupon_sale_count = CustomerCouponItems.objects.filter(customer_coupon__customer__routes__pk=route_id,customer_coupon__created_date__date=date).count()
+        empty_bottle_count = CustomerSupply.objects.filter(customer__routes__pk=route_id,created_date__date=date).aggregate(total=Sum('collected_empty_bottle'))['total'] or 0
         
         van_route = Van_Routes.objects.get(routes__pk=route_id,van__salesman=request.user)
         filled_bottle_count = VanProductStock.objects.filter(van=van_route.van,product__product_name="5 Gallon",stock_type__in=["opening_stock", "closing"]).aggregate(total_count=Sum('count'))['total_count'] or 0
         
-        used_coupon_count = CustomerSupplyCoupon.objects.filter(customer_supply__customer__routes__pk=route_id,customer_supply__created_date__date=datetime.today().date()).aggregate(leaf_count=Count('leaf'))['leaf_count']
+        used_coupon_count = CustomerSupplyCoupon.objects.filter(customer_supply__customer__routes__pk=route_id,customer_supply__created_date__date=date).aggregate(leaf_count=Count('leaf'))['leaf_count']
         
-        cash_in_hand = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date()).aggregate(total_amount=Sum('amout_recieved'))['total_amount'] or 0
+        cash_in_hand = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=date).aggregate(total_amount=Sum('amout_recieved'))['total_amount'] or 0
         
-        cash_sale_total_amount = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date(),invoice_type="cash_invoice").aggregate(total_amount=Sum('amout_total'))['total_amount'] or 0
-        cash_sale_amount_recieved = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date(),invoice_type="cash_invoice").aggregate(total_amount=Sum('amout_recieved'))['total_amount'] or 0
+        cash_sale_total_amount = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=date,invoice_type="cash_invoice").aggregate(total_amount=Sum('amout_total'))['total_amount'] or 0
+        cash_sale_amount_recieved = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=date,invoice_type="cash_invoice").aggregate(total_amount=Sum('amout_recieved'))['total_amount'] or 0
         
-        credit_sale_total_amount = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date(),invoice_type="credit_invoive").aggregate(total_amount=Sum('amout_total'))['total_amount'] or 0
-        credit_sale_amount_recieved = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=datetime.today().date(),invoice_type="credit_invoive").aggregate(total_amount=Sum('amout_recieved'))['total_amount'] or 0
+        credit_sale_total_amount = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=date,invoice_type="credit_invoive").aggregate(total_amount=Sum('amout_total'))['total_amount'] or 0
+        credit_sale_amount_recieved = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=date,invoice_type="credit_invoive").aggregate(total_amount=Sum('amout_recieved'))['total_amount'] or 0
         
         expences = Expense.objects.filter(van__salesman__pk=request.user.pk).aggregate(total_amount=Sum('amount'))['total_amount'] or 0
         
