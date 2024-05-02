@@ -3476,8 +3476,16 @@ class CreditNoteAPI(APIView):
     def get(self, request, *args, **kwargs):
         
         credit_invoices = Invoice.objects.filter(invoice_type='credit_invoive')
-        print(credit_invoices,"credit_invoices")
+        # print(credit_invoices,"credit_invoices")
         if credit_invoices.exists():
+            start_date = request.GET.get('start_date')
+            end_date = request.GET.get('end_date')
+
+            if start_date and end_date :
+                start_date = datetime.strptime(start_date, '%m/%d/%Y').date()
+                end_date = datetime.strptime(end_date, '%m/%d/%Y').date()
+                instances = instances.filter(created_date__range=[start_date, end_date])
+                
             serialized = CreditNoteSerializer(credit_invoices, many=True)
             return Response({'status': True,'data': serialized.data}, status=status.HTTP_200_OK)
         else:
@@ -3831,7 +3839,7 @@ class ExpenseReportAPI(APIView):
             
             serialized_data = SalesmanExpensesSerializer(expenses, many=True).data
 
-            return Response({'status': True, 'data': serialized_data, 'message': 'Customer products list passed!'})
+            return Response({'status': True, 'data': serialized_data, 'message': 'Successful'})
         
         except Exception as e:
             return Response({'status': False, 'data': str(e), 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
