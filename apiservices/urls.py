@@ -122,6 +122,8 @@ urlpatterns = [
     path('vacations/<uuid:vacation_id>/delete/', VacationDeleteAPI.as_view(), name='vacation_delete_api'),
     
     path('myclient/',Myclient_API.as_view()),
+
+    #custody items
     path('get_products/', GetProductAPI.as_view(), name='get_products'),
     path('add_custody_items/', CustodyCustomAPIView.as_view(), name='custody_item_add'),
     path('custody_item_list/' ,CustodyCustomItemListAPI.as_view(), name='custody_item_list'),
@@ -177,7 +179,9 @@ urlpatterns = [
     path('dsr-cashsales/', CashSaleReportAPI.as_view(), name='cash_sale_report'),
     path('dsr-creditsales/', CreditSaleReportAPI.as_view(), name='credit_sale_report'),
 
-    path('visit_statistics/', VisitStatisticsAPI.as_view(), name='visit_statistics'),
+    path('dsr-visit_statistics/', VisitStatisticsAPI.as_view(), name='visit_statistics'),
+    path('dsr-fivegallon_related/', FivegallonRelatedAPI.as_view(), name='fivegallon_related'),
+
 
 
 ]

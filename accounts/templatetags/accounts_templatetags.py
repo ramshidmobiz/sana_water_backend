@@ -21,18 +21,20 @@ def get_next_visit_day(customer_pk):
 @register.simple_tag
 def bottle_stock(customer_pk):
     customer = Customers.objects.get(pk=customer_pk)
-    
-    total_bottle_count = CustomerSupply.objects.filter(customer=customer.customer_id)\
-                                                    .aggregate(total_quantity=Sum('allocate_bottle_to_custody'))['total_quantity'] or 0
-        
-    last_supplied_count = CustomerSupplyItems.objects.filter(customer_supply__customer=customer.customer_id)\
-                                                      .order_by('-customer_supply__created_date')\
-                                                      .values_list('quantity', flat=True).first() or 0
+   
+    custody_count = 0
+    outstanding_bottle_count = 0
 
-    pending_count = CustomerSupply.objects.filter(customer=customer.customer_id)\
-                                                   .aggregate(total_quantity=Sum('allocate_bottle_to_pending'))['total_quantity'] or 0
+    if (custody_stock:=CustomerCustodyStock.objects.filter(customer=customer,product__product_name="5 Gallon")).exists() :
+        custody_count = custody_stock.first().quantity 
 
-    final_bottle_count = total_bottle_count + last_supplied_count + pending_count 
-    # print("final_bottle_count",final_bottle_count)
-    
-    return final_bottle_count
+    if (outstanding_count:=CustomerOutstandingReport.objects.filter(customer=customer,product_type="emptycan")).exists() :
+        outstanding_bottle_count = outstanding_count.first().value
+
+    last_supplied_count = CustomerSupplyItems.objects.filter(customer_supply__customer=customer).order_by('-customer_supply__created_date').values_list('quantity', flat=True).first() or 0
+
+    total_bottle_count = custody_count + outstanding_bottle_count + last_supplied_count
+
+    return total_bottle_count
+
+

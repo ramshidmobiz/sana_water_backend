@@ -970,7 +970,7 @@ class CashSaleSerializer(serializers.ModelSerializer):
     building_name = serializers.SerializerMethodField()
     class Meta:
         model = Invoice
-        fields = ['reference_no','customer_name','net_taxable','vat','amout_total']
+        fields = ['reference_no','customer_name','building_name','net_taxable','vat','amout_total']
     
     def get_customer_name(self, obj):
         return obj.customer.customer_name
@@ -982,7 +982,7 @@ class CreditSaleSerializer(serializers.ModelSerializer):
     building_name = serializers.SerializerMethodField()
     class Meta:
         model = Invoice
-        fields = ['reference_no','customer_name','net_taxable','vat','amout_total']
+        fields = ['reference_no','customer_name','building_name','net_taxable','vat','amout_total']
     
     def get_customer_name(self, obj):
         return obj.customer.customer_name

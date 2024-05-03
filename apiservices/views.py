@@ -2355,6 +2355,7 @@ class CustodyCustomAPIView(APIView):
         try:
             customer = Customers.objects.get(customer_id=request.data['customer_id'])
             agreement_no = request.data['agreement_no']
+            print(agreement_no,'agreement_no')
             total_amount = request.data['total_amount']
             deposit_type = request.data['deposit_type']
             reference_no = request.data['reference_no']
@@ -2372,6 +2373,7 @@ class CustodyCustomAPIView(APIView):
                 deposit_type=deposit_type,
                 reference_no=reference_no
             )
+            print(custody_custom_instance.agreement_no,'ascSDCdsv')
 
             # Create CustodyCustomItems instances
             # for item_data in items_data:
@@ -2382,11 +2384,8 @@ class CustodyCustomAPIView(APIView):
                 serialnumber=serialnumber,
                 amount=total_amount
             )
-
-            # Update CustomerCustodyStock instances
-            # for item_data in items_data:
             try:
-                stock_instance = CustomerCustodyStock.objects.filter(customer=customer, product=product).first()
+                stock_instance = CustomerCustodyStock.objects.get(customer=customer, product=product)
                 stock_instance.agreement_no += ', ' + agreement_no
                 stock_instance.serialnumber += ', ' + serialnumber
                 stock_instance.amount += total_amount
@@ -2402,10 +2401,12 @@ class CustodyCustomAPIView(APIView):
                     serialnumber=serialnumber,
                     amount=total_amount
                 )
-            return Response({'status': True,'message': 'Created Succesfully'})
+
+            return Response({'status': True, 'message': 'Created Successfully'})
         except Exception as e:
-                print(e)
-                return Response({'status': False,'data':str(e), 'message': 'Something went wrong!'})
+            print(e)
+            return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'})
+
 
 
 
@@ -3474,22 +3475,28 @@ class CreditNoteAPI(APIView):
     # authentication_classes = [BasicAuthentication]
     # permission_classes = [IsAuthenticated]
     def get(self, request, *args, **kwargs):
+        start_date = request.data.get('start_date')
+        end_date = request.data.get('end_date')
         
-        credit_invoices = Invoice.objects.filter(invoice_type='credit_invoive')
-        # print(credit_invoices,"credit_invoices")
-        if credit_invoices.exists():
-            start_date = request.GET.get('start_date')
-            end_date = request.GET.get('end_date')
-
-            if start_date and end_date :
-                start_date = datetime.strptime(start_date, '%m/%d/%Y').date()
-                end_date = datetime.strptime(end_date, '%m/%d/%Y').date()
-                instances = instances.filter(created_date__range=[start_date, end_date])
-                
-            serialized = CreditNoteSerializer(credit_invoices, many=True)
-            return Response({'status': True,'data': serialized.data}, status=status.HTTP_200_OK)
+        if start_date and end_date:
+            try:
+                start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+                end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
+            except ValueError:
+                return Response({"error": "Invalid date format. Please use YYYY-MM-DD."}, status=400)
         else:
-            return Response({'status': False,'message': 'No data found'}, status=400)
+            start_datetime = datetime.today().date()
+            end_datetime = datetime.today().date()
+        
+        credit_invoices = Invoice.objects.filter(invoice_type='credit_invoive', created_date__date__range=[start_datetime, end_datetime])
+        print('credit_invoices',credit_invoices)
+        serialized = CreditNoteSerializer(credit_invoices, many=True)
+        
+        if serialized.data:
+            return Response({'status': True, 'data': serialized.data}, status=status.HTTP_200_OK)
+        else:
+            return Response({'status': False, 'message': 'No data found'}, status=status.HTTP_400_BAD_REQUEST)
+        
 
 class DashboardAPI(APIView):
     authentication_classes = [BasicAuthentication]
@@ -3856,7 +3863,7 @@ class CashSaleReportAPI(APIView):
             else:
                 date_str = datetime.today().date()
                 
-            cashsale = Invoice.objects.filter(invoice_type="cash_invoice", created_date=date_str)
+            cashsale = Invoice.objects.filter(invoice_type="cash_invoice", created_date__date=date_str)
             serialized_data = CashSaleSerializer(cashsale, many=True).data
             
             return Response({'status': True, 'data': serialized_data, 'message': 'Cash Sales report passed!'})
@@ -3877,7 +3884,7 @@ class CreditSaleReportAPI(APIView):
             else:
                 date_str = datetime.today().date()
                 
-            creditsale = Invoice.objects.filter(invoice_type="credit_invoive", created_date=date_str)
+            creditsale = Invoice.objects.filter(invoice_type="credit_invoive", created_date__date=date_str)
             serialized_data = CreditSaleSerializer(creditsale, many=True).data
             
             return Response({'status': True, 'data': serialized_data, 'message': 'Credit Sales report passed!'})
@@ -3922,6 +3929,46 @@ class VisitStatisticsAPI(APIView):
                 'non_visited_customers': non_visited_serializer.data,
                 'status': True,
                 'message': 'Visited and non-visited customers retrieved successfully!'
+            })
+        
+        except Exception as e:
+            return Response({
+                'status': False,
+                'data': str(e),
+                'message': 'Something went wrong!'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class FivegallonRelatedAPI(APIView):
+    # authentication_classes = [BasicAuthentication]
+    # permission_classes = [IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        try:
+            user_id = request.user.id
+            print("user_id", user_id)
+            
+            today_date = timezone.now().date()
+            
+            today_customer_supplies = CustomerSupply.objects.filter(created_date__date=today_date)
+            
+            customers_data = []
+            for supply in today_customer_supplies:
+                customer_data = {
+                    'customer_name': supply.customer.customer_name,
+                    'building_name': supply.customer.building_name,
+                    'room_no': supply.customer.door_house_no,
+                    'empty_bottles_collected': supply.collected_empty_bottle,
+                    'empty_bottle_pending': supply.allocate_bottle_to_pending,
+                    'coupons_collected': supply.customer.customer_supplycoupon_set.filter(created_date__date=today_date).count(),
+                    'pending_coupons': supply.customer.customer_supplycoupon_set.exclude(created_date__date=today_date).count()
+                }
+                customers_data.append(customer_data)
+            
+            return Response({
+                'customers': customers_data,
+                'status': True,
+                'message': 'Customer supply data retrieved successfully!'
             })
         
         except Exception as e:

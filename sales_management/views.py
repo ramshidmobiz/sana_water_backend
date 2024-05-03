@@ -2150,3 +2150,471 @@ def collection_report_excel(request):
     response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'inline; filename = "{filename}"'
     return response
+
+
+
+
+#-----------------Suspense Report--------------------------
+def suspense_report(request):
+
+    # Get start date from request parameters or default to today
+    start_date = request.GET.get('start_date')
+    
+    filter_data = {}
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    else:
+        start_date = datetime.today().date()
+    
+    filter_data['start_date'] = start_date.strftime('%Y-%m-%d')
+    
+    # Filter invoices based on start date
+    invoices = Invoice.objects.filter(created_date__gte=start_date).select_related('customer__routes').select_related('customer__sales_staff')
+
+    # Calculate Opening Suspense, Paid, and Closing Suspense
+    # opening_suspense = invoices.aggregate(opening_suspense=Sum('amout_total'))['opening_suspense'] or 0
+    opening_suspense = invoices.filter(created_date__gte=start_date).aggregate(opening_suspense=Sum('amout_total'))['opening_suspense'] or 0
+
+    # Calculate total Opening Suspense
+    total_opening_suspense = invoices.aggregate(total_opening_suspense=Sum('amout_total'))['total_opening_suspense'] or 0
+    # Calculate total Paid
+    total_paid = invoices.aggregate(total_paid=Sum('amout_recieved'))['total_paid'] or 0
+    # Calculate total Closing Suspense
+    total_closing_suspense = invoices.aggregate(total_closing_suspense=Sum('amout_total'))['total_closing_suspense'] or 0
+
+
+
+
+    context = {
+        'invoices': invoices,
+        'filter_data': filter_data,
+        'opening_suspense': opening_suspense,
+        'total_opening_suspense':total_opening_suspense,
+        'total_paid':total_paid,
+        'total_closing_suspense':total_closing_suspense,
+
+    }
+    return render(request, 'sales_management/suspense_report.html', context)
+
+def suspense_report_excel(request):
+    # Get start date from request parameters or default to today
+    start_date = request.GET.get('start_date')
+    
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    else:
+        start_date = datetime.today().date()
+    
+    # Filter invoices based on start date
+    invoices = Invoice.objects.filter(created_date__gte=start_date).select_related('customer__routes').select_related('customer__sales_staff')
+
+    # Calculate total values for Opening Suspense, Paid, and Closing Suspense
+    total_opening_suspense = sum(invoice.amout_total for invoice in invoices)
+    total_paid = sum(invoice.amout_recieved for invoice in invoices)
+    total_closing_suspense = sum(invoice.amout_total for invoice in invoices)
+
+    # Create a BytesIO object to save workbook data
+    buffer = BytesIO()
+
+    # Create a new Excel workbook and add a worksheet
+    workbook = xlsxwriter.Workbook(buffer)
+    worksheet = workbook.add_worksheet()
+    worksheet.title = "Suspense Report"
+
+    # Write headers
+    headers = ["Sl No", "Route", "Salesman", "Opening Suspense", "Paid", "Closing Suspense"]
+    worksheet.write_row(0, 0, headers)
+
+    # Write data rows
+    for index, invoice in enumerate(invoices, start=1):
+        worksheet.write_row(index, 0, [
+            index,
+            invoice.customer.routes.route_name,
+            invoice.customer.sales_staff.username,
+            invoice.amout_total,
+            invoice.amout_recieved,
+            invoice.amout_total
+        ])
+
+    # Write footer data
+    footer_row = len(invoices) + 1
+    worksheet.write(footer_row, 0, "Total")
+    worksheet.write(footer_row, 3, total_opening_suspense)
+    worksheet.write(footer_row, 4, total_paid)
+    worksheet.write(footer_row, 5, total_closing_suspense)
+
+    # Close the workbook
+    workbook.close()
+
+    # Create HttpResponse object to return the Excel file as a response
+    response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=Suspense_Report.xlsx'
+    return response
+
+
+def suspense_report_print(request):
+    # Get start date from request parameters or default to today
+    start_date = request.GET.get('start_date')
+    
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    else:
+        start_date = datetime.today().date()
+    
+    # Filter invoices based on start date
+    invoices = Invoice.objects.filter(created_date__gte=start_date).select_related('customer__routes').select_related('customer__sales_staff')
+
+    # Calculate total values for Opening Suspense, Paid, and Closing Suspense
+    total_opening_suspense = sum(invoice.amout_total for invoice in invoices)
+    total_paid = sum(invoice.amout_recieved for invoice in invoices)
+    total_closing_suspense = sum(invoice.amout_total for invoice in invoices)
+
+    # Create a BytesIO object to save PDF data
+    buffer = BytesIO()
+
+    # Create a new PDF document
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    
+    # Define table data
+    data = [
+        ["Sl No", "Route", "Salesman", "Opening Suspense", "Paid", "Closing Suspense"]
+    ]
+    
+    # Populate table data
+    for index, invoice in enumerate(invoices, start=1):
+        data.append([
+            str(index),
+            str(invoice.customer.routes.route_name),
+            str(invoice.customer.sales_staff.username),
+            str(invoice.amout_total),
+            str(invoice.amout_recieved),
+            str(invoice.amout_total)
+        ])
+    
+    # Add footer data
+    data.append([
+        "", "", "Total", str(total_opening_suspense), str(total_paid), str(total_closing_suspense)
+    ])
+
+    # Create a table
+    table = Table(data)
+
+    # Add style to the table
+    style = TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.gray),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+                        ])
+    table.setStyle(style)
+
+    # Add table to the document
+    doc.build([table])
+
+    # Create HttpResponse object to return the PDF file as a response
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename=Suspense_Report.pdf'
+    return response
+
+
+
+#-----------------DSR cash sales Report--------------------------
+
+def cashsales_report(request):
+    start_date = request.GET.get('start_date')
+    filter_data = {}
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    else:
+        start_date = datetime.today().date()
+    
+    filter_data['start_date'] = start_date.strftime('%Y-%m-%d')
+    
+    invoices = Invoice.objects.filter(created_date__date=start_date, invoice_type="cash_invoice")
+    
+    total_net_taxable = invoices.aggregate(total_net_taxable=Sum('net_taxable'))['total_net_taxable'] or 0
+    total_vat = invoices.aggregate(total_vat=Sum('vat'))['total_vat'] or 0
+    total_amout_total = invoices.aggregate(total_amout_total=Sum('amout_total'))['total_amout_total'] or 0
+
+    context = {
+        'invoices': invoices,
+        'filter_data': filter_data,
+        
+        'total_net_taxable':total_net_taxable,
+        'total_vat':total_vat,
+        'total_amout_total':total_amout_total,
+
+    }
+    return render(request, 'sales_management/dsr_cash_sales_report.html', context)
+
+def cashsales_report_excel(request):
+    start_date = request.GET.get('start_date')
+    
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    else:
+        start_date = datetime.today().date()
+    
+    invoices = Invoice.objects.filter(created_date__date=start_date, invoice_type="cash_invoice")
+
+    # Calculate total values for Opening Suspense, Paid, and Closing Suspense
+    total_net_taxable = sum(invoice.net_taxable for invoice in invoices)
+    total_vat = sum(invoice.vat for invoice in invoices)
+    total_amout_total = sum(invoice.amout_total for invoice in invoices)
+
+    # Create a BytesIO object to save workbook data
+    buffer = BytesIO()
+
+    # Create a new Excel workbook and add a worksheet
+    workbook = xlsxwriter.Workbook(buffer)
+    worksheet = workbook.add_worksheet()
+    worksheet.title = "Cash Sales Report"
+
+    # Write headers
+    headers = ["Sl No", "Reference No", "Customer Name", "Building Name", "Net taxable", "Vat","Grand Total"]
+    worksheet.write_row(0, 0, headers)
+
+    # Write data rows
+    for index, invoice in enumerate(invoices, start=1):
+        worksheet.write_row(index, 0, [
+            index,
+            invoice.reference_no,
+            invoice.customer.customer_name,
+            invoice.customer.building_name,
+            invoice.net_taxable,
+            invoice.vat,
+            invoice.amout_total
+        ])
+
+    # Write footer data
+    footer_row = len(invoices) + 1
+    worksheet.write(footer_row, 3, "Total")
+    worksheet.write(footer_row, 4, total_net_taxable)
+    worksheet.write(footer_row, 5, total_vat)
+    worksheet.write(footer_row, 6, total_amout_total)
+
+    # Close the workbook
+    workbook.close()
+
+    # Create HttpResponse object to return the Excel file as a response
+    response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=Cash_Sales_Report.xlsx'
+    return response
+
+
+def cashsales_report_print(request):
+    start_date = request.GET.get('start_date')
+    
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    else:
+        start_date = datetime.today().date()
+    
+    invoices = Invoice.objects.filter(created_date__date=start_date, invoice_type="cash_invoice")
+
+    total_net_taxable = sum(invoice.net_taxable for invoice in invoices)
+    total_vat = sum(invoice.vat for invoice in invoices)
+    total_amout_total = sum(invoice.amout_total for invoice in invoices)
+
+    # Create a BytesIO object to save PDF data
+    buffer = BytesIO()
+
+    # Create a new PDF document
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    
+    # Define table data
+    data = [
+        ["Sl No", "Reference No", "Customer Name", "Building Name", "Net taxable", "Vat","Grand Total"]
+    ]
+    
+    # Populate table data
+    for index, invoice in enumerate(invoices, start=1):
+        data.append([
+            str(index),
+            str(invoice.reference_no),
+            str(invoice.customer.customer_name),
+            str(invoice.customer.building_name),
+            str(invoice.net_taxable),
+            str(invoice.vat),
+            str(invoice.amout_total)
+        ])
+    
+    # Add footer data
+    data.append([
+        "", "","", "Total", str(total_net_taxable), str(total_vat), str(total_amout_total)
+    ])
+
+    # Create a table
+    table = Table(data)
+
+    # Add style to the table
+    style = TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.gray),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+                        ])
+    table.setStyle(style)
+
+    # Add table to the document
+    doc.build([table])
+
+    # Create HttpResponse object to return the PDF file as a response
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename=Cash_Sales_Report.pdf'
+    return response
+
+
+
+#-----------------DSR credit sales Report--------------------------
+
+def creditsales_report(request):
+    start_date = request.GET.get('start_date')
+    filter_data = {}
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    else:
+        start_date = datetime.today().date()
+    
+    filter_data['start_date'] = start_date.strftime('%Y-%m-%d')
+    
+    invoices = Invoice.objects.filter(created_date__date=start_date, invoice_type="credit_invoive")
+    
+    total_net_taxable = invoices.aggregate(total_net_taxable=Sum('net_taxable'))['total_net_taxable'] or 0
+    total_vat = invoices.aggregate(total_vat=Sum('vat'))['total_vat'] or 0
+    total_amout_total = invoices.aggregate(total_amout_total=Sum('amout_total'))['total_amout_total'] or 0
+
+    context = {
+        'invoices': invoices,
+        'filter_data': filter_data,
+        
+        'total_net_taxable':total_net_taxable,
+        'total_vat':total_vat,
+        'total_amout_total':total_amout_total,
+
+    }
+    return render(request, 'sales_management/dsr_credit_sales_report.html', context)
+
+def creditsales_report_excel(request):
+    start_date = request.GET.get('start_date')
+    
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    else:
+        start_date = datetime.today().date()
+    
+    invoices = Invoice.objects.filter(created_date__date=start_date, invoice_type="credit_invoice")
+
+    # Calculate total values for Opening Suspense, Paid, and Closing Suspense
+    total_net_taxable = sum(invoice.net_taxable for invoice in invoices)
+    total_vat = sum(invoice.vat for invoice in invoices)
+    total_amout_total = sum(invoice.amout_total for invoice in invoices)
+
+    # Create a BytesIO object to save workbook data
+    buffer = BytesIO()
+
+    # Create a new Excel workbook and add a worksheet
+    workbook = xlsxwriter.Workbook(buffer)
+    worksheet = workbook.add_worksheet()
+    worksheet.title = "Credit Sales Report"
+
+    # Write headers
+    headers = ["Sl No", "Reference No", "Customer Name", "Building Name", "Net taxable", "Vat","Grand Total"]
+    worksheet.write_row(0, 0, headers)
+
+    # Write data rows
+    for index, invoice in enumerate(invoices, start=1):
+        worksheet.write_row(index, 0, [
+            index,
+            invoice.reference_no,
+            invoice.customer.customer_name,
+            invoice.customer.building_name,
+            invoice.net_taxable,
+            invoice.vat,
+            invoice.amout_total
+        ])
+
+    # Write footer data
+    footer_row = len(invoices) + 1
+    worksheet.write(footer_row, 3, "Total")
+    worksheet.write(footer_row, 4, total_net_taxable)
+    worksheet.write(footer_row, 5, total_vat)
+    worksheet.write(footer_row, 6, total_amout_total)
+
+    # Close the workbook
+    workbook.close()
+
+    # Create HttpResponse object to return the Excel file as a response
+    response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=Credit_Sales_Report.xlsx'
+    return response
+
+
+def creditsales_report_print(request):
+    start_date = request.GET.get('start_date')
+    
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    else:
+        start_date = datetime.today().date()
+    
+    invoices = Invoice.objects.filter(created_date__date=start_date, invoice_type="credit_invoice")
+
+    total_net_taxable = sum(invoice.net_taxable for invoice in invoices)
+    total_vat = sum(invoice.vat for invoice in invoices)
+    total_amout_total = sum(invoice.amout_total for invoice in invoices)
+
+    # Create a BytesIO object to save PDF data
+    buffer = BytesIO()
+
+    # Create a new PDF document
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    
+    # Define table data
+    data = [
+        ["Sl No", "Reference No", "Customer Name", "Building Name", "Net taxable", "Vat","Grand Total"]
+    ]
+    
+    # Populate table data
+    for index, invoice in enumerate(invoices, start=1):
+        data.append([
+            str(index),
+            str(invoice.reference_no),
+            str(invoice.customer.customer_name),
+            str(invoice.customer.building_name),
+            str(invoice.net_taxable),
+            str(invoice.vat),
+            str(invoice.amout_total)
+        ])
+    
+    # Add footer data
+    data.append([
+        "", "","", "Total", str(total_net_taxable), str(total_vat), str(total_amout_total)
+    ])
+
+    # Create a table
+    table = Table(data)
+
+    # Add style to the table
+    style = TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.gray),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+                        ])
+    table.setStyle(style)
+
+    # Add table to the document
+    doc.build([table])
+
+    # Create HttpResponse object to return the PDF file as a response
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename=Credit_Sales_Report.pdf'
+    return response
+

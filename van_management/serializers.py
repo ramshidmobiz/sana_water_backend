@@ -32,4 +32,3 @@ class ExpenseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Expense
         fields = ('expense_id', 'expence_type', 'expense_type_name', 'route', 'van', 'amount', 'remarks', 'expense_date', 'date_created')
-        

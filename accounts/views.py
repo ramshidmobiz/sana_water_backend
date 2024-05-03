@@ -230,21 +230,7 @@ class Customer_List(View):
 
         # Start with all customers
         user_li = Customers.objects.all()
-        for customer in user_li:
-            customer_id = customer.customer_id
-            # total_bottle_count = CustomerSupplyItems.objects.filter(customer_supply__customer=customer_id)\
-            #                                             .aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
-            
-            # last_supplied_count = CustomerSupplyItems.objects.filter(customer_supply__customer=customer_id)\
-            #                                               .order_by('-customer_supply__created_date')\
-            #                                               .values_list('quantity', flat=True).first() or 0
-
-
-            # pending_count = CustodyCustomItems.objects.filter(custody_custom__customer=customer_id)\
-            #                                            .aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
-
-            # final_bottle_count = total_bottle_count + last_supplied_count + pending_count 
-            # print("final_bottle_count",final_bottle_count)
+        
             
         # Apply filters if they exist
         if query:
@@ -394,19 +380,19 @@ def customer_list_excel(request):
 
     for serial_number, customer in enumerate(user_li, start=1):
         next_visit_date = get_next_visit_day(customer.pk)
-        customer_id = customer.customer_id
-        total_bottle_count = CustomerSupply.objects.filter(customer=customer.customer_id)\
-                                                    .aggregate(total_quantity=Sum('allocate_bottle_to_custody'))['total_quantity'] or 0
-        
-        last_supplied_count = CustomerSupplyItems.objects.filter(customer_supply__customer=customer.customer_id)\
-                                                      .order_by('-customer_supply__created_date')\
-                                                      .values_list('quantity', flat=True).first() or 0
+        custody_count = 0
+        outstanding_bottle_count = 0
 
-        pending_count = CustomerSupply.objects.filter(customer=customer.customer_id)\
-                                                   .aggregate(total_quantity=Sum('allocate_bottle_to_pending'))['total_quantity'] or 0
+        if (custody_stock:=CustomerCustodyStock.objects.filter(customer=customer,product__product_name="5 Gallon")).exists() :
+            custody_count = custody_stock.first().quantity 
 
-        final_bottle_count = total_bottle_count + last_supplied_count + pending_count 
-        print("final_bottle_count",final_bottle_count)
+        if (outstanding_count:=CustomerOutstandingReport.objects.filter(customer=customer,product_type="emptycan")).exists() :
+            outstanding_bottle_count = outstanding_count.first().value
+
+        last_supplied_count = CustomerSupplyItems.objects.filter(customer_supply__customer=customer).order_by('-customer_supply__created_date').values_list('quantity', flat=True).first() or 0
+
+        total_bottle_count = custody_count + outstanding_bottle_count + last_supplied_count 
+        print("final_bottle_count",total_bottle_count)
         data['Serial Number'].append(serial_number)
         data['Customer ID'].append(customer.custom_id)
         data['Customer name'].append(customer.customer_name)
@@ -415,7 +401,7 @@ def customer_list_excel(request):
         data['Mobile No'].append(customer.mobile_no)
         data['Building Name'].append(customer.building_name)
         data['House No'].append(customer.door_house_no if customer.door_house_no else 'Nil')
-        data['Bottles stock'].append(final_bottle_count)
+        data['Bottles stock'].append(total_bottle_count)
         data['Next Visit date'].append(next_visit_date)
         data['Sales Type'].append(customer.sales_type)
 

@@ -53,4 +53,18 @@ urlpatterns = [
     path('customerSales_Excel_report',customerSales_Excel_report, name='customerSales_Excel_report'),
     path('customerSales_Print_report',customerSales_Print_report, name='customerSales_Print_report'),
 
+#----------------- Suspense Report-------------------------------------
+    path('suspense_report',suspense_report, name='suspense_report'),
+    path('suspense_report_excel',suspense_report_excel, name='suspense_report_excel'),
+    path('suspense_report_print',suspense_report_print, name='suspense_report_print'),
+#------------------DSR Cash Sales Report-------------------------------------
+    path('cashsales_report',cashsales_report, name='cashsales_report'),
+    path('cashsales_report_excel',cashsales_report_excel, name='cashsales_report_excel'),
+    path('cashsales_report_print',cashsales_report_print, name='cashsales_report_print'),
+    
+#------------------DSR Credit Sales Report-------------------------------------
+    path('creditsales_report',creditsales_report, name='creditsales_report'),
+    path('creditsales_report_excel',creditsales_report_excel, name='creditsales_report_excel'),
+    path('creditsales_report_print',creditsales_report_print, name='creditsales_report_print'),
+
 ]

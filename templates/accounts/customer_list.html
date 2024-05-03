@@ -112,8 +112,8 @@
                                             <td style="text-align:left;">{{data.building_name}},<br> {{data.door_house_no}}</td>
                                             {% get_next_visit_day data.pk as next_visit_date %}
                                             <td style="text-align:left;">{{next_visit_date}}</td>
-                                            {% bottle_stock data.pk as final_bottle_count %}
-                                            <td style="text-align:left;">{{final_bottle_count}}</td>
+                                            {% bottle_stock data.pk as total_bottle_count %}
+                                            <td style="text-align:left;">{{total_bottle_count}}</td>
                                             <td style="text-align:left;">{{data.sales_type}}</td>
                                            
                                             <td>
