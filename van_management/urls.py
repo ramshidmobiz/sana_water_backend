@@ -45,7 +45,9 @@ urlpatterns = [
     
                                    
     # path('van-stock-product', VanStock.as_view(), name="vanstock"),
-    path('van-stock-product', VanStockList.as_view(), name="vanstock"),
+    # path('van-stock-product', VanStockList.as_view(), name="vanstock"),
+    path('van-stock-product', VanProductStockList.as_view(), name="vanstock_product"),
+    
     path('offload', offload, name="offload"),
     path('view_item_details/<str:pk>/', View_Item_Details.as_view(), name="view_item_details"),
     path('edit_item_count/<uuid:product_id>/', EditItemView.as_view(), name="edit_item_count"),

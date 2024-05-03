@@ -928,6 +928,23 @@ class VanStockList(View):
             'evening_stock_count': evening_stock_count}
         return render(request, 'van_management/vanstock.html', context)
     
+    
+class VanProductStockList(View):
+    
+    def get(self, request, *args, **kwargs):
+        products = ProdutItemMaster.objects.filter()
+        van_instances = Van.objects.all()
+        van_product_stock = VanProductStock.objects.all()
+    
+        context = {
+            'products': products,
+            'van_instances': van_instances,
+            'van_product_stock': van_product_stock, 
+        }
+        return render(request, 'van_management/van_product_stock.html', context)
+    
+    
+    
 def offload(request):
     van_stock = VanProductStock.objects.all()
     context = {'van_stock': van_stock}

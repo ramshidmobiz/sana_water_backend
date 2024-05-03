@@ -5,9 +5,10 @@ from django.db.models import Q, Sum,Subquery,Value
 from django.db.models.functions import Coalesce
 
 from accounts.models import CustomUser
-from client_management.models import CustomerSupply
+from client_management.models import CustomerSupply, CustomerSupplyItems
 from master.models import CategoryMaster
-from van_management.models import Van_Routes
+from product.models import Staff_IssueOrders, Staff_Orders_details
+from van_management.models import OffloadVan, Van, Van_Routes, VanProductItems, VanProductStock
 
 register = template.Library()
 
@@ -17,3 +18,28 @@ def get_empty_bottles(salesman):
         return CustomerSupply.objects.filter(salesman=salesman,created_date__date=datetime.today().date()).aggregate(total=Coalesce(Sum('collected_empty_bottle'), Value(0)))['total']
     except CustomerSupply.DoesNotExist:
         return 0
+    
+@register.simple_tag
+def get_van_product_wise_stock(van,product):
+    van = Van.objects.get(pk=van)
+    van_poducts_items = VanProductItems.objects.filter(van_stock__van=van,product__pk=product)
+    van_stock = VanProductStock.objects.filter(van=van,product__pk=product)
+    
+    staff_order_details = Staff_Orders_details.objects.filter(staff_order_id__created_date__date=datetime.today().date(),product_id__pk=product,staff_order_id__created_by=van.salesman.pk)
+    requested_count = staff_order_details.aggregate(total_count=Sum('count'))['total_count'] or 0
+    issued_count = staff_order_details.aggregate(total_count=Sum('issued_qty'))['total_count'] or 0
+    supply_instances = CustomerSupplyItems.objects.filter(product__pk=product,customer_supply__salesman=van.salesman,customer_supply__created_date__date=datetime.today().date())
+    
+    return{
+        "opening_stock": van_poducts_items.filter(van_stock__stock_type="opening_stock").aggregate(total_count=Sum('count'))['total_count'] or 0,
+        "requested_count": requested_count,
+        "issued_count": issued_count,
+        "empty_bottle_collected": supply_instances.aggregate(total_count=Sum('customer_supply__collected_empty_bottle'))['total_count'] or 0,
+        "sold_count": supply_instances.aggregate(total_count=Sum('quantity'))['total_count'] or 0,
+        "return_count": van_stock.filter(stock_type="return").aggregate(total_count=Sum('count'))['total_count'] or 0,
+        "closing_count": van_stock.filter(stock_type="closing").aggregate(total_count=Sum('count'))['total_count'] or 0,
+        "change_count": van_stock.filter(stock_type="change").aggregate(total_count=Sum('count'))['total_count'] or 0,
+        "offload_count": OffloadVan.objects.filter(van=van,product__pk=product).aggregate(total_count=Sum('quantity'))['total_count'] or 0,
+        "damage_count": van_stock.filter(stock_type="damage").aggregate(total_count=Sum('count'))['total_count'] or 0,
+    }
+    

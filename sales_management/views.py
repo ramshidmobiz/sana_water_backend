@@ -2618,3 +2618,127 @@ def creditsales_report_print(request):
     response['Content-Disposition'] = 'attachment; filename=Credit_Sales_Report.pdf'
     return response
 
+#----------DSR Coupon Book Sales--------------
+
+def dsr_coupon_book_sales(request):
+
+    # Get start date from request parameters or default to today
+    start_date = request.GET.get('start_date')
+    print("start_date",start_date)
+    
+    filter_data = {}
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    else:
+        start_date = datetime.today().date()
+    
+    filter_data['start_date'] = start_date.strftime('%Y-%m-%d')
+    customer_coupon_items=CustomerCouponItems.objects.filter(customer_coupon__created_date__gte=start_date).order_by("-customer_coupon__created_date")
+
+    context={'customer_coupon_items':customer_coupon_items,
+            'filter_data': filter_data,
+}
+    return render(request,'sales_management/dsr_coupon_book_sales.html',context)
+
+def dsr_coupon_book_sales_excel(request):
+    # Get start date from request parameters or default to today
+    start_date = request.GET.get('start_date')
+    print("start_date", start_date)
+    
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    else:
+        start_date = datetime.today().date()
+    
+    # Query data
+    customer_coupon_items = CustomerCouponItems.objects.filter(customer_coupon__created_date__gte=start_date).order_by("-customer_coupon__created_date")
+    
+    # Create a BytesIO object to save workbook data
+    buffer = BytesIO()
+
+    # Create a new Excel workbook and add a worksheet
+    workbook = xlsxwriter.Workbook(buffer)
+    worksheet = workbook.add_worksheet()
+
+    # Write headers
+    headers = ["Sl no","Reference Number", "Customer Name", "Building Name/no", "Book Number", "Coupon Type" , "Coupon Method","Rate"]
+    for col, header in enumerate(headers):
+        worksheet.write(0, col, header)
+
+    # Write data to the worksheet
+    row = 1  # Start from row 1 after the header row
+    sl_no = 1  # Initialize Sl No
+    for item in customer_coupon_items:
+        building_info = f"{item.customer_coupon.customer.building_name} / {item.customer_coupon.customer.door_house_no} / {item.customer_coupon.customer.floor_no}"
+        worksheet.write(row, 0, sl_no)  
+        worksheet.write(row, 1, item.customer_coupon.reference_number)
+        worksheet.write(row, 2, item.customer_coupon.customer.customer_name)
+        worksheet.write(row, 3, building_info)
+        worksheet.write(row, 4, item.coupon.book_num)
+        worksheet.write(row, 5, item.coupon.coupon_type.coupon_type_name)
+        worksheet.write(row, 6, item.coupon.coupon_method)
+        worksheet.write(row, 7, item.rate)
+        row += 1
+        sl_no += 1  # Increment Sl No
+
+    # Close the workbook
+    workbook.close()
+
+    # Move the BytesIO pointer to the start of the buffer
+    buffer.seek(0)
+
+    # Create the HTTP response with the Excel file
+    response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="dsr_coupon_book_sales.xlsx"'
+
+    return response
+
+def dsr_coupon_book_sales_print(request):
+    # Get start date from request parameters or default to today
+    start_date = request.GET.get('start_date')
+    print("start_date", start_date)
+    
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    else:
+        start_date = datetime.today().date()
+    
+    # Query data
+    customer_coupon_items = CustomerCouponItems.objects.filter(customer_coupon__created_date__gte=start_date).order_by("-customer_coupon__created_date")
+
+    # Create data for PDF table
+    data = [
+        ["Reference Number", "Customer Name", "Building Name/no", "Book Number", "Coupon Type", "Coupon Method","Rate"]
+    ]
+    for item in customer_coupon_items:
+        building_info = f"{item.customer_coupon.customer.building_name} / {item.customer_coupon.customer.door_house_no} / {item.customer_coupon.customer.floor_no}"
+        data.append([
+            item.customer_coupon.reference_number,
+            item.customer_coupon.customer.customer_name,
+            building_info,
+            item.coupon.book_num,
+            item.coupon.coupon_type.coupon_type_name,
+            item.coupon.coupon_method,
+            item.rate
+        ])
+
+    # Define custom page size (e.g., 8.5x5.5 inches)
+    custom_page_size = (13.5 * inch, 5.5 * inch)
+
+    # Create a PDF document with custom page size
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(custom_page_size))
+    table = Table(data, colWidths=[100, 150, 200, 100, 150, 100])
+    table.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.gray),
+                               ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                               ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                               ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                               ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                               ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                               ('GRID', (0, 0), (-1, -1), 1, colors.black)]))
+    doc.build([table])
+
+    # Create HTTP response with the PDF file
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="dsr_coupon_book_sales.pdf"'
+    return response 

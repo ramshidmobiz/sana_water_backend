@@ -66,5 +66,9 @@ urlpatterns = [
     path('creditsales_report',creditsales_report, name='creditsales_report'),
     path('creditsales_report_excel',creditsales_report_excel, name='creditsales_report_excel'),
     path('creditsales_report_print',creditsales_report_print, name='creditsales_report_print'),
-
+    
+#-------------------DSR coupon Book Sales-------------------------
+    path('dsr_coupon_book_sales',dsr_coupon_book_sales, name='dsr_coupon_book_sales'),
+    path('dsr_coupon_book_sales_excel',dsr_coupon_book_sales_excel, name='dsr_coupon_book_sales_excel'),
+    path('dsr_coupon_book_sales_print',dsr_coupon_book_sales_print, name='dsr_coupon_book_sales_print'),
 ]

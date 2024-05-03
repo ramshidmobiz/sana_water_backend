@@ -1110,19 +1110,19 @@
                                     <a href="" class="side-menu__item">DSR Bottle Count 5Gallon empty + fresh</a>
                                 </li>
                                 <li class="slide">
-                                    <a href="" class="side-menu__item">DSR Coupon Book Sale</a>
+                                    <a href="{% url 'dsr_coupon_book_sales' %}" class="side-menu__item">DSR Coupon Book Sale</a>
                                 </li>
                                 <li class="slide">
-                                    <a href="" class="side-menu__item">DSR Cash Sale</a>
+                                    <a href="{% url 'cashsales_report' %}" class="side-menu__item">DSR Cash Sales</a>
                                 </li>
                                 <li class="slide">
-                                    <a href="" class="side-menu__item">DSR Credit Sale</a>
+                                    <a href="{% url 'creditsales_report' %}" class="side-menu__item">DSR Credit Sales</a>
                                 </li>
                                 <li class="slide">
                                     <a href="" class="side-menu__item">DSR Expence</a>
                                 </li>
                                  <li class="slide">
-                                    <a href="" class="side-menu__item">DSR Susupence</a>
+                                    <a href="" class="side-menu__item">DSR Suspence</a>
                                 </li>
                             </ul>
                         </li>
@@ -1153,7 +1153,7 @@
                                     <a href="{% url 'schedule_view' %}" class="side-menu__item">Trip Schedule</a>
                                 </li>
                                 <li class="slide">
-                                    <a href="{% url 'vanstock' %}" class="side-menu__item">Van Stock </a>
+                                    <a href="{% url 'vanstock_product' %}" class="side-menu__item">Van Stock</a>
                                 </li>
                                 {% comment %} <li class="slide">
                                     <a href="{% url 'van_coupon_stock' %}" class="side-menu__item">Van Stock Coupons</a>
