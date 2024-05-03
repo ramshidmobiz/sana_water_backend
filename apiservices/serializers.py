@@ -282,7 +282,6 @@ class SupplyItemFiveGallonWaterGetSerializer(serializers.ModelSerializer):
         return qty
     
 class SupplyItemProductGetSerializer(serializers.ModelSerializer):
-    rate = serializers.SerializerMethodField()
     quantity = serializers.SerializerMethodField()
 
     class Meta:
@@ -290,9 +289,6 @@ class SupplyItemProductGetSerializer(serializers.ModelSerializer):
         fields = ['id', 'product_name','category','unit','rate','quantity']
         read_only_fields = ['id', 'product_name']
 
-    def get_rate(self, obj):
-        rate = Product.objects.filter(product_name=obj).latest('created_date').rate
-        return rate
     
     def get_quantity(self, obj):
         customer_id = self.context.get('customer_id')
