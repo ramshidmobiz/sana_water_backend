@@ -2,6 +2,7 @@ import uuid
 import json
 import datetime
 from van_management.models import *
+from decimal import Decimal
 
 from django.views import View
 from django.db.models import Q, Sum, Count
@@ -931,8 +932,29 @@ def new_coupon_count(request,pk):
     if request.method == 'POST':
         form = CoupenEditForm(request.POST)
         if form.is_valid():
-            data = form.save(commit=False)
-            data.customer = Customers.objects.get(pk=pk)
+            # data = form.save(commit=False)
+            # data.customer = Customers.objects.get(pk=pk)
+            # data.save()
+            coupon_type_id = CouponType.objects.get(pk=form.cleaned_data['coupon_type_id'].pk)
+            
+            coupon_method = "manual"
+            if coupon_type_id.coupon_type_name is "Other":
+                coupon_method = "digital"
+            try:
+                data = CustomerCouponStock.objects.get(
+                    customer_id=Customers.objects.get(pk=pk),
+                    coupon_type_id=coupon_type_id,
+                    coupon_method=coupon_method
+                )
+            except CustomerCouponStock.DoesNotExist:
+                data = CustomerCouponStock.objects.create(
+                    customer_id=Customers.objects.get(pk=pk),
+                    coupon_type_id=coupon_type_id,
+                    coupon_method=coupon_method,
+                    count=0
+                )
+
+            data.count += Decimal(form.cleaned_data['count'])
             data.save()
 
             messages.success(request, 'New coupon count added successfully!')

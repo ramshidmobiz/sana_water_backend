@@ -33,7 +33,7 @@ from rest_framework.authentication import BasicAuthentication
 from rest_framework.permissions import BasePermission, IsAuthenticated,IsAuthenticatedOrReadOnly
 
 from accounts.models import *
-from invoice_management.models import Invoice, InvoiceItems
+from invoice_management.models import Invoice, InvoiceDailyCollection, InvoiceItems
 from client_management.forms import CoupenEditForm
 from master.serializers import *
 from master.functions import generate_serializer_errors, get_custom_id
@@ -2257,7 +2257,14 @@ class CustomerCouponRecharge(APIView):
                             rate=product_item.rate,
                             invoice=invoice_instance,
                             remarks='invoice genereted from recharge coupon items reference no : ' + invoice_instance.reference_no
-                        )    
+                        )
+                        
+                    InvoiceDailyCollection.objects.create(
+                        invoice=invoice_instance,
+                        created_date=datetime.today(),
+                        customer=invoice_instance.customer,
+                        salesman=request.user,
+                    ) 
 
                 # Create ChequeCouponPayment instanceno_of_leaflets
                 cheque_payment_instance = None
@@ -2720,6 +2727,13 @@ class create_customer_supply(APIView):
                             invoice=invoice,
                             remarks='invoice genereted from supply items reference no : ' + invoice.reference_no
                         )
+                        
+                    InvoiceDailyCollection.objects.create(
+                        invoice=invoice,
+                        created_date=datetime.today(),
+                        customer=invoice.customer,
+                        salesman=request.user,
+                    )
 
                 DiffBottlesModel.objects.filter(
                     delivery_date__date=date.today(),
