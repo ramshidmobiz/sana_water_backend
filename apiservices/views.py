@@ -4011,7 +4011,7 @@ class ShopInAPI(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request, customer_pk):
         try:
-            user_id = request.user.id
+            user_id = request.user
             SalesmanSpendingLog.objects.create(
                 customer=Customers.objects.get(pk=customer_pk),
                 salesman=user_id,
@@ -4036,7 +4036,7 @@ class ShopOutAPI(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request, customer_pk):
         try:
-            user_id = request.user.id
+            user_id = request.user
             if (instances:=SalesmanSpendingLog.objects.filter(customer__pk=customer_pk,salesman=user_id,created_date__date=datetime.today().date())):
                 instances.update(shop_out=datetime.now())
                 
