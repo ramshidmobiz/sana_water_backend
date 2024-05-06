@@ -36,7 +36,7 @@ from accounts.models import *
 from invoice_management.models import Invoice, InvoiceDailyCollection, InvoiceItems
 from client_management.forms import CoupenEditForm
 from master.serializers import *
-from master.functions import generate_serializer_errors, get_custom_id
+from master.functions import generate_serializer_errors, get_custom_id, get_next_visit_date
 from master.models import *
 from random import randint
 from datetime import datetime as dt
@@ -3031,8 +3031,12 @@ class VanStockAPI(APIView):
             product_stock = product_stock.filter(van__pk=request.GET.get('van_pk')).exclude(count=0)
             
         else:
-            coupon_stock = coupon_stock.filter(van__salesman=request.user).exclude(count=0)
-            product_stock = product_stock.filter(van__salesman=request.user).exclude(count=0)
+            try:
+                coupon_stock = coupon_stock.filter(van__salesman=request.user).exclude(count=0)
+                product_stock = product_stock.filter(van__salesman=request.user).exclude(count=0)
+            except:
+                coupon_stock = coupon_stock.exclude(count=0)
+                product_stock = product_stock.exclude(count=0)
             
         coupon_serializer = VanCouponStockSerializer(coupon_stock, many=True)
         product_serializer = VanProductStockSerializer(product_stock, many=True)
@@ -4009,7 +4013,7 @@ class ShopInAPI(APIView):
         try:
             user_id = request.user.id
             SalesmanSpendingLog.objects.create(
-                customer__pk=customer_pk,
+                customer=Customers.objects.get(pk=customer_pk),
                 salesman=user_id,
                 created_date=datetime.now(),
                 shop_in=datetime.now(),
@@ -4088,6 +4092,138 @@ class TaxAPI(APIView):
                 'status': True,
                 'message': 'success!',
                 'data': serializer.data
+            })
+        
+        except Exception as e:
+            return Response({
+                'status': False,
+                'data': str(e),
+                'message': 'Something went wrong!'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+class CustomerLoginApi(APIView):
+    def post(self, request, *args, **kwargs):
+        try:
+            mobile_number = request.data.get('mobile_number')
+            password = request.data.get('password')
+            if (instances:=Customers.objects.filter(mobile_no=mobile_number)).exists():
+                username = instances.first().user_id.username
+                if username and password:
+                    user = authenticate(username=username, password=password)
+                    if user is not None:
+                        # if user.is_active:
+                        login(request, user)
+                        user_obj = CustomUser.objects.filter(username=username).first()
+                        token = generate_random_string(20)
+                        data = {
+                            'id': user_obj.id,
+                            'username': username,
+                            'user_type': user_obj.user_type,
+                            'token': token
+                        }
+                        # else:
+                        #     return Response({'status': False, 'message': 'User Inactive!'})
+                        return Response({'status': True, 'data': data, 'message': 'Authenticated User!'})
+                    else:
+                        return Response({'status': False, 'message': 'Unauthenticated User!'})
+                else:
+                    return Response({'status': False, 'message': 'Unauthenticated User!'})
+            else:
+                return Response({'status': False, 'message': 'This mobile Number not registered contact your salesman'})
+        except CustomUser.DoesNotExist:
+            return Response({'status': False, 'message': 'User does not exist!'})
+        except Exception as e:
+            print(f'Something went wrong: {e}')
+            return Response({'status': False, 'message': 'Something went wrong!'})
+
+class NextVisitDateAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        try:
+            customer = Customers.objects.get(user_id=request.user)
+            if not customer.visit_schedule is None:
+                next_visit_date = get_next_visit_date(customer.visit_schedule)
+            
+            return Response({
+                'status': True,
+                'message': 'success!',
+                'data': str(next_visit_date)
+            })
+        
+        except Exception as e:
+            return Response({
+                'status': False,
+                'data': str(e),
+                'message': 'Something went wrong!'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+class CustomerCouponBalanceAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        try:
+            pending_coupons = 0
+            digital_coupons = 0
+            manual_coupons = 0
+            
+            if CustomerOutstandingReport.objects.filter(product_type="coupons",customer=obj).exists() :
+                pending_coupons = CustomerOutstandingReport.objects.get(product_type="coupons",customer=obj).value
+            
+            if CustomerCouponStock.objects.filter(customer__user_id=request.user).exists() :
+                customer_coupon_stock = CustomerCouponStock.objects.filter(customer__user_id=request.user)
+            
+                if (customer_coupon_stock_digital:=customer_coupon_stock.filter(coupon_method="digital")).exists() :
+                    digital_coupons = customer_coupon_stock_digital.aggregate(total_count=Sum('count'))['total_count']
+                if (customer_coupon_stock_manual:=customer_coupon_stock.filter(coupon_method="manual")).exists() :
+                    manual_coupons = customer_coupon_stock_manual.aggregate(total_count=Sum('count'))['total_count']
+            
+            return Response({
+                'status': True,
+                'message': 'success!',
+                'data': {
+                    'pending_coupons': pending_coupons,
+                    'digital_coupons': digital_coupons,
+                    'manual_coupons': manual_coupons,
+                },
+            })
+        
+        except Exception as e:
+            return Response({
+                'status': False,
+                'data': str(e),
+                'message': 'Something went wrong!'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            
+class CustomerOutstandingAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        try:
+            pending_coupons = 0
+            pending_emptycan = 0
+            pending_amount = 0
+            
+            if CustomerOutstandingReport.objects.filter(product_type="coupons",customer__user_id=request.user).exists() :
+                pending_coupons = CustomerOutstandingReport.objects.get(product_type="coupons",customer__user_id=request.user).value
+                
+            if CustomerOutstandingReport.objects.filter(product_type="emptycan",customer__user_id=request.user).exists() :
+                pending_emptycan = CustomerOutstandingReport.objects.get(product_type="emptycan",customer__user_id=request.user).value
+                
+            if CustomerOutstandingReport.objects.filter(product_type="amount",customer__user_id=request.user).exists() :
+                pending_amount = CustomerOutstandingReport.objects.get(product_type="amount",customer__user_id=request.user).value
+            
+            return Response({
+                'status': True,
+                'message': 'success!',
+                'data': {
+                    'pending_coupons': pending_coupons,
+                    'pending_emptycan': pending_emptycan,
+                    'pending_amount': pending_amount,
+                },
             })
         
         except Exception as e:

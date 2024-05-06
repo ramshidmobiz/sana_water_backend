@@ -14,6 +14,11 @@ urlpatterns = [
     # Customer Sign in
     path('customers/',Customer_API.as_view()),
     path('customers/<str:id>/',Customer_API.as_view()),
+    
+    path('customer-login/',CustomerLoginApi.as_view()),
+    path('customer-next-visit-date/',NextVisitDateAPI.as_view()),
+    path('customer-coupon-balance/',CustomerCouponBalanceAPI.as_view()),
+    path('customer-outstanding-balance/',CustomerOutstandingAPI.as_view()),
     #################Master Url##############################
 
     path('route/<str:id>/',RouteMaster_API.as_view()),
@@ -188,6 +193,4 @@ urlpatterns = [
     path('salesman-request/', SalesmanRequestAPI.as_view(), name='salesman_request'),
     
     path('tax/', TaxAPI.as_view(), name='tax_api'),
-    
-    
 ]
