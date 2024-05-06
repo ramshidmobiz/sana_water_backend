@@ -4057,23 +4057,32 @@ class ShopOutAPI(APIView):
                 'message': 'Something went wrong!'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
+from django.utils import timezone
+
 class SalesmanRequestAPI(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
+    
     def post(self, request):
         try:
-            serializer = SalesmanRequestSerializer()
+            serializer = SalesmanRequestSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save(
                     salesman=request.user,
                     created_by=request.user,
-                    created_date=datetime.now(),
+                    created_date=timezone.now(),
                 )
             
-            return Response({
-                'status': True,
-                'message': 'Request Send Successfully!'
-            })
+                return Response({
+                    'status': True,
+                    'message': 'Request Sent Successfully!'
+                })
+            else:
+                return Response({
+                    'status': False,
+                    'data': serializer.errors,
+                    'message': 'Validation Error!'
+                }, status=status.HTTP_400_BAD_REQUEST)
         
         except Exception as e:
             return Response({
