@@ -71,4 +71,9 @@ urlpatterns = [
     path('dsr_coupon_book_sales',dsr_coupon_book_sales, name='dsr_coupon_book_sales'),
     path('dsr_coupon_book_sales_excel',dsr_coupon_book_sales_excel, name='dsr_coupon_book_sales_excel'),
     path('dsr_coupon_book_sales_print',dsr_coupon_book_sales_print, name='dsr_coupon_book_sales_print'),
+    
+    
+#------------------DSR Stock Report-------------------------------------
+    path('dsr_stock_report',dsr_stock_report, name='dsr_stock_report'),
+   
 ]

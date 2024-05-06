@@ -1,3 +1,4 @@
+from tax_settings.models import Tax
 from . models import *
 from rest_framework import serializers
 
@@ -32,3 +33,9 @@ class ExpenseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Expense
         fields = ('expense_id', 'expence_type', 'expense_type_name', 'route', 'van', 'amount', 'remarks', 'expense_date', 'date_created')
+
+class TaxSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Tax
+        fields = ('id', 'name','percentage')

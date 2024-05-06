@@ -222,3 +222,14 @@ class CollectionCheque(models.Model):
 
     def __str__(self):
         return self.bank_name
+    
+
+class SalesmanSpendingLog(models.Model):
+    created_date = models.DateTimeField(auto_now_add=True)
+    customer = models.ForeignKey('accounts.Customers', on_delete=models.CASCADE)
+    salesman = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE)
+    shop_in = models.DateTimeField(null=True,blank=True)
+    shop_out = models.DateTimeField(null=True,blank=True)
+
+    def __str__(self):
+        return f"{self.customer} - {self.created_date}"

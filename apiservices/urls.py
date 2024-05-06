@@ -181,7 +181,13 @@ urlpatterns = [
 
     path('dsr-visit_statistics/', VisitStatisticsAPI.as_view(), name='visit_statistics'),
     path('dsr-fivegallon_related/', FivegallonRelatedAPI.as_view(), name='fivegallon_related'),
-
-
-
+    
+    path('shop-in/<uuid:customer_pk>/', ShopInAPI.as_view(), name='shop_in'),
+    path('shop-out/<uuid:customer_pk>/', ShopOutAPI.as_view(), name='shop_out'),
+    
+    path('salesman-request/', SalesmanRequestAPI.as_view(), name='salesman_request'),
+    
+    path('tax/', TaxAPI.as_view(), name='tax_api'),
+    
+    
 ]

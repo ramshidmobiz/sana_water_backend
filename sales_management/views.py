@@ -50,7 +50,7 @@ import pandas as pd
 from io import BytesIO
 from reportlab.pdfgen import canvas
 from django.utils import timezone
-from van_management.models import Van_Routes,Van
+from van_management.models import Van_Routes,Van,VanProductStock
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.lib.units import inch
 
@@ -2742,3 +2742,32 @@ def dsr_coupon_book_sales_print(request):
     response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="dsr_coupon_book_sales.pdf"'
     return response 
+
+
+#-----------------DSR Stock Report--------------------------
+
+def dsr_stock_report(request):
+    start_date = request.GET.get('start_date')
+    filter_data = {}
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    else:
+        start_date = datetime.today().date()
+    
+    filter_data['start_date'] = start_date.strftime('%Y-%m-%d')
+    salesman_id=request.user.id
+    products = ProdutItemMaster.objects.filter()
+    van_instances = Van.objects.filter(salesman=salesman_id,created_date__date=start_date)
+    van_product_stock = VanProductStock.objects.filter(van__created_date__date=start_date)
+    
+
+    context = {
+        'products': products,
+        'van_instances': van_instances,
+        'van_product_stock': van_product_stock,
+        
+
+    }
+    return render(request, 'sales_management/dsr_stock_report.html', context)
+
+

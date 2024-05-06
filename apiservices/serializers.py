@@ -987,4 +987,10 @@ class CreditSaleSerializer(serializers.ModelSerializer):
     def get_customer_name(self, obj):
         return obj.customer.customer_name
     def get_building_name(self, obj):
-        return obj.customer.building_name                
+        return obj.customer.building_name
+    
+class SalesmanRequestSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = SalesmanRequest
+        fields = ['request']

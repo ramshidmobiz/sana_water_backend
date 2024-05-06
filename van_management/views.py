@@ -965,5 +965,14 @@ class EditItemView(View):
         if item:
             item.count = count
             item.save()
-        return HttpResponseRedirect(reverse('offload')) 
+        return HttpResponseRedirect(reverse('offload'))
+    
+def salesman_requests(request):
+    
+    instances = SalesmanRequest.objects.all()
+    
+    context = {
+        'instances': instances
+        }
+    return render(request, 'van_management/salesman_requests.html', context)
     

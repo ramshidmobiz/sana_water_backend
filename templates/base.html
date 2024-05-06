@@ -1081,7 +1081,9 @@
                                 <li class="slide">
                                     <a href="{% url 'customerSales_report' %}" class="side-menu__item">New Sales Report</a>
                                 </li>
-                                
+                                <li class="slide">
+                                    <a href="{% url 'suspense_report' %}" class="side-menu__item">Suspense Report</a>
+                                </li>
                             </ul>
                         </li>
                         <!-- End::slide -->
@@ -1101,7 +1103,7 @@
                                     <a href="" class="side-menu__item">DSR Visit statistics</a>
                                 </li>
                                 <li class="slide">
-                                    <a href="" class="side-menu__item">DSR Stock</a>
+                                    <a href="{% url 'dsr_stock_report' %}" class="side-menu__item">DSR Stock</a>
                                 </li>
                                 <li class="slide">
                                     <a href="" class="side-menu__item">DSR 5Gallon Related</a>
@@ -1126,7 +1128,6 @@
                                 </li>
                             </ul>
                         </li>
-
                          <li class="slide__category"><span class="category-name">Van Management</span></li>
                         <!-- End::slide__category -->
 
@@ -1169,6 +1170,9 @@
                                 </li>
 				                <li class="slide">
                                     <a href="{% url 'expense_list' %}" class="side-menu__item">Expense</a>
+                                </li>
+                                <li class="slide">
+                                    <a href="{% url 'salesman-requests' %}" class="side-menu__item">Salesman Requests</a>
                                 </li>
                             </ul>
                         </li>

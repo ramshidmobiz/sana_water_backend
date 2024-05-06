@@ -52,4 +52,6 @@ urlpatterns = [
     path('view_item_details/<str:pk>/', View_Item_Details.as_view(), name="view_item_details"),
     path('edit_item_count/<uuid:product_id>/', EditItemView.as_view(), name="edit_item_count"),
     
+    path('salesman-requests/',salesman_requests, name="salesman_requests"),
+    
 ]

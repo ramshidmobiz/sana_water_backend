@@ -50,7 +50,7 @@ from rest_framework.permissions import IsAuthenticated
 from accounts.models import *
 from master.models import *
 from product.models import *
-from sales_management.models import CollectionItems, CollectionPayment
+from sales_management.models import CollectionItems, CollectionPayment, SalesmanSpendingLog
 from van_management.models import *
 from customer_care.models import *
 from order.models import *
@@ -3023,8 +3023,17 @@ class VanStockAPI(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
     def get(self, request):
-        coupon_stock = VanCouponStock.objects.filter(van__salesman=request.user).exclude(count=0)
-        product_stock = VanProductStock.objects.filter(van__salesman=request.user).exclude(count=0)
+        coupon_stock = VanCouponStock.objects.all()
+        product_stock = VanProductStock.objects.all()
+        
+        if request.GET.get('van_pk'):
+            coupon_stock = coupon_stock.filter(van__pk=request.GET.get('van_pk')).exclude(count=0)
+            product_stock = product_stock.filter(van__pk=request.GET.get('van_pk')).exclude(count=0)
+            
+        else:
+            coupon_stock = coupon_stock.filter(van__salesman=request.user).exclude(count=0)
+            product_stock = product_stock.filter(van__salesman=request.user).exclude(count=0)
+            
         coupon_serializer = VanCouponStockSerializer(coupon_stock, many=True)
         product_serializer = VanProductStockSerializer(product_stock, many=True)
         
@@ -3983,6 +3992,102 @@ class FivegallonRelatedAPI(APIView):
                 'customers': customers_data,
                 'status': True,
                 'message': 'Customer supply data retrieved successfully!'
+            })
+        
+        except Exception as e:
+            return Response({
+                'status': False,
+                'data': str(e),
+                'message': 'Something went wrong!'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            
+class ShopInAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def post(self, request, customer_pk):
+        try:
+            user_id = request.user.id
+            SalesmanSpendingLog.objects.create(
+                customer__pk=customer_pk,
+                salesman=user_id,
+                created_date=datetime.now(),
+                shop_in=datetime.now(),
+                )
+            
+            return Response({
+                'status': True,
+                'message': 'Shop In successfully!'
+            })
+        
+        except Exception as e:
+            return Response({
+                'status': False,
+                'data': str(e),
+                'message': 'Something went wrong!'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+class ShopOutAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def post(self, request, customer_pk):
+        try:
+            user_id = request.user.id
+            if (instances:=SalesmanSpendingLog.objects.filter(customer__pk=customer_pk,salesman=user_id,created_date__date=datetime.today().date())):
+                instances.update(shop_out=datetime.now())
+                
+                return Response({
+                    'status': True,
+                    'message': 'Successfully!'
+                })
+            else:
+                return Response({
+                    'status': False,
+                    'message': 'you are not shop in shopin first'
+                })
+        
+        except Exception as e:
+            return Response({
+                'status': False,
+                'data': str(e),
+                'message': 'Something went wrong!'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+class SalesmanRequestAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        try:
+            serializer = SalesmanRequestSerializer()
+            if serializer.is_valid():
+                serializer.save(
+                    salesman=request.user,
+                    created_by=request.user,
+                    created_date=datetime.now(),
+                )
+            
+            return Response({
+                'status': True,
+                'message': 'Request Send Successfully!'
+            })
+        
+        except Exception as e:
+            return Response({
+                'status': False,
+                'data': str(e),
+                'message': 'Something went wrong!'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+class TaxAPI(APIView):
+    def get(self, request):
+        try:
+            instances = Tax.objects.all()
+            serializer = TaxSerializer(instances,many=True)
+            
+            return Response({
+                'status': True,
+                'message': 'success!',
+                'data': serializer.data
             })
         
         except Exception as e:
