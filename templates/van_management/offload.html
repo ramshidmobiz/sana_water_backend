@@ -39,17 +39,17 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for van, data in grouped_van_stock.items%}
+                                {% for data in van_stock %}
                                 <tr>
                                     <td style="text-align:center;">{{forloop.counter}}</td>
-                                    <td style="text-align:center;">{{van.plate}}</td>
-                                    <td style="text-align:center;">{{van.driver}}</td>
-                                    <td style="text-align:center;">{{van.salesman}}</td>
-                                    {% comment %} <td style="text-align:center;">{{total_stock }}</td> {% endcomment %}
+                                    <td style="text-align:center;">{{data.van.plate}}</td>
+                                    <td style="text-align:center;">{{data.van.driver}}</td>
+                                    <td style="text-align:center;">{{data.van.salesman}}</td>
+                                    {% comment %} <td style="text-align:center;">{{data.total_stock }}</td> {% endcomment %}
                                     <td>
                                         <div class="g-2">
                                        
-                                            <a href="{% url 'view_item_details' product_id %}" aria-label="anchor" class="btn  btn-warning-light btn-sm" data-bs-toggle="tooltip" data-bs-original-title="View">
+                                            <a href="{% url 'view_item_details' data.product_id %}" aria-label="anchor" class="btn  btn-warning-light btn-sm" data-bs-toggle="tooltip" data-bs-original-title="View">
                                                 <span class="bi bi-eye fs-14"></span>
                                             </a>
                                             <a aria-label="anchor" class="btn btn-danger-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Delete">

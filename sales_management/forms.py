@@ -3,6 +3,8 @@ from django import forms
 from django.db.models import Q
 from master.models import RouteMaster  # Assuming you have imported RouteMaster
 from accounts.models import Customers
+from invoice_management.models import SuspenseCollection
+from django.forms import TextInput
 
 class SaleEntryFilterForm(forms.Form):
     route_name = forms.ModelChoiceField(
@@ -139,3 +141,13 @@ class CreditCouponCustomerSaleForm(forms.ModelForm):
         model = SalesExtraModel
         fields = ['qty_needed', 'no_of_coupons', 'coupon_variations', 'empty_bottles', 'collected_bottles', 'bottle_variations']
 
+class SuspenseCollectionForm(forms.ModelForm):
+    
+    class Meta:
+        model = SuspenseCollection
+        fields = ['amount_paid', 'reference_no']
+
+        widgets = {
+            'amount_paid': TextInput(attrs={'class': 'form-control', 'required': 'true', 'placeholder': 'Amount to be Paid'}), 
+            'reference_no': TextInput(attrs={'class': 'form-control', 'placeholder': 'Reference No'}), 
+        }

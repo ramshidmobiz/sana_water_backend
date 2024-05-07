@@ -4179,8 +4179,6 @@ def market_share(request):
 
 
 
-
-
 class CustomerLoginApi(APIView):
     def post(self, request, *args, **kwargs):
         try:

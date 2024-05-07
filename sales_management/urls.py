@@ -55,6 +55,7 @@ urlpatterns = [
 
 #----------------- Suspense Report-------------------------------------
     path('suspense_report',suspense_report, name='suspense_report'),
+    path('create_suspense_collection/<int:id>/', create_suspense_collection, name='create_suspense_collection'),
     path('suspense_report_excel',suspense_report_excel, name='suspense_report_excel'),
     path('suspense_report_print',suspense_report_print, name='suspense_report_print'),
 #------------------DSR Cash Sales Report-------------------------------------

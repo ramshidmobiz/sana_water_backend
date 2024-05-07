@@ -1081,9 +1081,9 @@
                                 <li class="slide">
                                     <a href="{% url 'customerSales_report' %}" class="side-menu__item">New Sales Report</a>
                                 </li>
-                                <li class="slide">
+                                {% comment %} <li class="slide">
                                     <a href="{% url 'suspense_report' %}" class="side-menu__item">Suspense Report</a>
-                                </li>
+                                </li> {% endcomment %}
                             </ul>
                         </li>
                         <!-- End::slide -->
@@ -1124,7 +1124,7 @@
                                     <a href="" class="side-menu__item">DSR Expence</a>
                                 </li>
                                  <li class="slide">
-                                    <a href="" class="side-menu__item">DSR Suspence</a>
+                                    <a href="{% url 'suspense_report' %}" class="side-menu__item">DSR Suspence</a>
                                 </li>
                             </ul>
                         </li>

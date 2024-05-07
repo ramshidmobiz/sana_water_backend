@@ -54,6 +54,8 @@ from django.utils import timezone
 from van_management.models import Van_Routes,Van,VanProductStock
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.lib.units import inch
+from invoice_management.models import *
+from van_management.models import Expense
 
 class TransactionHistoryListView(ListView):
     model = Transaction
@@ -2156,63 +2158,109 @@ def collection_report_excel(request):
 
 
 #-----------------Suspense Report--------------------------
-def suspense_report(request):
+from .forms import SuspenseCollectionForm
 
-    # Get start date from request parameters or default to today
+def suspense_report(request):
     start_date = request.GET.get('start_date')
-    
+    print("start_date", start_date)
     filter_data = {}
+
     if start_date:
         start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
     else:
         start_date = datetime.today().date()
-    
+
     filter_data['start_date'] = start_date.strftime('%Y-%m-%d')
-    
-    # Filter invoices based on start date
-    invoices = Invoice.objects.filter(created_date__gte=start_date).select_related('customer__routes').select_related('customer__sales_staff')
 
-    # Calculate Opening Suspense, Paid, and Closing Suspense
-    # opening_suspense = invoices.aggregate(opening_suspense=Sum('amout_total'))['opening_suspense'] or 0
-    opening_suspense = invoices.filter(created_date__gte=start_date).aggregate(opening_suspense=Sum('amout_total'))['opening_suspense'] or 0
+    invoices = InvoiceDailyCollection.objects.filter(created_date__gte=start_date)\
+                                              .select_related('customer__routes')\
+                                              .select_related('customer__sales_staff')
+    print("invoices", invoices)
+    suspense_collections = SuspenseCollection.objects.filter(created_date__gte=start_date)
+    print("suspense_collections", suspense_collections)
 
-    # Calculate total Opening Suspense
-    total_opening_suspense = invoices.aggregate(total_opening_suspense=Sum('amout_total'))['total_opening_suspense'] or 0
-    # Calculate total Paid
-    total_paid = invoices.aggregate(total_paid=Sum('amout_recieved'))['total_paid'] or 0
-    # Calculate total Closing Suspense
-    total_closing_suspense = invoices.aggregate(total_closing_suspense=Sum('amout_total'))['total_closing_suspense'] or 0
+    # Calculate total opening suspense
+    total_opening_suspense = invoices.aggregate(total_opening_suspense=Sum('amount'))['total_opening_suspense'] or 0
 
+    # Calculate total paid
+    total_paid = suspense_collections.aggregate(total_paid=Sum('amount_paid'))['total_paid'] or 0
 
-
+    # Calculate total closing suspense
+    total_closing_suspense = suspense_collections.aggregate(total_closing_suspense=Sum('amount_balance'))['total_closing_suspense'] or 0
 
     context = {
         'invoices': invoices,
         'filter_data': filter_data,
-        'opening_suspense': opening_suspense,
-        'total_opening_suspense':total_opening_suspense,
-        'total_paid':total_paid,
-        'total_closing_suspense':total_closing_suspense,
-
+        'suspense_collections': suspense_collections,
+        'total_opening_suspense': total_opening_suspense,
+        'total_paid': total_paid,
+        'total_closing_suspense': total_closing_suspense,
     }
+
     return render(request, 'sales_management/suspense_report.html', context)
 
-def suspense_report_excel(request):
-    # Get start date from request parameters or default to today
-    start_date = request.GET.get('start_date')
+def create_suspense_collection(request, id):
+    invoice = get_object_or_404(InvoiceDailyCollection, id=id)
     
+    if request.method == 'POST':
+        form = SuspenseCollectionForm(request.POST)
+        if form.is_valid():
+            # Fetch the total expense for the given route and van (assuming they are available in the invoice)
+            total_expense = Expense.objects.filter(
+                route=invoice.customer.routes,
+                expense_date=invoice.created_date.date()  # Assuming expense_date is a DateField
+            ).aggregate(total_amount=Sum('amount'))['total_amount'] or 0
+            
+            # Calculate net_payeble_amount
+            cash_sale_amount = invoice.invoice.amout_total if invoice.invoice.invoice_type == 'cash_invoice' else 0
+            credit_sale_amount = invoice.invoice.amout_total if invoice.invoice.invoice_type == 'credit_invoice' else 0
+            net_payeble_amount = cash_sale_amount + credit_sale_amount - total_expense
+
+            suspense_collection = form.save(commit=False)
+            suspense_collection.date = timezone.now()  # Set the created_date
+            suspense_collection.created_date = invoice.created_date 
+            suspense_collection.salesman = invoice.customer.sales_staff
+            suspense_collection.route = invoice.customer.routes
+            suspense_collection.cash_sale_amount = cash_sale_amount
+            suspense_collection.credit_sale_amount = credit_sale_amount
+            suspense_collection.expense = total_expense
+            suspense_collection.net_payeble_amount = net_payeble_amount  # Set the net_payeble_amount field
+            # Calculate amount_balance
+            amount_paid = form.cleaned_data['amount_paid']
+            amount_balance = invoice.amount - amount_paid
+            suspense_collection.amount_balance = amount_balance
+            suspense_collection.save()
+            print("SuspenseCollection instance saved successfully:", suspense_collection)
+
+            return redirect('suspense_report')  # Redirect to the suspense_report URL
+        else:
+            print("Form errors:", form.errors)
+
+    else:
+        form = SuspenseCollectionForm()
+        print("form",form)
+    
+    return render(request, 'sales_management/create_suspense_collection.html', {'form': form, 'invoice': invoice})
+
+
+from django.utils import timezone
+
+def suspense_report_excel(request):
+    start_date = request.GET.get('start_date')
+    filter_data = {}
+
     if start_date:
         start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
     else:
         start_date = datetime.today().date()
-    
-    # Filter invoices based on start date
-    invoices = Invoice.objects.filter(created_date__gte=start_date).select_related('customer__routes').select_related('customer__sales_staff')
 
-    # Calculate total values for Opening Suspense, Paid, and Closing Suspense
-    total_opening_suspense = sum(invoice.amout_total for invoice in invoices)
-    total_paid = sum(invoice.amout_recieved for invoice in invoices)
-    total_closing_suspense = sum(invoice.amout_total for invoice in invoices)
+    filter_data['start_date'] = start_date.strftime('%Y-%m-%d')
+
+    invoices = InvoiceDailyCollection.objects.filter(created_date__gte=start_date)\
+                                              .select_related('customer__routes')\
+                                              .select_related('customer__sales_staff')
+
+    suspense_collections = SuspenseCollection.objects.filter(created_date__gte=start_date)
 
     # Create a BytesIO object to save workbook data
     buffer = BytesIO()
@@ -2222,27 +2270,37 @@ def suspense_report_excel(request):
     worksheet = workbook.add_worksheet()
     worksheet.title = "Suspense Report"
 
-    # Write headers
-    headers = ["Sl No", "Route", "Salesman", "Opening Suspense", "Paid", "Closing Suspense"]
-    worksheet.write_row(0, 0, headers)
+    # Write header row
+    headers = ['Sl No', 'Created Date', 'Invoice Type', 'Route', 'Salesman', 'Opening Suspense', 'Paid', 'Closing Suspense']
+    for col, header in enumerate(headers):
+        worksheet.write(0, col, header)
 
     # Write data rows
-    for index, invoice in enumerate(invoices, start=1):
-        worksheet.write_row(index, 0, [
-            index,
-            invoice.customer.routes.route_name,
-            invoice.customer.sales_staff.username,
-            invoice.amout_total,
-            invoice.amout_recieved,
-            invoice.amout_total
-        ])
+    row = 1
+    for invoice in invoices:
+        created_date = invoice.created_date.replace(tzinfo=None)
+        worksheet.write(row, 0, row)  # Sl No
+        worksheet.write(row, 1, created_date)  # Created Date
+        worksheet.write(row, 2, invoice.invoice.invoice_type)  # Invoice Type
+        worksheet.write(row, 4, invoice.customer.sales_staff.username)  # Salesman
+        worksheet.write(row, 5, invoice.amount)  # Opening Suspense
+        # Fetch the corresponding SuspenseCollection for this invoice
+        related_suspense_collection = suspense_collections.filter(salesman=invoice.customer.sales_staff).first()
+        if related_suspense_collection:
+            worksheet.write(row, 6, related_suspense_collection.amount_paid)  # Paid
+            worksheet.write(row, 7, related_suspense_collection.amount_balance)  # Closing Suspense
+        else:
+            worksheet.write(row, 6, '')  # Paid
+            worksheet.write(row, 7, '')  # Closing Suspense
 
-    # Write footer data
-    footer_row = len(invoices) + 1
-    worksheet.write(footer_row, 0, "Total")
-    worksheet.write(footer_row, 3, total_opening_suspense)
-    worksheet.write(footer_row, 4, total_paid)
-    worksheet.write(footer_row, 5, total_closing_suspense)
+        # Extract and write route information
+        if invoice.customer.routes:
+            route_info = f"{invoice.customer.routes.route_name}"
+            worksheet.write(row, 3, route_info)  # Route
+        else:
+            worksheet.write(row, 3, '')  # Route
+
+        row += 1
 
     # Close the workbook
     workbook.close()
@@ -2254,21 +2312,35 @@ def suspense_report_excel(request):
 
 
 def suspense_report_print(request):
-    # Get start date from request parameters or default to today
     start_date = request.GET.get('start_date')
-    
+    filter_data = {}
+
     if start_date:
         start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
     else:
         start_date = datetime.today().date()
-    
-    # Filter invoices based on start date
-    invoices = Invoice.objects.filter(created_date__gte=start_date).select_related('customer__routes').select_related('customer__sales_staff')
 
-    # Calculate total values for Opening Suspense, Paid, and Closing Suspense
-    total_opening_suspense = sum(invoice.amout_total for invoice in invoices)
-    total_paid = sum(invoice.amout_recieved for invoice in invoices)
-    total_closing_suspense = sum(invoice.amout_total for invoice in invoices)
+    filter_data['start_date'] = start_date.strftime('%Y-%m-%d')
+
+    invoices = InvoiceDailyCollection.objects.filter(created_date__gte=start_date)\
+                                              .select_related('customer__routes')\
+                                              .select_related('customer__sales_staff')
+
+    suspense_collections = SuspenseCollection.objects.filter(created_date__gte=start_date)
+
+    # Prepare data for the PDF report
+    data = [['Sl No', 'Created Date', 'Invoice Type', 'Route', 'Salesman', 'Opening Suspense', 'Paid', 'Closing Suspense']]
+
+    for invoice in invoices:
+        created_date = invoice.created_date.replace(tzinfo=None)
+        salesman_name = invoice.customer.sales_staff.username if invoice.customer.sales_staff else ''
+        route_info = f"{invoice.customer.routes.route_name}" if invoice.customer.routes else ''
+
+        related_suspense_collection = suspense_collections.filter(salesman=invoice.customer.sales_staff).first()
+        paid = related_suspense_collection.amount_paid if related_suspense_collection else ''
+        balance = related_suspense_collection.amount_balance if related_suspense_collection else ''
+
+        data.append([invoice.id, created_date, invoice.invoice.invoice_type, route_info, salesman_name, invoice.amount, paid, balance])
 
     # Create a BytesIO object to save PDF data
     buffer = BytesIO()
@@ -2276,41 +2348,20 @@ def suspense_report_print(request):
     # Create a new PDF document
     doc = SimpleDocTemplate(buffer, pagesize=letter)
     
-    # Define table data
-    data = [
-        ["Sl No", "Route", "Salesman", "Opening Suspense", "Paid", "Closing Suspense"]
-    ]
-    
-    # Populate table data
-    for index, invoice in enumerate(invoices, start=1):
-        data.append([
-            str(index),
-            str(invoice.customer.routes.route_name),
-            str(invoice.customer.sales_staff.username),
-            str(invoice.amout_total),
-            str(invoice.amout_recieved),
-            str(invoice.amout_total)
-        ])
-    
-    # Add footer data
-    data.append([
-        "", "", "Total", str(total_opening_suspense), str(total_paid), str(total_closing_suspense)
-    ])
-
-    # Create a table
+    # Create a table with the data
     table = Table(data)
-
+    
     # Add style to the table
-    style = TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.gray),
-                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+    style = TableStyle([('BACKGROUND', (0, 0), (-1, 0), 'grey'),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), 'white'),
                         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
                         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                        ('GRID', (0, 0), (-1, -1), 1, colors.black)
-                        ])
-    table.setStyle(style)
+                        ('BACKGROUND', (0, 1), (-1, -1), 'lightgrey'),
+                        ('GRID', (0, 0), (-1, -1), 1, 'black')])
 
+    table.setStyle(style)
+    
     # Add table to the document
     doc.build([table])
 
@@ -2318,7 +2369,6 @@ def suspense_report_print(request):
     response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename=Suspense_Report.pdf'
     return response
-
 
 
 #-----------------DSR cash sales Report--------------------------
