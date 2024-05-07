@@ -409,7 +409,18 @@ class CustomerSupplyStock(models.Model):
             return str(self.product)
         
 
-
+class MarketShare(models.Model):
+        id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+        product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True,blank=True)
+        customer = models.ForeignKey('accounts.Customers',on_delete = models.CASCADE)
+        company_name=models.CharField(max_length=30, blank=True)
+        price = models.PositiveIntegerField(default=0)  
+        
+        class Meta:
+            ordering = ('-id',)
+            
+        def __str__(self):
+            return str(self.product)
 
 
 

@@ -75,5 +75,18 @@ urlpatterns = [
     
 #------------------DSR Stock Report-------------------------------------
     path('dsr_stock_report',dsr_stock_report, name='dsr_stock_report'),
+
+
+
+#------------------DSR Visit Statistics Report-------------------------------------
+    path('visitstatistics_report',visitstatistics_report, name='visitstatistics_report'),
+    path('visitstatistics_report_excel',visitstatistics_report_excel, name='visitstatistics_report_excel'),
+    path('visitstatistics_print',visitstatistics_report_print, name='visitstatistics_report_print'),
+    
+    #------------------DSR Five Gallon Related Report-------------------------------------
+    path('fivegallonrelated_report/', fivegallonrelated_report, name='fivegallonrelated_report'),
+    # path('cashsales_report_excel',cashsales_report_excel, name='cashsales_report_excel'),
+    # path('cashsales_report_print',cashsales_report_print, name='cashsales_report_print'),
+    
    
 ]

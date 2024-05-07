@@ -480,12 +480,16 @@ class VanCouponStockSerializer(serializers.ModelSerializer):
         
 class VanProductStockSerializer(serializers.ModelSerializer):
     product_name = serializers.SerializerMethodField()
+    product_rate = serializers.SerializerMethodField()
     class Meta:
         model = VanProductStock
         fields = '__all__'
         
     def get_product_name(self, obj):
         return obj.product.product_name
+    
+    def get_product_rate(self, obj):
+        return obj.product.rate
     
 
 
@@ -802,10 +806,31 @@ class CollectionPaymentSerializer(serializers.ModelSerializer):
 
         return collection_payment
     
+# class CustodyCustomSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = CustodyCustom
+#         fields = ['customer', 'agreement_no', 'deposit_type','reference_no']
+# class CustodyCustomItemsSerializer(serializers.ModelSerializer):
+#     product_name = serializers.CharField(source='product.product_name.product_name', read_only=True)
+#     deposit_type = serializers.CharField(source='custody_custom.deposit_type', read_only=True)
+#     agreement_no = serializers.CharField(source='custody_custom.agreement_no', read_only=True)  
+#     reference_no = serializers.CharField(source='custody_custom.reference_no', read_only=True)
+
+#     class Meta:
+#         model = CustodyCustomItems
+#         fields = ['id', 'custody_custom', 'product', 'product_name', 'quantity', 'serialnumber', 'amount','reference_no','agreement_no','deposit_type']
+class CustomerCustodyStockSerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source='customer.customer_name', read_only=True)
+
+    class Meta:
+        model = CustomerCustodyStock
+        fields = ['id', 'customer', 'customer_name', 'agreement_no', 'deposit_type', 'reference_no', 'product', 'quantity', 'serialnumber', 'amount']
+
 class CustodyCustomSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustodyCustom
-        fields = ['customer', 'agreement_no', 'deposit_type','reference_no']
+        fields = ['customer', 'agreement_no', 'deposit_type', 'reference_no']
+
 class CustodyCustomItemsSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.product_name.product_name', read_only=True)
     deposit_type = serializers.CharField(source='custody_custom.deposit_type', read_only=True)
@@ -814,8 +839,8 @@ class CustodyCustomItemsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustodyCustomItems
-        fields = ['id', 'custody_custom', 'product', 'product_name', 'quantity', 'serialnumber', 'amount','reference_no','agreement_no','deposit_type']
-
+        fields = ['id', 'custody_custom', 'product', 'product_name', 'quantity', 'serialnumber', 'amount', 'reference_no', 'agreement_no', 'deposit_type']
+        
 # class EmergencyCustomersSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = DiffBottlesModel
@@ -994,3 +1019,8 @@ class SalesmanRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = SalesmanRequest
         fields = ['request']
+        
+class MarketShareSerializers(serializers.ModelSerializer):
+    class Meta :
+        model = MarketShare
+        fields = '__all__'

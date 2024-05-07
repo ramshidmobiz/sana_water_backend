@@ -39,6 +39,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from io import BytesIO  
 
 from .models import *
+from customer_care.models import *
 from client_management.models import *
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
@@ -2769,5 +2770,230 @@ def dsr_stock_report(request):
 
     }
     return render(request, 'sales_management/dsr_stock_report.html', context)
+
+def visitstatistics_report(request):
+    user_id = request.user.id
+    start_date = request.GET.get('start_date')
+    filter_data = {}
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    else:
+        start_date = datetime.today().date()
+
+    filter_data['start_date'] = start_date.strftime('%Y-%m-%d')
+    #new customers created
+    salesman_customers_count = Customers.objects.filter(created_date__date=start_date,sales_staff_id=user_id).count()
+    #emergency supply
+    emergency_customers = DiffBottlesModel.objects.filter(created_date__date=start_date, assign_this_to_id=user_id).count()
+    print('emergency_customers',emergency_customers)
+    #actual visit
+    visited_customers_count = CustomerSupply.objects.filter(salesman_id=user_id, created_date__date=start_date).count()
+    print(visited_customers_count,'visited_customers_count')
+    
+    planned_visits_count = Customers.objects.filter(visit_schedule__isnull=False, created_date__date=start_date).annotate(
+        planned_visit_count=Count('visit_schedule')
+    ).filter(planned_visit_count__gt=0).count()
+    print(planned_visits_count,'planned_visits_count')
+
+    # non_visited_customers = CustomerSupply.objects.exclude(salesman_id=user_id, created_date__date=start_date).count()
+    non_visited_customers = planned_visits_count - visited_customers_count
+
+    print(non_visited_customers,'non_visited_customers')
+
+    context = {
+        'salesman_customers_count': salesman_customers_count,
+        'emergency_customers': emergency_customers,
+        'visited_customers_count': visited_customers_count,
+        'non_visited_customers': non_visited_customers,
+        'planned_visits_count': planned_visits_count
+    }
+    return render(request, 'sales_management/dsr_visit_statistics_report.html', context)
+
+
+def visitstatistics_report_excel(request):
+    user_id = request.user.id
+
+    start_date = request.GET.get('start_date')
+    
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    else:
+        start_date = datetime.today().date()
+    
+    salesman_customers_count = Customers.objects.filter(created_date__date=start_date,sales_staff_id=user_id).count()
+    #emergency supply
+    emergency_customers = DiffBottlesModel.objects.filter(created_date__date=start_date, assign_this_to_id=user_id).count()
+    print('emergency_customers',emergency_customers)
+    #actual visit
+    visited_customers_count = CustomerSupply.objects.filter(salesman_id=user_id, created_date__date=start_date).count()
+    print(visited_customers_count,'visited_customers_count')
+    
+    planned_visits_count = Customers.objects.filter(visit_schedule__isnull=False, created_date__date=start_date).annotate(
+        planned_visit_count=Count('visit_schedule')
+    ).filter(planned_visit_count__gt=0).count()
+    print(planned_visits_count,'planned_visits_count')
+
+    # non_visited_customers = CustomerSupply.objects.exclude(salesman_id=user_id, created_date__date=start_date).count()
+    non_visited_customers = planned_visits_count - visited_customers_count
+
+   
+
+    # Create a BytesIO object to save workbook data
+    buffer = BytesIO()
+
+    # Create a new Excel workbook and add a worksheet
+    workbook = xlsxwriter.Workbook(buffer)
+    worksheet = workbook.add_worksheet()
+    worksheet.title = "Credit Sales Report"
+
+    # Write headers
+    headers = ["", "Reference No", "Customer Name", "Building Name", "Net taxable", "Vat","Grand Total"]
+    worksheet.write_row(0, 0, headers)
+
+    # Write data rows
+    for index, invoice in enumerate(invoices, start=1):
+        worksheet.write_row(index, 0, [
+            index,
+            invoice.reference_no,
+            invoice.customer.customer_name,
+            invoice.customer.building_name,
+            invoice.net_taxable,
+            invoice.vat,
+            invoice.amout_total
+        ])
+    #  'salesman_customers_count': salesman_customers_count,
+    #     'emergency_customers': emergency_customers,
+    #     'visited_customers_count': visited_customers_count,
+    #     'non_visited_customers': non_visited_customers,
+    #     'planned_visits_count': planned_visits_count
+
+    # # Write footer data
+    # footer_row = len(invoices) + 1
+    # worksheet.write(footer_row, 3, "Total")
+    # worksheet.write(footer_row, 4, total_net_taxable)
+    # worksheet.write(footer_row, 5, total_vat)
+    # worksheet.write(footer_row, 6, total_amout_total)
+
+    # Close the workbook
+    workbook.close()
+
+    # Create HttpResponse object to return the Excel file as a response
+    response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=Visit_Statistics_Report.xlsx'
+    return response
+
+
+def visitstatistics_report_print(request):
+    user_id = request.user.id
+
+    start_date = request.GET.get('start_date')
+    
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    else:
+        start_date = datetime.today().date()
+    
+    salesman_customers_count = Customers.objects.filter(created_date__date=start_date,sales_staff_id=user_id).count()
+    #emergency supply
+    emergency_customers = DiffBottlesModel.objects.filter(created_date__date=start_date, assign_this_to_id=user_id).count()
+    print('emergency_customers',emergency_customers)
+    #actual visit
+    visited_customers_count = CustomerSupply.objects.filter(salesman_id=user_id, created_date__date=start_date).count()
+    print(visited_customers_count,'visited_customers_count')
+    
+    planned_visits_count = Customers.objects.filter(visit_schedule__isnull=False, created_date__date=start_date).annotate(
+        planned_visit_count=Count('visit_schedule')
+    ).filter(planned_visit_count__gt=0).count()
+    print(planned_visits_count,'planned_visits_count')
+
+    # non_visited_customers = CustomerSupply.objects.exclude(salesman_id=user_id, created_date__date=start_date).count()
+    non_visited_customers = planned_visits_count - visited_customers_count
+
+   
+
+
+    # Create a BytesIO object to save PDF data
+    buffer = BytesIO()
+
+    # Create a new PDF document
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    
+    # Define table data
+    data = [
+        ["Sl No", "Reference No", "Customer Name", "Building Name", "Net taxable", "Vat","Grand Total"]
+    ]
+    
+    # Populate table data
+    for index, invoice in enumerate(invoices, start=1):
+        data.append([
+            str(index),
+            str(invoice.reference_no),
+            str(invoice.customer.customer_name),
+            str(invoice.customer.building_name),
+            str(invoice.net_taxable),
+            str(invoice.vat),
+            str(invoice.amout_total)
+        ])
+    
+   
+
+    # Create a table
+    table = Table(data)
+
+    # Add style to the table
+    style = TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.gray),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+                        ])
+    table.setStyle(style)
+
+    # Add table to the document
+    doc.build([table])
+
+    # Create HttpResponse object to return the PDF file as a response
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename=Visit_Statistics_Report.pdf'
+    return response
+
+
+def fivegallonrelated_report(request):
+    user_id = request.user.id
+    start_date = request.GET.get('start_date')
+    filter_data = {}
+
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    else:
+        start_date = datetime.today().date()
+
+    filter_data['start_date'] = start_date.strftime('%Y-%m-%d')
+    empty_bottles_collected = CustomerSupply.objects.filter(created_date__date=start_date, collected_empty_bottle__gt=0, salesman_id=user_id).count()
+
+    # empty_bottles_collected = CustomerSupply.objects.filter(created_date__date=start_date, collected_empty_bottle__gt=0, **filter_data).count()
+    empty_bottle_pending = CustomerSupply.objects.filter(created_date__date=start_date, allocate_bottle_to_pending__gt=0, salesman_id=user_id).count()
+    print(empty_bottle_pending,'empty_bottle_pending')
+    coupons_collected = CustomerSupplyCoupon.objects.filter(customer_supply__created_date__date=start_date, customer_supply__salesman_id=user_id).aggregate(total_coupons=Count('leaf'))['total_coupons']
+    total_supplied_quantity = CustomerSupplyItems.objects.filter(customer_supply__created_date__date=start_date, customer_supply__salesman_id=user_id).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+    total_collected_amount = CustomerSupply.objects.filter(created_date__date=start_date, salesman_id=user_id).aggregate(total_collected_amount=Sum('net_payable'))['total_collected_amount'] or 0
+    total_pending_amount = CustomerSupply.objects.filter(created_date__date=start_date, salesman_id=user_id).aggregate(total_pending_amount=Sum('grand_total') - Sum('net_payable'))['total_pending_amount'] or 0
+    mode_of_supply = CustomerSupply.objects.filter(created_date__date=start_date, salesman_id=user_id).values('customer__sales_type').annotate(total=Count('customer__sales_type'))
+
+    context = {
+        'empty_bottles_collected': empty_bottles_collected,
+        'empty_bottle_pending': empty_bottle_pending,
+        'coupons_collected': coupons_collected,
+        'total_supplied_quantity': total_supplied_quantity,
+        'total_collected_amount': total_collected_amount,
+        'total_pending_amount': total_pending_amount,
+        'mode_of_supply' :mode_of_supply
+    }
+
+    return render(request, 'sales_management/dsr_fivegallonrelated_report.html', context)
+
+    
 
 

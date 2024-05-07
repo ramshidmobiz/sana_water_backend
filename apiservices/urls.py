@@ -193,4 +193,7 @@ urlpatterns = [
     path('salesman-request/', SalesmanRequestAPI.as_view(), name='salesman_request'),
     
     path('tax/', TaxAPI.as_view(), name='tax_api'),
+    
+    path('market_share/',market_share, name='market_share'),
+    
 ]

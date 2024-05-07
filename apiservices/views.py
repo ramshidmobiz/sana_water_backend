@@ -2352,7 +2352,6 @@ class GetProductAPI(APIView):
 #                     quantity=quantity
 #                 )
 
-
 class CustodyCustomAPIView(APIView):
     def post(self, request):
         # serializer = CustomerCustodySerializer(data=request.data)
@@ -2364,11 +2363,11 @@ class CustodyCustomAPIView(APIView):
             customer = Customers.objects.get(customer_id=request.data['customer_id'])
             agreement_no = request.data['agreement_no']
             print(agreement_no,'agreement_no')
-            total_amount = request.data['total_amount']
+            total_amount = int(request.data['total_amount'])
             deposit_type = request.data['deposit_type']
             reference_no = request.data['reference_no']
             product =  ProdutItemMaster.objects.get(id=request.data['product_id'])
-            quantity =  request.data['quantity']
+            quantity =  int(request.data['quantity'])
             serialnumber =  request.data['serialnumber']
             # pri
             
@@ -2397,6 +2396,7 @@ class CustodyCustomAPIView(APIView):
                 stock_instance.agreement_no += ', ' + agreement_no
                 stock_instance.serialnumber += ', ' + serialnumber
                 stock_instance.amount += total_amount
+                stock_instance.quantity += quantity
                 stock_instance.save()
             except CustomerCustodyStock.DoesNotExist:
                 CustomerCustodyStock.objects.create(
@@ -2414,7 +2414,6 @@ class CustodyCustomAPIView(APIView):
         except Exception as e:
             print(e)
             return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'})
-
 
 
 
@@ -2867,13 +2866,6 @@ class customerCouponStock(APIView):
 #                     'deposit_form_number': item['deposit_form_number']
 #                 })
 
-#             final_response = list(grouped_data.values())
-
-#             return Response({'status': True, 'data': final_response, 'message': 'Custody items list passed!'})
-
-#         except Exception as e:
-#             return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'})
-
 class CustodyCustomItemListAPI(APIView):
     
     authentication_classes = [BasicAuthentication]
@@ -2891,6 +2883,7 @@ class CustodyCustomItemListAPI(APIView):
                 custody_custom_objects = CustodyCustom.objects.filter(customer_id=customer_obj.customer_id)
                 
                 customer_products = []
+                customer_custody_stock = []
                 
                 for custody_custom_obj in custody_custom_objects:
                     serialized_custody_custom = CustodyCustomSerializer(custody_custom_obj).data
@@ -2906,55 +2899,89 @@ class CustodyCustomItemListAPI(APIView):
                     
                     customer_products.extend(serialized_items)
                 
+                customer_custody_stock_objects = CustomerCustodyStock.objects.filter(customer=customer_obj)
+                print("customer_custody_stock_objects",customer_custody_stock_objects)
+                serialized_custody_stock = CustomerCustodyStockSerializer(customer_custody_stock_objects, many=True).data
+                
                 serialized_data.append({
                     'customer': customer_obj.customer_id,
-                    'products': customer_products
+                    'products': customer_products,
+                    'custody_stock': serialized_custody_stock
                 })
+            
+            print("Serialized Data:", serialized_data)
             
             return Response({'status': True, 'data': serialized_data, 'message': 'Customer products list passed!'})
         
         except Exception as e:
             return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class CustodyItemReturnAPI(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = CustodyCustomReturnSerializer
 
     def post(self, request, *args, **kwargs):
+        
         try:
-            id = request.data['id']
-            customer_id = request.data['customer_id']
+            customer = Customers.objects.get(customer_id=request.data['customer_id'])
+            custody_stock_id = request.data['custody_stock_id']
+            agreement_no = request.data['agreement_no']
+            print(agreement_no,'agreement_no')
+            total_amount = int(request.data['total_amount'])
+            deposit_type = request.data['deposit_type']
+            reference_no = request.data['reference_no']
+            product =  ProdutItemMaster.objects.get(id=request.data['product_id'])
+            quantity =  int(request.data['quantity'])
+            serialnumber =  request.data['serialnumber']
 
-            product_id = request.data['product_id']
-            serial_number = request.data['serialnumber']
-            quantity = request.data['count']
-            agreement_number = request.data['deposit_form_number']
-            amount = request.data['amount']
+            # stock_instance = CustomerReturnStock.objects.get(id=custody_stock_id).quantity
 
-            custody_item_return = CustomerReturn.objects.create(
 
-                customer_id = customer_id,
-                product_id=product_id,
-                serialnumber=serial_number,
-                count=quantity,
-                amount=amount,
-                deposit_form_number=agreement_number
+            custody_return_instance = CustomerReturn.objects.create(
+                customer=customer,
+                agreement_no=agreement_no,
+                # total_amount=total_amount,
+                deposit_type=deposit_type,
+                reference_no=reference_no
             )
-            print("hgdghfhfjhfj",custody_item_return)
+            print(custody_return_instance.agreement_no,'ascSDCdsv')
 
+            # Create CustodyCustomItems instances
+            # for item_data in items_data:
+            CustomerReturnItems.objects.create(
+                customer_return=custody_return_instance,
+                product=product,
+                quantity=quantity,
+                serialnumber=serialnumber,
+                amount=total_amount
+            )
+            try:
+                stock_instance = CustomerReturnStock.objects.get(customer=customer, product=product)
+                stock_instance.agreement_no += ', ' + agreement_no
+                stock_instance.serialnumber += ', ' + serialnumber
+                stock_instance.amount -= total_amount
+                stock_instance.quantity -= quantity
+                stock_instance.save()
+            except CustomerReturnStock.DoesNotExist:
+                CustomerReturnStock.objects.create(
+                    customer=customer,
+                    id=custody_stock_id,
+                    agreement_no=agreement_no,
+                    deposit_type=deposit_type,
+                    reference_no=reference_no,
+                    product=product,
+                    quantity=quantity,
+                    serialnumber=serialnumber,
+                    amount=total_amount
+                )
 
-            CustodyCustomItems.objects.get(id=id).delete()
-
-            serializer = self.serializer_class(custody_item_return)
-            return Response({"status": True, "data": serializer.data, "message": "Data saved successfully!"})
-        except KeyError as e:
-            return Response({"status": False, "message": f"Missing required parameter: {e}"})
-        except ValueError as e:
-            return Response({"status": False, "message": f"Invalid value: {e}"})
-        except Product.DoesNotExist:
-            return Response({"status": False, "message": "Product not found"})
+            return Response({'status': True, 'message': 'Created Successfully'})
         except Exception as e:
-            return Response({"status": False, "message": f"Something went wrong: {e}"})
+            print(e)
+            return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'})
+
 
 class OutstandingAmountAPI(APIView):
 
@@ -4111,6 +4138,32 @@ class TaxAPI(APIView):
                 'data': str(e),
                 'message': 'Something went wrong!'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+@api_view(['POST'])            
+@csrf_exempt 
+def market_share(request):
+        if request.method == 'POST':
+            customer_id = request.data.get('customer_id')
+            company_name = request.data.get('company_name')
+            price = request.data.get('price')
+            product = request.data.get('product')
+            
+
+            if not customer_id or not price:
+                return Response({'error': 'customer_id and price are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                market_share = MarketShare.objects.get(customer_id=customer_id)
+                market_share.price = price
+                market_share.company_name = company_name
+                market_share.product = product
+                market_share.save()
+                serializer = MarketShareSerializers(market_share)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except MarketShare.DoesNotExist:
+                return Response({'error': 'MarketShare with this customer_id does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+
 
 
 
