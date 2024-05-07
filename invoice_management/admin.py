@@ -9,3 +9,7 @@ admin.site.register(Invoice,InvoiceAdmin)
 class InvoiceItemsAdmin(admin.ModelAdmin):
     list_display = ('invoice','product_items','qty','rate')
 admin.site.register(InvoiceItems,InvoiceItemsAdmin)
+
+class InvoiceDailyCollectionAdmin(admin.ModelAdmin):
+    list_display = ('invoice','amount','customer','salesman')
+admin.site.register(InvoiceDailyCollection,InvoiceDailyCollectionAdmin)

@@ -2249,7 +2249,7 @@ class CustomerCouponRecharge(APIView):
                     for item_data in coupon_items:
                         category = CategoryMaster.objects.get(category_name__iexact="coupons")
                         product_item = ProdutItemMaster.objects.get(product_name=item_data.coupon.coupon_type.coupon_type_name)
-                        print(product_item)
+                        # print(product_item)
                         InvoiceItems.objects.create(
                             category=category,
                             product_items=product_item,
@@ -2264,6 +2264,7 @@ class CustomerCouponRecharge(APIView):
                         created_date=datetime.today(),
                         customer=invoice_instance.customer,
                         salesman=request.user,
+                        amount=invoice_instance.amout_recieved,
                     ) 
 
                 # Create ChequeCouponPayment instanceno_of_leaflets
@@ -2727,12 +2728,13 @@ class create_customer_supply(APIView):
                             invoice=invoice,
                             remarks='invoice genereted from supply items reference no : ' + invoice.reference_no
                         )
-                        
+                    print("invoice generate")
                     InvoiceDailyCollection.objects.create(
                         invoice=invoice,
                         created_date=datetime.today(),
                         customer=invoice.customer,
                         salesman=request.user,
+                        amount=invoice.amout_recieved,
                     )
 
                 DiffBottlesModel.objects.filter(
