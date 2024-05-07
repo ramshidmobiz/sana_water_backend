@@ -4138,24 +4138,38 @@ class TaxAPI(APIView):
                 'data': str(e),
                 'message': 'Something went wrong!'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
+
+class CompetitorsAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        serializer = CompetitorsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class CompetitorsListAPIView(APIView):
+    def get(self, request, format=None):
+        competitors = Competitors.objects.all()
+        serializer = CompetitorsSerializer(competitors, many=True)
+        return Response(serializer.data)
+               
 @api_view(['POST'])            
 @csrf_exempt 
 def market_share(request):
         if request.method == 'POST':
             customer_id = request.data.get('customer_id')
-            company_name = request.data.get('company_name')
+            competitor_name = request.data.get('competitor_name')
             price = request.data.get('price')
             product = request.data.get('product')
             
-
+            
             if not customer_id or not price:
                 return Response({'error': 'customer_id and price are required'}, status=status.HTTP_400_BAD_REQUEST)
 
             try:
                 market_share = MarketShare.objects.get(customer_id=customer_id)
                 market_share.price = price
-                market_share.company_name = company_name
+                market_share.competitor_name = competitor_name
                 market_share.product = product
                 market_share.save()
                 serializer = MarketShareSerializers(market_share)
@@ -4296,3 +4310,42 @@ class CustomerOutstandingAPI(APIView):
                 'data': str(e),
                 'message': 'Something went wrong!'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            
+class OffloadCouponAPI(APIView):
+    def post(self, request):
+        product_id = request.data.get('product')
+        quantity = request.data.get('quantity')
+
+        try:
+            coupon = VanCouponStock.objects.get(pk=product_id)
+        except VanCouponStock.DoesNotExist:
+            return Response({"error": "Coupon does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            quantity = int(quantity) 
+        except ValueError:
+            return Response({"error": "Invalid quantity"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if coupon.book_num is None or coupon.book_num < quantity:
+            return Response({"error": "Not enough coupons available"}, status=status.HTTP_400_BAD_REQUEST)
+
+        coupon.book_num -= quantity
+        coupon.save()
+
+        offload_data = {
+            'van': request.data.get('van'),
+            'product': product_id,
+            'quantity': quantity,
+            'stock_type': 'offload',
+            'created_by': str(request.user.id),
+            'modified_by': str(request.user.id),
+            'modified_date': datetime.now(),
+            'created_date': datetime.now()
+        }
+        serializer = OffloadVanSerializer(data=offload_data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
+            

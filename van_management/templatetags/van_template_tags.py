@@ -8,7 +8,7 @@ from accounts.models import CustomUser
 from client_management.models import CustomerSupply, CustomerSupplyItems
 from master.models import CategoryMaster
 from product.models import Staff_IssueOrders, Staff_Orders_details
-from van_management.models import OffloadVan, Van, Van_Routes, VanProductItems, VanProductStock
+from van_management.models import Offload, Van, Van_Routes, VanProductItems, VanProductStock
 
 register = template.Library()
 
@@ -39,7 +39,7 @@ def get_van_product_wise_stock(van,product):
         "return_count": van_stock.filter(stock_type="return").aggregate(total_count=Sum('count'))['total_count'] or 0,
         "closing_count": van_stock.filter(stock_type="closing").aggregate(total_count=Sum('count'))['total_count'] or 0,
         "change_count": van_stock.filter(stock_type="change").aggregate(total_count=Sum('count'))['total_count'] or 0,
-        "offload_count": OffloadVan.objects.filter(van=van,product__pk=product).aggregate(total_count=Sum('quantity'))['total_count'] or 0,
+        "offload_count": Offload.objects.filter(van=van,product__pk=product).aggregate(total_count=Sum('quantity'))['total_count'] or 0,
         "damage_count": van_stock.filter(stock_type="damage").aggregate(total_count=Sum('count'))['total_count'] or 0,
     }
     

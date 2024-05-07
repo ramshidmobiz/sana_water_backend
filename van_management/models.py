@@ -141,13 +141,14 @@ class VanCouponStock(models.Model):
         return f"{self.id}"
     
     
-class OffloadVan(models.Model):
+class Offload(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_by = models.CharField(max_length=30, blank=True)
     created_date = models.DateTimeField(auto_now_add=True)
     modified_by = models.CharField(max_length=20, null=True, blank=True)
     modified_date = models.DateTimeField(auto_now=True ,blank=True, null=True)
     
+    salesman = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE, related_name='offload')
     van = models.ForeignKey(Van, on_delete=models.CASCADE)
     product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=0)
@@ -155,8 +156,16 @@ class OffloadVan(models.Model):
 
     def __str__(self):
         return f"{self.id}"
+    
+class OffloadItems(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.id}"
        
-  
 class SalesmanRequest(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_by = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE, related_name='salesman_requests_created')

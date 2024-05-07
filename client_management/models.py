@@ -408,12 +408,18 @@ class CustomerSupplyStock(models.Model):
         def __str__(self):
             return str(self.product)
         
-
+class Competitors(models.Model):
+        id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+        competitor_name=models.CharField(max_length=30, blank=True)
+        
+        class Meta:
+            ordering = ('-id',)
+            
 class MarketShare(models.Model):
         id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
         product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True,blank=True)
         customer = models.ForeignKey('accounts.Customers',on_delete = models.CASCADE)
-        company_name=models.CharField(max_length=30, blank=True)
+        competitor=models.ForeignKey(Competitors,on_delete = models.CASCADE)
         price = models.PositiveIntegerField(default=0)  
         
         class Meta:

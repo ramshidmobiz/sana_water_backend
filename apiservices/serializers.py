@@ -1020,7 +1020,17 @@ class SalesmanRequestSerializer(serializers.ModelSerializer):
         model = SalesmanRequest
         fields = ['request']
         
+class CompetitorsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Competitors
+        fields = '__all__' 
+             
 class MarketShareSerializers(serializers.ModelSerializer):
     class Meta :
         model = MarketShare
         fields = '__all__'
+        
+class OffloadVanSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Offload
+        fields = ['id', 'created_by', 'created_date', 'modified_by', 'modified_date', 'van', 'product', 'quantity', 'stock_type']

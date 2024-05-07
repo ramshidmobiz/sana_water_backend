@@ -194,6 +194,9 @@ urlpatterns = [
     
     path('tax/', TaxAPI.as_view(), name='tax_api'),
     
+    path('competitors/', CompetitorsAPIView.as_view(), name='competitors'),
+    path('competitors_list/', CompetitorsListAPIView.as_view(), name='competitors_list'),
     path('market_share/',market_share, name='market_share'),
+    path('offload_coupon/', OffloadCouponAPI.as_view(), name='offload_coupon'),
     
 ]

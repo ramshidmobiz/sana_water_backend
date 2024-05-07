@@ -975,4 +975,3 @@ def salesman_requests(request):
         'instances': instances
         }
     return render(request, 'van_management/salesman_requests.html', context)
-    
