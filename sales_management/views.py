@@ -2,7 +2,7 @@
 import json
 import random
 from datetime import datetime, timedelta
-
+from van_management.models import *
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse, reverse_lazy
@@ -3045,5 +3045,39 @@ def fivegallonrelated_report(request):
     return render(request, 'sales_management/dsr_fivegallonrelated_report.html', context)
 
     
+def bottlecount_report(request):
+    user_id = request.user.id
+    start_date = request.GET.get('start_date')
+    filter_data = {}
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    else:
+        start_date = datetime.today().date()
 
+    filter_data['start_date'] = start_date.strftime('%Y-%m-%d')
+    
+    total_empty_bottles = CustomerCustodyStock.objects.filter(customer__sales_staff_id=user_id).aggregate(total_quantity=Sum('quantity'))['total_quantity']
+    if total_empty_bottles is None:
+        total_empty_bottles = 0
+
+    total_supplied_bottles = CustomerSupply.objects.filter(created_date__date=start_date).aggregate(total_bottles=Sum('collected_empty_bottle'))['total_bottles']
+    # closing_stock_count = VanStock.objects.filter(created_date=start_date,stock_type="closing").aggregate(total_count=Sum('count'))['total_count'] or 0,
+    closing_stock_count = VanStock.objects.filter(created_date=start_date, stock_type='closing').count() or 0
+    damage_bottle_count = VanProductItems.objects.filter(van_stock__created_date=start_date, van_stock__stock_type='damage').aggregate(total_damage=Sum('count'))['total_damage'] or 0
+    pending_bottle_count = CustomerSupply.objects.filter(created_date__date=start_date,salesman_id=user_id).aggregate(total_pending=Sum('allocate_bottle_to_pending'))['total_pending'] or 0
+    if pending_bottle_count is None:
+        pending_bottle_count = 0
+
+    total_count = total_empty_bottles + total_supplied_bottles + closing_stock_count + damage_bottle_count + pending_bottle_count
+
+    context = {
+        'total_empty_bottles': total_empty_bottles,
+        'total_supplied_bottles':total_supplied_bottles,
+        'closing_stock_count': closing_stock_count,
+        'damage_bottle_count': damage_bottle_count,
+        'pending_bottle_count': pending_bottle_count,
+        'total_count': total_count,
+    }
+
+    return render(request, 'sales_management/dsr_bottlecount_report.html', context)
 

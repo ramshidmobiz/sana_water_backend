@@ -86,8 +86,10 @@ urlpatterns = [
     
     #------------------DSR Five Gallon Related Report-------------------------------------
     path('fivegallonrelated_report/', fivegallonrelated_report, name='fivegallonrelated_report'),
-    # path('cashsales_report_excel',cashsales_report_excel, name='cashsales_report_excel'),
-    # path('cashsales_report_print',cashsales_report_print, name='cashsales_report_print'),
     
+    #------------------DSR Bottle Count 5gallon empty +fresh Report-------------------------------------
+    path('bottlecount_report/', bottlecount_report, name='bottlecount_report'),
+   
+   
    
 ]

@@ -8,29 +8,13 @@
     <meta charset="UTF-8">
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Sana Water</title>
-    <meta name="Description" content="Sana water admin dashboard">
+    <title>National Water</title>
+    <meta name="Description" content="National water admin dashboard">
     <meta name="Author" content="Mobiz Technologies">
-	<meta name="keywords" content="Sana water admin dashboard">
+	<meta name="keywords" content="National water admin dashboard">
 
     <!-- Favicon -->
-    <link rel="apple-touch-icon" sizes="57x57" href="{% static 'images/fav_icons/apple-icon-57x57.png' %}">
-    <link rel="apple-touch-icon" sizes="60x60" href="{% static 'images/fav_icons/apple-icon-60x60.png' %}">
-    <link rel="apple-touch-icon" sizes="72x72" href="{% static 'images/fav_icons/apple-icon-72x72.png' %}">
-    <link rel="apple-touch-icon" sizes="76x76" href="{% static 'images/fav_icons/apple-icon-76x76.png' %}">
-    <link rel="apple-touch-icon" sizes="114x114" href="{% static 'images/fav_icons/apple-icon-114x114.png' %}">
-    <link rel="apple-touch-icon" sizes="120x120" href="{% static 'images/fav_icons/apple-icon-120x120.png' %}">
-    <link rel="apple-touch-icon" sizes="144x144" href="{% static 'images/fav_icons/apple-icon-144x144.png' %}">
-    <link rel="apple-touch-icon" sizes="152x152" href="{% static 'images/fav_icons/apple-icon-152x152.png' %}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/fav_icons/apple-icon-180x180.png' %}">
-    <link rel="icon" type="image/png" sizes="192x192"  href="{% static 'images/fav_icons/android-icon-192x192.png' %}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/fav_icons/favicon-32x32.png' %}">
-    <link rel="icon" type="image/png" sizes="96x96" href="{% static 'images/fav_icons/favicon-96x96.png' %}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/fav_icons/favicon-16x16.png' %}">
-    <link rel="manifest" href="{% static 'images/fav_icons/manifest.json' %}%">
-    <meta name="msapplication-TileColor" content="#ffffff">
-    <meta name="msapplication-TileImage" content="{% static 'images/fav_icons/ms-icon-144x144.png' %}">
-    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="{%static 'images/brand-logos/desktop-logos.png'%}" type="image/x-icon">
 
     <!-- Choices JS -->
     <script src="{%static 'libs/choices.js/public/assets/scripts/choices.min.js'%}"></script>
@@ -1109,7 +1093,7 @@
                                     <a href="{% url 'fivegallonrelated_report' %}" class="side-menu__item">DSR 5Gallon Related</a>
                                 </li>
                                 <li class="slide">
-                                    <a href="" class="side-menu__item">DSR Bottle Count 5Gallon empty + fresh</a>
+                                    <a href="{% url 'bottlecount_report' %}" class="side-menu__item">DSR Bottle Count 5Gallon empty + fresh</a>
                                 </li>
                                 <li class="slide">
                                     <a href="{% url 'dsr_coupon_book_sales' %}" class="side-menu__item">DSR Coupon Book Sale</a>
@@ -1479,7 +1463,7 @@
        <footer class="footer mt-auto py-3 bg-white text-center">
            <div class="container">
                <span class="text-muted"> Copyright © <span id="year"></span> <a
-                       href="javascript:void(0);" class="text-dark fw-semibold">Sana Waters</a>.
+                       href="javascript:void(0);" class="text-dark fw-semibold">National Waters</a>.
                    powered by <a href="https://www.mobiztechnologies.com/">
                        <span class="fw-semibold text-primary text-decoration-underline">Mobiz Technologies</span>
                    </a> All
