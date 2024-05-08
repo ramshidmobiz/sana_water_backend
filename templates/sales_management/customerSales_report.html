@@ -40,16 +40,14 @@
                                     <div class="col d-flex align-items-center justify-content-end">
                                         <a href="{% url 'customerSales_Excel_report' %}?start_date={{ filter_data.start_date }}&end_date={{ filter_data.end_date }}" class="btn btn-outline-success"><i class="fas fa-file-excel"></i>Excel</a>
                                         <a href="{% url 'customerSales_Print_report' %}?start_date={{ filter_data.start_date }}&end_date={{ filter_data.end_date }}" class="btn btn-outline-success"><i class="fas fa-file-excel"></i>Print</a>
-
                                     </div>
                                 </div>
-                                
                             </div>
                         </form>
                     </div>
                     <div id="table-container" style="overflow:scroll;">
                         <div class="card-body">
-                            <table  class="table table-bordered text-wrap" style="width: 100%">
+                            <table class="table table-bordered text-wrap" style="width: 100%">
                                 <thead>
                                     <tr>
                                         <th>Sl No</th>
@@ -71,26 +69,23 @@
                                 <tbody>
                                     {% load el_pagination_tags %}
                                     {% paginate 20 customersales %}
-                                    {% for customersale in customersales %}
-                                        <tr>
-                                            <td>{{ forloop.counter }}</td>
-                                            <td>{{ customersale.date }}</td>
-                                            <td>{{ customersale.ref_invoice_no }}</td>
-                                            <td>{{ customersale.customer_name }}</td>
-                                            <td>{{ customersale.building_name }} 
-                                                {% if customersale.door_house_no %}/ {{ customersale.door_house_no }} {% endif %} 
-                                                {% if customersale.floor_no %}/ {{ customersale.floor_no }} {% endif %}
-                                            </td>
-                                            <td>{{ customersale.sales_type }}</td>
-                                            <td>{{ customersale.route_name }}</td>
-                                            <td>{{ customersale.salesman }}</td>
-                                            <td>{{ customersale.amount }}</td>
-                                            <td>{{ customersale.discount }}</td>
-                                            <td>{{ customersale.net_taxable }}</td>
-                                            <td>{{ customersale.vat_amount}}</td>
-                                            <td>{{ customersale.grand_total}}</td>
-                                            <td>{{ customersale.amount_collected }}</td>
-                                        </tr>
+                                    {% for data in customersales %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}</td>
+                                        <td>{{ data.date }}</td>
+                                        <td>{{ data.ref_invoice_no }}</td>
+                                        <td>{{ data.customer_name }}</td>
+                                        <td>{{ data.building_name }} {% if data.door_house_no %}/ {{ data.door_house_no }} {% endif %} {% if data.floor_no %}/ {{ data.floor_no }} {% endif %}</td>
+                                        <td>{{ data.sales_type }}</td>
+                                        <td>{{ data.route_name }}</td>
+                                        <td>{{ data.salesman }}</td>
+                                        <td>{{ data.amount }}</td>
+                                        <td>{{ data.discount }}</td>
+                                        <td>{{ data.net_taxable }}</td>
+                                        <td>{{ data.vat_amount}}</td>
+                                        <td>{{ data.grand_total}}</td>
+                                        <td>{{ data.amount_collected }}</td>
+                                    </tr>
                                     {% endfor %}
                                 </tbody>
                                 <!-- Table Footer -->
@@ -103,10 +98,8 @@
                                         <td>{{ total_vat }}</td>
                                         <td>{{ total_grand_total }}</td>
                                         <td>{{ total_amount_recieved }}</td>
-
                                     </tr>
                                 </tfoot>
-
                             </table>
                         </div>
                     </div>
@@ -115,15 +108,13 @@
                     <div class="row pagi my-3">
                         <div class="col-sm-6 col-xs-6 tot my-pagination">
                             <div class="m-t-10 text-start">
-                                Showing {{title}}
-                                <span class="current_page_index">{{ pages.current_start_index }}</span> - <span
-                                class="current_end_status">{{ pages.current_end_index }}</span> of <span
-                                class="total_count">{{ pages.total_count }}</span>
+                                Showing {{title}} <span class="current_page_index">{{ pages.current_start_index }}</span> - <span class="current_end_status">{{ pages.current_end_index }}</span> of <span class="total_count">{{ pages.total_count }}</span>
                             </div>
                         </div>
                         <div class="col-sm-6 col-xs-6 pagination-btn-div">{% show_pages %}</div>
                     </div>
-                </div>
+</div>
+
             </div>
         </div>
     </div>

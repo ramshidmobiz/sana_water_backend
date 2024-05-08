@@ -347,7 +347,6 @@ class CustomerSupply(models.Model):
         allocate_bottle_to_custody = models.PositiveIntegerField(default=0)
         allocate_bottle_to_paid = models.PositiveIntegerField(default=0)
         reference_number = models.CharField(max_length=100, null=True, blank=True)
-
         
         created_by = models.CharField(max_length=30, blank=True)
         created_date = models.DateTimeField(auto_now_add=True)

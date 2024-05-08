@@ -8,6 +8,10 @@ admin.site.register(VanStock)
 admin.site.register(VanProductItems)
 admin.site.register(VanCouponItems)
 
+class ExpenseAdmin(admin.ModelAdmin):
+    list_display = ('date_created','expense_date','expence_type','amount')
+admin.site.register(Expense,ExpenseAdmin)
+
 class VanProductStockAdmin(admin.ModelAdmin):
     list_display = ('product','stock_type','count','van')
 admin.site.register(VanProductStock,VanProductStockAdmin)

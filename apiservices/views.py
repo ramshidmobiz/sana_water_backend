@@ -3438,9 +3438,7 @@ class CustomerSalesReportAPI(APIView):
         total_amount_received = 0
 
         start_date_str = request.data.get('start_date')
-        print("start_date_str",start_date_str)
         end_date_str = request.data.get('end_date')
-        print("end_date_str",end_date_str)
 
         if start_date_str and end_date_str:
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
@@ -3457,17 +3455,17 @@ class CustomerSalesReportAPI(APIView):
         sales = CustomerSupply.objects.select_related('customer', 'salesman').filter(
             created_date__date__gte=start_date,
             created_date__date__lte=end_date
-        ).exclude(customer__sales_type__in=["CASH COUPON", "CREDIT"]).order_by("-created_date")
+        ).exclude(customer__sales_type__in=["CASH COUPON", "CREDIT COUPON"]).order_by("-created_date")
 
         coupons = CustomerCoupon.objects.select_related('customer', 'salesman').filter(
             created_date__date__gte=start_date,
             created_date__date__lte=end_date
         ).order_by("-created_date")
 
-        collections = CollectionPayment.objects.select_related('customer', 'salesman').filter(
-            created_date__date__gte=start_date,
-            created_date__date__lte=end_date
-        ).order_by("-created_date")
+        # collections = CollectionPayment.objects.select_related('customer', 'salesman').filter(
+        #     created_date__date__gte=start_date,
+        #     created_date__date__lte=end_date
+        # ).order_by("-created_date")
 
         sales_report_data = []
 
@@ -3500,18 +3498,18 @@ class CustomerSalesReportAPI(APIView):
             total_amount_received += coupon.amount_recieved
 
         # Process CollectionPayment data
-        for collection in collections:
-            serialized_collection = NewSalesCollectionPaymentSerializer(collection).data
-            serialized_collection['customer_name'] = collection.customer.customer_name
-            serialized_collection['building_name'] = collection.customer.building_name
-            sales_report_data.append(serialized_collection)
+        # for collection in collections:
+        #     serialized_collection = NewSalesCollectionPaymentSerializer(collection).data
+        #     serialized_collection['customer_name'] = collection.customer.customer_name
+        #     serialized_collection['building_name'] = collection.customer.building_name
+        #     sales_report_data.append(serialized_collection)
 
-            total_amount += collection.total_amount()
-            total_discount += collection.total_discounts()
-            total_net_payable += collection.total_net_taxeble()
-            total_vat += collection.total_vat()
-            total_grand_total += collection.total_amount()
-            total_amount_received += collection.collected_amount()
+        #     total_amount += collection.total_amount()
+        #     total_discount += collection.total_discounts()
+        #     total_net_payable += collection.total_net_taxeble()
+        #     total_vat += collection.total_vat()
+        #     total_grand_total += collection.total_amount()
+        #     total_amount_received += collection.collected_amount()
 
         response_data = {
             'customersales': sales_report_data,
@@ -3566,13 +3564,7 @@ class DashboardAPI(APIView):
             
         date = datetime.strptime(date_str, '%Y-%m-%d')
         
-        todays_customers = find_customers(request, date_str, route_id)
-        today_customers_count = 0
-        
-        if todays_customers:
-            for customer in todays_customers:
-                if customer['trip'] == trip.capitalize():
-                    today_customers_count += 1
+        today_customers_count = len(find_customers(request, date_str, route_id))
                 
         supplied_customers_count = CustomerSupply.objects.filter(customer__routes__pk=route_id,created_date__date=date).count()
         
@@ -3589,11 +3581,16 @@ class DashboardAPI(APIView):
         
         cash_in_hand = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=date).aggregate(total_amount=Sum('amout_recieved'))['total_amount'] or 0
         
-        cash_sale_total_amount = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=date,invoice_type="cash_invoice").aggregate(total_amount=Sum('amout_total'))['total_amount'] or 0
-        cash_sale_amount_recieved = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=date,invoice_type="cash_invoice").aggregate(total_amount=Sum('amout_recieved'))['total_amount'] or 0
+        # cash_sale_total_amount = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=date,invoice_type="cash_invoice").aggregate(total_amount=Sum('amout_total'))['total_amount'] or 0
+        cash_sale_total_amount = CustomerSupply.objects.filter(customer__routes__pk=route_id,created_date__date=date,customer__sales_type="CASH").aggregate(total_amount=Sum('subtotal'))['total_amount'] or 0
+        cash_sale_total_amount += CustomerCoupon.objects.filter(created_date__date=date,customer__routes__pk=route_id,customer__sales_type="CASH").aggregate(total_amount=Sum('total_payeble'))['total_amount'] or 0
+        cash_sale_amount_recieved = CustomerSupply.objects.filter(customer__routes__pk=route_id,created_date__date=date,customer__sales_type="CASH").aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
+        cash_sale_amount_recieved += CustomerCoupon.objects.filter(created_date__date=date,customer__routes__pk=route_id,customer__sales_type="CASH").aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
         
-        credit_sale_total_amount = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=date,invoice_type="credit_invoive").aggregate(total_amount=Sum('amout_total'))['total_amount'] or 0
-        credit_sale_amount_recieved = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=date,invoice_type="credit_invoive").aggregate(total_amount=Sum('amout_recieved'))['total_amount'] or 0
+        credit_sale_total_amount = CustomerSupply.objects.filter(customer__routes__pk=route_id,created_date__date=date,customer__sales_type="CREDIT").aggregate(total_amount=Sum('subtotal'))['total_amount'] or 0
+        credit_sale_total_amount += CustomerCoupon.objects.filter(customer__routes__pk=route_id,created_date__date=date,customer__sales_type="CREDIT").aggregate(total_amount=Sum('total_payeble'))['total_amount'] or 0
+        credit_sale_amount_recieved = CustomerSupply.objects.filter(customer__routes__pk=route_id,created_date__date=date,customer__sales_type="CREDIT").aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
+        credit_sale_amount_recieved += CustomerCoupon.objects.filter(customer__routes__pk=route_id,created_date__date=date,customer__sales_type="CREDIT").aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
         
         expences = Expense.objects.filter(van__salesman__pk=request.user.pk).aggregate(total_amount=Sum('amount'))['total_amount'] or 0
         

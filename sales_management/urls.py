@@ -89,7 +89,6 @@ urlpatterns = [
     
     #------------------DSR Bottle Count 5gallon empty +fresh Report-------------------------------------
     path('bottlecount_report/', bottlecount_report, name='bottlecount_report'),
-   
-   
-   
+    
+    path('dsr-summary/', dsr_summary, name='dsr_summary'),
 ]

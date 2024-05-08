@@ -8,3 +8,6 @@ class CustomerCouponStockAdmin(admin.ModelAdmin):
 admin.site.register(CustomerCouponStock,CustomerCouponStockAdmin)
 admin.site.register(CustomerOutstanding)
 admin.site.register(CustomerOutstandingReport)
+
+admin.site.register(CustomerSupply)
+admin.site.register(CustomerSupplyItems)
