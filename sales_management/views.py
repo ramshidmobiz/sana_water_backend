@@ -3149,8 +3149,8 @@ def dsr_summary(request):
         
         ##### stock report #### 
         products = ProdutItemMaster.objects.filter()
-        van_instances = Van.objects.filter(salesman=salesman,created_date__date=date)
-        van_product_stock = VanProductStock.objects.filter(van__created_date__date=date)
+        van_instances = Van.objects.filter(salesman=salesman)
+        van_product_stock = VanProductStock.objects.filter()
         
         #### 5 Gallon Related ###
         empty_bottles_collected = CustomerSupply.objects.filter(created_date__date=date, collected_empty_bottle__gt=0, salesman_id=salesman).count()
