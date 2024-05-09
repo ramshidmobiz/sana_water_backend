@@ -419,7 +419,13 @@ class MarketShare(models.Model):
         product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True,blank=True)
         customer = models.ForeignKey('accounts.Customers',on_delete = models.CASCADE)
         competitor=models.ForeignKey(Competitors,on_delete = models.CASCADE)
-        price = models.PositiveIntegerField(default=0)  
+        quantity=models.PositiveIntegerField(default=0)
+        price = models.PositiveIntegerField(default=0)
+        
+        created_by = models.CharField(max_length=30, blank=True)
+        created_date = models.DateTimeField(auto_now_add=True)
+        modified_by = models.CharField(max_length=20, null=True, blank=True)
+        modified_date = models.DateTimeField(auto_now=True ,blank=True, null=True)
         
         class Meta:
             ordering = ('-id',)

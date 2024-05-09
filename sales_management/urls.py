@@ -91,4 +91,6 @@ urlpatterns = [
     path('bottlecount_report/', bottlecount_report, name='bottlecount_report'),
     
     path('dsr-summary/', dsr_summary, name='dsr_summary'),
+    path('print-dsr-summary/', print_dsr_summary, name='print_dsr_summary'),
+    # path('export-dsr-summary/', export_daily_summary_report, name='export_dsr_summary'),
 ]

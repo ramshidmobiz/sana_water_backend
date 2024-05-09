@@ -31,7 +31,7 @@ def get_van_product_wise_stock(van,product):
     supply_instances = CustomerSupplyItems.objects.filter(product__pk=product,customer_supply__salesman=van.salesman,customer_supply__created_date__date=datetime.today().date())
     
     return{
-        "opening_stock": van_poducts_items.filter(van_stock__stock_type="opening_stock").aggregate(total_count=Sum('count'))['total_count'] or 0,
+        "opening_stock": van_stock.filter(stock_type="opening_stock").aggregate(total_count=Sum('count'))['total_count'] or 0,
         "requested_count": requested_count,
         "issued_count": issued_count,
         "empty_bottle_collected": supply_instances.aggregate(total_count=Sum('customer_supply__collected_empty_bottle'))['total_count'] or 0,

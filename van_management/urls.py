@@ -50,7 +50,8 @@ urlpatterns = [
     
     path('offload', offload, name="offload"),
     path('view_item_details/<str:pk>/', View_Item_Details.as_view(), name="view_item_details"),
-    path('edit_item_count/<uuid:product_id>/', EditItemView.as_view(), name="edit_item_count"),
+    path('edit-product-count/<uuid:van_id>/<uuid:product_id>/', EditProductView.as_view(), name="edit_product_count"),
+    path('edit-coupon-count/<uuid:van_id>/<uuid:coupon_id>/', EditCouponView.as_view(), name="edit_coupon_count"),
     
     path('salesman-requests/',salesman_requests, name="salesman_requests"),
     

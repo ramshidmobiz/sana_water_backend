@@ -3592,7 +3592,7 @@ class DashboardAPI(APIView):
         credit_sale_amount_recieved = CustomerSupply.objects.filter(customer__routes__pk=route_id,created_date__date=date,customer__sales_type="CREDIT").aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
         credit_sale_amount_recieved += CustomerCoupon.objects.filter(customer__routes__pk=route_id,created_date__date=date,customer__sales_type="CREDIT").aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
         
-        expences = Expense.objects.filter(van__salesman__pk=request.user.pk).aggregate(total_amount=Sum('amount'))['total_amount'] or 0
+        expences = Expense.objects.filter(van__salesman__pk=request.user.pk,expense_date=date).aggregate(total_amount=Sum('amount'))['total_amount'] or 0
         
         data = {
             'date': date_str,
@@ -3621,6 +3621,7 @@ class DashboardAPI(APIView):
         }
         
         return Response({'status': True, 'data': data}, status=status.HTTP_200_OK)
+    
 class CollectionReportAPI(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
@@ -4150,31 +4151,60 @@ class CompetitorsListAPIView(APIView):
         serializer = CompetitorsSerializer(competitors, many=True)
         return Response(serializer.data)
                
-@api_view(['POST'])            
-@csrf_exempt 
-def market_share(request):
-        if request.method == 'POST':
-            customer_id = request.data.get('customer_id')
-            competitor_name = request.data.get('competitor_name')
-            price = request.data.get('price')
-            product = request.data.get('product')
-            
-            
-            if not customer_id or not price:
-                return Response({'error': 'customer_id and price are required'}, status=status.HTTP_400_BAD_REQUEST)
+# @api_view(['POST'])            
+# @csrf_exempt 
+# def market_share(request):
+#     if request.method == 'POST':
+#         customer_id = request.data.get('customer_id')
+#         competitor_name = request.data.get('competitor_name')
+#         price = request.data.get('price')
+#         product = request.data.get('product')
+        
+        
+#         if not customer_id or not price:
+#             return Response({'error': 'customer_id and price are required'}, status=status.HTTP_400_BAD_REQUEST)
 
-            try:
-                market_share = MarketShare.objects.get(customer_id=customer_id)
-                market_share.price = price
-                market_share.competitor_name = competitor_name
-                market_share.product = product
-                market_share.save()
-                serializer = MarketShareSerializers(market_share)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            except MarketShare.DoesNotExist:
-                return Response({'error': 'MarketShare with this customer_id does not exist'}, status=status.HTTP_404_NOT_FOUND)
+#         try:
+#             market_share = MarketShare.objects.get(customer_id=customer_id)
+#             market_share.price = price
+#             market_share.competitor_name = competitor_name
+#             market_share.product = product
+#             market_share.save()
+#             serializer = MarketShareSerializers(market_share)
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+#         except MarketShare.DoesNotExist:
+#             return Response({'error': 'MarketShare with this customer_id does not exist'}, status=status.HTTP_404_NOT_FOUND)
 
-
+class MarketShareAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        try:
+            serializer = MarketShareSerializers(data=request.data)
+            if serializer.is_valid():
+                serializer.save(
+                    created_by=request.user,
+                    created_date=timezone.now(),
+                )
+                return Response({
+                    'status': True,
+                    'data': serializer.data,
+                    'message': 'market share added Successfully!'
+                })
+            else:
+                return Response({
+                    'status': False,
+                    'data': serializer.errors,
+                    'message': 'Validation Error!'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        except Exception as e:
+            return Response({
+                'status': False,
+                'data': str(e),
+                'message': 'Something went wrong!' + str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class CustomerLoginApi(APIView):
     def post(self, request, *args, **kwargs):

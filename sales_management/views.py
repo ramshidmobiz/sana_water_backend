@@ -1184,7 +1184,7 @@ def download_salesreport_excel(request):
 #         table_border_format = workbook.add_format({'border':1})
 #         worksheet.conditional_format(4, 0, len(df.index)+4, len(df.columns) - 1, {'type':'cell', 'criteria': '>', 'value':0, 'format':table_border_format})
 #         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 16, 'border': 1})
-#         worksheet.merge_range('A1:J2', f'National Water', merge_format)
+#         worksheet.merge_range('A1:J2', f'Sana Water', merge_format)
 #         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
 #         worksheet.merge_range('A3:J3', f'    Collection Report   ', merge_format)
 #         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
@@ -1255,7 +1255,7 @@ def download_salesreport_excel(request):
 #         table_border_format = workbook.add_format({'border':1})
 #         worksheet.conditional_format(4, 0, len(df.index)+4, len(df.columns) - 1, {'type':'cell', 'criteria': '>', 'value':0, 'format':table_border_format})
 #         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 16, 'border': 1})
-#         worksheet.merge_range('A1:J2', f'National Water', merge_format)
+#         worksheet.merge_range('A1:J2', f'Sana Water', merge_format)
 #         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
 #         worksheet.merge_range('A3:J3', f'    Daily Collection Report   ', merge_format)
 #         # worksheet.merge_range('E3:H3', f'Date: {def_date}', merge_format)
@@ -2144,7 +2144,7 @@ def collection_report_excel(request):
         table_border_format = workbook.add_format({'border':1})
         worksheet.conditional_format(4, 0, len(df.index)+4, len(df.columns) - 1, {'type':'cell', 'criteria': '>', 'value':0, 'format':table_border_format})
         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 16, 'border': 1})
-        worksheet.merge_range('A1:J2', f'National Water', merge_format)
+        worksheet.merge_range('A1:J2', f'Sana Water', merge_format)
         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
         worksheet.merge_range('A3:J3', f'    Collection Report   ', merge_format)
         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
@@ -3115,6 +3115,7 @@ def dsr_summary(request):
     suspense_balance_amount = 0
     
     van_instances = Van.objects.none
+    van_route = Van_Routes.objects.none
     cash_invoices = Invoice.objects.none
     credit_invoices = Invoice.objects.none
     products = ProdutItemMaster.objects.none
@@ -3200,8 +3201,8 @@ def dsr_summary(request):
         suspense_paid_amount = suspense_collections.aggregate(total_paid=Sum('amount_paid'))['total_paid'] or 0
         suspense_balance_amount = suspense_opening_amount - suspense_paid_amount
         
-
     context = {
+        'van_route': van_route,
         # visit statistics
         'new_customers_count': new_customers_count,
         'emergency_supply_count': emergency_supply_count,
@@ -3249,4 +3250,532 @@ def dsr_summary(request):
         
         'filter_data': filter_data
     }
+    
     return render(request, 'sales_management/dsr_summary.html', context)
+
+def print_dsr_summary(request):
+    
+    filter_data = {}
+    new_customers_count = 0
+    emergency_supply_count = 0
+    visited_customers_count = 0
+    non_visited_count = 0
+    planned_visit_count = 0
+    # empty_bottles_collected = 0
+    # empty_bottle_pending = 0
+    # coupons_collected = 0
+    # total_supplied_quantity = 0
+    # total_collected_amount = 0
+    # total_pending_amount = 0
+    # mode_of_supply = 0
+    total_empty_bottles = 0
+    total_supplied_bottles = 0
+    closing_stock_count = 0
+    damage_bottle_count = 0
+    pending_bottle_count = 0
+    total_count = 0
+    cash_total_net_taxable = 0
+    cash_total_vat = 0
+    cash_total_amout_total = 0
+    credit_total_net_taxable = 0
+    credit_total_vat = 0
+    credit_total_amout_total = 0
+    suspense_opening_amount = 0
+    suspense_paid_amount = 0
+    suspense_balance_amount = 0
+    
+    van_instances = Van.objects.none
+    van_route = Van_Routes.objects.none
+    cash_invoices = Invoice.objects.none
+    credit_invoices = Invoice.objects.none
+    products = ProdutItemMaster.objects.none
+    expenses_instanses = Expense.objects.none
+    routes_instances = RouteMaster.objects.all()
+    van_product_stock = VanProductStock.objects.none
+    customer_coupon_items = CustomerCouponItems.objects.none
+    
+    date = request.GET.get('date')
+    route_name = request.GET.get('route_name')
+    
+    if date:
+        date = datetime.strptime(date, '%Y-%m-%d').date()
+    else:
+        date = datetime.today().date()
+    filter_data['filter_date'] = date.strftime('%Y-%m-%d')
+    
+    
+    if route_name:
+        van_route = Van_Routes.objects.filter(routes__route_name=route_name).first()
+        salesman = van_route.van.salesman
+        filter_data['route_name'] = route_name
+        #new customers created
+        new_customers_count = Customers.objects.filter(created_date__date=date,sales_staff_id=salesman).count()
+        #emergency supply
+        emergency_supply_count = DiffBottlesModel.objects.filter(created_date__date=date, assign_this_to_id=salesman).count()
+        #actual visit
+        visited_customers_count = CustomerSupply.objects.filter(salesman_id=salesman, created_date__date=date).distinct().count()
+        todays_customers = find_customers(request, str(date), van_route.routes.pk)
+        planned_visit_count = len(todays_customers)
+        non_visited_count = planned_visit_count - visited_customers_count
+        
+        ##### stock report #### 
+        products = ProdutItemMaster.objects.filter()
+        van_instances = Van.objects.filter(salesman=salesman)
+        van_product_stock = VanProductStock.objects.filter()
+        
+        # Pending Bottle Customers
+        pending_bottle_customer_instances = CustomerSupply.objects.filter(created_date__date=date, allocate_bottle_to_pending__gt=0, salesman_id=salesman)
+        
+        #### 5 Gallon Related ###
+        # empty_bottles_collected = CustomerSupply.objects.filter(created_date__date=date, collected_empty_bottle__gt=0, salesman_id=salesman).count()
+        # # empty_bottles_collected = CustomerSupply.objects.filter(created_date__date=date, collected_empty_bottle__gt=0, **filter_data).count()
+        # empty_bottle_pending = CustomerSupply.objects.filter(created_date__date=date, allocate_bottle_to_pending__gt=0, salesman_id=salesman).count()
+        # coupons_collected = CustomerSupplyCoupon.objects.filter(customer_supply__created_date__date=date, customer_supply__salesman_id=salesman).aggregate(total_coupons=Count('leaf'))['total_coupons']
+        # total_supplied_quantity = CustomerSupplyItems.objects.filter(customer_supply__created_date__date=date, customer_supply__salesman_id=salesman).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+        # total_collected_amount = CustomerSupply.objects.filter(created_date__date=date, salesman_id=salesman).aggregate(total_collected_amount=Sum('net_payable'))['total_collected_amount'] or 0
+        # total_pending_amount = CustomerSupply.objects.filter(created_date__date=date, salesman_id=salesman).aggregate(total_pending_amount=Sum('grand_total') - Sum('net_payable'))['total_pending_amount'] or 0
+        # mode_of_supply = CustomerSupply.objects.filter(created_date__date=date, salesman_id=salesman).values('customer__sales_type').annotate(total=Count('customer__sales_type')) or 0
+        
+        #### Bottle Count ####
+        total_empty_bottles = CustodyCustomItems.objects.filter(custody_custom__customer__sales_staff_id=salesman,custody_custom__created_date__date=date).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+
+        total_supplied_bottles = CustomerSupply.objects.filter(created_date__date=date).aggregate(total_bottles=Sum('collected_empty_bottle'))['total_bottles'] or 0
+        # closing_stock_count = VanStock.objects.filter(created_date=date,stock_type="closing").aggregate(total_count=Sum('count'))['total_count'] or 0,
+        closing_stock_count = VanStock.objects.filter(created_date__date=date, stock_type='closing').count() or 0
+        damage_bottle_count = VanProductItems.objects.filter(van_stock__created_date__date=date, van_stock__stock_type='damage').aggregate(total_damage=Sum('count'))['total_damage'] or 0
+        pending_bottle_count = CustomerSupply.objects.filter(created_date__date=date,salesman_id=salesman).aggregate(total_pending=Sum('allocate_bottle_to_pending'))['total_pending'] or 0
+
+        total_count = total_empty_bottles + total_supplied_bottles + closing_stock_count + damage_bottle_count + pending_bottle_count
+        
+        #### coupon sales count ####
+        customer_coupon_items=CustomerCouponItems.objects.filter(customer_coupon__salesman=salesman,customer_coupon__created_date__date=date).order_by("-customer_coupon__created_date")
+        
+        ### cash sales ####
+        cash_invoices = Invoice.objects.filter(created_date__date=date, invoice_type="cash_invoice")
+        cash_total_net_taxable = cash_invoices.aggregate(total_net_taxable=Sum('net_taxable'))['total_net_taxable'] or 0
+        cash_total_vat = cash_invoices.aggregate(total_vat=Sum('vat'))['total_vat'] or 0
+        cash_total_amout_total = cash_invoices.aggregate(total_amout_total=Sum('amout_total'))['total_amout_total'] or 0
+        
+        ### credit sales ####
+        credit_invoices = Invoice.objects.filter(created_date__date=date, invoice_type="credit_invoive")
+        credit_total_net_taxable = credit_invoices.aggregate(total_net_taxable=Sum('net_taxable'))['total_net_taxable'] or 0
+        credit_total_vat = credit_invoices.aggregate(total_vat=Sum('vat'))['total_vat'] or 0
+        credit_total_amout_total = credit_invoices.aggregate(total_amout_total=Sum('amout_total'))['total_amout_total'] or 0
+        
+        ### expenses ####
+        expenses_instanses = Expense.objects.filter(date_created=date,van__salesman=salesman)
+        
+        ### suspense ###
+        suspense_collections = SuspenseCollection.objects.filter(created_date__date=date,salesman=salesman)
+        cash_sales_amount = suspense_collections.aggregate(total_cash_sale=Sum('cash_sale_amount'))['total_cash_sale'] or 0
+        credit_sales_amount = suspense_collections.aggregate(total_credit_sale=Sum('credit_sale_amount'))['total_credit_sale'] or 0
+        
+        suspense_opening_amount = cash_sales_amount + credit_sales_amount
+        suspense_paid_amount = suspense_collections.aggregate(total_paid=Sum('amount_paid'))['total_paid'] or 0
+        suspense_balance_amount = suspense_opening_amount - suspense_paid_amount
+        
+
+    context = {
+        'van_route': van_route,
+        # visit statistics
+        'new_customers_count': new_customers_count,
+        'emergency_supply_count': emergency_supply_count,
+        'visited_customers_count': visited_customers_count,
+        'non_visited_count': non_visited_count,
+        'planned_visit_count': planned_visit_count,
+        'routes_instances': routes_instances,
+        # stock report
+        'products': products,
+        'van_instances': van_instances,
+        'van_product_stock': van_product_stock,
+        # pending bottle issues customers instances
+        'pending_bottle_customer_instances': pending_bottle_customer_instances,
+        # 5 Gallon Related
+        # 'empty_bottles_collected': empty_bottles_collected,
+        # 'empty_bottle_pending': empty_bottle_pending,
+        # 'coupons_collected': coupons_collected,
+        # 'total_supplied_quantity': total_supplied_quantity,
+        # 'total_collected_amount': total_collected_amount,
+        # 'total_pending_amount': total_pending_amount,
+        # 'mode_of_supply' :mode_of_supply,
+        # Bottle Count
+        'total_empty_bottles': total_empty_bottles,
+        'total_supplied_bottles':total_supplied_bottles,
+        'closing_stock_count': closing_stock_count,
+        'damage_bottle_count': damage_bottle_count,
+        'pending_bottle_count': pending_bottle_count,
+        'total_count': total_count,
+        #coupon book sale
+        'customer_coupon_items':customer_coupon_items,
+        #cash sales
+        'cash_invoices': cash_invoices,
+        'cash_total_net_taxable':cash_total_net_taxable,
+        'cash_total_vat':cash_total_vat,
+        'cash_total_amout_total':cash_total_amout_total,
+        # credit sales
+        'credit_invoices': credit_invoices,
+        'credit_total_net_taxable':credit_total_net_taxable,
+        'credit_total_vat':credit_total_vat,
+        'credit_total_amout_total':credit_total_amout_total,
+        # expenses
+        'expenses_instanses': expenses_instanses,
+        # suspense
+        'suspense_opening_amount': suspense_opening_amount,
+        'suspense_paid_amount': suspense_paid_amount,
+        'suspense_balance_amount': suspense_balance_amount,
+        
+        'filter_data': filter_data
+    }
+    return render(request, 'sales_management/dsr_summary_print.html', context)
+
+# import openpyxl
+# from django.http import HttpResponse
+# from django.template.loader import render_to_string
+# from datetime import datetime
+# import io
+
+# def export_dsr_summary_data_to_excel(request):
+#     filter_data = {}
+#     new_customers_count = 0
+#     emergency_supply_count = 0
+#     visited_customers_count = 0
+#     non_visited_count = 0
+#     planned_visit_count = 0
+#     empty_bottles_collected = 0
+#     empty_bottle_pending = 0
+#     coupons_collected = 0
+#     total_supplied_quantity = 0
+#     total_collected_amount = 0
+#     total_pending_amount = 0
+#     mode_of_supply = 0
+#     total_empty_bottles = 0
+#     total_supplied_bottles = 0
+#     closing_stock_count = 0
+#     damage_bottle_count = 0
+#     pending_bottle_count = 0
+#     total_count = 0
+#     cash_total_net_taxable = 0
+#     cash_total_vat = 0
+#     cash_total_amout_total = 0
+#     credit_total_net_taxable = 0
+#     credit_total_vat = 0
+#     credit_total_amout_total = 0
+#     suspense_opening_amount = 0
+#     suspense_paid_amount = 0
+#     suspense_balance_amount = 0
+    
+#     van_instances = Van.objects.none
+#     van_route = Van_Routes.objects.none
+#     cash_invoices = Invoice.objects.none
+#     credit_invoices = Invoice.objects.none
+#     products = ProdutItemMaster.objects.none
+#     expenses_instanses = Expense.objects.none
+#     routes_instances = RouteMaster.objects.all()
+#     van_product_stock = VanProductStock.objects.none
+#     customer_coupon_items = CustomerCouponItems.objects.none
+    
+#     date = request.GET.get('date')
+#     route_name = request.GET.get('route_name')
+    
+#     if date:
+#         date = datetime.strptime(date, '%Y-%m-%d').date()
+#     else:
+#         date = datetime.today().date()
+#     filter_data['filter_date'] = date.strftime('%Y-%m-%d')
+    
+    
+#     if route_name:
+#         van_route = Van_Routes.objects.filter(routes__route_name=route_name).first()
+#         salesman = van_route.van.salesman
+#         filter_data['route_name'] = route_name
+#         #new customers created
+#         new_customers_count = Customers.objects.filter(created_date__date=date,sales_staff_id=salesman).count()
+#         #emergency supply
+#         emergency_supply_count = DiffBottlesModel.objects.filter(created_date__date=date, assign_this_to_id=salesman).count()
+#         #actual visit
+#         visited_customers_count = CustomerSupply.objects.filter(salesman_id=salesman, created_date__date=date).distinct().count()
+#         todays_customers = find_customers(request, str(date), van_route.routes.pk)
+#         planned_visit_count = len(todays_customers)
+#         non_visited_count = planned_visit_count - visited_customers_count
+        
+#         ##### stock report #### 
+#         products = ProdutItemMaster.objects.filter()
+#         van_instances = Van.objects.filter(salesman=salesman)
+#         van_product_stock = VanProductStock.objects.filter()
+        
+#         #### 5 Gallon Related ###
+#         empty_bottles_collected = CustomerSupply.objects.filter(created_date__date=date, collected_empty_bottle__gt=0, salesman_id=salesman).count()
+#         # empty_bottles_collected = CustomerSupply.objects.filter(created_date__date=date, collected_empty_bottle__gt=0, **filter_data).count()
+#         empty_bottle_pending = CustomerSupply.objects.filter(created_date__date=date, allocate_bottle_to_pending__gt=0, salesman_id=salesman).count()
+#         coupons_collected = CustomerSupplyCoupon.objects.filter(customer_supply__created_date__date=date, customer_supply__salesman_id=salesman).aggregate(total_coupons=Count('leaf'))['total_coupons']
+#         total_supplied_quantity = CustomerSupplyItems.objects.filter(customer_supply__created_date__date=date, customer_supply__salesman_id=salesman).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+#         total_collected_amount = CustomerSupply.objects.filter(created_date__date=date, salesman_id=salesman).aggregate(total_collected_amount=Sum('net_payable'))['total_collected_amount'] or 0
+#         total_pending_amount = CustomerSupply.objects.filter(created_date__date=date, salesman_id=salesman).aggregate(total_pending_amount=Sum('grand_total') - Sum('net_payable'))['total_pending_amount'] or 0
+#         mode_of_supply = CustomerSupply.objects.filter(created_date__date=date, salesman_id=salesman).values('customer__sales_type').annotate(total=Count('customer__sales_type')) or 0
+        
+#         #### Bottle Count ####
+#         total_empty_bottles = CustodyCustomItems.objects.filter(custody_custom__customer__sales_staff_id=salesman,custody_custom__created_date__date=date).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+
+#         total_supplied_bottles = CustomerSupply.objects.filter(created_date__date=date).aggregate(total_bottles=Sum('collected_empty_bottle'))['total_bottles'] or 0
+#         # closing_stock_count = VanStock.objects.filter(created_date=date,stock_type="closing").aggregate(total_count=Sum('count'))['total_count'] or 0,
+#         closing_stock_count = VanStock.objects.filter(created_date__date=date, stock_type='closing').count() or 0
+#         damage_bottle_count = VanProductItems.objects.filter(van_stock__created_date__date=date, van_stock__stock_type='damage').aggregate(total_damage=Sum('count'))['total_damage'] or 0
+#         pending_bottle_count = CustomerSupply.objects.filter(created_date__date=date,salesman_id=salesman).aggregate(total_pending=Sum('allocate_bottle_to_pending'))['total_pending'] or 0
+
+#         total_count = total_empty_bottles + total_supplied_bottles + closing_stock_count + damage_bottle_count + pending_bottle_count
+        
+#         #### coupon sales count ####
+#         customer_coupon_items=CustomerCouponItems.objects.filter(customer_coupon__salesman=salesman,customer_coupon__created_date__date=date).order_by("-customer_coupon__created_date")
+        
+#         ### cash sales ####
+#         cash_invoices = Invoice.objects.filter(created_date__date=date, invoice_type="cash_invoice")
+#         cash_total_net_taxable = cash_invoices.aggregate(total_net_taxable=Sum('net_taxable'))['total_net_taxable'] or 0
+#         cash_total_vat = cash_invoices.aggregate(total_vat=Sum('vat'))['total_vat'] or 0
+#         cash_total_amout_total = cash_invoices.aggregate(total_amout_total=Sum('amout_total'))['total_amout_total'] or 0
+        
+#         ### credit sales ####
+#         credit_invoices = Invoice.objects.filter(created_date__date=date, invoice_type="credit_invoive")
+#         credit_total_net_taxable = credit_invoices.aggregate(total_net_taxable=Sum('net_taxable'))['total_net_taxable'] or 0
+#         credit_total_vat = credit_invoices.aggregate(total_vat=Sum('vat'))['total_vat'] or 0
+#         credit_total_amout_total = credit_invoices.aggregate(total_amout_total=Sum('amout_total'))['total_amout_total'] or 0
+        
+#         ### expenses ####
+#         expenses_instanses = Expense.objects.filter(date_created=date,van__salesman=salesman)
+        
+#         ### suspense ###
+#         suspense_collections = SuspenseCollection.objects.filter(created_date__date=date,salesman=salesman)
+#         cash_sales_amount = suspense_collections.aggregate(total_cash_sale=Sum('cash_sale_amount'))['total_cash_sale'] or 0
+#         credit_sales_amount = suspense_collections.aggregate(total_credit_sale=Sum('credit_sale_amount'))['total_credit_sale'] or 0
+        
+#         suspense_opening_amount = cash_sales_amount + credit_sales_amount
+#         suspense_paid_amount = suspense_collections.aggregate(total_paid=Sum('amount_paid'))['total_paid'] or 0
+#         suspense_balance_amount = suspense_opening_amount - suspense_paid_amount
+        
+
+#     context = {
+#         'van_route': van_route,
+#         # visit statistics
+#         'new_customers_count': new_customers_count,
+#         'emergency_supply_count': emergency_supply_count,
+#         'visited_customers_count': visited_customers_count,
+#         'non_visited_count': non_visited_count,
+#         'planned_visit_count': planned_visit_count,
+#         'routes_instances': routes_instances,
+#         # stock report
+#         'products': products,
+#         'van_instances': van_instances,
+#         'van_product_stock': van_product_stock,
+#         # 5 Gallon Related
+#         'empty_bottles_collected': empty_bottles_collected,
+#         'empty_bottle_pending': empty_bottle_pending,
+#         'coupons_collected': coupons_collected,
+#         'total_supplied_quantity': total_supplied_quantity,
+#         'total_collected_amount': total_collected_amount,
+#         'total_pending_amount': total_pending_amount,
+#         'mode_of_supply' :mode_of_supply,
+#         # Bottle Count
+#         'total_empty_bottles': total_empty_bottles,
+#         'total_supplied_bottles':total_supplied_bottles,
+#         'closing_stock_count': closing_stock_count,
+#         'damage_bottle_count': damage_bottle_count,
+#         'pending_bottle_count': pending_bottle_count,
+#         'total_count': total_count,
+#         #coupon book sale
+#         'customer_coupon_items':customer_coupon_items,
+#         #cash sales
+#         'cash_invoices': cash_invoices,
+#         'cash_total_net_taxable':cash_total_net_taxable,
+#         'cash_total_vat':cash_total_vat,
+#         'cash_total_amout_total':cash_total_amout_total,
+#         # credit sales
+#         'credit_invoices': credit_invoices,
+#         'credit_total_net_taxable':credit_total_net_taxable,
+#         'credit_total_vat':credit_total_vat,
+#         'credit_total_amout_total':credit_total_amout_total,
+#         # expenses
+#         'expenses_instanses': expenses_instanses,
+#         # suspense
+#         'suspense_opening_amount': suspense_opening_amount,
+#         'suspense_paid_amount': suspense_paid_amount,
+#         'suspense_balance_amount': suspense_balance_amount,
+        
+#         'filter_data': filter_data
+#     }
+#     html_content = render_to_string('sales_management/dsr_summary.html', context)
+
+#     # Create a new Excel workbook
+#     workbook = openpyxl.Workbook()
+#     worksheet = workbook.active
+#     worksheet.title = "DSR Summary"
+
+#     # Convert HTML content to plain text and write it to the Excel file
+#     for row_idx, row in enumerate(html_content.split('\n'), start=1):
+#         for col_idx, value in enumerate(row.split(','), start=1):
+#             worksheet.cell(row=row_idx, column=col_idx, value=value)
+
+#     # Save the workbook to an in-memory buffer
+#     output = io.BytesIO()
+#     workbook.save(output)
+#     output.seek(0)  # Move the buffer's cursor to the beginning
+
+#     # Prepare response to send the Excel file
+#     response = HttpResponse(output.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+#     response['Content-Disposition'] = f'attachment; filename="dialy-summery-report{date}.xlsx"'
+
+#     return response
+
+# def export_daily_summary_report(request):
+#     filter_data = {}
+#     new_customers_count = 0
+#     emergency_supply_count = 0
+#     visited_customers_count = 0
+#     non_visited_count = 0
+#     planned_visit_count = 0
+#     empty_bottles_collected = 0
+#     empty_bottle_pending = 0
+#     coupons_collected = 0
+#     total_supplied_quantity = 0
+#     total_collected_amount = 0
+#     total_pending_amount = 0
+#     mode_of_supply = 0
+#     total_empty_bottles = 0
+#     total_supplied_bottles = 0
+#     closing_stock_count = 0
+#     damage_bottle_count = 0
+#     pending_bottle_count = 0
+#     total_count = 0
+#     cash_total_net_taxable = 0
+#     cash_total_vat = 0
+#     cash_total_amout_total = 0
+#     credit_total_net_taxable = 0
+#     credit_total_vat = 0
+#     credit_total_amout_total = 0
+#     suspense_opening_amount = 0
+#     suspense_paid_amount = 0
+#     suspense_balance_amount = 0
+    
+#     van_instances = Van.objects.none
+#     van_route = Van_Routes.objects.none
+#     cash_invoices = Invoice.objects.none
+#     credit_invoices = Invoice.objects.none
+#     products = ProdutItemMaster.objects.none
+#     expenses_instanses = Expense.objects.none
+#     routes_instances = RouteMaster.objects.all()
+#     van_product_stock = VanProductStock.objects.none
+#     customer_coupon_items = CustomerCouponItems.objects.none
+    
+#     date = request.GET.get('date')
+#     route_name = request.GET.get('route_name')
+    
+#     if date:
+#         date = datetime.strptime(date, '%Y-%m-%d').date()
+#     else:
+#         date = datetime.today().date()
+#     filter_data['filter_date'] = date.strftime('%Y-%m-%d')
+    
+    
+#     if route_name:
+#         van_route = Van_Routes.objects.filter(routes__route_name=route_name).first()
+#         salesman = van_route.van.salesman
+#         filter_data['route_name'] = route_name
+#         #new customers created
+#         new_customers_count = Customers.objects.filter(created_date__date=date,sales_staff_id=salesman).count()
+#         #emergency supply
+#         emergency_supply_count = DiffBottlesModel.objects.filter(created_date__date=date, assign_this_to_id=salesman).count()
+#         #actual visit
+#         visited_customers_count = CustomerSupply.objects.filter(salesman_id=salesman, created_date__date=date).distinct().count()
+#         todays_customers = find_customers(request, str(date), van_route.routes.pk)
+#         planned_visit_count = len(todays_customers)
+#         non_visited_count = planned_visit_count - visited_customers_count
+        
+#         ##### stock report #### 
+#         products = ProdutItemMaster.objects.filter()
+#         van_instances = Van.objects.filter(salesman=salesman)
+#         van_product_stock = VanProductStock.objects.filter()
+        
+#         #### 5 Gallon Related ###
+#         empty_bottles_collected = CustomerSupply.objects.filter(created_date__date=date, collected_empty_bottle__gt=0, salesman_id=salesman).count()
+#         # empty_bottles_collected = CustomerSupply.objects.filter(created_date__date=date, collected_empty_bottle__gt=0, **filter_data).count()
+#         empty_bottle_pending = CustomerSupply.objects.filter(created_date__date=date, allocate_bottle_to_pending__gt=0, salesman_id=salesman).count()
+#         coupons_collected = CustomerSupplyCoupon.objects.filter(customer_supply__created_date__date=date, customer_supply__salesman_id=salesman).aggregate(total_coupons=Count('leaf'))['total_coupons']
+#         total_supplied_quantity = CustomerSupplyItems.objects.filter(customer_supply__created_date__date=date, customer_supply__salesman_id=salesman).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+#         total_collected_amount = CustomerSupply.objects.filter(created_date__date=date, salesman_id=salesman).aggregate(total_collected_amount=Sum('net_payable'))['total_collected_amount'] or 0
+#         total_pending_amount = CustomerSupply.objects.filter(created_date__date=date, salesman_id=salesman).aggregate(total_pending_amount=Sum('grand_total') - Sum('net_payable'))['total_pending_amount'] or 0
+#         mode_of_supply = CustomerSupply.objects.filter(created_date__date=date, salesman_id=salesman).values('customer__sales_type').annotate(total=Count('customer__sales_type')) or 0
+        
+#         #### Bottle Count ####
+#         total_empty_bottles = CustodyCustomItems.objects.filter(custody_custom__customer__sales_staff_id=salesman,custody_custom__created_date__date=date).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+
+#         total_supplied_bottles = CustomerSupply.objects.filter(created_date__date=date).aggregate(total_bottles=Sum('collected_empty_bottle'))['total_bottles'] or 0
+#         # closing_stock_count = VanStock.objects.filter(created_date=date,stock_type="closing").aggregate(total_count=Sum('count'))['total_count'] or 0,
+#         closing_stock_count = VanStock.objects.filter(created_date__date=date, stock_type='closing').count() or 0
+#         damage_bottle_count = VanProductItems.objects.filter(van_stock__created_date__date=date, van_stock__stock_type='damage').aggregate(total_damage=Sum('count'))['total_damage'] or 0
+#         pending_bottle_count = CustomerSupply.objects.filter(created_date__date=date,salesman_id=salesman).aggregate(total_pending=Sum('allocate_bottle_to_pending'))['total_pending'] or 0
+
+#         total_count = total_empty_bottles + total_supplied_bottles + closing_stock_count + damage_bottle_count + pending_bottle_count
+        
+#         #### coupon sales count ####
+#         customer_coupon_items=CustomerCouponItems.objects.filter(customer_coupon__salesman=salesman,customer_coupon__created_date__date=date).order_by("-customer_coupon__created_date")
+        
+#         ### cash sales ####
+#         cash_invoices = Invoice.objects.filter(created_date__date=date, invoice_type="cash_invoice")
+#         cash_total_net_taxable = cash_invoices.aggregate(total_net_taxable=Sum('net_taxable'))['total_net_taxable'] or 0
+#         cash_total_vat = cash_invoices.aggregate(total_vat=Sum('vat'))['total_vat'] or 0
+#         cash_total_amout_total = cash_invoices.aggregate(total_amout_total=Sum('amout_total'))['total_amout_total'] or 0
+        
+#         ### credit sales ####
+#         credit_invoices = Invoice.objects.filter(created_date__date=date, invoice_type="credit_invoive")
+#         credit_total_net_taxable = credit_invoices.aggregate(total_net_taxable=Sum('net_taxable'))['total_net_taxable'] or 0
+#         credit_total_vat = credit_invoices.aggregate(total_vat=Sum('vat'))['total_vat'] or 0
+#         credit_total_amout_total = credit_invoices.aggregate(total_amout_total=Sum('amout_total'))['total_amout_total'] or 0
+        
+#         ### expenses ####
+#         expenses_instanses = Expense.objects.filter(date_created=date,van__salesman=salesman)
+        
+#         ### suspense ###
+#         suspense_collections = SuspenseCollection.objects.filter(created_date__date=date,salesman=salesman)
+#         cash_sales_amount = suspense_collections.aggregate(total_cash_sale=Sum('cash_sale_amount'))['total_cash_sale'] or 0
+#         credit_sales_amount = suspense_collections.aggregate(total_credit_sale=Sum('credit_sale_amount'))['total_credit_sale'] or 0
+        
+#         suspense_opening_amount = cash_sales_amount + credit_sales_amount
+#         suspense_paid_amount = suspense_collections.aggregate(total_paid=Sum('amount_paid'))['total_paid'] or 0
+#         suspense_balance_amount = suspense_opening_amount - suspense_paid_amount
+
+#     # Create DataFrames for each table
+#     visit_statistics_df = pd.DataFrame({
+#         'New Customer Created': [new_customers_count],
+#         'Planned Visit': [planned_visit_count],
+#         'Emergency Supply': [emergency_supply_count],
+#         'Non Visited': [non_visited_count]
+#     })
+
+#     # Define the Excel writer
+#     excel_writer = pd.ExcelWriter('daily_summary_report.xlsx', engine='openpyxl')
+
+#     # Write each DataFrame to a specific sheet in the Excel file
+#     visit_statistics_df.to_excel(excel_writer, index=False, sheet_name='Visit Statistics', startrow=1, startcol=1)
+
+#     # Get the workbook and the worksheet
+#     workbook = excel_writer.book
+#     worksheet = excel_writer.sheets['Visit Statistics']
+
+#     # Set column widths
+#     column_widths = [20, 20, 20, 20]  # Adjust the widths as needed
+#     for i, width in enumerate(column_widths):
+#         worksheet.column_dimensions[worksheet.cell(row=1, column=i+1).column_letter].width = width
+
+#     # Add headers
+#     for idx, value in enumerate(visit_statistics_df.columns):
+#         worksheet.cell(row=1, column=idx+1, value=value)
+
+#     # Save the Excel file
+#     excel_writer.save()
+
+#     # Define the file path
+#     file_path = 'daily_summary_report.xlsx'
+
+#     # Prepare response
+#     with open(file_path, 'rb') as file:
+#         response = HttpResponse(file.read(), content_type='application/vnd.ms-excel')
+#         response['Content-Disposition'] = 'attachment; filename="daily_summary_report.xlsx"'
+#     return response

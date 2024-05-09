@@ -1,8 +1,11 @@
-from django.db import models
 import uuid
-from coupon_management.models import Coupon, CouponType, NewCoupon
+
+from django.db import models
+from django.db.models import Sum
+
 from master.models import *
 from product.models import Product, ProdutItemMaster
+from coupon_management.models import Coupon, CouponType, NewCoupon
 
 # Create your models here.
 STOCK_TYPES = (
@@ -33,6 +36,11 @@ class Van(models.Model):
 
     def __str__(self):
         return str(self.van_make)
+    
+    def get_total_vanstock(self):
+        product_count = VanProductStock.objects.filter(van=self,stock_type="opening_stock").aggregate(total_amount=Sum('count'))['total_amount'] or 0
+        coupon_count = VanCouponStock.objects.filter(van=self,stock_type="opening_stock").aggregate(total_amount=Sum('count'))['total_amount'] or 0
+        return product_count + coupon_count
     
 class Van_Routes(models.Model):
     van_route_id= models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -141,14 +149,14 @@ class VanCouponStock(models.Model):
         return f"{self.id}"
     
     
-class Offload(models.Model):
+class Offload(models.Model): #Product offload model
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_by = models.CharField(max_length=30, blank=True)
     created_date = models.DateTimeField(auto_now_add=True)
     modified_by = models.CharField(max_length=20, null=True, blank=True)
     modified_date = models.DateTimeField(auto_now=True ,blank=True, null=True)
     
-    salesman = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE, related_name='offload')
+    salesman = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE)
     van = models.ForeignKey(Van, on_delete=models.CASCADE)
     product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=0)
@@ -157,11 +165,18 @@ class Offload(models.Model):
     def __str__(self):
         return f"{self.id}"
     
-class OffloadItems(models.Model):
+class OffloadCoupon(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created_by = models.CharField(max_length=30, blank=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_by = models.CharField(max_length=20, null=True, blank=True)
+    modified_date = models.DateTimeField(auto_now=True ,blank=True, null=True)
     
-    product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE)
+    salesman = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE)
+    van = models.ForeignKey(Van, on_delete=models.CASCADE)
+    coupon = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=0)
+    stock_type = models.CharField(max_length=100,choices=STOCK_TYPES)
 
     def __str__(self):
         return f"{self.id}"

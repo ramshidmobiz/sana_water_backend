@@ -41,7 +41,7 @@
                             </thead>
                             <tbody>
                                 {% for supply in customer_supplies %}
-                                {% for item in supply.customersupplyitems_set.all %}
+                                {% comment %} {% for item in supply.customersupplyitems_set.all %} {% endcomment %}
                                 <tr>
                                     <td>{{ forloop.parentloop.counter }}</td>
                                     <td>{{ supply.customer.customer_name }}</td>
@@ -54,7 +54,7 @@
                                     <td>{% if supply.customer.sales_type == 'CREDIT' %} {{ credit_counts }} {% endif %}</td>
                                     <td>{{ item.amount }}</td>                                
                                 </tr>
-                                {% endfor %}
+                                {% comment %} {% endfor %} {% endcomment %}
                                 {% endfor %}
                             </tbody>
                         </table>

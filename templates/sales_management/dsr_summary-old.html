@@ -54,24 +54,24 @@
                     </div>
 
                     <div >
-                        <div class="card-body">
-                            <div class="row align-items-center">
-                                <div class="col-4">
-                                    <p><strong>Salesman: {{van_route.van.salesman.get_fullname}}</strong></p>
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-4">
+                                        <p><strong>Salesman: {{van_route.van.salesman.get_fullname}}</strong></p>
+                                    </div>
+                                    <div class="col-4">
+                                        <p><strong>Driver: {{van_route.van.driver.get_fullname}}</strong></p>
+                                    </div>
                                 </div>
-                                <div class="col-4">
-                                    <p><strong>Driver: {{van_route.van.driver.get_fullname}}</strong></p>
-                                </div>
+                                {% comment %} <div class="row align-items-center">
+                                    <div class="col-4">
+                                        <p>Route: {{van_route.routes.route_name}}</p>
+                                    </div>
+                                    <div class="col-4">
+                                        <p>Date: {{ filter_data.filter_date }}</p>
+                                    </div>
+                                </div> {% endcomment %}
                             </div>
-                            {% comment %} <div class="row align-items-center">
-                                <div class="col-4">
-                                    <p>Route: {{van_route.routes.route_name}}</p>
-                                </div>
-                                <div class="col-4">
-                                    <p>Date: {{ filter_data.filter_date }}</p>
-                                </div>
-                            </div> {% endcomment %}
-                        </div>
                     </div>
 
                     <div id="table-container">
@@ -148,7 +148,7 @@
                             <table  class="table table-bordered text-wrap" style="width: 100%">
                                 <thead>
                                     <tr>
-                                        <th class="text-center text-bold" colspan="10">Pending Bottle</th>
+                                        <th class="text-center text-bold" colspan="10">5 Gallon Related</th>
                                     </tr>
                                     <tr>
                                         <th scope="col">Sl No</th>
@@ -156,18 +156,28 @@
                                         <th scope="col">Building Name /Room No</th>
                                         <th scope="col">Mode Of Supply</th>
                                         <th scope="col">Qty Supplied</th>
-                                        <th scope="col">Bottles Pending</th>
+                                        <th scope="col">Empty Bottles Collected</th>
+                                        <th scope="col">Empty Bottles Pending</th>
+                                        <th scope="col">Coupons Collected</th>
+                                        {% comment %} <th scope="col">Pending Coupons</th> {% endcomment %}
+                                        <th scope="col">Amount Collected</th>
+                                        <th scope="col">Pending Amount</th>
                                     </tr>
                                 </thead>
                                <tbody>
-                                    {% for row in pending_bottle_customer_instances %}
+                                    {% for row in data %}
                                     <tr>
                                         <td>{{ forloop.counter }}</td>
                                         <td>{{ row.customer.customer_name }}</td>
                                         <td>{{ row.customer.building_name }}</td>
                                         <td>{{ row.mode_of_supply }}</td>                                      
                                         <td>{{ row.total_supplied_quantity }}</td>
+                                        <td>{{ row.empty_bottles_collected }}</td>
                                         <td>{{ row.empty_bottle_pending }}</td>
+                                        <td>{{ row.coupons_collected }}</td>
+                                        {% comment %} <td>{{ row.pending_coupons }}</td> {% endcomment %}
+                                        <td>{{ row.total_collected_amount }}</td>
+                                        <td>{{ row.total_pending_amount }}</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>

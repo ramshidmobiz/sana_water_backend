@@ -30,31 +30,45 @@
                         <table id="datatable-basic" class="table table-bordered text-nowrap" style="width:100%">
                             <thead>
                                 <tr>
-                                    <th scope="col">Sl.No</th>
                                     <th scope="col">Item Name</th>
+                                    <th scope="col">Current Stock</th>
                                     <th scope="col" style="width:30%">Qty Offloaded</th>
                                     
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for data in item_details %}
+                                {% for data in product_items %}
                                 <tr>
-                                    <td style="text-align:center;">{{forloop.counter}}</td>
                                     <td style="text-align:center;">{{data.product.product_name}}</td>
-                                    {% comment %} <td style="text-align:center;">{{data.count}}</td> {% endcomment %}
+                                    <td style="text-align:center;">{{data.count}}</td>
                                     <td style="text-align:center;">
-                                        <form method="post" action="{% url 'edit_item_count' data.product_id %}">
+                                        <form method="post" action="{% url 'edit_product_count' data.van.pk  data.product_id %}">
                                             {% csrf_token %}
-                                           
-                                                <div class="input-group"> 
-                                                    <input type="text" class="form-control" name="count" placeholder="Recipient's username" value="{{ data.count }}" aria-label="Recipient's username"
-                                                    aria-describedby="basic-addon2"> 
+                                            <div class="input-group"> 
+                                                <input type="text" class="form-control" name="count" placeholder="Recipient's username" value="{{ data.count }}" aria-label="Recipient's username"
+                                                aria-describedby="basic-addon2"> 
                                                 <div class="input-group-append">
                                                     <button class="btn btn-outline-success" type="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-save"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button>
                                                 </div>
+                                            </div>
+                                        </form>
+                                    </td>
+                                    
+                                {% endfor %}
+                                {% for data in coupon_items %}
+                                <tr>
+                                    <td style="text-align:center;">{{data.coupon.coupon_type.coupon_type_name}} {{data.coupon.book}}</td>
+                                    <td style="text-align:center;">{{data.count}}</td>
+                                    <td style="text-align:center;">
+                                        <form method="post" action="{% url 'edit_coupon_count' data.van.pk data.coupon.pk %}">
+                                            {% csrf_token %}
+                                            <div class="input-group"> 
+                                                <input type="text" class="form-control" name="count" placeholder="Recipient's username" value="{{ data.count }}" aria-label="Recipient's username"
+                                                aria-describedby="basic-addon2"> 
+                                                <div class="input-group-append">
+                                                    <button class="btn btn-outline-success" type="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-save"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></button>
                                                 </div>
-
-
+                                            </div>
                                         </form>
                                     </td>
                                     

@@ -1028,7 +1028,7 @@ class CompetitorsSerializer(serializers.ModelSerializer):
 class MarketShareSerializers(serializers.ModelSerializer):
     class Meta :
         model = MarketShare
-        fields = '__all__'
+        fields = ['product','customer','competitor','quantity','price']
         
 class OffloadVanSerializer(serializers.ModelSerializer):
     class Meta:

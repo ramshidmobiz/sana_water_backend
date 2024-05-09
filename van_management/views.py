@@ -1,12 +1,14 @@
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.timezone import now
+
+from coupon_management.models import CouponStock
 from .models import Van, Van_Routes, Van_License
 from accounts.models import CustomUser, Customers
 from master.models import EmirateMaster, RouteMaster
 from customer_care.models import DiffBottlesModel
 from client_management.models import Vacation,CustomerSupply
-from product.models import Staff_IssueOrders
+from product.models import ProductStock, Staff_IssueOrders
 
 
 from .forms import  *
@@ -705,7 +707,7 @@ def excel_download(request, route_id, def_date, trip):
 
         # Merge cells and write other information with borders
         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 16, 'border': 1})
-        worksheet.merge_range('A1:N2', f'National Water', merge_format)
+        worksheet.merge_range('A1:N2', f'Sana Water', merge_format)
         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
         worksheet.merge_range('A3:D3', f'Route:    {route.route_name}    {trip}', merge_format)
         worksheet.merge_range('E3:I3', f'Date: {def_date}', merge_format)
@@ -946,8 +948,11 @@ class VanProductStockList(View):
     
     
 def offload(request):
-    van_stock = VanProductStock.objects.all()
-    context = {'van_stock': van_stock}
+    instances = Van.objects.all()
+    
+    context = {
+        'instances': instances
+        }
     return render(request, 'van_management/offload.html', context)
 
 class View_Item_Details(View):
@@ -955,16 +960,62 @@ class View_Item_Details(View):
 
     @method_decorator(login_required)
     def get(self, request, pk, *args, **kwargs):
-        item_details = VanProductStock.objects.filter(product__id=pk)
-        context = {'item_details': item_details}
+        product_items = VanProductStock.objects.filter(van__pk=pk,count__gt=0)
+        coupon_items = VanCouponStock.objects.filter(van__pk=pk,count__gt=0)
+        
+        context = {
+            'product_items': product_items,
+            'coupon_items': coupon_items,
+            }
+        
         return render(request, self.template_name, context)   
-class EditItemView(View):
-    def post(self, request, product_id):
+    
+class EditProductView(View):
+    def post(self, request, van_id, product_id):
         count = request.POST.get('count')
-        item = VanProductStock.objects.filter(product=product_id).first()
-        if item:
-            item.count = count
+        item = VanProductStock.objects.get(van__pk=van_id,product=product_id)
+        if not int(count) > item.count :
+            item.count -= count
             item.save()
+            
+            product_stock = ProductStock.objects.get(branch=item.van.branch_id,product_name=item.product)
+            product_stock += count
+            product_stock.save()
+            
+            Offload.objects.create(
+                created_by=request.user.id,
+                created_date=datetime.now(),
+                salesman=item.van.salesman,
+                van=item.van,
+                product=item.product,
+                quantity=count,
+                stock_type=item.stock_type
+            )
+            
+        return HttpResponseRedirect(reverse('offload'))
+        
+class EditCouponView(View):
+    def post(self, request, van_id, coupon_id):
+        count = request.POST.get('count')
+        item = VanCouponStock.objects.get(van__pk=van_id,coupon=coupon_id)
+        if not int(count) > item.count :
+            item.count -= count
+            item.save()
+            
+            coupon = CouponStock.objects.get(couponbook__pk=coupon_id)
+            coupon.coupon_stock = "company"
+            coupon.save()
+            
+            OffloadCoupon.objects.create(
+                created_by=request.user.id,
+                created_date=datetime.now(),
+                salesman=item.van.salesman,
+                van=item.van,
+                coupon=item.coupon,
+                quantity=count,
+                stock_type=item.stock_type
+            )
+
         return HttpResponseRedirect(reverse('offload'))
     
 def salesman_requests(request):
