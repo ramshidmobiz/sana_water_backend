@@ -9,3 +9,5 @@ admin.site.register(Invoice,InvoiceAdmin)
 class InvoiceItemsAdmin(admin.ModelAdmin):
     list_display = ('invoice','product_items','qty','rate')
 admin.site.register(InvoiceItems,InvoiceItemsAdmin)
+
+admin.site.register(SuspenseCollection)

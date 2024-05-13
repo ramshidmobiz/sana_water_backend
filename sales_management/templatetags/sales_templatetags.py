@@ -3,13 +3,36 @@ import datetime
 from django import template
 from django.db.models import Q, Sum
 
+from client_management.models import CustomerCoupon, CustomerSupply
+from invoice_management.models import SuspenseCollection
+from sales_management.models import CollectionPayment
+from van_management.models import Expense
+
 register = template.Library()
 
-# @register.simple_tag
-# def get_salesman_name(staff_id):
-#     try:
-#         # Ensure to sanitize and validate staff_id if needed
-#         salesman = CustomUser.objects.get(id=staff_id)
-#         return salesman.get_full_name()
-#     except CustomUser.DoesNotExist:
-#         return "--"
+@register.simple_tag
+def get_suspense_collection(date,salesman):
+    
+    expenses_instanses = Expense.objects.filter(date_created=date,van__salesman__pk=salesman)
+    today_expense = expenses_instanses.aggregate(total_expense=Sum('amount'))['total_expense'] or 0
+    
+    # cash sales amount collected
+    supply_amount_collected = CustomerSupply.objects.filter(created_date__date=date,salesman__pk=salesman,customer__sales_type="CASH").aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
+    coupon_amount_collected = CustomerCoupon.objects.filter(created_date__date=date,salesman__pk=salesman,customer__sales_type="CASH").aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
+    cash_sales_amount_collected = supply_amount_collected + coupon_amount_collected
+    
+    # collection details
+    dialy_collections = CollectionPayment.objects.filter(created_date__date=date,salesman_id=salesman,amount_received__gt=0)
+    
+    credit_sales_amount_collected = dialy_collections.aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
+    total_sales_amount_collected = cash_sales_amount_collected + credit_sales_amount_collected
+    net_payble = total_sales_amount_collected - today_expense
+    
+    amount_paid = SuspenseCollection.objects.filter(date=date,salesman=salesman).aggregate(total_amount=Sum('amount_paid'))['total_amount'] or 0
+    amount_balance = net_payble - amount_paid
+    
+    return {
+        'opening_balance': net_payble,
+        'amount_paid': amount_paid,
+        'amount_balance': amount_balance,
+    }

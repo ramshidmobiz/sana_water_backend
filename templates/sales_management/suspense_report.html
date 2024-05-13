@@ -2,6 +2,7 @@
 {% block title %} Suspense Report {% endblock %}
 {% block content %}
     {% load static %}
+    {% load sales_templatetags %}
 
     <!-- Page Header -->
     <div class="page-header-breadcrumb d-md-flex d-block align-items-center justify-content-between ">
@@ -47,8 +48,7 @@
                                     <thead>
                                         <tr>
                                             <th>Sl No</th>
-                                            <th>Created Date</th>
-                                            <th>Invoice Type</th>
+                                            <th>Van</th>
                                             <th>Route</th>
                                             <th>Salesman</th>
                                             <th>Opening Suspense</th>
@@ -59,29 +59,27 @@
                                     </thead>
                                     <tbody>
                                         {% load el_pagination_tags %}
-                                        {% paginate 20 invoices %}
-                                        {% for invoice in invoices %}
+                                        {% paginate 20 van_instances %}
+                                        {% for van in van_instances %}
                                             <tr>
                                                 <td>{{ forloop.counter }}</td>
-                                                <td>{{ invoice.created_date }}</td>
-                                                <td>{{ invoice.invoice.invoice_type }}</td>                                       
-                                                <td>{{ invoice.customer.routes }}</td>
-                                                <td>{{ invoice.customer.sales_staff.username }}</td>
-                                                <td>{{ invoice.amount }}</td>
-                                                <!-- Iterate over related SuspenseCollection objects -->
-                                                {% for suspense_collection in suspense_collections %}
-                                                    <!-- Display amount_paid and amount_balance for the current invoice -->
-                                                    <td>{{ suspense_collection.amount_paid }}</td>
-                                                    <td>{{ suspense_collection.amount_balance }}</td>
-                                                {% endfor %}
+                                                <td>{{ van.plate }}</td>
+                                                <td>{{ van.get_van_route }}</td>                                       
+                                                <td>{{ van.salesman.get_fullname }}</td>
+                                                {% get_suspense_collection filter_data.start_date van.salesman.pk as suspense_collection %}
+                                                <td>{{ suspense_collection.opening_balance }}</td>
+                                                <td>{{ suspense_collection.amount_paid }}</td>
+                                                <td>{{ suspense_collection.amount_balance }}</td>
                                                 <td>
+                                                    {% if suspense_collection.opening_balance != suspense_collection.amount_paid %}
                                                     <div class="ms-auto">
-                                                        <a href="{% url 'create_suspense_collection' invoice.id %}">
+                                                        <a href="{% url 'create_suspense_collection' van.pk filter_data.start_date %}">
                                                             <button type="button" class="btn btn-success btn-wave text-end d-flex me-4 my-auto">
                                                                 <i class="bi bi-plus-circle me-1"></i>Create
                                                             </button>
                                                         </a>
                                                     </div>
+                                                    {% endif %}
                                                 </td>
                                             </tr>
                                         {% endfor %}

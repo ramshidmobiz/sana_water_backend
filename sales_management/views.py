@@ -1,6 +1,7 @@
 # views.py
 import json
 import random
+from decimal import Decimal
 from datetime import datetime, timedelta
 from apiservices.views import find_customers
 from van_management.models import *
@@ -2172,76 +2173,70 @@ def suspense_report(request):
         start_date = datetime.today().date()
 
     filter_data['start_date'] = start_date.strftime('%Y-%m-%d')
+    
+    van_instances = Van.objects.all()
+    if request.user.branch_id :
+        van_instances = van_instances.filter(branch_id=request.user.branch_id)
 
-    invoices = InvoiceDailyCollection.objects.filter(created_date__gte=start_date)\
-                                              .select_related('customer__routes')\
-                                              .select_related('customer__sales_staff')
-    print("invoices", invoices)
-    suspense_collections = SuspenseCollection.objects.filter(created_date__gte=start_date)
-    print("suspense_collections", suspense_collections)
-
-    # Calculate total opening suspense
-    total_opening_suspense = invoices.aggregate(total_opening_suspense=Sum('amount'))['total_opening_suspense'] or 0
-
-    # Calculate total paid
-    total_paid = suspense_collections.aggregate(total_paid=Sum('amount_paid'))['total_paid'] or 0
-
-    # Calculate total closing suspense
-    total_closing_suspense = suspense_collections.aggregate(total_closing_suspense=Sum('amount_balance'))['total_closing_suspense'] or 0
 
     context = {
-        'invoices': invoices,
+        'van_instances': van_instances,
         'filter_data': filter_data,
-        'suspense_collections': suspense_collections,
-        'total_opening_suspense': total_opening_suspense,
-        'total_paid': total_paid,
-        'total_closing_suspense': total_closing_suspense,
     }
 
     return render(request, 'sales_management/suspense_report.html', context)
 
-def create_suspense_collection(request, id):
-    invoice = get_object_or_404(InvoiceDailyCollection, id=id)
+def create_suspense_collection(request,id,date):
+    van_instance = Van.objects.get(pk=id)
+    salesman = van_instance.salesman
+    
+    expenses_instanses = Expense.objects.filter(date_created=date,van__pk=id)
+    today_expense = expenses_instanses.aggregate(total_expense=Sum('amount'))['total_expense'] or 0
+    
+    # cash sales amount collected
+    supply_amount_collected = CustomerSupply.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CASH").aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
+    coupon_amount_collected = CustomerCoupon.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CASH").aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
+    cash_sales_amount_collected = supply_amount_collected + coupon_amount_collected
+    
+    # collection details
+    dialy_collections = CollectionPayment.objects.filter(created_date__date=date,salesman_id=salesman,amount_received__gt=0)
+    
+    credit_sales_amount_collected = dialy_collections.aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
+    total_sales_amount_collected = cash_sales_amount_collected + credit_sales_amount_collected
+    net_payble = total_sales_amount_collected - today_expense
+    
+    amount_paid = SuspenseCollection.objects.filter(date=date,salesman=salesman).aggregate(total_amount=Sum('amount_paid'))['total_amount'] or 0
+    amount_payeble = net_payble - amount_paid
     
     if request.method == 'POST':
-        form = SuspenseCollectionForm(request.POST)
-        if form.is_valid():
-            # Fetch the total expense for the given route and van (assuming they are available in the invoice)
-            total_expense = Expense.objects.filter(
-                route=invoice.customer.routes,
-                expense_date=invoice.created_date.date()  # Assuming expense_date is a DateField
-            ).aggregate(total_amount=Sum('amount'))['total_amount'] or 0
-            
-            # Calculate net_payeble_amount
-            cash_sale_amount = invoice.invoice.amout_total if invoice.invoice.invoice_type == 'cash_invoice' else 0
-            credit_sale_amount = invoice.invoice.amout_total if invoice.invoice.invoice_type == 'credit_invoice' else 0
-            net_payeble_amount = cash_sale_amount + credit_sale_amount - total_expense
+        form = SuspenseCollectionForm(request.POST,initial={'payable_amount': amount_payeble})
+        if Decimal(request.POST.get("amount_paid")) <= amount_payeble :
+            if form.is_valid():
+                suspense_collection = form.save(commit=False)
+                suspense_collection.date = date  # Set the created_date
+                suspense_collection.created_date = datetime.today().date()
+                suspense_collection.salesman = salesman
+                suspense_collection.route = Van_Routes.objects.filter(van=van_instance).first().routes
+                suspense_collection.cash_sale_amount = cash_sales_amount_collected
+                suspense_collection.credit_sale_amount = credit_sales_amount_collected
+                suspense_collection.expense = today_expense
+                suspense_collection.net_payeble_amount = amount_payeble  # Set the net_payeble_amount field
+                # Calculate amount_balance
+                amount_paid = form.cleaned_data['amount_paid']
+                amount_balance = amount_payeble - amount_paid
+                suspense_collection.amount_balance = amount_balance
+                suspense_collection.save()
 
-            suspense_collection = form.save(commit=False)
-            suspense_collection.date = timezone.now()  # Set the created_date
-            suspense_collection.created_date = invoice.created_date 
-            suspense_collection.salesman = invoice.customer.sales_staff
-            suspense_collection.route = invoice.customer.routes
-            suspense_collection.cash_sale_amount = cash_sale_amount
-            suspense_collection.credit_sale_amount = credit_sale_amount
-            suspense_collection.expense = total_expense
-            suspense_collection.net_payeble_amount = net_payeble_amount  # Set the net_payeble_amount field
-            # Calculate amount_balance
-            amount_paid = form.cleaned_data['amount_paid']
-            amount_balance = invoice.amount - amount_paid
-            suspense_collection.amount_balance = amount_balance
-            suspense_collection.save()
-            print("SuspenseCollection instance saved successfully:", suspense_collection)
-
-            return redirect('suspense_report')  # Redirect to the suspense_report URL
+                return redirect('suspense_report')  # Redirect to the suspense_report URL
+            else:
+                print("Form errors:", form.errors)
         else:
-            print("Form errors:", form.errors)
-
+            print("graeterthan")
     else:
-        form = SuspenseCollectionForm()
+        form = SuspenseCollectionForm(initial={'payable_amount': amount_payeble})
         print("form",form)
     
-    return render(request, 'sales_management/create_suspense_collection.html', {'form': form, 'invoice': invoice})
+    return render(request, 'sales_management/create_suspense_collection.html', {'form': form})
 
 
 from django.utils import timezone

@@ -27,6 +27,13 @@
                             <!--row 1-->
                             <div class="col-md-6">
                                 <div class="form-group required">
+                                    <label class='control-label'>Amount Payyable</label>
+                                    {{ form.payable_amount }}
+                                    <span style="color: red;">{{ form.payable_amount.errors }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group required">
                                     <label class='control-label'>Amount to be Paid</label>
                                     {{ form.amount_paid }}
                                     <span style="color: red;">{{ form.amount_paid.errors }}</span>

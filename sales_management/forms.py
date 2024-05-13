@@ -142,6 +142,7 @@ class CreditCouponCustomerSaleForm(forms.ModelForm):
         fields = ['qty_needed', 'no_of_coupons', 'coupon_variations', 'empty_bottles', 'collected_bottles', 'bottle_variations']
 
 class SuspenseCollectionForm(forms.ModelForm):
+    payable_amount = forms.DecimalField(label='Payable Amount', required=True,widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Payable Amount', 'readonly': 'readonly'}))
     
     class Meta:
         model = SuspenseCollection

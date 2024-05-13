@@ -43,6 +43,9 @@ class Van(models.Model):
         coupon_count = VanCouponStock.objects.filter(van=self,stock_type="opening_stock").aggregate(total_amount=Sum('count'))['total_amount'] or 0
         return product_count + coupon_count
     
+    def get_van_route(self):
+        return Van_Routes.objects.filter(van=self).first().routes.route_name
+    
 class Van_Routes(models.Model):
     van_route_id= models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_by = models.CharField(max_length=20,  blank=True)
