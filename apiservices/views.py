@@ -1683,6 +1683,8 @@ from collections import defaultdict
 @api_view(['GET'])
 def product_items(request):
     if (instances:=ProdutItemMaster.objects.all()).exists():
+        if request.GET.get("non_coupon"):
+            instances = instances.exclude(category__category_name="Coupons")
         serializer = ProdutItemMasterSerializer(instances, many=True, context={"request": request})
 
         status_code = status.HTTP_200_OK
@@ -2513,6 +2515,14 @@ class create_customer_supply(APIView):
                     if suply_items.product.product_name == "5 Gallon" :
                         total_fivegallon_qty += Decimal(suply_items.quantity)
                         
+                        empty_bottle, _ = VanProductStock.objects.get_or_create(
+                            product=suply_items.product,
+                            van__salesman=request.user,
+                            stock_type="emptycan",
+                        )
+                        empty_bottle.count += collected_empty_bottle
+                        empty_bottle.save()
+                        
                     vanstock = VanProductStock.objects.get(product=suply_items.product,stock_type="opening_stock",van__salesman=request.user)
                     vanstock.count -= suply_items.quantity
                     vanstock.save()
@@ -3078,7 +3088,6 @@ class VanStockAPI(APIView):
 class CouponCountList(APIView):
 
     def get(self, request, pk, format=None):
-        print("View accessed with customer_id:ssssssssssssssssssssssssssss", pk)  # Print statement for debugging
         try:
             customer = Customers.objects.get(customer_id=pk)
             customers = CustomerCouponStock.objects.filter(customer=customer)

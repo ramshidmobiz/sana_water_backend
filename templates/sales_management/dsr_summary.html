@@ -123,10 +123,11 @@
                                 <tbody>
                                     {% for van_data in van_instances %}
                                     {% for product_data in products %}
+                                    {% get_van_product_wise_stock van_data.pk product_data.pk as stock_details %}
+                                    {% if stock_details.opening_stock > 0 or stock_details.requested_count > 0 or stock_details.issued_count > 0 or stock_details.empty_bottle_collected > 0 or stock_details.sold_count > 0 or stock_details.return_count > 0 or stock_details.offload_count > 0 or stock_details.closing_count > 0 %}
                                     <tr>
                                         <td style="text-align:center;">{{forloop.counter}}</td>
                                         <td style="text-align:center;">{{product_data.product_name}}</td>
-                                        {% get_van_product_wise_stock van_data.pk product_data.pk as stock_details %}
                                         <td style="text-align:center;">{{stock_details.opening_stock}}</td>
                                         <td style="text-align:center;">{{stock_details.requested_count}}</td>
                                         <td style="text-align:center;">{{stock_details.issued_count}}</td>
@@ -136,6 +137,7 @@
                                         <td style="text-align:center;">{{stock_details.offload_count}}</td>
                                         <td style="text-align:center;">{{stock_details.closing_count}}</td>
                                     </tr>
+                                    {% endif %}
                                     {% endfor %} 
                                     {% endfor %}
                                 </tbody>
@@ -335,6 +337,89 @@
                             <table  class="table table-bordered text-wrap" style="width: 100%">
                                 <thead>
                                     <tr>
+                                        <th class="text-center text-bold" colspan="7">Credit Outstanding</th>
+                                    </tr>
+                                    <tr>
+                                        <th scope="col">Credit Outstanding</th>
+                                        <th scope="col">Credit Outstanding Collection</th>
+                                        <th scope="col">Net Outstanding</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>{{outstanding_credit_notes_total_amount}}</td>
+                                        <td>{{outstanding_credit_notes_received_amount}}</td>
+                                        <td>{{outstanding_credit_notes_balance}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="table-container">
+                        <div class="card-body">
+                            <table  class="table table-bordered text-wrap" style="width: 100%">
+                                <thead>
+                                    <tr>
+                                        <th class="text-center text-bold" colspan="3">5 Gallon Supplied Retes</th>
+                                    </tr>
+                                    <tr>
+                                        <th scope="col">Rate</th>
+                                        <th scope="col">Credit</th>
+                                        <th scope="col">Cash</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for rate in five_gallon_rates %}
+                                    <tr>
+                                        <td>{{ rate }}</td>
+                                        {% get_five_gallon_ratewise_count rate filter_data.filter_date salesman_id as ratewise_count %}
+                                        <td>{{ ratewise_count.credit_amount_count }}</td>
+                                        <td>{{ ratewise_count.debit_amount_count }}</td>
+                                    </tr>
+                                {% endfor %} 
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="table-container">
+                        <div class="card-body">
+                            <table  class="table table-bordered text-wrap" style="width: 100%">
+                                <thead>
+                                    <tr>
+                                        <th class="text-center text-bold" colspan="6">Outstanding Amount Collected</th>
+                                    </tr>
+                                    <tr>
+                                        <th scope="col">Sl.no</th>
+                                        <th scope="col">Customer Name</th>
+                                        <th scope="col">Building Name/Room no</th>
+                                        <th scope="col">Customer Type</th>
+                                        <th scope="col">Amount Collected</th>
+                                        <th scope="col">Mode</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for instance in dialy_collections %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}</td>
+                                        <td>{{ instance.customer.customer_name }}</td>
+                                        <td>{{ instance.customer.building_name }} {% if instance.customer.door_house_no %} / {{ instance.customer.door_house_no }} {% endif %}</td>
+                                        <td>{{ instance.customer.customer_type }}</td>
+                                        <td>{{ instance.amount_received }}</td>
+                                        <td>{{ instance.payment_method }}</td>
+                                    </tr>
+                                {% endfor %} 
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="table-container">
+                        <div class="card-body">
+                            <table  class="table table-bordered text-wrap" style="width: 100%">
+                                <thead>
+                                    <tr>
                                         <th class="text-center text-bold" colspan="3">Expense</th>
                                     </tr>
                                     <tr>
@@ -361,19 +446,64 @@
                             <table  class="table table-bordered text-wrap" style="width: 100%">
                                 <thead>
                                     <tr>
-                                        <th class="text-center text-bold" colspan="3">Suspense</th>
+                                        <th class="text-center text-bold" colspan="6">Todays Sales and Collection Related</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <th>Cash Sales Amount Collected</th>
+                                        <td>{{cash_sales_amount_collected}}</td>
+                                        <th>No.of Cheque Collected</th>
+                                        <td>{{no_of_collected_cheque}}</td>
+                                        <th>Cash Sales</th>
+                                        <td>{{total_cash_sales_count}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Credit Amount Collected</th>
+                                        <td>{{credit_sales_amount_collected}}</td>
+                                        <th>Cheque Amount</th>
+                                        <td>{{collected_cheque_amount}}</td>
+                                        <th>Credit Sales</th>
+                                        <td>{{total_credit_sales_count}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Total Amount Collected</th>
+                                        <td>{{total_sales_amount_collected}}</td>
+                                        <th></th>
+                                        <td></td>
+                                        <th>Total Sales</th>
+                                        <td>{{total_sales_count}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="table-container">
+                        <div class="card-body text-center">
+                            <p><strong>Balance Cash in Hand:</strong>  {{balance_in_hand}}/- </p>
+                            <p><strong>Net Payyable:</strong>  {{net_payble}}/- </p>
+                        </div>
+                    </div>
+
+                    <div id="table-container">
+                        <div class="card-body">
+                            <table  class="table table-bordered text-wrap" style="width: 100%">
+                                <thead>
+                                    <tr>
+                                        <th class="text-center text-bold" colspan="5">Suspense</th>
                                     </tr>
                                     <tr>
                                         <th>Opening</th>
-                                        <th>Paid</th>
+                                        <th>Paid</th> 
                                         <th>Closing</th> 
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>{{ suspense_opening_amount }}</td>
-                                        <td>{{ suspense_paid_amount }}</td>
-                                        <td>{{ suspense_balance_amount }}</td>
+                                        <td>{{ net_payble }}</td>
+                                        <td></td>
+                                        <td></td>
                                     </tr>
                                 </tbody>
                             </table>

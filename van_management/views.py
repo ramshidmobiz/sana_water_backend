@@ -892,18 +892,17 @@ class VanStockList(View):
         van_stock = VanProductStock.objects.all()
         requested_quantity=CustomerSupply.objects.all()
         issued_orders = Staff_IssueOrders.objects.filter(salesman_id=request.user.id)
-        print("issued_orders",issued_orders)
-        offload=OffloadVan.objects.all()
+        
+        offload=Offload.objects.all()
         morning_stock_count=0
         evening_stock_count=0
         salesman_id=request.user.id
-        print("salesman_id",salesman_id)
+        
         if request.user.is_authenticated and request.user.user_type == "Salesman":
             instances = instances.filter(van__salesman_id=request.user.id)
             van_stock = van_stock.filter(van__salesman_id=request.user.id)
             for v in van_stock:
                 pro=v.product.id
-                print("pro",pro)
                 morning_stocks = van_stock.filter(product=pro,van__created_date__time__lt=time(12, 0, 0))
                 
                 morning_stock_count = morning_stocks.filter(van__salesman_id=request.user.id,).count()
@@ -936,7 +935,7 @@ class VanProductStockList(View):
     def get(self, request, *args, **kwargs):
         products = ProdutItemMaster.objects.filter()
         van_instances = Van.objects.all()
-        van_product_stock = VanProductStock.objects.all()
+        van_product_stock = VanProductStock.objects.filter()
     
         context = {
             'products': products,
@@ -975,11 +974,11 @@ class EditProductView(View):
         count = request.POST.get('count')
         item = VanProductStock.objects.get(van__pk=van_id,product=product_id)
         if not int(count) > item.count :
-            item.count -= count
+            item.count -= int(count)
             item.save()
             
             product_stock = ProductStock.objects.get(branch=item.van.branch_id,product_name=item.product)
-            product_stock += count
+            product_stock.quantity += int(count)
             product_stock.save()
             
             Offload.objects.create(
@@ -988,7 +987,7 @@ class EditProductView(View):
                 salesman=item.van.salesman,
                 van=item.van,
                 product=item.product,
-                quantity=count,
+                quantity=int(count),
                 stock_type=item.stock_type
             )
             
@@ -999,7 +998,7 @@ class EditCouponView(View):
         count = request.POST.get('count')
         item = VanCouponStock.objects.get(van__pk=van_id,coupon=coupon_id)
         if not int(count) > item.count :
-            item.count -= count
+            item.count -= int(count)
             item.save()
             
             coupon = CouponStock.objects.get(couponbook__pk=coupon_id)
@@ -1012,7 +1011,7 @@ class EditCouponView(View):
                 salesman=item.van.salesman,
                 van=item.van,
                 coupon=item.coupon,
-                quantity=count,
+                quantity=int(count),
                 stock_type=item.stock_type
             )
 

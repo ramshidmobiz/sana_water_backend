@@ -14,6 +14,7 @@ STOCK_TYPES = (
         ('return', 'Return'),
         ('closing', 'Closing'),
         ('damage', 'Damage'),
+        ('emptycan','Empty Can')
     )
 
 class Van(models.Model):
