@@ -790,8 +790,8 @@ class CouponSaleView(View):
 
             not_found = not user_li.exists()
 
-        # else:
-            # user_li = CustomerCoupons.objects.filter()
+        else:
+            user_li = CustomerCoupons.objects.filter()
 
         balance_coupons = user_li
         print(balance_coupons,'balance_coupons')
