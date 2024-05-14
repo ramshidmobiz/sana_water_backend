@@ -2,6 +2,7 @@
 {% block title %} Products List {% endblock %}
 {% block content %}
 {% load static %}
+{% load purchase_template_tags %}
 <!-- End::app-sidebar -->
 <!-- Page Header -->
 <div class="page-header-breadcrumb d-md-flex d-block align-items-center justify-content-between ">
@@ -51,8 +52,8 @@
                                 <tr>
                                     <td style="text-align:center;">{{forloop.counter}}</td>
                                     <td style="text-align:left;">{{data.product_id}}</td>
-                                    {% get_van_current_stock data.created %}
-                                    <td style="text-align:center;">{{data.count}}</td>
+                                    {% get_van_current_stock data.staff_order_id.created_by data.product_id.pk as current_stock %}
+                                    <td style="text-align:center;">{{current_stock}}</td>
                                     <td style="text-align:center;">{{data.count}}</td>
                                     <td style="text-align:center;">{{data.issued_qty}}</td>
                                     <td>

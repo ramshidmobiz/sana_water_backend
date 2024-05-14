@@ -424,7 +424,7 @@ def staff_issue_orders_details_list(request,staff_order_id):
 def staffIssueOrdersCreate(request, staff_order_details_id):
     issue = get_object_or_404(Staff_Orders_details, staff_order_details_id=staff_order_details_id)
     van = Van.objects.get(salesman_id__id=issue.staff_order_id.created_by)
-    vanstock_count = VanProductStock.objects.filter(van=van,product__product_name="5 Gallon",stock_type__in=["opening_stock","closing"]).aggregate(total_amount=Sum('count'))['total_amount']
+    vanstock_count = VanProductStock.objects.filter(van=van,product__product_name="5 Gallon",stock_type__in=["opening_stock","closing"]).aggregate(total_amount=Sum('count'))['total_amount'] or 0
     
     product_stock = ProductStock.objects.get(product_name=issue.product_id)
     stock_quantity = issue.count

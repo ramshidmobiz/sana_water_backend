@@ -5,7 +5,8 @@ from django.db.models import Q, Sum
 
 from accounts.models import CustomUser
 from master.models import CategoryMaster
-from van_management.models import Van_Routes
+from product.models import ProdutItemMaster
+from van_management.models import Van_Routes, VanCouponStock, VanProductStock
 
 register = template.Library()
 
@@ -31,4 +32,16 @@ def get_categories():
         return CategoryMaster.objects.all()
     except :
         return "--"
-
+    
+@register.simple_tag
+def get_van_current_stock(van,product):
+    try :
+        product = ProdutItemMaster.objects.get(pk=product)
+        if product.category.category_name=="Coupons":
+            count = VanCouponStock.objects.filter(van__pk=van,coupon__coupon_type__coupon_type_name=product.product_name,stock_type__in=["opening_stock","closing"]).aggregate(total_amount=Sum('count'))['total_amount']
+        else:
+            count = VanProductStock.objects.filter(van__pk=van,product=product,stock_type__in=["opening_stock","closing"]).aggregate(total_amount=Sum('count'))['total_amount']
+    except:
+        count = 0
+    
+    return count
