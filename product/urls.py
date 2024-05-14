@@ -20,8 +20,6 @@ urlpatterns = [
     path('defaultprice_edit/<str:pk>', Defaultprice_Edit.as_view(), name='defaultprice_edit'),
     path('defaultprice_delete/<str:product_name>', Defaultprice_Delete.as_view(), name='defaultprice_delete'),
     
-    
-
     path('staff-issue-orders-list',staff_issue_orders_list, name='staff_issue_orders_list'),
     path('staff-issue-order-details/<str:staff_order_id>/', staff_issue_orders_details_list, name='staff_issue_orders_details_list'),
     

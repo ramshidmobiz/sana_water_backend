@@ -984,7 +984,24 @@ def customer_outstanding_list(request):
     :param request:
     :return: Customer Outstanding list view
     """
+    filter_data = {}
     reports = CustomerOutstandingReport.objects.all()
+    
+    query = request.GET.get("q")
+    
+    if query:
+
+        reports = reports.filter(
+            Q(customer__customer_name__icontains=query) |
+            Q(customer__customer_id__icontains=query) |
+            Q(customer__mobile_no__icontains=query) |
+            Q(customer__whats_app__icontains=query) |
+            Q(customer__email_id__icontains=query) |
+            Q(building_name__invoice_id__icontains=query) 
+        )
+        title = "Outstanding List - %s" % query
+        filter_data['q'] = query
+    
     route_filter = request.GET.get('route_name')
     if route_filter:
             reports = reports.filter(customer__routes__route_name=route_filter)
@@ -1013,13 +1030,15 @@ def customer_outstanding_list(request):
             customer_data[customer_id]['coupons'] += report.value
             
     context = {
-        'customer_data': customer_data.values(),
+        'instances': customer_data.values(),
         'page_name' : 'Customer Outstanding List',
         'page_title' : 'Customer Outstanding List',
         'customer_pk': request.GET.get("customer_pk"),
         
         'is_customer_outstanding': True,
-        'is_need_datetime_picker': True,'route_li': route_li,
+        'is_need_datetime_picker': True,
+        'route_li': route_li,
+        'filter_data': filter_data,
     }
 
     return render(request, 'client_management/customer_outstanding/list.html', context)

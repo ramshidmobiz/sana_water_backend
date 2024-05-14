@@ -423,6 +423,8 @@ def staff_issue_orders_details_list(request,staff_order_id):
 @transaction.atomic
 def staffIssueOrdersCreate(request, staff_order_details_id):
     issue = get_object_or_404(Staff_Orders_details, staff_order_details_id=staff_order_details_id)
+    van = Van.objects.get(salesman_id__id=issue.staff_order_id.created_by)
+    vanstock_count = VanProductStock.objects.filter(van=van,product__product_name="5 Gallon",stock_type__in=["opening_stock","closing"]).aggregate(total_amount=Sum('count'))['total_amount']
     
     product_stock = ProductStock.objects.get(product_name=issue.product_id)
     stock_quantity = issue.count
@@ -433,69 +435,85 @@ def staffIssueOrdersCreate(request, staff_order_details_id):
             try:
                 with transaction.atomic():
                     quantity_issued = form.cleaned_data.get('quantity_issued')
-                    if 0 < int(quantity_issued) <= int(product_stock.quantity):
-                        # Creating Staff Issue Order
-                        van = Van.objects.get(salesman_id__id=issue.staff_order_id.created_by)
-                        data = form.save(commit=False)
-                        # data.created_by = request.user.id
-                        data.modified_by = request.user.id
-                        data.modified_date = datetime.now()
-                        data.created_date = datetime.now()
-                        data.product_id = issue.product_id
-                        data.staff_Orders_details_id = issue
-                        data.stock_quantity = stock_quantity
-                        data.quantity_issued = int(data.quantity_issued) + int(quantity_issued)
-                        data.van = van
-                        data.save()
-                        
-                        # Updating ProductStock
-                        product_stock.quantity -= int(quantity_issued)
-                        product_stock.save()
-                        
-                        # Updating VanStock and VanProductStock
-                        # van = Van.objects.get(salesman_id__id=form.cleaned_data.get('salesman_id').pk)
-                        vanstock = VanStock.objects.create(
-                            created_by=request.user.id,
-                            created_date=datetime.now(),
-                            modified_by=request.user.id,
-                            modified_date=datetime.now(),
-                            van=van,
-                            stock_type='opening_stock',
-                        )
-                        VanProductItems.objects.create(
-                            product=issue.product_id,
-                            count=int(quantity_issued),
-                            van_stock=vanstock,
-                        )
-                        
-                        if VanProductStock.objects.filter(product=issue.product_id,stock_type='opening_stock',van=van).exists():
-                            van_product_stock = VanProductStock.objects.get(product=issue.product_id,stock_type='opening_stock',van=van)
-                            van_product_stock.count += int(quantity_issued)
-                            van_product_stock.save()
+                    
+                    if issue.product_id.product_name == "5 Gallon":
+                        if int(quantity_issued) != 0 and int(quantity_issued) + vanstock_count <= van.bottle_count:
+                            van_limit=True
                         else:
-                            van_product_stock = VanProductStock.objects.create(
-                                product=issue.product_id,
-                                stock_type='opening_stock',
+                            van_limit=False
+                    else:
+                        van_limit = True
+                        
+                    if van_limit:
+                        if 0 < int(quantity_issued) <= int(product_stock.quantity):
+                            # Creating Staff Issue Order
+                            data = form.save(commit=False)
+                            # data.created_by = request.user.id
+                            data.modified_by = request.user.id
+                            data.modified_date = datetime.now()
+                            data.created_date = datetime.now()
+                            data.product_id = issue.product_id
+                            data.staff_Orders_details_id = issue
+                            data.stock_quantity = stock_quantity
+                            data.quantity_issued = int(data.quantity_issued) + int(quantity_issued)
+                            data.van = van
+                            data.save()
+                            
+                            # Updating ProductStock
+                            product_stock.quantity -= int(quantity_issued)
+                            product_stock.save()
+                            
+                            # Updating VanStock and VanProductStock
+                            # van = Van.objects.get(salesman_id__id=form.cleaned_data.get('salesman_id').pk)
+                            vanstock = VanStock.objects.create(
+                                created_by=request.user.id,
+                                created_date=datetime.now(),
+                                modified_by=request.user.id,
+                                modified_date=datetime.now(),
                                 van=van,
-                                count=int(quantity_issued)
-                                )
-                        
-                        issue.issued_qty += int(quantity_issued)
-                        issue.save()
-                        
-                        response_data = {
-                            "status": "true",
-                            "title": "Successfully Created",
-                            "message": "created successfully.",
-                            'redirect': 'true',
-                            "redirect_url": reverse('staff_issue_orders_list')
-                        }
+                                stock_type='opening_stock',
+                            )
+                            VanProductItems.objects.create(
+                                product=issue.product_id,
+                                count=int(quantity_issued),
+                                van_stock=vanstock,
+                            )
+                            
+                            if VanProductStock.objects.filter(product=issue.product_id,stock_type='opening_stock',van=van).exists():
+                                van_product_stock = VanProductStock.objects.get(product=issue.product_id,stock_type='opening_stock',van=van)
+                                van_product_stock.count += int(quantity_issued)
+                                van_product_stock.save()
+                            else:
+                                van_product_stock = VanProductStock.objects.create(
+                                    product=issue.product_id,
+                                    stock_type='opening_stock',
+                                    van=van,
+                                    count=int(quantity_issued)
+                                    )
+                            
+                            issue.issued_qty += int(quantity_issued)
+                            issue.save()
+                            
+                            response_data = {
+                                "status": "true",
+                                "title": "Successfully Created",
+                                "message": "created successfully.",
+                                'redirect': 'true',
+                                "redirect_url": reverse('staff_issue_orders_list')
+                            }
+                        else:
+                            response_data = {
+                                "status": "false",
+                                "title": "Failed",
+                                "message": f"No stock available in {product_stock.product_name}, only {product_stock.quantity} left",
+                            }
                     else:
                         response_data = {
                             "status": "false",
                             "title": "Failed",
-                            "message": f"No stock available in {product_stock.product_name}, only {product_stock.quantity} left",
+                            "message": f"Over Load! currently {vanstock_count} Can Loaded, Max 5 Gallon Limit is {van.bottle_count}",
                         }
+                        
             except IntegrityError as e:
                 # Handle database integrity error
                 response_data = {
@@ -525,6 +543,8 @@ def staffIssueOrdersCreate(request, staff_order_details_id):
         context = {
             'form': form,
             'issue_instance': issue,
+            'max_van_bottle_count': van.bottle_count,
+            'van_current_stock_bottle_count': vanstock_count,
         }
         return render(request, 'products/coupon_issue_orders_create.html', context)
 

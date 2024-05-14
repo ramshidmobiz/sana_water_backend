@@ -4,7 +4,7 @@ from accounts.models import CustomUser, Customers
 from client_management.models import CustomerOutstanding, OutstandingAmount, CustomerOutstandingReport
 
 # Read the Excel file
-file_path = '/home/ra/Downloads/outstanding_update.xlsx'
+file_path = '/home/ra/Downloads/outstanding_update_monday.xlsx'
 data = pd.read_excel(file_path)
 print("File path:", file_path)
 print("DataFrame columns:", data.columns)
@@ -56,7 +56,7 @@ def populate_models_from_excel(data):
         )
 
         # Update or create CustomerOutstandingReport
-        report, created = CustomerOutstandingReport.objects.update_or_create(
+        report, created = CustomerOutstandingReport.objects.get_or_create(
             customer=customer,
             product_type='amount',
             defaults={'value': amount}

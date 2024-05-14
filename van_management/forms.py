@@ -12,7 +12,7 @@ class VanForm(forms.ModelForm):
 
     class Meta:
         model = Van
-        fields = ['van_make', 'plate', 'renewal_date', 'insurance_expiry_date', 'capacity', 'branch_id','salesman','driver']
+        fields = ['van_make', 'plate', 'renewal_date', 'insurance_expiry_date', 'capacity', 'branch_id','salesman','driver','bottle_count']
 
         widgets = {
             'van_make' : forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
@@ -22,7 +22,7 @@ class VanForm(forms.ModelForm):
             'capacity' : forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
             'driver' : forms.Select(attrs={"class": "form-control", 'required': 'true'}),
             'salesman' : forms.Select(attrs={"class": "form-control", 'required': 'true'}),
-
+            'bottle_count' : forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
         }
 
 
@@ -34,7 +34,7 @@ class EditVanForm(forms.ModelForm):
 
     class Meta:
         model = Van
-        fields = ['van_make', 'plate', 'renewal_date', 'insurance_expiry_date', 'capacity', 'branch_id','salesman','driver']
+        fields = ['van_make', 'plate', 'renewal_date', 'insurance_expiry_date', 'capacity', 'branch_id','salesman','driver','bottle_count']
 
         widgets = {
             'van_make' : forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
@@ -44,7 +44,7 @@ class EditVanForm(forms.ModelForm):
             'capacity' : forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
             'driver' : forms.Select(attrs={"class": "form-control", 'required': 'true'}),
             'salesman' : forms.Select(attrs={"class": "form-control", 'required': 'true'}),
-
+            'bottle_count' : forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
         }
 
 
