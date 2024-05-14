@@ -28,6 +28,7 @@ class Van(models.Model):
     renewal_date = models.DateTimeField(blank=True, null=True)
     insurance_expiry_date = models.DateTimeField(blank=True, null=True)
     capacity = models.IntegerField(null=True,blank=True)
+    bottle_count = models.PositiveIntegerField(default=0)
     driver = models.ForeignKey('accounts.CustomUser', on_delete=models.SET_NULL, null=True, blank=True,related_name='driver_van')
     salesman = models.ForeignKey('accounts.CustomUser', on_delete=models.SET_NULL, null=True, blank=True,related_name='salesman_van')
     branch_id = models.ForeignKey('master.BranchMaster', on_delete=models.SET_NULL, null=True, blank=True,related_name='van_branch')
