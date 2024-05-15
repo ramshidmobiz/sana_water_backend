@@ -155,4 +155,12 @@ class ExpenseEditForm(forms.ModelForm):
         }
         
         
-        
+class BottleAllocationForm(forms.ModelForm):
+    class Meta:
+        model = BottleAllocation
+        fields = ['route', 'fivegallon_count', 'reason']
+        widgets = {
+            'route': forms.Select(attrs={'class': 'form-control'}),
+            'fivegallon_count': forms.NumberInput(attrs={'class': 'form-control'}),
+            'reason': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }       

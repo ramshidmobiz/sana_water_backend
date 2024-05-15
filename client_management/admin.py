@@ -12,6 +12,7 @@ admin.site.register(ChequeCouponPayment)
 
 admin.site.register(CustomerOutstanding)
 admin.site.register(OutstandingProduct)
+admin.site.register(OutstandingAmount)
 admin.site.register(OutstandingCoupon)
 admin.site.register(CustomerOutstandingReport)
 

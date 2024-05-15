@@ -1,6 +1,8 @@
+import random
 import uuid
 import json
 import datetime
+from invoice_management.models import Invoice, InvoiceItems
 from van_management.models import *
 from decimal import Decimal
 
@@ -1113,6 +1115,38 @@ def create_customer_outstanding(request):
                                 value=outstanding_amount.amount,
                                 customer=outstanding_data.customer
                             )
+                            
+                        random_part = str(random.randint(1000, 9999))
+                        invoice_number = f'WTR-{random_part}'
+                        
+                        # Create the invoice
+                        invoice = Invoice.objects.create(
+                            invoice_no=invoice_number,
+                            created_date=datetime.today(),
+                            net_taxable=outstanding_amount.amount,
+                            vat=0,
+                            discount=0,
+                            amout_total=outstanding_amount.amount,
+                            amout_recieved=0,
+                            customer=outstanding_amount.customer_outstanding.customer,
+                            reference_no="oustading added for customer"
+                        )
+                        
+                        if outstanding_amount.customer_outstanding.customer.sales_type == "CREDIT":
+                            invoice.invoice_type = "credit_invoive"
+                            invoice.save()
+
+                        # Create invoice items
+                        item = ProdutItemMaster.objects.get(product_name="5 Gallon")
+                        InvoiceItems.objects.create(
+                            category=item.category,
+                            product_items=item,
+                            qty=0,
+                            rate=outstanding_amount.customer_outstanding.customer.rate,
+                            invoice=invoice,
+                            remarks='invoice genereted from backend reference no : ' + invoice.reference_no
+                        )
+
                     
                     elif outstanding_data.product_type == "emptycan":
                         outstanding_bottle = customer_outstanding_bottles_form.save(commit=False)

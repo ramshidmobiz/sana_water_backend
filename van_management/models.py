@@ -198,3 +198,20 @@ class SalesmanRequest(models.Model):
 
     def __str__(self):
         return f"{self.id}"
+    
+
+class BottleAllocation(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created_by = models.CharField(max_length=30, blank=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_by = models.CharField(max_length=20, null=True, blank=True)
+    modified_date = models.DateTimeField(auto_now=True ,blank=True, null=True)
+    
+    route = models.ForeignKey(RouteMaster, blank=True, null=True, on_delete=models.SET_NULL)
+    fivegallon_count = models.PositiveIntegerField(default=0)
+    reason =models.CharField(max_length=300)
+
+
+    def __str__(self):
+        return f"{self.id}"
+

@@ -54,5 +54,11 @@ urlpatterns = [
     path('edit-coupon-count/<uuid:van_id>/<uuid:coupon_id>/', EditCouponView.as_view(), name="edit_coupon_count"),
     
     path('salesman-requests/',salesman_requests, name="salesman_requests"),
+
+
+    path('bottle_allocation/',BottleAllocationn, name='bottle_allocation'),
+    path('edit_bottle_allocation/<uuid:route_id>/',EditBottleAllocation, name='edit_bottle_allocation'),
+
+
     
 ]
