@@ -60,7 +60,7 @@
                                                 <td style="text-align:center;">{{forloop.counter}}</td>
                                                 <td style="text-align:center;">{{van_data.van_make}}</td>
                                                 <td style="text-align:center;">{{product_data.product_name}}</td>
-                                                {% get_van_product_wise_stock van_data.pk product_data.pk as stock_details %}
+                                                {% get_van_product_wise_stock filter_data.filter_date van_data.pk product_data.pk as stock_details %}
                                                 <td style="text-align:center;">{{stock_details.opening_stock}}</td>
                                                 <td style="text-align:center;">{{stock_details.requested_count}}</td>
                                                 <td style="text-align:center;">{{stock_details.issued_count}}</td>

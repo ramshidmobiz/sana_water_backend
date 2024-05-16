@@ -111,11 +111,12 @@
                                         <th scope="col">Sl No</th>
                                         <th scope="col">Item Name</th>
                                         <th scope="col">Opening Stock</th>
+                                        <th scope="col">Stock Requested</th>
                                         <th scope="col">Stock Issued</th>
                                         <th scope="col">Total Stock</th>
                                         <th scope="col">Sold</th>
                                         <th scope="col">Returned</th>
-                                        <th scope="col">Replaced</th>
+                                        <th scope="col">Empty Can</th>
                                         <th scope="col">Offloaded</th>
                                         <th scope="col">Closing</th>
                                     </tr>
@@ -123,7 +124,7 @@
                                 <tbody>
                                     {% for van_data in van_instances %}
                                     {% for product_data in products %}
-                                    {% get_van_product_wise_stock van_data.pk product_data.pk as stock_details %}
+                                    {% get_van_product_wise_stock filter_data.filter_date van_data.pk product_data.pk as stock_details %}
                                     {% if stock_details.opening_stock > 0 or stock_details.requested_count > 0 or stock_details.issued_count > 0 or stock_details.empty_bottle_collected > 0 or stock_details.sold_count > 0 or stock_details.return_count > 0 or stock_details.offload_count > 0 or stock_details.closing_count > 0 %}
                                     <tr>
                                         <td style="text-align:center;">{{forloop.counter}}</td>
@@ -131,9 +132,10 @@
                                         <td style="text-align:center;">{{stock_details.opening_stock}}</td>
                                         <td style="text-align:center;">{{stock_details.requested_count}}</td>
                                         <td style="text-align:center;">{{stock_details.issued_count}}</td>
-                                        <td style="text-align:center;">{% if product_data.product_name == "5 Gallon" %}{{stock_details.empty_bottle_collected}}{% else %}0{% endif %}</td>
-                                        <td style="text-align:center;">{{ stock_details.sold_count }}</td>
+                                        <td style="text-align:center;">{{stock_details.sold_count}}</td>
+                                        <td style="text-align:center;">{{stock_details.total_stock}}</td>
                                         <td style="text-align:center;">{{stock_details.return_count}}</td>
+                                        <td style="text-align:center;">{% if product_data.product_name == "5 Gallon" %}{{stock_details.empty_bottle_collected}}{% else %}0{% endif %}</td>
                                         <td style="text-align:center;">{{stock_details.offload_count}}</td>
                                         <td style="text-align:center;">{{stock_details.closing_count}}</td>
                                     </tr>
