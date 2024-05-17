@@ -942,17 +942,17 @@ class CouponConsumptionReportSerializer(serializers.Serializer):
     
     
 class StockMovementReportSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source='product.product_name')
-    count = serializers.IntegerField()
-    rate = serializers.DecimalField(source='product.rate', max_digits=10, decimal_places=2)
-    total_amount = serializers.SerializerMethodField()
-
-    def get_total_amount(self, obj):
-        return obj.count * obj.product.rate
-
+    customer_name = serializers.SerializerMethodField()
+    product_name = serializers.SerializerMethodField()
+   
     class Meta:
-        model = VanProductItems
-        fields = ['product_name', 'count', 'rate', 'total_amount']
+        model = CustomerSupplyItems
+        fields = [ 'product', 'quantity','customer_name','product_name']
+        
+    def get_customer_name(self, obj):
+        return obj.customer_supply.customer.customer_name  
+    def get_product_name(self, obj):
+        return obj.product.product_name 
 
 class CustomerSupplySerializers(serializers.ModelSerializer):
     class Meta:

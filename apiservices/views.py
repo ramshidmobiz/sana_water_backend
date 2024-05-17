@@ -4452,6 +4452,7 @@ class CouponConsumptionReport(APIView):
         return Response(serializer.data)
 
 from django.utils.timezone import make_aware
+from django.db.models import Sum, Count, Case, When, IntegerField
 
 class StockMovementReportAPI(APIView):
     authentication_classes = [BasicAuthentication]
@@ -4471,18 +4472,94 @@ class StockMovementReportAPI(APIView):
         except ValueError:
             return Response({'status': False, 'message': 'Invalid date format'}, status=status.HTTP_400_BAD_REQUEST)
 
-        stock_movement = VanProductItems.objects.filter(
-            van_stock__van__salesman_id=salesman_id,
-            van_stock__created_date__range=(from_date, to_date)
-        ).select_related('van_stock__van')
+        stock_movement = CustomerSupplyItems.objects.filter(
+            customer_supply__salesman_id=salesman_id,
+            customer_supply__created_date__range=(from_date, to_date)
+        ).select_related('customer_supply')
 
         if stock_movement.exists():
-            total_sale_amount = stock_movement.aggregate(total_sale=Sum(F('count') * F('product__rate')))['total_sale']
+            aggregated_stock_movement = stock_movement.values('product').annotate(
+                total_quantity=Sum('quantity'),
+                rate=F('product__rate')
+            )
+
+            total_sale_amount = aggregated_stock_movement.aggregate(total_sale=Sum(F('total_quantity') * F('rate')))['total_sale']
+
+            # Count products sold, returned, and assigned
+            products_sold = aggregated_stock_movement.aggregate(
+                products_sold=Sum(Case(When(total_quantity__gt=0, then=F('total_quantity')), default=0, output_field=IntegerField())),
+                products_returned=Sum(Case(When(total_quantity__lt=0, then=F('total_quantity')), default=0, output_field=IntegerField())),
+                products_assigned=Sum(Case(When(total_quantity__gt=0, then=F('total_quantity')), default=0, output_field=IntegerField()))
+            )
+            
+            total_sale_amount = stock_movement.aggregate(total_sale=Sum(F('quantity') * F('product__rate')))['total_sale']
             serialized_data = StockMovementReportSerializer(stock_movement, many=True).data
-            return Response({'status': True, 'data': serialized_data, 'total_sale_amount': total_sale_amount}, status=status.HTTP_200_OK)
+            return Response({'status': True, 
+                             'data': serialized_data, 
+                             'total_sale_amount': total_sale_amount,
+                             'products_sold': products_sold['products_sold'],
+                             'products_returned': products_sold['products_returned'],
+                             'products_assigned': products_sold['products_assigned']}, status=status.HTTP_200_OK)
         else:
             return Response({'status': False, 'message': 'No data found'}, status=status.HTTP_400_BAD_REQUEST)
 
+
+# from django.db.models import Sum, Count, Case, When, IntegerField
+
+# from django.utils.timezone import make_aware
+
+# class StockMovementReportAPI(APIView):
+#     authentication_classes = [BasicAuthentication]
+#     permission_classes = [IsAuthenticated]
+    
+#     def get(self, request, salesman_id, *args, **kwargs):
+#         from_date = request.GET.get('from_date')
+#         to_date = request.GET.get('to_date')
+
+#         if not (from_date and to_date):
+#             return Response({'status': False, 'message': 'Please provide both from_date and to_date'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         try:
+#             from_date = make_aware(datetime.strptime(from_date, '%Y-%m-%d'))
+#             to_date = make_aware(datetime.strptime(to_date, '%Y-%m-%d'))
+#         except ValueError:
+#             return Response({'status': False, 'message': 'Invalid date format'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         stock_movement = CustomerSupplyItems.objects.filter(
+#             customer_supply__salesman_id=salesman_id,
+#             customer_supply__created_date__range=(from_date, to_date)
+#         ).select_related('customer_supply__customer', 'customer_supply__salesman')
+
+
+#         print("stock_movement",stock_movement)
+#         if stock_movement.exists():
+#             # Aggregate quantities for the same product
+#             aggregated_stock_movement = stock_movement.values('product').annotate(
+#                 total_quantity=Sum('quantity'),
+#                 rate=F('product__rate')
+#             )
+
+#             total_sale_amount = aggregated_stock_movement.aggregate(total_sale=Sum(F('total_quantity') * F('rate')))['total_sale']
+
+#             # Count products sold, returned, and assigned
+#             products_sold = aggregated_stock_movement.aggregate(
+#                 products_sold=Sum(Case(When(total_quantity__gt=0, then=F('total_quantity')), default=0, output_field=IntegerField())),
+#                 products_returned=Sum(Case(When(total_quantity__lt=0, then=F('total_quantity')), default=0, output_field=IntegerField())),
+#                 products_assigned=Sum(Case(When(total_quantity__gt=0, then=F('total_quantity')), default=0, output_field=IntegerField()))
+#             )
+
+#             serialized_data = StockMovementReportSerializer(aggregated_stock_movement, many=True).data
+#             response_data = {
+#                 'status': True,
+#                 'data': serialized_data,
+#                 'total_sale_amount': total_sale_amount,
+#                 'products_sold': products_sold['products_sold'],
+#                 'products_returned': products_sold['products_returned'],
+#                 'products_assigned': products_sold['products_assigned']
+#             }
+#             return Response(response_data, status=status.HTTP_200_OK)
+#         else:
+#             return Response({'status': False, 'message': 'No data found'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # class VisitReportAPI(APIView):
