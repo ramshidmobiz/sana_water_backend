@@ -107,11 +107,12 @@
                                             <th scope="col">Sl No</th>
                                             <th scope="col">Item Name</th>
                                             <th scope="col">Opening Stock</th>
+                                            <th scope="col">Stock Requested</th>
                                             <th scope="col">Stock Issued</th>
                                             <th scope="col">Total Stock</th>
                                             <th scope="col">Sold</th>
                                             <th scope="col">Returned</th>
-                                            <th scope="col">Replaced</th>
+                                            <th scope="col">Empty Can</th>
                                             <th scope="col">Offloaded</th>
                                             <th scope="col">Closing</th>
                                         </tr>
@@ -119,7 +120,7 @@
                                     <tbody>
                                         {% for van_data in van_instances %}
                                         {% for product_data in products %}
-                                        {% get_van_product_wise_stock van_data.pk product_data.pk as stock_details %}
+                                        {% get_van_product_wise_stock filter_data.filter_date van_data.pk product_data.pk as stock_details %}
                                         {% if stock_details.opening_stock > 0 or stock_details.requested_count > 0 or stock_details.issued_count > 0 or stock_details.empty_bottle_collected > 0 or stock_details.sold_count > 0 or stock_details.return_count > 0 or stock_details.offload_count > 0 or stock_details.closing_count > 0 %}
                                         <tr>
                                             <td style="text-align:center;">{{forloop.counter}}</td>
@@ -127,9 +128,10 @@
                                             <td style="text-align:center;">{{stock_details.opening_stock}}</td>
                                             <td style="text-align:center;">{{stock_details.requested_count}}</td>
                                             <td style="text-align:center;">{{stock_details.issued_count}}</td>
-                                            <td style="text-align:center;">{% if product_data.product_name == "5 Gallon" %}{{stock_details.empty_bottle_collected}}{% else %}0{% endif %}</td>
-                                            <td style="text-align:center;">{{ stock_details.sold_count }}</td>
+                                            <td style="text-align:center;">{{stock_details.sold_count}}</td>
+                                            <td style="text-align:center;">{{stock_details.total_stock}}</td>
                                             <td style="text-align:center;">{{stock_details.return_count}}</td>
+                                            <td style="text-align:center;">{% if product_data.product_name == "5 Gallon" %}{{stock_details.empty_bottle_collected}}{% else %}0{% endif %}</td>
                                             <td style="text-align:center;">{{stock_details.offload_count}}</td>
                                             <td style="text-align:center;">{{stock_details.closing_count}}</td>
                                         </tr>
@@ -257,20 +259,34 @@
                                             <th scope="col">Net taxable</th>
                                             <th scope="col">Vat</th>
                                             <th scope="col">Grand Total</th>
+                                            <th scope="col">Cash Recieved</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for invoice in cash_invoices %}
+                                        {% for sale in cash_sales %}
                                         <tr>
-                                            <td>{{ forloop.counter }}</td>
-                                            <td>{{ invoice.reference_no }}</td>
-                                            <td>{{ invoice.customer.customer_name }}</td>
-                                            <td>{{ invoice.customer.building_name   }}</td>
-                                            <td>{{ invoice.net_taxable }}</td>
-                                            <td>{{ invoice.vat }}</td>
-                                            <td>{{ invoice.amout_total  }}</td>
+                                            <td>{{forloop.counter}}</td>
+                                            <td>{{sale.reference_number}}</td>
+                                            <td>{{sale.customer.customer_name}}</td>
+                                            <td>{{sale.customer.building_name}}</td>
+                                            <td>{{sale.net_payable}}</td>
+                                            <td>{{sale.vat}}</td>
+                                            <td>{{sale.subtotal}}</td>
+                                            <td>{{sale.amount_recieved}}</td>
                                         </tr>
-                                    {% endfor %} 
+                                        {% endfor %}
+                                        {% for sale in recharge_cash_sales %}
+                                        <tr>
+                                            <td>{{forloop.counter}}</td>
+                                            <td>{{sale.reference_number}}</td>
+                                            <td>{{sale.customer.customer_name}}</td>
+                                            <td>{{sale.customer.building_name}}</td>
+                                            <td>{{sale.net_amount}}</td>
+                                            <td>0</td>
+                                            <td>{{sale.grand_total}}</td>
+                                            <td>{{sale.amount_recieved}}</td>
+                                        </tr>
+                                    {% endfor %}  
                                     </tbody>
                                     <!-- Table Footer -->
                                     <tfoot>
@@ -278,7 +294,8 @@
                                             <td colspan="4" style="text-align: right;">Total:</td>
                                             <td>{{ cash_total_net_taxable }}</td>
                                             <td>{{ cash_total_vat }}</td>
-                                            <td>{{ cash_total_amout_total }}</td>
+                                            <td>{{ cash_total_subtotal }}</td>
+                                            <td>{{ cash_total_amount_recieved }}</td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -300,18 +317,33 @@
                                             <th scope="col">Net taxable</th>
                                             <th scope="col">Vat</th>
                                             <th scope="col">Grand Total</th>
+                                            <th scope="col">Cash Recieved</th>
+                                            
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for invoice in credit_invoices %}
+                                        {% for sale in credit_sales %}
                                         <tr>
-                                            <td>{{ forloop.counter }}</td>
-                                            <td>{{ invoice.reference_no }}</td>
-                                            <td>{{ invoice.customer.customer_name }}</td>
-                                            <td>{{ invoice.customer.building_name   }}</td>
-                                            <td>{{ invoice.net_taxable }}</td>
-                                            <td>{{ invoice.vat }}</td>
-                                            <td>{{ invoice.amout_total  }}</td>
+                                            <td>{{forloop.counter}}</td>
+                                            <td>{{sale.reference_number}}</td>
+                                            <td>{{sale.customer.customer_name}}</td>
+                                            <td>{{sale.customer.building_name}}</td>
+                                            <td>{{sale.net_payable}}</td>
+                                            <td>{{sale.vat}}</td>
+                                            <td>{{sale.subtotal}}</td>
+                                            <td>{{sale.amount_recieved}}</td>
+                                        </tr>
+                                    {% endfor %} 
+                                    {% for sale in recharge_credit_sales %}
+                                        <tr>
+                                            <td>{{forloop.counter}}</td>
+                                            <td>{{sale.reference_number}}</td>
+                                            <td>{{sale.customer.customer_name}}</td>
+                                            <td>{{sale.customer.building_name}}</td>
+                                            <td>{{sale.net_payable}}</td>
+                                            <td>{{sale.vat}}</td>
+                                            <td>{{sale.subtotal}}</td>
+                                            <td>{{sale.amount_recieved}}</td>
                                         </tr>
                                     {% endfor %} 
                                     </tbody>
@@ -321,7 +353,8 @@
                                             <td colspan="4" style="text-align: right;">Total:</td>
                                             <td>{{ credit_total_net_taxable }}</td>
                                             <td>{{ credit_total_vat }}</td>
-                                            <td>{{ credit_total_amout_total }}</td>
+                                            <td>{{ credit_total_subtotal }}</td>
+                                            <td>{{ credit_total_amount_recieved }}</td>
                                         </tr>
                                     </tfoot>
                                 </table>

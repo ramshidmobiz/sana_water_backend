@@ -3242,11 +3242,11 @@ def dsr_summary(request):
         suspense_balance_amount = today_payable - suspense_paid_amount
         
         # collection details
-        dialy_collections = CollectionPayment.objects.filter(created_date__date=date,salesman_id=salesman,amount_received__gt=0)
+        dialy_collections = CollectionPayment.objects.filter(salesman_id=salesman,amount_received__gt=0)
         # credit outstanding
         # outstanding_credit_notes = Invoice.objects.filter(invoice_type="credit_invoive",customer__sales_staff=salesman).exclude(created_date__date__gt=date)
-        outstanding_credit_notes_total_amount = OutstandingAmount.objects.filter(customer_outstanding__created_date=date,customer_outstanding__product_type="amount").aggregate(total_amount=Sum('amount'))['total_amount']
-        outstanding_credit_notes_received_amount = dialy_collections.aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
+        outstanding_credit_notes_total_amount = OutstandingAmount.objects.filter(customer_outstanding__product_type="amount").aggregate(total_amount=Sum('amount'))['total_amount']
+        outstanding_credit_notes_received_amount = dialy_collections.filter(created_date__date__lte=date).aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
         outstanding_credit_notes_balance = outstanding_credit_notes_total_amount - outstanding_credit_notes_received_amount
         
         # 5 gallon rate based
@@ -3257,7 +3257,7 @@ def dsr_summary(request):
         coupon_amount_collected = CustomerCoupon.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CASH").aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
         cash_sales_amount_collected = supply_amount_collected + coupon_amount_collected
         
-        credit_sales_amount_collected = dialy_collections.aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
+        credit_sales_amount_collected = dialy_collections.filter(created_date__date=date).aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
         total_sales_amount_collected = cash_sales_amount_collected + credit_sales_amount_collected
         
         cash_sales_supply_count = CustomerSupply.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CASH").count()
@@ -3378,10 +3378,12 @@ def print_dsr_summary(request):
     total_count = 0
     cash_total_net_taxable = 0
     cash_total_vat = 0
-    cash_total_amout_total = 0
+    cash_total_subtotal = 0
+    cash_total_amount_recieved = 0
     credit_total_net_taxable = 0
     credit_total_vat = 0
-    credit_total_amout_total = 0
+    credit_total_subtotal = 0
+    credit_total_amount_recieved = 0
     in_hand_amount = 0
     today_expense = 0
     today_payable = 0
@@ -3404,8 +3406,10 @@ def print_dsr_summary(request):
     van_instances = Van.objects.none
     van_route = Van_Routes.objects.none
     salesman_id =  ""
-    cash_invoices = Invoice.objects.none
-    credit_invoices = Invoice.objects.none
+    cash_sales = CustomerSupply.objects.none
+    credit_sales = CustomerSupply.objects.none
+    recharge_cash_sales = CustomerCoupon.objects.none
+    recharge_credit_sales = CustomerCoupon.objects.none
     products = ProdutItemMaster.objects.none
     expenses_instanses = Expense.objects.none
     routes_instances = RouteMaster.objects.all()
@@ -3419,9 +3423,10 @@ def print_dsr_summary(request):
     
     if date:
         date = datetime.strptime(date, '%Y-%m-%d').date()
+        filter_data['filter_date'] = date.strftime('%Y-%m-%d')
     else:
-        date = datetime.today().date()
-    filter_data['filter_date'] = date.strftime('%Y-%m-%d')
+        date_today = datetime.today().date()
+        filter_data['filter_date'] = date_today.strftime('%Y-%m-%d')
     
     
     if route_name:
@@ -3469,16 +3474,36 @@ def print_dsr_summary(request):
         customer_coupon_items=CustomerCouponItems.objects.filter(customer_coupon__salesman=salesman,customer_coupon__created_date__date=date).order_by("-customer_coupon__created_date")
         
         ### cash sales ####
-        cash_invoices = Invoice.objects.filter(created_date__date=date, invoice_type="cash_invoice")
-        cash_total_net_taxable = cash_invoices.aggregate(total_net_taxable=Sum('net_taxable'))['total_net_taxable'] or 0
-        cash_total_vat = cash_invoices.aggregate(total_vat=Sum('vat'))['total_vat'] or 0
-        cash_total_amout_total = cash_invoices.aggregate(total_amout_total=Sum('amout_total'))['total_amout_total'] or 0
+        cash_sales = CustomerSupply.objects.filter(created_date__date=date,amount_recieved__gt=0)
+        cash_total_net_taxable = cash_sales.aggregate(total_net_taxable=Sum('net_payable'))['total_net_taxable'] or 0
+        cash_total_vat = cash_sales.aggregate(total_vat=Sum('vat'))['total_vat'] or 0
+        cash_total_subtotal = cash_sales.aggregate(total_subtotal=Sum('subtotal'))['total_subtotal'] or 0
+        cash_total_received = cash_sales.aggregate(total_amount_recieved=Sum('amount_recieved'))['total_amount_recieved'] or 0
+        recharge_cash_sales = CustomerCoupon.objects.filter(created_date__date=date,amount_recieved__gt=0)
+        cash_sale_recharge_net_payeble = recharge_cash_sales.aggregate(total_net_amount=Sum('net_amount'))['total_net_amount'] or 0
+        cash_sale_recharge_vat_total = 0
+        cash_sale_recharge_grand_total = recharge_cash_sales.aggregate(total_grand_total=Sum('grand_total'))['total_grand_total'] or 0
+        cash_sale_recharge_amount_recieved = recharge_cash_sales.aggregate(total_amount_recieved=Sum('amount_recieved'))['total_amount_recieved'] or 0
+        cash_total_net_taxable = cash_total_net_taxable + cash_sale_recharge_net_payeble 
+        cash_total_vat = cash_total_vat + cash_sale_recharge_vat_total 
+        cash_total_subtotal = cash_total_subtotal + cash_sale_recharge_grand_total 
+        cash_total_amount_recieved = cash_total_received + cash_sale_recharge_amount_recieved 
         
         ### credit sales ####
-        credit_invoices = Invoice.objects.filter(created_date__date=date, invoice_type="credit_invoive")
-        credit_total_net_taxable = credit_invoices.aggregate(total_net_taxable=Sum('net_taxable'))['total_net_taxable'] or 0
-        credit_total_vat = credit_invoices.aggregate(total_vat=Sum('vat'))['total_vat'] or 0
-        credit_total_amout_total = credit_invoices.aggregate(total_amout_total=Sum('amout_total'))['total_amout_total'] or 0
+        credit_sales = CustomerSupply.objects.filter(created_date__date=date,amount_recieved__lte=0)
+        credit_total_net_taxable = credit_sales.aggregate(total_net_taxable=Sum('net_payable'))['total_net_taxable'] or 0
+        credit_total_vat = credit_sales.aggregate(total_vat=Sum('vat'))['total_vat'] or 0
+        credit_total_subtotal = credit_sales.aggregate(total_subtotal=Sum('subtotal'))['total_subtotal'] or 0
+        credit_total_received = credit_sales.aggregate(total_amount_recieved=Sum('amount_recieved'))['total_amount_recieved'] or 0
+        recharge_credit_sales = CustomerCoupon.objects.filter(created_date__date=date,amount_recieved__gt=0)
+        credit_sale_recharge_net_payeble = recharge_credit_sales.aggregate(total_net_amount=Sum('net_amount'))['total_net_amount'] or 0
+        credit_sale_recharge_vat_total = 0
+        credit_sale_recharge_grand_total = recharge_credit_sales.aggregate(total_grand_total=Sum('grand_total'))['total_grand_total'] or 0
+        credit_sale_recharge_amount_recieved = recharge_credit_sales.aggregate(total_amount_recieved=Sum('amount_recieved'))['total_amount_recieved'] or 0
+        credit_total_net_taxable = credit_total_net_taxable + credit_sale_recharge_net_payeble 
+        credit_total_vat = credit_total_vat + credit_sale_recharge_vat_total 
+        credit_total_subtotal = credit_total_subtotal + credit_sale_recharge_grand_total
+        credit_total_amount_recieved = credit_total_received + credit_sale_recharge_amount_recieved
         
         ### expenses ####
         expenses_instanses = Expense.objects.filter(date_created=date,van__salesman=salesman)
@@ -3495,22 +3520,22 @@ def print_dsr_summary(request):
         suspense_balance_amount = today_payable - suspense_paid_amount
         
         # collection details
-        dialy_collections = CollectionPayment.objects.filter(created_date__date=date,salesman_id=salesman,amount_received__gt=0)
+        dialy_collections = CollectionPayment.objects.filter(salesman_id=salesman,amount_received__gt=0)
         # credit outstanding
         # outstanding_credit_notes = Invoice.objects.filter(invoice_type="credit_invoive",customer__sales_staff=salesman).exclude(created_date__date__gt=date)
-        outstanding_credit_notes_total_amount = CustomerOutstandingReport.objects.filter(customer__sales_staff=salesman,product_type="amount").aggregate(total_amount=Sum('value'))['total_amount'] or 0
-        outstanding_credit_notes_received_amount = dialy_collections.aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
+        outstanding_credit_notes_total_amount = OutstandingAmount.objects.filter(customer_outstanding__product_type="amount").aggregate(total_amount=Sum('amount'))['total_amount']
+        outstanding_credit_notes_received_amount = dialy_collections.filter(created_date__date__lte=date).aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
         outstanding_credit_notes_balance = outstanding_credit_notes_total_amount - outstanding_credit_notes_received_amount
         
         # 5 gallon rate based
-        unique_amounts = set(CustomerSupplyItems.objects.filter(customer_supply__created_date__date=date,customer_supply__salesman_id=salesman,product__product_name="5 Gallon").values_list('amount', flat=True))
+        unique_amounts = set(CustomerSupplyItems.objects.filter(customer_supply__created_date__date=date,customer_supply__salesman_id=salesman,product__product_name="5 Gallon").values_list('customer_supply__customer__rate', flat=True))
         
         # cash sales amount collected
         supply_amount_collected = CustomerSupply.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CASH").aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
         coupon_amount_collected = CustomerCoupon.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CASH").aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
         cash_sales_amount_collected = supply_amount_collected + coupon_amount_collected
         
-        credit_sales_amount_collected = dialy_collections.aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
+        credit_sales_amount_collected = dialy_collections.filter(created_date__date=date).aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
         total_sales_amount_collected = cash_sales_amount_collected + credit_sales_amount_collected
         
         cash_sales_supply_count = CustomerSupply.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CASH").count()
@@ -3562,15 +3587,19 @@ def print_dsr_summary(request):
         #coupon book sale
         'customer_coupon_items':customer_coupon_items,
         #cash sales
-        'cash_invoices': cash_invoices,
+        'cash_sales': cash_sales,
+        'recharge_cash_sales': recharge_cash_sales,
         'cash_total_net_taxable':cash_total_net_taxable,
         'cash_total_vat':cash_total_vat,
-        'cash_total_amout_total':cash_total_amout_total,
+        'cash_total_subtotal': cash_total_subtotal,
+        'cash_total_amount_recieved': cash_total_amount_recieved,
         # credit sales
-        'credit_invoices': credit_invoices,
+        'credit_sales': credit_sales,
+        'recharge_credit_sales': recharge_credit_sales,
         'credit_total_net_taxable':credit_total_net_taxable,
         'credit_total_vat':credit_total_vat,
-        'credit_total_amout_total':credit_total_amout_total,
+        'credit_total_subtotal':credit_total_subtotal,
+        'credit_total_amount_recieved': credit_total_amount_recieved,
         # expenses
         'expenses_instanses': expenses_instanses,
         # suspense

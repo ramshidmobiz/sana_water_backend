@@ -23,7 +23,7 @@ class Command(BaseCommand):
                 # Create the invoice
                 invoice = Invoice.objects.create(
                     invoice_no=invoice_number,
-                    created_date=datetime.datetime.today(),
+                    created_date=out_amount.customer_outstanding.created_date,
                     net_taxable=out_amount.amount,
                     vat=0,
                     discount=0,
