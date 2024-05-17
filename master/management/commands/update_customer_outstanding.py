@@ -1,3 +1,4 @@
+from datetime import datetime
 import pandas as pd
 from decimal import Decimal
 from django.db import transaction
@@ -5,7 +6,7 @@ from accounts.models import CustomUser, Customers
 from client_management.models import CustomerOutstanding, OutstandingAmount, CustomerOutstandingReport
 
 # Read the Excel file
-file_path = '/home/ra/Downloads/outstanding_update_latest.xlsx'
+file_path = '/home/ra/Downloads/outstanding_update_date_wise.xlsx'
 data = pd.read_excel(file_path)
 print("File path:", file_path)
 print("DataFrame columns:", data.columns)
@@ -27,7 +28,9 @@ def populate_models_from_excel(data):
     for index, row in data.iterrows():
         customer_name = row['customer_name']
         amount = Decimal(row['amount'])
-
+        str_date = str(row['date'])
+        date = datetime.strptime(str_date, '%d-%m-%Y')
+        
         # Get or create customer
         try:
             customer = Customers.objects.get(customer_name=customer_name)
@@ -35,38 +38,30 @@ def populate_models_from_excel(data):
             print(f"Customer {customer_name} does not exist.")
             continue
 
-        # Get or create CustomerOutstanding
-        if not CustomerOutstanding.objects.filter(customer=customer,product_type='amount'):
-            customer_outstanding, created = CustomerOutstanding.objects.get_or_create(
-                customer=customer,
-                product_type='amount',
-                defaults={
-                    'created_by': user.id,
-                    'modified_by': user.id,
-                }
-            )
+        customer_outstanding = CustomerOutstanding.objects.create(
+            customer=customer,
+            product_type='amount',
+            created_by=user.id,
+            modified_by=user.id,
+            created_date=date,
+        )
 
-            if not created:
-                # Update modified_by and modified_date if it already exists
-                customer_outstanding.modified_by = user.id
-                customer_outstanding.save()
+        # Create OutstandingAmount
+        outstanding_amount = OutstandingAmount.objects.create(
+            customer_outstanding=customer_outstanding,
+            amount=amount
+        )
 
-            # Create OutstandingAmount
-            outstanding_amount = OutstandingAmount.objects.create(
-                customer_outstanding=customer_outstanding,
-                amount=amount
-            )
+        # Update or create CustomerOutstandingReport
+        if (instances:=CustomerOutstandingReport.objects.filter(customer=customer,product_type='amount')).exists():
+            report = instances.first()
+        else:
+            report = CustomerOutstandingReport.objects.create(customer=customer,product_type='amount')
 
-            # Update or create CustomerOutstandingReport
-            if (instances:=CustomerOutstandingReport.objects.filter(customer=customer,product_type='amount')).exists():
-                report = instances.first()
-            else:
-                report = CustomerOutstandingReport.objects.create(customer=customer,product_type='amount')
-    
-            report.value += amount
-            report.save()
+        report.value += amount
+        report.save()
 
-            print(f"Processed row {index + 1} for customer {customer_name}")
+        print(f"Processed row {index + 1} for customer {customer_name}")
 
 # Execute the function
 populate_models_from_excel(data)

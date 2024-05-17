@@ -52,7 +52,7 @@ def get_van_product_wise_stock(date,van,product):
     
 @register.simple_tag
 def get_five_gallon_ratewise_count(rate,date,salesman):
-    instances = CustomerSupplyItems.objects.filter(customer_supply__created_date__date=date,customer_supply__salesman_id=salesman,product__product_name="5 Gallon",amount=rate)
+    instances = CustomerSupplyItems.objects.filter(customer_supply__created_date__date=date,customer_supply__salesman_id=salesman,product__product_name="5 Gallon",customer_supply__customer__rate=rate)
     return {
         "debit_amount_count": instances.filter(customer_supply__customer__sales_type="CASH").count(),
         "credit_amount_count": instances.filter(customer_supply__customer__sales_type="CREDIT").count()

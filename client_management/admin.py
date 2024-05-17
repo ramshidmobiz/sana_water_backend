@@ -10,7 +10,9 @@ admin.site.register(CustomerCouponStock,CustomerCouponStockAdmin)
 admin.site.register(CustomerCoupon)
 admin.site.register(ChequeCouponPayment)
 
-admin.site.register(CustomerOutstanding)
+class CustomerOutstandingAdmin(admin.ModelAdmin):
+    list_display = ('id','created_by','created_date','product_type','customer')
+admin.site.register(CustomerOutstanding,CustomerOutstandingAdmin)
 admin.site.register(OutstandingProduct)
 admin.site.register(OutstandingAmount)
 admin.site.register(OutstandingCoupon)

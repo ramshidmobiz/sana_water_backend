@@ -263,20 +263,34 @@
                                         <th scope="col">Net taxable</th>
                                         <th scope="col">Vat</th>
                                         <th scope="col">Grand Total</th>
+                                        <th scope="col">Cash Recieved</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for invoice in cash_invoices %}
+                                    {% for sale in cash_sales %}
                                     <tr>
-                                        <td>{{ forloop.counter }}</td>
-                                        <td>{{ invoice.reference_no }}</td>
-                                        <td>{{ invoice.customer.customer_name }}</td>
-                                        <td>{{ invoice.customer.building_name   }}</td>
-                                        <td>{{ invoice.net_taxable }}</td>
-                                        <td>{{ invoice.vat }}</td>
-                                        <td>{{ invoice.amout_total  }}</td>
+                                        <td>{{forloop.counter}}</td>
+                                        <td>{{sale.reference_number}}</td>
+                                        <td>{{sale.customer.customer_name}}</td>
+                                        <td>{{sale.customer.building_name}}</td>
+                                        <td>{{sale.net_payable}}</td>
+                                        <td>{{sale.vat}}</td>
+                                        <td>{{sale.subtotal}}</td>
+                                        <td>{{sale.amount_recieved}}</td>
                                     </tr>
-                                {% endfor %} 
+                                    {% endfor %}
+                                    {% for sale in recharge_cash_sales %}
+                                    <tr>
+                                        <td>{{forloop.counter}}</td>
+                                        <td>{{sale.reference_number}}</td>
+                                        <td>{{sale.customer.customer_name}}</td>
+                                        <td>{{sale.customer.building_name}}</td>
+                                        <td>{{sale.net_amount}}</td>
+                                        <td>0</td>
+                                        <td>{{sale.grand_total}}</td>
+                                        <td>{{sale.amount_recieved}}</td>
+                                    </tr>
+                                {% endfor %}  
                                 </tbody>
                                 <!-- Table Footer -->
                                 <tfoot>
@@ -284,7 +298,8 @@
                                         <td colspan="4" style="text-align: right;">Total:</td>
                                         <td>{{ cash_total_net_taxable }}</td>
                                         <td>{{ cash_total_vat }}</td>
-                                        <td>{{ cash_total_amout_total }}</td>
+                                        <td>{{ cash_total_subtotal }}</td>
+                                        <td>{{ cash_total_amount_recieved }}</td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -306,18 +321,33 @@
                                         <th scope="col">Net taxable</th>
                                         <th scope="col">Vat</th>
                                         <th scope="col">Grand Total</th>
+                                        <th scope="col">Cash Recieved</th>
+                                        
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for invoice in credit_invoices %}
+                                    {% for sale in credit_sales %}
                                     <tr>
-                                        <td>{{ forloop.counter }}</td>
-                                        <td>{{ invoice.reference_no }}</td>
-                                        <td>{{ invoice.customer.customer_name }}</td>
-                                        <td>{{ invoice.customer.building_name   }}</td>
-                                        <td>{{ invoice.net_taxable }}</td>
-                                        <td>{{ invoice.vat }}</td>
-                                        <td>{{ invoice.amout_total  }}</td>
+                                        <td>{{forloop.counter}}</td>
+                                        <td>{{sale.reference_number}}</td>
+                                        <td>{{sale.customer.customer_name}}</td>
+                                        <td>{{sale.customer.building_name}}</td>
+                                        <td>{{sale.net_payable}}</td>
+                                        <td>{{sale.vat}}</td>
+                                        <td>{{sale.subtotal}}</td>
+                                        <td>{{sale.amount_recieved}}</td>
+                                    </tr>
+                                {% endfor %} 
+                                {% for sale in recharge_credit_sales %}
+                                    <tr>
+                                        <td>{{forloop.counter}}</td>
+                                        <td>{{sale.reference_number}}</td>
+                                        <td>{{sale.customer.customer_name}}</td>
+                                        <td>{{sale.customer.building_name}}</td>
+                                        <td>{{sale.net_payable}}</td>
+                                        <td>{{sale.vat}}</td>
+                                        <td>{{sale.subtotal}}</td>
+                                        <td>{{sale.amount_recieved}}</td>
                                     </tr>
                                 {% endfor %} 
                                 </tbody>
@@ -327,7 +357,8 @@
                                         <td colspan="4" style="text-align: right;">Total:</td>
                                         <td>{{ credit_total_net_taxable }}</td>
                                         <td>{{ credit_total_vat }}</td>
-                                        <td>{{ credit_total_amout_total }}</td>
+                                        <td>{{ credit_total_subtotal }}</td>
+                                        <td>{{ credit_total_amount_recieved }}</td>
                                     </tr>
                                 </tfoot>
                             </table>

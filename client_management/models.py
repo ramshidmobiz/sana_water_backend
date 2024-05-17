@@ -276,7 +276,7 @@ class CustomerOutstanding(models.Model):
     customer = models.ForeignKey('accounts.Customers', on_delete=models.CASCADE, null=True, blank=True)
     product_type = models.CharField(max_length=200, choices=PRODUCT_TYPES)
     created_by = models.CharField(max_length=30, blank=True)
-    created_date = models.DateTimeField(auto_now_add=True)
+    created_date = models.DateTimeField()
     modified_by = models.CharField(max_length=20, null=True, blank=True)
     modified_date = models.DateTimeField(auto_now=True, blank=True, null=True)
     
