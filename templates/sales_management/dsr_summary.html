@@ -113,7 +113,6 @@
                                         <th scope="col">Opening Stock</th>
                                         <th scope="col">Stock Requested</th>
                                         <th scope="col">Stock Issued</th>
-                                        <th scope="col">Total Stock</th>
                                         <th scope="col">Sold</th>
                                         <th scope="col">Returned</th>
                                         <th scope="col">Empty Can</th>
@@ -132,7 +131,6 @@
                                         <td style="text-align:center;">{{stock_details.opening_stock}}</td>
                                         <td style="text-align:center;">{{stock_details.requested_count}}</td>
                                         <td style="text-align:center;">{{stock_details.issued_count}}</td>
-                                        <td style="text-align:center;">{{stock_details.total_stock}}</td>
                                         <td style="text-align:center;">{{stock_details.sold_count}}</td>
                                         <td style="text-align:center;">{{stock_details.return_count}}</td>
                                         <td style="text-align:center;">{% if product_data.product_name == "5 Gallon" %}{{stock_details.empty_bottle_collected}}{% else %}0{% endif %}</td>

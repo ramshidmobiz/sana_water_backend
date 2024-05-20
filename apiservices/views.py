@@ -2514,12 +2514,18 @@ class create_customer_supply(APIView):
                     
                     if suply_items.product.product_name == "5 Gallon" :
                         total_fivegallon_qty += Decimal(suply_items.quantity)
-                        
-                        empty_bottle, _ = VanProductStock.objects.get_or_create(
-                            product=suply_items.product,
-                            van__salesman=request.user,
-                            stock_type="emptycan",
-                        )
+                        if not VanProductStock.objects.filter(product=suply_items.product,van__salesman=request.user,stock_type="emptycan").exists():
+                            empty_bottle = VanProductStock.objects.create(
+                                product=suply_items.product,
+                                van__salesman=request.user,
+                                stock_type="emptycan",
+                            )
+                        else:
+                            empty_bottle = VanProductStock.objects.get(
+                                product=suply_items.product,
+                                van__salesman=request.user,
+                                stock_type="emptycan",
+                            )
                         empty_bottle.count += collected_empty_bottle
                         empty_bottle.save()
                         
