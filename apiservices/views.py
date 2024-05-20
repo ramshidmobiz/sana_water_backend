@@ -2662,6 +2662,7 @@ class create_customer_supply(APIView):
                                 product_type="amount",
                                 created_by=request.user.id,
                                 customer=customer_supply.customer,
+                                created_date=datetime.today()
                             )
 
                             outstanding_amount = OutstandingAmount.objects.create(

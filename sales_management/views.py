@@ -3080,6 +3080,288 @@ def bottlecount_report(request):
 def dsr_summary(request):
     
     filter_data = {}
+    data_filter = False
+    new_customers_count = 0
+    emergency_supply_count = 0
+    visited_customers_count = 0
+    non_visited_count = 0
+    planned_visit_count = 0
+    # empty_bottles_collected = 0
+    # empty_bottle_pending = 0
+    # coupons_collected = 0
+    # total_supplied_quantity = 0
+    # total_collected_amount = 0
+    # total_pending_amount = 0
+    # mode_of_supply = 0
+    total_empty_bottles = 0
+    total_supplied_bottles = 0
+    closing_stock_count = 0
+    damage_bottle_count = 0
+    pending_bottle_count = 0
+    total_count = 0
+    cash_total_net_taxable = 0
+    cash_total_vat = 0
+    cash_total_subtotal = 0
+    cash_total_amount_recieved = 0
+    credit_total_net_taxable = 0
+    credit_total_vat = 0
+    credit_total_subtotal = 0
+    credit_total_amount_recieved = 0
+    in_hand_amount = 0
+    today_expense = 0
+    today_payable = 0
+    suspense_paid_amount = 0
+    suspense_balance_amount = 0
+    outstanding_credit_notes_total_amount = 0
+    outstanding_credit_notes_received_amount = 0
+    outstanding_credit_notes_balance = 0
+    cash_sales_amount_collected = 0
+    credit_sales_amount_collected = 0
+    total_sales_amount_collected = 0
+    total_cash_sales_count = 0
+    total_credit_sales_count = 0
+    total_sales_count = 0
+    no_of_collected_cheque = 0
+    collected_cheque_amount = 0
+    balance_in_hand = 0
+    net_payble = 0
+    
+    van_instances = Van.objects.none
+    van_route = Van_Routes.objects.none
+    salesman_id =  ""
+    cash_sales = CustomerSupply.objects.none
+    credit_sales = CustomerSupply.objects.none
+    recharge_cash_sales = CustomerCoupon.objects.none
+    recharge_credit_sales = CustomerCoupon.objects.none
+    products = ProdutItemMaster.objects.none
+    expenses_instanses = Expense.objects.none
+    routes_instances = RouteMaster.objects.all()
+    van_product_stock = VanProductStock.objects.none
+    customer_coupon_items = CustomerCouponItems.objects.none
+    unique_amounts = CustomerCouponItems.objects.none
+    dialy_collections = InvoiceDailyCollection.objects.none
+    
+    date = request.GET.get('date')
+    route_name = request.GET.get('route_name')
+    
+    if date:
+        date = datetime.strptime(date, '%Y-%m-%d').date()
+        filter_data['filter_date'] = date.strftime('%Y-%m-%d')
+    else:
+        date_today = datetime.today().date()
+        filter_data['filter_date'] = date_today.strftime('%Y-%m-%d')
+    
+    
+    if route_name:
+        data_filter = True
+        
+        van_route = Van_Routes.objects.filter(routes__route_name=route_name).first()
+        salesman = van_route.van.salesman
+        salesman_id = salesman.pk
+        filter_data['route_name'] = route_name
+        #new customers created
+        new_customers_count = Customers.objects.filter(created_date__date=date,sales_staff_id=salesman).count()
+        #emergency supply
+        emergency_supply_count = DiffBottlesModel.objects.filter(created_date__date=date, assign_this_to_id=salesman).count()
+        #actual visit
+        visited_customers_count = CustomerSupply.objects.filter(salesman_id=salesman, created_date__date=date).distinct().count()
+        todays_customers = find_customers(request, str(date), van_route.routes.pk)
+        planned_visit_count = len(todays_customers)
+        non_visited_count = planned_visit_count - visited_customers_count
+        
+        ##### stock report #### 
+        products = ProdutItemMaster.objects.filter()
+        van_instances = Van.objects.filter(salesman=salesman)
+        van_product_stock = VanProductStock.objects.all()
+        
+        #### 5 Gallon Related ###
+        # empty_bottles_collected = CustomerSupply.objects.filter(created_date__date=date, collected_empty_bottle__gt=0, salesman_id=salesman).count()
+        # # empty_bottles_collected = CustomerSupply.objects.filter(created_date__date=date, collected_empty_bottle__gt=0, **filter_data).count()
+        # empty_bottle_pending = CustomerSupply.objects.filter(created_date__date=date, allocate_bottle_to_pending__gt=0, salesman_id=salesman).count()
+        # coupons_collected = CustomerSupplyCoupon.objects.filter(customer_supply__created_date__date=date, customer_supply__salesman_id=salesman).aggregate(total_coupons=Count('leaf'))['total_coupons']
+        # total_supplied_quantity = CustomerSupplyItems.objects.filter(customer_supply__created_date__date=date, customer_supply__salesman_id=salesman).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+        # total_collected_amount = CustomerSupply.objects.filter(created_date__date=date, salesman_id=salesman).aggregate(total_collected_amount=Sum('net_payable'))['total_collected_amount'] or 0
+        # total_pending_amount = CustomerSupply.objects.filter(created_date__date=date, salesman_id=salesman).aggregate(total_pending_amount=Sum('grand_total') - Sum('net_payable'))['total_pending_amount'] or 0
+        # mode_of_supply = CustomerSupply.objects.filter(created_date__date=date, salesman_id=salesman).values('customer__sales_type').annotate(total=Count('customer__sales_type')) or 0
+        
+        #### Bottle Count ####
+        total_empty_bottles = CustodyCustomItems.objects.filter(custody_custom__customer__sales_staff_id=salesman,custody_custom__created_date__date=date).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+
+        total_supplied_bottles = CustomerSupply.objects.filter(created_date__date=date).aggregate(total_bottles=Sum('collected_empty_bottle'))['total_bottles'] or 0
+        # closing_stock_count = VanStock.objects.filter(created_date=date,stock_type="closing").aggregate(total_count=Sum('count'))['total_count'] or 0,
+        closing_stock_count = VanStock.objects.filter(created_date__date=date, stock_type='closing').count() or 0
+        damage_bottle_count = VanProductItems.objects.filter(van_stock__created_date__date=date, van_stock__stock_type='damage').aggregate(total_damage=Sum('count'))['total_damage'] or 0
+        pending_bottle_count = CustomerSupply.objects.filter(created_date__date=date,salesman_id=salesman).aggregate(total_pending=Sum('allocate_bottle_to_pending'))['total_pending'] or 0
+
+        total_count = total_empty_bottles + total_supplied_bottles + closing_stock_count + damage_bottle_count + pending_bottle_count
+        
+        #### coupon sales count ####
+        customer_coupon_items=CustomerCouponItems.objects.filter(customer_coupon__salesman=salesman,customer_coupon__created_date__date=date).order_by("-customer_coupon__created_date")
+        
+        ### cash sales ####
+        cash_sales = CustomerSupply.objects.filter(created_date__date=date,salesman=salesman,amount_recieved__gt=0)
+        cash_total_net_taxable = cash_sales.aggregate(total_net_taxable=Sum('net_payable'))['total_net_taxable'] or 0
+        cash_total_vat = cash_sales.aggregate(total_vat=Sum('vat'))['total_vat'] or 0
+        cash_total_subtotal = cash_sales.aggregate(total_subtotal=Sum('subtotal'))['total_subtotal'] or 0
+        cash_total_received = cash_sales.aggregate(total_amount_recieved=Sum('amount_recieved'))['total_amount_recieved'] or 0
+        recharge_cash_sales = CustomerCoupon.objects.filter(created_date__date=date,amount_recieved__gt=0)
+        cash_sale_recharge_net_payeble = recharge_cash_sales.aggregate(total_net_amount=Sum('net_amount'))['total_net_amount'] or 0
+        cash_sale_recharge_vat_total = 0
+        cash_sale_recharge_grand_total = recharge_cash_sales.aggregate(total_grand_total=Sum('grand_total'))['total_grand_total'] or 0
+        cash_sale_recharge_amount_recieved = recharge_cash_sales.aggregate(total_amount_recieved=Sum('amount_recieved'))['total_amount_recieved'] or 0
+        cash_total_net_taxable = cash_total_net_taxable + cash_sale_recharge_net_payeble 
+        cash_total_vat = cash_total_vat + cash_sale_recharge_vat_total 
+        cash_total_subtotal = cash_total_subtotal + cash_sale_recharge_grand_total 
+        cash_total_amount_recieved = cash_total_received + cash_sale_recharge_amount_recieved 
+        
+        ### credit sales ####
+        credit_sales = CustomerSupply.objects.filter(created_date__date=date,salesman=salesman,amount_recieved__lte=0)
+        credit_total_net_taxable = credit_sales.aggregate(total_net_taxable=Sum('net_payable'))['total_net_taxable'] or 0
+        credit_total_vat = credit_sales.aggregate(total_vat=Sum('vat'))['total_vat'] or 0
+        credit_total_subtotal = credit_sales.aggregate(total_subtotal=Sum('subtotal'))['total_subtotal'] or 0
+        credit_total_received = credit_sales.aggregate(total_amount_recieved=Sum('amount_recieved'))['total_amount_recieved'] or 0
+        recharge_credit_sales = CustomerCoupon.objects.filter(created_date__date=date,amount_recieved__gt=0)
+        credit_sale_recharge_net_payeble = recharge_credit_sales.aggregate(total_net_amount=Sum('net_amount'))['total_net_amount'] or 0
+        credit_sale_recharge_vat_total = 0
+        credit_sale_recharge_grand_total = recharge_credit_sales.aggregate(total_grand_total=Sum('grand_total'))['total_grand_total'] or 0
+        credit_sale_recharge_amount_recieved = recharge_credit_sales.aggregate(total_amount_recieved=Sum('amount_recieved'))['total_amount_recieved'] or 0
+        credit_total_net_taxable = credit_total_net_taxable + credit_sale_recharge_net_payeble 
+        credit_total_vat = credit_total_vat + credit_sale_recharge_vat_total 
+        credit_total_subtotal = credit_total_subtotal + credit_sale_recharge_grand_total
+        credit_total_amount_recieved = credit_total_received + credit_sale_recharge_amount_recieved
+        
+        ### expenses ####
+        expenses_instanses = Expense.objects.filter(date_created=date,van__salesman=salesman)
+        today_expense = expenses_instanses.aggregate(total_expense=Sum('amount'))['total_expense'] or 0
+        
+        ### suspense ###
+        suspense_collections = SuspenseCollection.objects.filter(created_date__date=date,salesman=salesman)
+        cash_sales_amount = suspense_collections.aggregate(total_cash_sale=Sum('cash_sale_amount'))['total_cash_sale'] or 0
+        credit_sales_amount = suspense_collections.aggregate(total_credit_sale=Sum('credit_sale_amount'))['total_credit_sale'] or 0
+        
+        in_hand_amount = cash_sales_amount + credit_sales_amount
+        today_payable = in_hand_amount - today_expense
+        suspense_paid_amount = suspense_collections.aggregate(total_paid=Sum('amount_paid'))['total_paid'] or 0
+        suspense_balance_amount = today_payable - suspense_paid_amount
+        
+        # collection details
+        dialy_collections = CollectionPayment.objects.filter(salesman_id=salesman,amount_received__gt=0)
+        # credit outstanding
+        # outstanding_credit_notes = Invoice.objects.filter(invoice_type="credit_invoive",customer__sales_staff=salesman).exclude(created_date__date__gt=date)
+        outstanding_credit_notes_total_amount = OutstandingAmount.objects.filter(customer_outstanding__created_date__date__lte=date,customer_outstanding__product_type="amount").aggregate(total_amount=Sum('amount'))['total_amount']
+        outstanding_credit_notes_received_amount = dialy_collections.filter(created_date__date__lte=date).aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
+        outstanding_credit_notes_balance = outstanding_credit_notes_total_amount - outstanding_credit_notes_received_amount
+        
+        # 5 gallon rate based
+        unique_amounts = set(CustomerSupplyItems.objects.filter(customer_supply__created_date__date=date,customer_supply__salesman_id=salesman,product__product_name="5 Gallon").values_list('customer_supply__customer__rate', flat=True))
+        
+        # cash sales amount collected
+        supply_amount_collected = cash_sales.aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
+        coupon_amount_collected = CustomerCoupon.objects.filter(created_date__date=date,salesman=salesman,amount_recieved__gt=0).aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
+        cash_sales_amount_collected = supply_amount_collected + coupon_amount_collected
+        
+        credit_sales_amount_collected = dialy_collections.filter(created_date__date=date).aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
+        total_sales_amount_collected = cash_sales_amount_collected + credit_sales_amount_collected
+        
+        cash_sales_supply_count = cash_sales.count()
+        cash_sales_coupon_count = CustomerCoupon.objects.filter(created_date__date=date,salesman=salesman,amount_recieved__gt=0).count()
+        total_cash_sales_count = cash_sales_supply_count + cash_sales_coupon_count
+        
+        credit_sales_supply_count = credit_sales.count()
+        credit_sales_coupon_count = CustomerCoupon.objects.filter(created_date__date=date,salesman=salesman,amount_recieved__gt=0).count()
+        total_credit_sales_count = credit_sales_supply_count + credit_sales_coupon_count
+        
+        total_sales_count = total_cash_sales_count + total_credit_sales_count
+        
+        cheque_collection = CollectionPayment.objects.filter(payment_method="CHEQUE",created_date__date=date,salesman=salesman)
+        no_of_collected_cheque = cheque_collection.count()
+        collected_cheque_amount = cheque_collection.aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
+        
+        balance_in_hand = total_sales_amount_collected - collected_cheque_amount - today_expense
+        net_payble = total_sales_amount_collected - today_expense
+        
+    context = {
+        'data_filter': data_filter,
+        'salesman_id': salesman_id,
+        'van_route': van_route,
+        # visit statistics
+        'new_customers_count': new_customers_count,
+        'emergency_supply_count': emergency_supply_count,
+        'visited_customers_count': visited_customers_count,
+        'non_visited_count': non_visited_count,
+        'planned_visit_count': planned_visit_count,
+        'routes_instances': routes_instances,
+        # stock report
+        'products': products,
+        'van_instances': van_instances,
+        'van_product_stock': van_product_stock,
+        # # 5 Gallon Related
+        # 'empty_bottles_collected': empty_bottles_collected,
+        # 'empty_bottle_pending': empty_bottle_pending,
+        # 'coupons_collected': coupons_collected,
+        # 'total_supplied_quantity': total_supplied_quantity,
+        # 'total_collected_amount': total_collected_amount,
+        # 'total_pending_amount': total_pending_amount,
+        # 'mode_of_supply' :mode_of_supply,
+        # Bottle Count
+        'total_empty_bottles': total_empty_bottles,
+        'total_supplied_bottles':total_supplied_bottles,
+        'closing_stock_count': closing_stock_count,
+        'damage_bottle_count': damage_bottle_count,
+        'pending_bottle_count': pending_bottle_count,
+        'total_count': total_count,
+        #coupon book sale
+        'customer_coupon_items':customer_coupon_items,
+        #cash sales
+        'cash_sales': cash_sales,
+        'recharge_cash_sales': recharge_cash_sales,
+        'cash_total_net_taxable':cash_total_net_taxable,
+        'cash_total_vat':cash_total_vat,
+        'cash_total_subtotal': cash_total_subtotal,
+        'cash_total_amount_recieved': cash_total_amount_recieved,
+        # credit sales
+        'credit_sales': credit_sales,
+        'recharge_credit_sales': recharge_credit_sales,
+        'credit_total_net_taxable':credit_total_net_taxable,
+        'credit_total_vat':credit_total_vat,
+        'credit_total_subtotal':credit_total_subtotal,
+        'credit_total_amount_recieved': credit_total_amount_recieved,
+        # expenses
+        'expenses_instanses': expenses_instanses,
+        # suspense
+        'in_hand_amount': in_hand_amount,
+        'today_expense': today_expense, 
+        'today_payable': today_payable,
+        'suspense_paid_amount': suspense_paid_amount,
+        'suspense_balance_amount': suspense_balance_amount,
+        'outstanding_credit_notes_total_amount' : outstanding_credit_notes_total_amount,
+        'outstanding_credit_notes_received_amount' : outstanding_credit_notes_received_amount,
+        'outstanding_credit_notes_balance': outstanding_credit_notes_balance,
+        # 5 gallon rate based
+        'five_gallon_rates': unique_amounts,
+        # dialy collections
+        'dialy_collections': dialy_collections,
+        # sales amount collected
+        'cash_sales_amount_collected': cash_sales_amount_collected,
+        'credit_sales_amount_collected': credit_sales_amount_collected,
+        'total_sales_amount_collected': total_sales_amount_collected,
+        'total_cash_sales_count': total_cash_sales_count,
+        'total_credit_sales_count': total_credit_sales_count,
+        'total_sales_count': total_sales_count,
+        'no_of_collected_cheque': no_of_collected_cheque,
+        'collected_cheque_amount': collected_cheque_amount,
+        
+        'balance_in_hand': balance_in_hand,
+        'net_payble': net_payble,
+        
+        'filter_data': filter_data
+    }
+    
+    return render(request, 'sales_management/dsr_summary.html', context)
+
+def print_dsr_summary(request):
+    
+    filter_data = {}
     new_customers_count = 0
     emergency_supply_count = 0
     visited_customers_count = 0
@@ -3351,285 +3633,7 @@ def dsr_summary(request):
         'net_payble': net_payble,
         
         'filter_data': filter_data
-    }
-    
-    return render(request, 'sales_management/dsr_summary.html', context)
-
-def print_dsr_summary(request):
-    
-    filter_data = {}
-    new_customers_count = 0
-    emergency_supply_count = 0
-    visited_customers_count = 0
-    non_visited_count = 0
-    planned_visit_count = 0
-    # empty_bottles_collected = 0
-    # empty_bottle_pending = 0
-    # coupons_collected = 0
-    # total_supplied_quantity = 0
-    # total_collected_amount = 0
-    # total_pending_amount = 0
-    # mode_of_supply = 0
-    total_empty_bottles = 0
-    total_supplied_bottles = 0
-    closing_stock_count = 0
-    damage_bottle_count = 0
-    pending_bottle_count = 0
-    total_count = 0
-    cash_total_net_taxable = 0
-    cash_total_vat = 0
-    cash_total_subtotal = 0
-    cash_total_amount_recieved = 0
-    credit_total_net_taxable = 0
-    credit_total_vat = 0
-    credit_total_subtotal = 0
-    credit_total_amount_recieved = 0
-    in_hand_amount = 0
-    today_expense = 0
-    today_payable = 0
-    suspense_paid_amount = 0
-    suspense_balance_amount = 0
-    outstanding_credit_notes_total_amount = 0
-    outstanding_credit_notes_received_amount = 0
-    outstanding_credit_notes_balance = 0
-    cash_sales_amount_collected = 0
-    credit_sales_amount_collected = 0
-    total_sales_amount_collected = 0
-    total_cash_sales_count = 0
-    total_credit_sales_count = 0
-    total_sales_count = 0
-    no_of_collected_cheque = 0
-    collected_cheque_amount = 0
-    balance_in_hand = 0
-    net_payble = 0
-    
-    van_instances = Van.objects.none
-    van_route = Van_Routes.objects.none
-    salesman_id =  ""
-    cash_sales = CustomerSupply.objects.none
-    credit_sales = CustomerSupply.objects.none
-    recharge_cash_sales = CustomerCoupon.objects.none
-    recharge_credit_sales = CustomerCoupon.objects.none
-    products = ProdutItemMaster.objects.none
-    expenses_instanses = Expense.objects.none
-    routes_instances = RouteMaster.objects.all()
-    van_product_stock = VanProductStock.objects.none
-    customer_coupon_items = CustomerCouponItems.objects.none
-    unique_amounts = CustomerCouponItems.objects.none
-    dialy_collections = InvoiceDailyCollection.objects.none
-    
-    date = request.GET.get('date')
-    route_name = request.GET.get('route_name')
-    
-    if date:
-        date = datetime.strptime(date, '%Y-%m-%d').date()
-        filter_data['filter_date'] = date.strftime('%Y-%m-%d')
-    else:
-        date_today = datetime.today().date()
-        filter_data['filter_date'] = date_today.strftime('%Y-%m-%d')
-    
-    
-    if route_name:
-        van_route = Van_Routes.objects.filter(routes__route_name=route_name).first()
-        salesman = van_route.van.salesman
-        salesman_id = salesman.pk
-        filter_data['route_name'] = route_name
-        #new customers created
-        new_customers_count = Customers.objects.filter(created_date__date=date,sales_staff_id=salesman).count()
-        #emergency supply
-        emergency_supply_count = DiffBottlesModel.objects.filter(created_date__date=date, assign_this_to_id=salesman).count()
-        #actual visit
-        visited_customers_count = CustomerSupply.objects.filter(salesman_id=salesman, created_date__date=date).distinct().count()
-        todays_customers = find_customers(request, str(date), van_route.routes.pk)
-        planned_visit_count = len(todays_customers)
-        non_visited_count = planned_visit_count - visited_customers_count
-        
-        ##### stock report #### 
-        products = ProdutItemMaster.objects.filter()
-        van_instances = Van.objects.filter(salesman=salesman)
-        van_product_stock = VanProductStock.objects.all()
-        
-        #### 5 Gallon Related ###
-        # empty_bottles_collected = CustomerSupply.objects.filter(created_date__date=date, collected_empty_bottle__gt=0, salesman_id=salesman).count()
-        # # empty_bottles_collected = CustomerSupply.objects.filter(created_date__date=date, collected_empty_bottle__gt=0, **filter_data).count()
-        # empty_bottle_pending = CustomerSupply.objects.filter(created_date__date=date, allocate_bottle_to_pending__gt=0, salesman_id=salesman).count()
-        # coupons_collected = CustomerSupplyCoupon.objects.filter(customer_supply__created_date__date=date, customer_supply__salesman_id=salesman).aggregate(total_coupons=Count('leaf'))['total_coupons']
-        # total_supplied_quantity = CustomerSupplyItems.objects.filter(customer_supply__created_date__date=date, customer_supply__salesman_id=salesman).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
-        # total_collected_amount = CustomerSupply.objects.filter(created_date__date=date, salesman_id=salesman).aggregate(total_collected_amount=Sum('net_payable'))['total_collected_amount'] or 0
-        # total_pending_amount = CustomerSupply.objects.filter(created_date__date=date, salesman_id=salesman).aggregate(total_pending_amount=Sum('grand_total') - Sum('net_payable'))['total_pending_amount'] or 0
-        # mode_of_supply = CustomerSupply.objects.filter(created_date__date=date, salesman_id=salesman).values('customer__sales_type').annotate(total=Count('customer__sales_type')) or 0
-        
-        #### Bottle Count ####
-        total_empty_bottles = CustodyCustomItems.objects.filter(custody_custom__customer__sales_staff_id=salesman,custody_custom__created_date__date=date).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
-
-        total_supplied_bottles = CustomerSupply.objects.filter(created_date__date=date).aggregate(total_bottles=Sum('collected_empty_bottle'))['total_bottles'] or 0
-        # closing_stock_count = VanStock.objects.filter(created_date=date,stock_type="closing").aggregate(total_count=Sum('count'))['total_count'] or 0,
-        closing_stock_count = VanStock.objects.filter(created_date__date=date, stock_type='closing').count() or 0
-        damage_bottle_count = VanProductItems.objects.filter(van_stock__created_date__date=date, van_stock__stock_type='damage').aggregate(total_damage=Sum('count'))['total_damage'] or 0
-        pending_bottle_count = CustomerSupply.objects.filter(created_date__date=date,salesman_id=salesman).aggregate(total_pending=Sum('allocate_bottle_to_pending'))['total_pending'] or 0
-
-        total_count = total_empty_bottles + total_supplied_bottles + closing_stock_count + damage_bottle_count + pending_bottle_count
-        
-        #### coupon sales count ####
-        customer_coupon_items=CustomerCouponItems.objects.filter(customer_coupon__salesman=salesman,customer_coupon__created_date__date=date).order_by("-customer_coupon__created_date")
-        
-        ### cash sales ####
-        cash_sales = CustomerSupply.objects.filter(created_date__date=date,amount_recieved__gt=0)
-        cash_total_net_taxable = cash_sales.aggregate(total_net_taxable=Sum('net_payable'))['total_net_taxable'] or 0
-        cash_total_vat = cash_sales.aggregate(total_vat=Sum('vat'))['total_vat'] or 0
-        cash_total_subtotal = cash_sales.aggregate(total_subtotal=Sum('subtotal'))['total_subtotal'] or 0
-        cash_total_received = cash_sales.aggregate(total_amount_recieved=Sum('amount_recieved'))['total_amount_recieved'] or 0
-        recharge_cash_sales = CustomerCoupon.objects.filter(created_date__date=date,amount_recieved__gt=0)
-        cash_sale_recharge_net_payeble = recharge_cash_sales.aggregate(total_net_amount=Sum('net_amount'))['total_net_amount'] or 0
-        cash_sale_recharge_vat_total = 0
-        cash_sale_recharge_grand_total = recharge_cash_sales.aggregate(total_grand_total=Sum('grand_total'))['total_grand_total'] or 0
-        cash_sale_recharge_amount_recieved = recharge_cash_sales.aggregate(total_amount_recieved=Sum('amount_recieved'))['total_amount_recieved'] or 0
-        cash_total_net_taxable = cash_total_net_taxable + cash_sale_recharge_net_payeble 
-        cash_total_vat = cash_total_vat + cash_sale_recharge_vat_total 
-        cash_total_subtotal = cash_total_subtotal + cash_sale_recharge_grand_total 
-        cash_total_amount_recieved = cash_total_received + cash_sale_recharge_amount_recieved 
-        
-        ### credit sales ####
-        credit_sales = CustomerSupply.objects.filter(created_date__date=date,amount_recieved__lte=0)
-        credit_total_net_taxable = credit_sales.aggregate(total_net_taxable=Sum('net_payable'))['total_net_taxable'] or 0
-        credit_total_vat = credit_sales.aggregate(total_vat=Sum('vat'))['total_vat'] or 0
-        credit_total_subtotal = credit_sales.aggregate(total_subtotal=Sum('subtotal'))['total_subtotal'] or 0
-        credit_total_received = credit_sales.aggregate(total_amount_recieved=Sum('amount_recieved'))['total_amount_recieved'] or 0
-        recharge_credit_sales = CustomerCoupon.objects.filter(created_date__date=date,amount_recieved__gt=0)
-        credit_sale_recharge_net_payeble = recharge_credit_sales.aggregate(total_net_amount=Sum('net_amount'))['total_net_amount'] or 0
-        credit_sale_recharge_vat_total = 0
-        credit_sale_recharge_grand_total = recharge_credit_sales.aggregate(total_grand_total=Sum('grand_total'))['total_grand_total'] or 0
-        credit_sale_recharge_amount_recieved = recharge_credit_sales.aggregate(total_amount_recieved=Sum('amount_recieved'))['total_amount_recieved'] or 0
-        credit_total_net_taxable = credit_total_net_taxable + credit_sale_recharge_net_payeble 
-        credit_total_vat = credit_total_vat + credit_sale_recharge_vat_total 
-        credit_total_subtotal = credit_total_subtotal + credit_sale_recharge_grand_total
-        credit_total_amount_recieved = credit_total_received + credit_sale_recharge_amount_recieved
-        
-        ### expenses ####
-        expenses_instanses = Expense.objects.filter(date_created=date,van__salesman=salesman)
-        today_expense = expenses_instanses.aggregate(total_expense=Sum('amount'))['total_expense'] or 0
-        
-        ### suspense ###
-        suspense_collections = SuspenseCollection.objects.filter(created_date__date=date,salesman=salesman)
-        cash_sales_amount = suspense_collections.aggregate(total_cash_sale=Sum('cash_sale_amount'))['total_cash_sale'] or 0
-        credit_sales_amount = suspense_collections.aggregate(total_credit_sale=Sum('credit_sale_amount'))['total_credit_sale'] or 0
-        
-        in_hand_amount = cash_sales_amount + credit_sales_amount
-        today_payable = in_hand_amount - today_expense
-        suspense_paid_amount = suspense_collections.aggregate(total_paid=Sum('amount_paid'))['total_paid'] or 0
-        suspense_balance_amount = today_payable - suspense_paid_amount
-        
-        # collection details
-        dialy_collections = CollectionPayment.objects.filter(salesman_id=salesman,amount_received__gt=0)
-        # credit outstanding
-        # outstanding_credit_notes = Invoice.objects.filter(invoice_type="credit_invoive",customer__sales_staff=salesman).exclude(created_date__date__gt=date)
-        outstanding_credit_notes_total_amount = OutstandingAmount.objects.filter(customer_outstanding__product_type="amount").aggregate(total_amount=Sum('amount'))['total_amount']
-        outstanding_credit_notes_received_amount = dialy_collections.filter(created_date__date__lte=date).aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
-        outstanding_credit_notes_balance = outstanding_credit_notes_total_amount - outstanding_credit_notes_received_amount
-        
-        # 5 gallon rate based
-        unique_amounts = set(CustomerSupplyItems.objects.filter(customer_supply__created_date__date=date,customer_supply__salesman_id=salesman,product__product_name="5 Gallon").values_list('customer_supply__customer__rate', flat=True))
-        
-        # cash sales amount collected
-        supply_amount_collected = CustomerSupply.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CASH").aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
-        coupon_amount_collected = CustomerCoupon.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CASH").aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
-        cash_sales_amount_collected = supply_amount_collected + coupon_amount_collected
-        
-        credit_sales_amount_collected = dialy_collections.filter(created_date__date=date).aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
-        total_sales_amount_collected = cash_sales_amount_collected + credit_sales_amount_collected
-        
-        cash_sales_supply_count = CustomerSupply.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CASH").count()
-        cash_sales_coupon_count = CustomerCoupon.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CASH").count()
-        total_cash_sales_count = cash_sales_supply_count + cash_sales_coupon_count
-        
-        credit_sales_supply_count = CustomerSupply.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CREDIT").count()
-        credit_sales_coupon_count = CustomerCoupon.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CREDIT").count()
-        total_credit_sales_count = credit_sales_supply_count + credit_sales_coupon_count
-        
-        total_sales_count = total_cash_sales_count + total_credit_sales_count
-        
-        cheque_collection = CollectionPayment.objects.filter(payment_method="CHEQUE",created_date__date=date,salesman=salesman)
-        no_of_collected_cheque = cheque_collection.count()
-        collected_cheque_amount = cheque_collection.aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
-        
-        balance_in_hand = total_sales_amount_collected - collected_cheque_amount - today_expense
-        net_payble = total_sales_amount_collected - today_expense
-        
-    context = {
-        'salesman_id': salesman_id,
-        'van_route': van_route,
-        # visit statistics
-        'new_customers_count': new_customers_count,
-        'emergency_supply_count': emergency_supply_count,
-        'visited_customers_count': visited_customers_count,
-        'non_visited_count': non_visited_count,
-        'planned_visit_count': planned_visit_count,
-        'routes_instances': routes_instances,
-        # stock report
-        'products': products,
-        'van_instances': van_instances,
-        'van_product_stock': van_product_stock,
-        # # 5 Gallon Related
-        # 'empty_bottles_collected': empty_bottles_collected,
-        # 'empty_bottle_pending': empty_bottle_pending,
-        # 'coupons_collected': coupons_collected,
-        # 'total_supplied_quantity': total_supplied_quantity,
-        # 'total_collected_amount': total_collected_amount,
-        # 'total_pending_amount': total_pending_amount,
-        # 'mode_of_supply' :mode_of_supply,
-        # Bottle Count
-        'total_empty_bottles': total_empty_bottles,
-        'total_supplied_bottles':total_supplied_bottles,
-        'closing_stock_count': closing_stock_count,
-        'damage_bottle_count': damage_bottle_count,
-        'pending_bottle_count': pending_bottle_count,
-        'total_count': total_count,
-        #coupon book sale
-        'customer_coupon_items':customer_coupon_items,
-        #cash sales
-        'cash_sales': cash_sales,
-        'recharge_cash_sales': recharge_cash_sales,
-        'cash_total_net_taxable':cash_total_net_taxable,
-        'cash_total_vat':cash_total_vat,
-        'cash_total_subtotal': cash_total_subtotal,
-        'cash_total_amount_recieved': cash_total_amount_recieved,
-        # credit sales
-        'credit_sales': credit_sales,
-        'recharge_credit_sales': recharge_credit_sales,
-        'credit_total_net_taxable':credit_total_net_taxable,
-        'credit_total_vat':credit_total_vat,
-        'credit_total_subtotal':credit_total_subtotal,
-        'credit_total_amount_recieved': credit_total_amount_recieved,
-        # expenses
-        'expenses_instanses': expenses_instanses,
-        # suspense
-        'in_hand_amount': in_hand_amount,
-        'today_expense': today_expense, 
-        'today_payable': today_payable,
-        'suspense_paid_amount': suspense_paid_amount,
-        'suspense_balance_amount': suspense_balance_amount,
-        'outstanding_credit_notes_total_amount' : outstanding_credit_notes_total_amount,
-        'outstanding_credit_notes_received_amount' : outstanding_credit_notes_received_amount,
-        'outstanding_credit_notes_balance': outstanding_credit_notes_balance,
-        # 5 gallon rate based
-        'five_gallon_rates': unique_amounts,
-        # dialy collections
-        'dialy_collections': dialy_collections,
-        # sales amount collected
-        'cash_sales_amount_collected': cash_sales_amount_collected,
-        'credit_sales_amount_collected': credit_sales_amount_collected,
-        'total_sales_amount_collected': total_sales_amount_collected,
-        'total_cash_sales_count': total_cash_sales_count,
-        'total_credit_sales_count': total_credit_sales_count,
-        'total_sales_count': total_sales_count,
-        'no_of_collected_cheque': no_of_collected_cheque,
-        'collected_cheque_amount': collected_cheque_amount,
-        
-        'balance_in_hand': balance_in_hand,
-        'net_payble': net_payble,
-        
-        'filter_data': filter_data
-    }
+    }   
     
     return render(request, 'sales_management/dsr_summary_print.html', context)
 
