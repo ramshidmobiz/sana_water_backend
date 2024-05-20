@@ -3196,7 +3196,7 @@ def dsr_summary(request):
         customer_coupon_items=CustomerCouponItems.objects.filter(customer_coupon__salesman=salesman,customer_coupon__created_date__date=date).order_by("-customer_coupon__created_date")
         
         ### cash sales ####
-        cash_sales = CustomerSupply.objects.filter(created_date__date=date,amount_recieved__gt=0)
+        cash_sales = CustomerSupply.objects.filter(created_date__date=date,salesman=salesman,amount_recieved__gt=0)
         cash_total_net_taxable = cash_sales.aggregate(total_net_taxable=Sum('net_payable'))['total_net_taxable'] or 0
         cash_total_vat = cash_sales.aggregate(total_vat=Sum('vat'))['total_vat'] or 0
         cash_total_subtotal = cash_sales.aggregate(total_subtotal=Sum('subtotal'))['total_subtotal'] or 0
@@ -3212,7 +3212,7 @@ def dsr_summary(request):
         cash_total_amount_recieved = cash_total_received + cash_sale_recharge_amount_recieved 
         
         ### credit sales ####
-        credit_sales = CustomerSupply.objects.filter(created_date__date=date,amount_recieved__lte=0)
+        credit_sales = CustomerSupply.objects.filter(created_date__date=date,salesman=salesman,amount_recieved__lte=0)
         credit_total_net_taxable = credit_sales.aggregate(total_net_taxable=Sum('net_payable'))['total_net_taxable'] or 0
         credit_total_vat = credit_sales.aggregate(total_vat=Sum('vat'))['total_vat'] or 0
         credit_total_subtotal = credit_sales.aggregate(total_subtotal=Sum('subtotal'))['total_subtotal'] or 0
@@ -3253,19 +3253,19 @@ def dsr_summary(request):
         unique_amounts = set(CustomerSupplyItems.objects.filter(customer_supply__created_date__date=date,customer_supply__salesman_id=salesman,product__product_name="5 Gallon").values_list('customer_supply__customer__rate', flat=True))
         
         # cash sales amount collected
-        supply_amount_collected = CustomerSupply.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CASH").aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
-        coupon_amount_collected = CustomerCoupon.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CASH").aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
+        supply_amount_collected = cash_sales.aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
+        coupon_amount_collected = CustomerCoupon.objects.filter(created_date__date=date,salesman=salesman,amount_recieved__gt=0).aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
         cash_sales_amount_collected = supply_amount_collected + coupon_amount_collected
         
         credit_sales_amount_collected = dialy_collections.filter(created_date__date=date).aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
         total_sales_amount_collected = cash_sales_amount_collected + credit_sales_amount_collected
         
-        cash_sales_supply_count = CustomerSupply.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CASH").count()
-        cash_sales_coupon_count = CustomerCoupon.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CASH").count()
+        cash_sales_supply_count = cash_sales.count()
+        cash_sales_coupon_count = CustomerCoupon.objects.filter(created_date__date=date,salesman=salesman,amount_recieved__gt=0).count()
         total_cash_sales_count = cash_sales_supply_count + cash_sales_coupon_count
         
-        credit_sales_supply_count = CustomerSupply.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CREDIT").count()
-        credit_sales_coupon_count = CustomerCoupon.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CREDIT").count()
+        credit_sales_supply_count = credit_sales.count()
+        credit_sales_coupon_count = CustomerCoupon.objects.filter(created_date__date=date,salesman=salesman,amount_recieved__gt=0).count()
         total_credit_sales_count = credit_sales_supply_count + credit_sales_coupon_count
         
         total_sales_count = total_cash_sales_count + total_credit_sales_count
