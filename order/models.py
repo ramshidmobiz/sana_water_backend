@@ -37,7 +37,7 @@ class Order(models.Model):
     order_id= models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     driver = models.ForeignKey(CustomUser, on_delete=models.SET_NULL,  null=True, blank=True, related_name='driver',)
     route = models.ForeignKey(RouteMaster, on_delete=models.SET_NULL,  null=True, blank=True)
-    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
+    product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE, null=True, blank=True)
     quantity = models.PositiveIntegerField(default=0)
     salesman = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, blank=True, null=True,  related_name='salesman',)
     order_date = models.DateField(blank=True, null=True)
@@ -59,7 +59,7 @@ class Change_Reason(models.Model):
 class ChangeOrReturn(models.Model):
     customer = models.ForeignKey('accounts.Customers', on_delete = models.SET_NULL, null=True, blank=True)
     route = models.ForeignKey(RouteMaster, on_delete=models.SET_NULL, null=True)
-    product = models.ForeignKey(Product, on_delete=models.SET_NULL, blank=True, null=True)
+    product = models.ForeignKey(ProdutItemMaster, on_delete=models.SET_NULL, blank=True, null=True)
     reason = models.ForeignKey(Change_Reason, on_delete=models.SET_NULL,  null=True)
     note = models.TextField(blank=True, null=True)
     
