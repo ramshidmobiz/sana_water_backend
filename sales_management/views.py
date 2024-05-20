@@ -3245,7 +3245,7 @@ def dsr_summary(request):
         dialy_collections = CollectionPayment.objects.filter(salesman_id=salesman,amount_received__gt=0)
         # credit outstanding
         # outstanding_credit_notes = Invoice.objects.filter(invoice_type="credit_invoive",customer__sales_staff=salesman).exclude(created_date__date__gt=date)
-        outstanding_credit_notes_total_amount = OutstandingAmount.objects.filter(customer_outstanding__product_type="amount").aggregate(total_amount=Sum('amount'))['total_amount']
+        outstanding_credit_notes_total_amount = OutstandingAmount.objects.filter(customer_outstanding__created_date__date__lte=date,customer_outstanding__product_type="amount").aggregate(total_amount=Sum('amount'))['total_amount']
         outstanding_credit_notes_received_amount = dialy_collections.filter(created_date__date__lte=date).aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
         outstanding_credit_notes_balance = outstanding_credit_notes_total_amount - outstanding_credit_notes_received_amount
         

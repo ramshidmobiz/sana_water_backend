@@ -289,7 +289,7 @@ class CustomerOutstanding(models.Model):
 class OutstandingAmount(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customer_outstanding = models.ForeignKey(CustomerOutstanding, on_delete=models.CASCADE)
-    amount = models.IntegerField(default=0)
+    amount = models.DecimalField(default=0, max_digits=10, decimal_places=2)
 
     class Meta:
         ordering = ('-id',)
