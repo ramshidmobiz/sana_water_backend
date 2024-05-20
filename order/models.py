@@ -51,7 +51,6 @@ class Order(models.Model):
 
 class Change_Reason(models.Model):
     reason_name = models.CharField(max_length=100)
-    reason_nametwo = models.CharField(max_length=100)
     def __str__(self):
         return self.reason_name
 
