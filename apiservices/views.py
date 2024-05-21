@@ -84,6 +84,8 @@ logger=logging.getLogger(__name__)
 from datetime import timedelta
 from django.db.models import Sum,Value
 from django.db.models.functions import Coalesce
+from django.utils.dateparse import parse_date
+
 
 
 
@@ -5202,19 +5204,26 @@ class OffloadCouponAPI(APIView):
 
 
 class PendingSupplyReportView(APIView):
-    def get(self, request):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get(self, request, route_id):
         try:
-            user_id = request.user.id
-            if request.GET.get('date'):
-                date_str = request.GET.get('date')
-            else:
-                date_str = datetime.today().date()
-            pending_supplies = CustomerSupply.objects.filter( created_date__date=date_str,net_payable__gt=F('amount_recieved'))
-            serializer = CustomerSupplySerializer(pending_supplies, many=True)
-            # return Response(serializer.data, status=status.HTTP_200_OK)            
-            return Response({'status': True, 'data': serializer.data, 'message': 'Pending Supply list passed!'})
+            date_str = request.GET.get("date_str", str(datetime.today().date()))
+            date = datetime.strptime(date_str, '%Y-%m-%d')
+
+            today_customers = find_customers(request, date_str, route_id)
+            today_customer_ids = [str(customer['customer_id']) for customer in today_customers]
+
+            today_supplied = CustomerSupply.objects.filter(created_date__date=date)
+            today_supplied_ids = today_supplied.values_list('customer_id', flat=True)
+            customers = Customers.objects.filter(pk__in=today_customer_ids).exclude(pk__in=today_supplied_ids)
+
+            serializer = CustomerSupplySerializer(customers, many=True)
+            return JsonResponse({'status': True, 'data': serializer.data, 'message': 'Pending Supply report passed!'})
+
         except Exception as e:
-            return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class CustodyReportView(APIView):
     def get(self, request):
@@ -5255,8 +5264,8 @@ class FreshcanEmptyBottleView(APIView):
             else:
                 date_str = datetime.today().date()
 
-            fresh_cans = VanProductStock.objects.filter(stock_type='opening_stock', van__created_date__date=date_str)
-            empty_bottles = VanProductStock.objects.filter(stock_type='emptycan', van__created_date__date=date_str)
+            fresh_cans = VanProductStock.objects.filter(stock_type='opening_stock', van__created_date__date=date_str ,van__salesman=user_id )
+            empty_bottles = VanProductStock.objects.filter(stock_type='emptycan', van__created_date__date=date_str, van__salesman=user_id)
 
             fresh_cans_serializer = VanProductStockSerializer(fresh_cans, many=True)
             empty_bottles_serializer = VanProductStockSerializer(empty_bottles, many=True)
@@ -5269,4 +5278,30 @@ class FreshcanEmptyBottleView(APIView):
             return Response(data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CustodyReportView(APIView):
+    def get(self, request, *args, **kwargs):
+        user_id = request.user.id
+        
+        date_str = request.GET.get('date', str(datetime.today().date()))
+        date = parse_date(date_str)
+        
+        if date:
+            customers = CustodyCustom.objects.filter(customer=user_id, created_date__date=date)
+        else:
+            customers = CustodyCustom.objects.filter(customer=user_id)
+        
+        custody_items = CustodyCustomItems.objects.filter(custody_custom__in=customers)
+        
+        custody_custom_serializer = CustodyCustomSerializer(customers, many=True)
+        custody_items_serializer = CustodyCustomItemsSerializer(custody_items, many=True)
+        
+        data = {
+            'custody_custom': custody_custom_serializer.data,
+            'custody_items': custody_items_serializer.data
+        }
+        
+        return Response(data, status=status.HTTP_200_OK)
+
         

@@ -201,11 +201,15 @@ urlpatterns = [
     path('market_share/',MarketShareAPI.as_view(), name='market_share'),
     path('offload_coupon/', OffloadCouponAPI.as_view(), name='offload_coupon'),
     
-    path('pending-supply-report/', PendingSupplyReportView.as_view(), name='pending-supply-report'),
+    path('pending-supply-report/<str:route_id>/', PendingSupplyReportView.as_view(), name='pending-supply-report'),
     
     path('custody_report_view/', CustodyReportView.as_view(), name='custody_report_view'),
     path('can_stock/', CanStockView.as_view(), name='can_stock'),
     path('freshcanandemptybottle/', FreshcanEmptyBottleView.as_view(), name='freshcanandemptybottle'),
+
+    path('custodyreport/', CustodyReportView.as_view(), name='custodyreport'),
+
+
 
     
     

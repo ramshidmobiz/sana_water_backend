@@ -1034,15 +1034,10 @@ class OffloadVanSerializer(serializers.ModelSerializer):
         
         
 class CustomerSupplySerializer(serializers.ModelSerializer):
-    customer_name = serializers.CharField(source='customer.customer_name')
-    mobile_no = serializers.CharField(source='customer.mobile_no')
-    building_name = serializers.CharField(source='customer.building_name')
-    door_house_no = serializers.CharField(source='customer.door_house_no')
-    floor_no = serializers.CharField(source='customer.floor_no')
   
     class Meta:
-        model = CustomerSupply
-        fields = ['customer_name','mobile_no','building_name','door_house_no','floor_no','amount_recieved','created_date']
+        model = Customers
+        fields = ['customer_name','mobile_no','building_name','door_house_no','floor_no']
 
 
 
@@ -1101,4 +1096,17 @@ class CouponConsumptionSerializer(serializers.Serializer):
     customer__customer_name = serializers.CharField()
     total_digital_leaflets = serializers.IntegerField()
     total_manual_leaflets = serializers.IntegerField()
+
+
+class CustodyCustomItemsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustodyCustomItems
+        fields = '__all__'
+
+class CustodyCustomSerializer(serializers.ModelSerializer):
+    items = CustodyCustomItemsSerializer(many=True, read_only=True, source='custodycustomitems_set')
+
+    class Meta:
+        model = CustodyCustom
+        fields = '__all__'
     
