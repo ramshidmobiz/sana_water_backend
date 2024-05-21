@@ -174,7 +174,7 @@ urlpatterns = [
     path('redeemed_history/', RedeemedHistoryAPI.as_view(), name='redeemed_history'),
 
     # path('visit_report/', VisitReportAPI.as_view(), name='visit_report'),
-    path('coupon_consumption_report/<int:salesman_id>/', CouponConsumptionReport.as_view(), name='coupon_consumption_report'),
+    path('coupon_consumption_report/', CouponConsumptionReport.as_view(), name='coupon_consumption_report'),
     path('stockmovementreport/<str:salesman_id>/', StockMovementReportAPI.as_view(), name='stock_movement_report'),
 
     path('visit_report/', VisitReportAPI.as_view(), name='visit_report'),
@@ -201,6 +201,12 @@ urlpatterns = [
     path('market_share/',MarketShareAPI.as_view(), name='market_share'),
     path('offload_coupon/', OffloadCouponAPI.as_view(), name='offload_coupon'),
     
+    path('pending-supply-report/', PendingSupplyReportView.as_view(), name='pending-supply-report'),
+    
+    path('custody_report_view/', CustodyReportView.as_view(), name='custody_report_view'),
+    path('can_stock/', CanStockView.as_view(), name='can_stock'),
+    path('freshcanandemptybottle/', FreshcanEmptyBottleView.as_view(), name='freshcanandemptybottle'),
+
     
     
 ]

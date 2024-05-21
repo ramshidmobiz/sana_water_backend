@@ -935,10 +935,6 @@ class CustomerCouponCountsSerializer(serializers.Serializer):
     digital_coupons_count = serializers.IntegerField()
     manual_coupons_count = serializers.IntegerField()
 
-class CouponConsumptionReportSerializer(serializers.Serializer):
-    customer_supply__customer__customer_name = serializers.CharField()
-    total_digital_quantity = serializers.DecimalField(max_digits=10, decimal_places=2)
-    total_manual_quantity = serializers.DecimalField(max_digits=10, decimal_places=2)
     
     
 class StockMovementReportSerializer(serializers.ModelSerializer):
@@ -1034,3 +1030,75 @@ class OffloadVanSerializer(serializers.ModelSerializer):
     class Meta:
         model = Offload
         fields = ['id', 'created_by', 'created_date', 'modified_by', 'modified_date', 'van', 'product', 'quantity', 'stock_type']
+        
+        
+        
+class CustomerSupplySerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source='customer.customer_name')
+    mobile_no = serializers.CharField(source='customer.mobile_no')
+    building_name = serializers.CharField(source='customer.building_name')
+    door_house_no = serializers.CharField(source='customer.door_house_no')
+    floor_no = serializers.CharField(source='customer.floor_no')
+  
+    class Meta:
+        model = CustomerSupply
+        fields = ['customer_name','mobile_no','building_name','door_house_no','floor_no','amount_recieved','created_date']
+
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProdutItemMaster
+        fields = '__all__'
+
+class CustodyCustomItemsSerializer(serializers.ModelSerializer):
+    product = ProductSerializer()
+
+    class Meta:
+        model = CustodyCustomItems
+        fields = '__all__'
+
+class CustodyCustomSerializer(serializers.ModelSerializer):
+    custody_custom_items = CustodyCustomItemsSerializer(many=True, source='custodycustomitems_set')
+
+    class Meta:
+        model = CustodyCustom
+        fields = '__all__'
+
+class VanSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Van
+        fields = ['van_id', 'van_make', 'plate', 'capacity']
+
+class VanProductStockSerializer(serializers.ModelSerializer):
+    van = VanSerializer(read_only=True)
+    
+    class Meta:
+        model = VanProductStock
+        fields = ['id', 'product', 'stock_type', 'count', 'van']
+
+
+
+
+class VanProductSerializer(serializers.ModelSerializer):
+    van = VanSerializer()
+    product = serializers.StringRelatedField()
+
+    class Meta:
+        model = VanProductStock
+        fields = ['id', 'product', 'stock_type', 'count', 'van']
+
+class VanCouponStockSerializer(serializers.ModelSerializer):
+    van = VanSerializer()
+    coupon = serializers.StringRelatedField()
+
+    class Meta:
+        model = VanCouponStock
+        fields = ['id', 'coupon', 'stock_type', 'count', 'van']
+
+
+class CouponConsumptionSerializer(serializers.Serializer):
+    customer__customer_name = serializers.CharField()
+    total_digital_leaflets = serializers.IntegerField()
+    total_manual_leaflets = serializers.IntegerField()
+    

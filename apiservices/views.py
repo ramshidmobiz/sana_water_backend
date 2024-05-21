@@ -4424,39 +4424,67 @@ class RedeemedHistoryAPI(APIView):
 # VisitReportAPI
 # Coupon Consumption Report
 class CouponConsumptionReport(APIView):
-        
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
-    def get(self, request, *args, **kwargs):
 
-        salesman_id = self.kwargs.get('salesman_id')  
-        # print("salesman_id",salesman_id)
+    def get(self, request, *args, **kwargs):
+        user_id = request.user.id
+        print("user_id", user_id)
+        customer_objs = Customers.objects.filter(sales_staff=user_id)
         start_date = request.data.get('start_date')
-        # print("start_date",start_date)
+        print("start_date",start_date)
         end_date = request.data.get('end_date')
-        # print("end_date",end_date)
-        
+        print("end_date",end_date)
+
         if not (start_date and end_date):
             start_datetime = datetime.today().date()
             end_datetime = datetime.today().date()
+            return Response({"error": "Both start_date and end_date are required."}, status=status.HTTP_400_BAD_REQUEST)
         else:
             start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
             end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
-        customers = Customers.objects.all()
-        # print("customers",customers)
 
-        for customer in customers:
-        # Query to get customer name and total quantity collected for digital and manual coupons
-            report_data = CustomerSupplyCoupon.objects.annotate(
-                total_digital_quantity=Sum('leaf__coupon__no_of_leaflets', filter=models.Q(customer_supply__salesman_id=salesman_id,customer_supply__created_date__range=[start_datetime, end_datetime],customer_supply__customer__customer_name=customer,leaf__coupon__coupon_method='digital')),
-                total_manual_quantity=Sum('leaf__coupon__no_of_leaflets', filter=models.Q(customer_supply__salesman_id=salesman_id,customer_supply__created_date__range=[start_datetime, end_datetime],customer_supply__customer__customer_name=customer,leaf__coupon__coupon_method='manual'))
-            ).values('customer_supply__customer__customer_name', 'total_digital_quantity', 'total_manual_quantity')
-            
-             
-        # print("report_data",report_data)
+        queryset = []
+        for customer_obj in customer_objs:
+            digital_coupon_data = CustomerSupplyDigitalCoupon.objects.filter(
+                customer_supply__customer=customer_obj,
+                customer_supply__salesman=customer_obj.sales_staff,
+                customer_supply__created_date__range=[start_datetime, end_datetime],
+            ).aggregate(total_digital_leaflets=Sum('count'))
 
-        serializer = CouponConsumptionReportSerializer(report_data, many=True)
-        return Response(serializer.data)
+            total_digital_leaflets = digital_coupon_data['total_digital_leaflets'] or 0
+
+            manual_coupon_data = CustomerCoupon.objects.annotate(
+                total_manual_leaflets=Count(
+                    'customercouponitems__coupon__leaflets',
+                    filter=Q(created_date__range=[start_datetime, end_datetime], customer=customer_obj, salesman=customer_obj.sales_staff, customercouponitems__coupon__coupon_method='manual', customercouponitems__coupon__leaflets__used=False),
+                    distinct=True
+                )
+            ).values(
+                'customer__customer_name',
+                'total_manual_leaflets'
+            ).first()
+
+            total_manual_leaflets = manual_coupon_data['total_manual_leaflets'] if manual_coupon_data else 0
+
+            queryset.append({
+                'customer__customer_name': customer_obj.customer_name,
+                'total_digital_leaflets': total_digital_leaflets,
+                'total_manual_leaflets': total_manual_leaflets
+            })
+
+        serializer = CouponConsumptionSerializer(queryset, many=True)
+
+        total_digital_sum = sum(item['total_digital_leaflets'] for item in queryset)
+        total_manual_sum = sum(item['total_manual_leaflets'] for item in queryset)
+
+        return Response({
+            'status': True,
+            'data': serializer.data,
+            'total_digital_sum': total_digital_sum,
+            'total_manual_sum': total_manual_sum,
+        }, status=status.HTTP_200_OK)
+    
 
 from django.utils.timezone import make_aware
 from django.db.models import Sum, Count, Case, When, IntegerField
@@ -5171,4 +5199,74 @@ class OffloadCouponAPI(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)            
-            
+
+
+class PendingSupplyReportView(APIView):
+    def get(self, request):
+        try:
+            user_id = request.user.id
+            if request.GET.get('date'):
+                date_str = request.GET.get('date')
+            else:
+                date_str = datetime.today().date()
+            pending_supplies = CustomerSupply.objects.filter( created_date__date=date_str,net_payable__gt=F('amount_recieved'))
+            serializer = CustomerSupplySerializer(pending_supplies, many=True)
+            # return Response(serializer.data, status=status.HTTP_200_OK)            
+            return Response({'status': True, 'data': serializer.data, 'message': 'Pending Supply list passed!'})
+        except Exception as e:
+            return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CustodyReportView(APIView):
+    def get(self, request):
+        user_id = request.user.id
+
+        # Get the date from the request, if provided
+        if request.GET.get('date'):
+            date_str = request.GET.get('date')
+        else:
+            date_str = datetime.today().date()
+        instances = CustodyCustom.objects.filter(created_date__date=date_str).order_by("-created_date")
+
+        serializer = CustodyCustomSerializer(instances, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        
+class CanStockView(APIView):
+    def get(self, request, format=None):
+        user_id = request.user.id
+
+        if request.GET.get('date'):
+            date_str = request.GET.get('date')
+        else:
+            date_str = datetime.today().date()
+        can_stock = VanProductStock.objects.filter(
+            stock_type='emptycan',
+            van__created_date__date=date_str
+        )
+        serializer = VanProductStockSerializer(can_stock, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class FreshcanEmptyBottleView(APIView):
+    def get(self, request, *args, **kwargs):
+        try:
+            user_id = request.user.id
+            if request.GET.get('date'):
+                date_str = request.GET.get('date')
+            else:
+                date_str = datetime.today().date()
+
+            fresh_cans = VanProductStock.objects.filter(stock_type='opening_stock', van__created_date__date=date_str)
+            empty_bottles = VanProductStock.objects.filter(stock_type='emptycan', van__created_date__date=date_str)
+
+            fresh_cans_serializer = VanProductStockSerializer(fresh_cans, many=True)
+            empty_bottles_serializer = VanProductStockSerializer(empty_bottles, many=True)
+
+            data = {
+                'fresh_cans': fresh_cans_serializer.data,
+                'empty_bottles': empty_bottles_serializer.data
+            }
+
+            return Response(data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
