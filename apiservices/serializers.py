@@ -1097,16 +1097,113 @@ class CouponConsumptionSerializer(serializers.Serializer):
     total_digital_leaflets = serializers.IntegerField()
     total_manual_leaflets = serializers.IntegerField()
 
-
-class CustodyCustomItemsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CustodyCustomItems
-        fields = '__all__'
-
-class CustodyCustomSerializer(serializers.ModelSerializer):
-    items = CustodyCustomItemsSerializer(many=True, read_only=True, source='custodycustomitems_set')
-
-    class Meta:
-        model = CustodyCustom
-        fields = '__all__'
+class FreshCanStockSerializer(serializers.ModelSerializer):
+    van = VanSerializer(read_only=True)
     
+    class Meta:
+        model = VanProductStock
+        fields = ['id', 'product', 'stock_type', 'count', 'van']
+class ManualCustomerCouponSerializer(serializers.ModelSerializer):
+    van = CouponConsumptionSerializer(read_only=True)
+    
+    class Meta:
+        model = CustomerCoupon
+        fields = ['id', 'amount_recieved', 'coupon_method']
+
+class DigitalCouponSerializer(serializers.ModelSerializer):
+    van = CouponConsumptionSerializer(read_only=True)
+    
+    class Meta:
+        model = CustomerSupplyDigitalCoupon
+        fields = ['id', 'count']
+
+class FreshCanStockSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VanProductStock
+        fields = ['count']
+
+class FreshvsCouponCustomerSerializer(serializers.ModelSerializer):
+    fresh_cans = serializers.SerializerMethodField()
+    total_digital_coupons = serializers.SerializerMethodField()
+    total_manual_coupons = serializers.SerializerMethodField()
+    opening_cans = serializers.SerializerMethodField()  
+    pending_cans = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Customers
+        fields = ['customer_name', 'customer_type', 'fresh_cans', 'total_digital_coupons', 'total_manual_coupons', 'opening_cans','pending_cans']
+
+    def get_fresh_cans(self, obj):
+        request = self.context.get('request')
+        start_datetime = request.data.get('start_date')
+        end_datetime = request.data.get('end_date')
+
+        fresh_cans = Staff_IssueOrders.objects.filter(
+            salesman_id=obj.sales_staff,
+            # created_date__range=[start_datetime, end_datetime],
+            status='Order Issued'
+        ).aggregate(total_fresh_cans=Sum('quantity_issued'))
+        print("fresh_cans", fresh_cans)
+
+        return fresh_cans.get('total_fresh_cans', 0) or 0
+
+    def get_total_digital_coupons(self, obj):
+        request = self.context.get('request')
+        start_datetime = request.data.get('start_date')
+        end_datetime = request.data.get('end_date')
+
+        digital_coupon_data = CustomerSupplyDigitalCoupon.objects.filter(
+            customer_supply__customer=obj,
+            customer_supply__created_date__range=[start_datetime, end_datetime]
+        ).aggregate(total_digital_leaflets=Sum('count'))
+        print("digital_coupon_data", digital_coupon_data)
+        return digital_coupon_data.get('total_digital_leaflets', 0) or 0
+
+    def get_total_manual_coupons(self, obj):
+        request = self.context.get('request')
+        start_datetime = request.data.get('start_date')
+        end_datetime = request.data.get('end_date')
+
+        manual_coupon_data = CustomerCouponItems.objects.filter(
+            customer_coupon__customer=obj,
+            customer_coupon__created_date__range=[start_datetime, end_datetime],
+            coupon__coupon_method='manual',
+            coupon__leaflets__used=False
+        ).aggregate(total_manual_leaflets=Count('coupon__leaflets', distinct=True))
+        print("manual_coupon_data", manual_coupon_data)
+        return manual_coupon_data.get('total_manual_leaflets', 0) or 0
+
+    def get_opening_cans(self, obj):
+        request = self.context.get('request')
+        start_datetime = request.data.get('start_date')
+        end_datetime = request.data.get('end_date')
+        
+        opening_cans = VanProductStock.objects.filter(
+            van__salesman=obj.sales_staff,
+            stock_type='opening_stock',
+            van__created_date__range=[start_datetime, end_datetime]
+        ).aggregate(total_opening_cans=Sum('count'))
+        print("opening_cans", opening_cans)
+        
+        return opening_cans.get('total_fresh_cans', 0) or 0
+    
+    def get_pending_cans(self, obj):
+        request = self.context.get('request')
+        start_datetime = request.data.get('start_date')
+        end_datetime = request.data.get('end_date')
+        
+        pending_cans = Staff_Orders_details.objects.filter(
+            # staff_order_id__salesman_id=obj.sales_staff,
+            status='Pending',
+            created_date__range=[start_datetime, end_datetime]
+        ).aggregate(total_pending_cans=Sum('count'))
+        print("pending_cans", pending_cans)
+        
+        return pending_cans.get('total_pending_cans', 0) or 0
+
+class CustomerOrdersSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = CustomerOrders
+        fields = ('id','product','quantity','total_amount','no_empty_bottle_return','empty_bottle_required','no_empty_bottle_required','empty_bottle_amount','total_net_amount','delivery_date','payment_option','order_status')
+        read_only_fields = ('id','order_status')

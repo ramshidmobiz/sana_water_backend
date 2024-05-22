@@ -30,6 +30,18 @@ PRODUCT_TYPES = (
     ('coupons','Coupons'),
 )
 
+CUSTOMER_ORDER_PAYMENT_OPTION = (
+    ('online','Online Payment'),
+    ('cod','Cash on delivery'),
+)
+
+CUSTOMER_ORDER_STATUS = (
+    ('pending','Pending'),
+    ('approve','Approved'),
+    ('deliverd','Deliverd'),
+    ('reject','Reject'),
+)
+
 class CustodyCustom(models.Model):
     custody_custom_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customer = models.ForeignKey('accounts.Customers', on_delete=models.CASCADE,null=True,blank=True)
@@ -429,6 +441,32 @@ class MarketShare(models.Model):
         
         class Meta:
             ordering = ('-id',)
+            
+        def __str__(self):
+            return str(self.product)
+        
+class CustomerOrders(models.Model):
+        id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+        product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE)
+        customer = models.ForeignKey('accounts.Customers',on_delete = models.CASCADE)
+        quantity=models.DecimalField(default=0, max_digits=10, decimal_places=2)
+        total_amount = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+        no_empty_bottle_return = models.PositiveIntegerField(default=0)
+        empty_bottle_required = models.BooleanField(default=False)
+        no_empty_bottle_required = models.PositiveIntegerField(default=0)
+        empty_bottle_amount = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+        total_net_amount = models.DecimalField(default=0, max_digits=10, decimal_places=2)
+        delivery_date = models.DateField()
+        payment_option = models.CharField(max_length=10,choices=CUSTOMER_ORDER_PAYMENT_OPTION)
+        order_status = models.CharField(max_length=10,choices=CUSTOMER_ORDER_STATUS)
+        
+        created_by = models.CharField(max_length=100, blank=True)
+        created_date = models.DateTimeField(auto_now_add=True)
+        modified_by = models.CharField(max_length=20, null=True, blank=True)
+        modified_date = models.DateTimeField(auto_now=True ,blank=True, null=True)
+        
+        class Meta:
+            ordering = ('-created_date',)
             
         def __str__(self):
             return str(self.product)

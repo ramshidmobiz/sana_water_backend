@@ -206,11 +206,9 @@ urlpatterns = [
     path('custody_report_view/', CustodyReportView.as_view(), name='custody_report_view'),
     path('can_stock/', CanStockView.as_view(), name='can_stock'),
     path('freshcanandemptybottle/', FreshcanEmptyBottleView.as_view(), name='freshcanandemptybottle'),
+    path('freshcan_Vs_Coupon/', FreshcanVsCouponView.as_view(), name='freshcan_Vs_Coupon'),
 
     path('custodyreport/', CustodyReportView.as_view(), name='custodyreport'),
-
-
-
     
-    
+    path('customer-orders/', CustomerOrdersAPIView.as_view(), name='customer_orders'),   
 ]

@@ -5224,7 +5224,9 @@ class PendingSupplyReportView(APIView):
         except Exception as e:
             return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
+        
+        
+        
 class CustodyReportView(APIView):
     def get(self, request):
         user_id = request.user.id
@@ -5305,3 +5307,45 @@ class CustodyReportView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
         
+
+
+class FreshcanVsCouponView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        try:
+            user_id = request.user.id
+            customer_objs = Customers.objects.filter(sales_staff=user_id)
+            start_date = request.data.get('start_date')
+            end_date = request.data.get('end_date')
+
+            if not (start_date and end_date):
+                return Response({"error": "Both start_date and end_date are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+            start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+            end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
+
+            customers_serializer = FreshvsCouponCustomerSerializer(
+                customer_objs, many=True, context={'request': request}
+            )
+
+            return Response(customers_serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CustomerOrdersAPIView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def post(self, request, *args, **kwargs):
+        customer = Customers.objects.get(user_id=request.user)
+        serializer = CustomerOrdersSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(
+                customer=customer,
+                order_status="pending",
+                created_by=customer.pk,
+                created_date=datetime.today()
+            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
