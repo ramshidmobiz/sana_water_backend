@@ -5349,3 +5349,50 @@ class CustomerOrdersAPIView(APIView):
             )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+#-----------------Supervisor app----------Production API------------
+class ProductListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        products = Product.objects.all().order_by('-created_date')
+        serializer = ProductSerializer(products, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class ProductCreateAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        serializer = ProductCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            product_name = serializer.validated_data.get('product_name')
+            quantity = serializer.validated_data.get('quantity')
+            product_item = get_object_or_404(ProdutItemMaster, pk=product_name.id)
+            
+            product = Product(
+                product_name=product_item,
+                created_by=str(request.user.id),
+                branch_id=request.user.branch_id,
+                quantity=quantity
+            )
+            product.save()
+            if request.user.branch_id:
+                try:
+                    branch_id = request.user.branch_id.branch_id
+                    branch = BranchMaster.objects.get(branch_id=branch_id)
+                    product.branch_id = branch
+                    
+                    stock_instance, created = ProductStock.objects.get_or_create(
+                        product_name=product.product_name,
+                        branch=product.branch_id,
+                        defaults={'quantity': int(product.quantity)}
+                    )
+                    if not created:
+                        stock_instance.quantity += int(product.quantity)
+                        stock_instance.save()
+                except BranchMaster.DoesNotExist:
+                    return Response({'detail': 'Branch information not found for the current user.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response({'detail': 'Product Successfully Added.'}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

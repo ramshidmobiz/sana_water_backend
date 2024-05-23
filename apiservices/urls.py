@@ -211,7 +211,8 @@ urlpatterns = [
     path('custodyreport/', CustodyReportView.as_view(), name='custodyreport'),
     
     path('customer-orders/', CustomerOrdersAPIView.as_view(), name='customer_orders'),   
-
-
     
+    path('production/', ProductListAPIView.as_view(), name='product-list'),
+    path('production/create/', ProductCreateAPIView.as_view(), name='product-create'),
+
 ]

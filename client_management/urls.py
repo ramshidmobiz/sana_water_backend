@@ -59,7 +59,8 @@ urlpatterns = [
         path('customer_count', customer_count, name="customer_count"),
 
         path('bottle_count', bottle_count, name="bottle_count"),
-        path('bottle-count-route-wise/<uuid:route_id>', bottle_count_route_wise, name='bottle_count_route_wise')
+        path('bottle-count-route-wise/<uuid:route_id>', bottle_count_route_wise, name='bottle_count_route_wise'),
 
-    
+        path('customer-orders-list', customer_orders, name="customer_orders_list"),
+        path('customer-orders-status-acknowledge/<uuid:pk>', customer_order_status_acknowledge, name="customer_order_status_acknowledge"),
 ]

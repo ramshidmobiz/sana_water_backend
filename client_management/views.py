@@ -1337,3 +1337,78 @@ def bottle_count_route_wise(request, route_id):
 
     return render(request, 'client_management/route_details.html', context)
     
+@login_required
+def customer_orders(request):
+    """
+    Customer orders List
+    :param request:
+    :return: Customer orders list view
+    """
+    filter_data = {}
+    instances = CustomerOrders.objects.all()
+    
+    query = request.GET.get("q")
+    
+    if query:
+
+        instances = instances.filter(
+            Q(customer__customer_name__icontains=query) |
+            Q(customer__customer_id__icontains=query) |
+            Q(customer__mobile_no__icontains=query) |
+            Q(customer__whats_app__icontains=query) |
+            Q(customer__email_id__icontains=query)
+        )
+        title = "Customer Order List - %s" % query
+        filter_data['q'] = query
+        
+    acknowledge_form = CustomerOrdersAcknowledgeForm()
+            
+    context = {
+        'instances': instances,
+        'acknowledge_form': acknowledge_form,
+        'page_name' : 'Customer Order List',
+        'page_title' : 'Customer Order List',
+        
+        'is_customer_outstanding': True,
+        'is_need_datetime_picker': True,
+        'filter_data': filter_data,
+    }
+
+    return render(request, 'client_management/customer_order_list.html', context)
+
+def customer_order_status_acknowledge(request,pk):
+            
+    try:
+        with transaction.atomic():
+            instance = CustomerOrders.objects.get(pk=pk)
+            form = CustomerOrdersAcknowledgeForm(request.POST,instance=instance)
+
+            data = form.save(commit=False)
+            data.save()
+            
+            # if data.order_status == "approve":
+                
+                
+            response_data = {
+                "status": "true",
+                "title": "Successfully Created",
+                "message": "Acknowledged",
+                'reload': 'true',
+            }
+            
+    except IntegrityError as e:
+        # Handle database integrity error
+        response_data = {
+            "status": "false",
+            "title": "Failed",
+            "message": str(e),
+        }
+
+    except Exception as e:
+        # Handle other exceptions
+        response_data = {
+            "status": "false",
+            "title": "Failed",
+            "message": str(e),
+        }
+    return HttpResponse(json.dumps(response_data), content_type='application/javascript')

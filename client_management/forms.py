@@ -369,13 +369,11 @@ class CustomerOutstandingCouponsForm(forms.ModelForm):
             'count': forms.NumberInput(attrs={'class': 'form-control'}),
         }
 
-# class CollectionPaymentForm(forms.ModelForm):
-#     class Meta:
-#         model = CollectionPayment
-#         fields = ['payment_method', 'amount', 'customer_supply', 'invoice']  # Include the 'amount', 'payment_method', 'customer_supply', and 'invoice' fields
-#         widgets = {
-#             'payment_method': forms.Select(attrs={'class': 'form-control', 'required': True}),
-#             'amount': forms.NumberInput(attrs={'class': 'form-control', 'required': True}),
-#             'customer_supply': forms.Select(attrs={'class': 'form-control', 'required': True}),
-#             'invoice': forms.Select(attrs={'class': 'form-control', 'required': True}),
-#         }
+class CustomerOrdersAcknowledgeForm(forms.ModelForm):
+    class Meta:
+        model = CustomerOrders
+        fields = ['order_status']
+        
+        widgets = {
+            'order_status': forms.Select(attrs={'class': 'form-control', 'required': True}),
+        }

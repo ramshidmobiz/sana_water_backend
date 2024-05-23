@@ -1046,6 +1046,12 @@ class ProductSerializer(serializers.ModelSerializer):
         model = ProdutItemMaster
         fields = '__all__'
 
+class ProductCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ['product_name', 'quantity']
+
+
 class CustodyCustomItemsSerializer(serializers.ModelSerializer):
     product = ProductSerializer()
 
