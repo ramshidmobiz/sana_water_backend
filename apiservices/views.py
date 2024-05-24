@@ -5244,43 +5244,70 @@ class CustodyReportView(APIView):
         
 class CanStockView(APIView):
     def get(self, request, format=None):
-        user_id = request.user.id
-
-        if request.GET.get('date'):
-            date_str = request.GET.get('date')
-        else:
-            date_str = datetime.today().date()
-        can_stock = VanProductStock.objects.filter(
-            stock_type='emptycan',
-            van__created_date__date=date_str
-        )
-        serializer = VanProductStockSerializer(can_stock, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-class FreshcanEmptyBottleView(APIView):
-    def get(self, request, *args, **kwargs):
         try:
             user_id = request.user.id
-            if request.GET.get('date'):
-                date_str = request.GET.get('date')
-            else:
-                date_str = datetime.today().date()
 
-            fresh_cans = VanProductStock.objects.filter(stock_type='opening_stock', van__created_date__date=date_str ,van__salesman=user_id )
-            empty_bottles = VanProductStock.objects.filter(stock_type='emptycan', van__created_date__date=date_str, van__salesman=user_id)
+            user_id = request.user.id
+            print("user_id",)
+            date_str = request.data['date_str']
+            print("date_str",date_str)
+            van=VanProductStock.objects.all()
+            for  v in van:
+                vans=v.van.salesman.id
+                print(vans,"vans")
 
-            fresh_cans_serializer = VanProductStockSerializer(fresh_cans, many=True)
-            empty_bottles_serializer = VanProductStockSerializer(empty_bottles, many=True)
+            can_stock = VanProductStock.objects.filter(
+                stock_type='emptycan',
+                van__created_date__date=date_str,
+                van__salesman=user_id
+            )
+
+            total_can_stock = can_stock.aggregate(total=Sum('count'))['total'] or 0
+
+            customer = Customers.objects.filter(sales_staff__id=user_id).first()
+            customer_name = customer.customer_name if customer else 'Unknown'
 
             data = {
-                'fresh_cans': fresh_cans_serializer.data,
-                'empty_bottles': empty_bottles_serializer.data
+                'customer_name': customer_name,
+                'total_can_stock': total_can_stock,
             }
 
             return Response(data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class FreshcanEmptyBottleView(APIView):
+    def get(self, request, *args, **kwargs):
+        try:
+            user_id = request.user.id
+            print("user_id",)
+            date_str = request.data['date_str']
+            print("date_str",date_str)
+            van=VanProductStock.objects.all()
+            for  v in van:
+                vans=v.van.salesman.id
+                print(vans,"vans")
+            fresh_cans = VanProductStock.objects.filter(stock_type='opening_stock',van__created_date__date=date_str, van__salesman__id=user_id)
+            print(fresh_cans,'fresh_cans')
+            empty_bottles = VanProductStock.objects.filter(stock_type='emptycan', van__created_date__date=date_str, van__salesman__id=user_id)
+            print(empty_bottles,'empty_bottles')
+
+            total_fresh_cans = fresh_cans.aggregate(total=Sum('count'))['total'] or 0
+            print(total_fresh_cans,'total_fresh_cans')
+            total_empty_bottles = empty_bottles.aggregate(total=Sum('count'))['total'] or 0
+
+            customer = Customers.objects.filter(sales_staff__id=user_id).first()
+            customer_name = customer.customer_name if customer else 'Unknown'
+
+            data = {
+                'customer_name': customer_name,
+                'fresh_cans': total_fresh_cans,
+                'empty_bottles': total_empty_bottles
+            }
+
+            return Response(data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class CustodyReportView(APIView):
     def get(self, request, *args, **kwargs):
@@ -5403,11 +5430,11 @@ class DispensersAndCoolersPurchasesAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request, *args, **kwargs):
-        products = CustomerOrders.objects.filter(product__product_name__in=['Hot and  Cool', 'Dispenser'])
+        user_id = request.user.id
+        products = CustomerOrders.objects.filter(customer__customer_id=user_id,product__product_name__in=['Hot and  Cool', 'Dispenser'])
         serializer = CustomerOrderSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
-
 class CustomerCouponPurchaseView(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
@@ -5423,4 +5450,66 @@ class CustomerCouponPurchaseView(APIView):
         print("customer_orders",customer_orders)
 
         serializer = CustomerCouponPurchaseSerializer(customer_orders, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)    
+class CustodyReportView(APIView):
+    def get(self, request, *args, **kwargs):
+        user_id = request.user.id
+        
+        date_str = request.data['date_str']
+        print("date_str",date_str)
+        van=CustodyCustom.objects.all()
+        for  v in van:
+            vans=v.customer.sales_staff.id
+            print(vans,"vans")
+        
+        
+        customers = CustodyCustom.objects.filter(customer__sales_staff__id=user_id, created_date__date=date_str)
+        print('customers',customers)
+    
+        custody_items = CustodyCustomItems.objects.filter(custody_custom__in=customers)
+        print(custody_items)
+        
+        custody_custom_serializer = CustodyCustomSerializer(customers, many=True)
+        custody_items_serializer = CustodyCustomItemsSerializer(custody_items, many=True)
+        
+        data = {
+            'custody_custom': custody_custom_serializer.data,
+            'custody_items': custody_items_serializer.data
+        }
+        
+        return Response(data, status=status.HTTP_200_OK)
+
+class WaterBottlePurchaseAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        customer_id = request.user.id  
+        print("customer_id",customer_id)
+        
+        customer_orders = Customer_Order.objects.filter(customer_id__user_id=customer_id)
+        
+        serializer = CustomerOrderSerializer(customer_orders, many=True)
+        
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class StockMovementCreateAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        serializer = StockMovementSerializer(data=request.data)
+        if serializer.is_valid():
+            stock_movement = serializer.save()
+            return Response({
+                'status': 'success',
+                'data': {
+                    'id': stock_movement.id,
+                    'created_by': stock_movement.created_by,
+                    'salesman': stock_movement.salesman.id,
+                    'from_van': stock_movement.from_van.van_id, 
+                    'to_van': stock_movement.to_van.van_id, 
+                }
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class StockMovementDetailsAPIView(ListAPIView):
+    queryset = StockMovement.objects.all()
+    serializer_class = StockMovementSerializer

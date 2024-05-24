@@ -1424,3 +1424,32 @@ def customer_order_status_acknowledge(request,pk):
             "message": str(e),
         }
     return HttpResponse(json.dumps(response_data), content_type='application/javascript')
+
+
+def nonvisitreason_List(request):
+    all_nonvisitreason= NonVisitReason.objects.all()
+    context = {'all_nonvisitreason': all_nonvisitreason}
+    return render(request, 'client_management/NonVisitReason/index_nonvisitReason.html', context)
+
+def create_nonvisitreason(request):
+    if request.method == 'POST':
+        form = Create_NonVisitReasonForm(request.POST)
+        if form.is_valid():
+            data = form.save(commit=False)
+            data.created_by = str(request.user.id)
+            data.save()
+            messages.success(request, 'Non Visit Reason created successfully!')
+            return redirect('nonvisitreason_List')
+        else:
+            messages.error(request, 'Invalid form data. Please check the input.')
+    else:
+        form = Create_NonVisitReasonForm()
+    context = {'form': form}
+    return render(request, 'client_management/NonVisitReason/create_nonvisitreason.html', context)
+
+def delete_nonvisitreason(request, id):
+    delete_nonvisitreason = NonVisitReason.objects.get(id=id)
+    if request.method == 'POST':
+        delete_nonvisitreason.delete()
+        return redirect('nonvisitreason_List')
+    return render(request, 'client_management/NonVisitReason/delete_nonvisitreason.html', {'delete_nonvisitreason': delete_nonvisitreason})

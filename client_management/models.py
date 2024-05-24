@@ -473,3 +473,27 @@ class CustomerOrders(models.Model):
 
 
 
+class NonVisitReason(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    reason_text = models.CharField(max_length=100, blank=True)
+
+    class Meta:
+        ordering = ('-id',)
+
+    def __str__(self):
+        return self.reason_text
+
+
+class NonvisitReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    customer = models.ForeignKey('accounts.Customers', on_delete=models.CASCADE)
+    salesman = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE)
+    reason = models.ForeignKey(NonVisitReason, on_delete=models.CASCADE)
+    supply_date = models.DateField()
+    created_date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-created_date',)
+
+    def __str__(self):
+        return f'{self.customer} - {self.salesman} - {self.reason}'

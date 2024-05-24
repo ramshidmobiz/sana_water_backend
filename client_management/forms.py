@@ -377,3 +377,10 @@ class CustomerOrdersAcknowledgeForm(forms.ModelForm):
         widgets = {
             'order_status': forms.Select(attrs={'class': 'form-control', 'required': True}),
         }
+class Create_NonVisitReasonForm(forms.ModelForm):
+    class Meta:
+        model = NonVisitReason
+        fields = ['reason_text']
+        widgets = {
+            'reason_text': forms.TextInput(attrs={'class': 'form-control','placeholder': 'Enter reason text here'}),
+        }

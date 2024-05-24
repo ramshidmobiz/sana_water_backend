@@ -63,4 +63,11 @@ urlpatterns = [
 
         path('customer-orders-list', customer_orders, name="customer_orders_list"),
         path('customer-orders-status-acknowledge/<uuid:pk>', customer_order_status_acknowledge, name="customer_order_status_acknowledge"),
+        
+        path('nonvisitreason_List', nonvisitreason_List, name="nonvisitreason_List"),
+        path('create_nonvisitreason', create_nonvisitreason, name="create_nonvisitreason"),
+        path('delete_nonvisitreason/<uuid:id>/', delete_nonvisitreason, name='delete_nonvisitreason'),
+
+
+
 ]

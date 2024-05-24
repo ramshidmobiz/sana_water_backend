@@ -936,18 +936,18 @@ class CustomerCouponCountsSerializer(serializers.Serializer):
 
     
     
-class StockMovementReportSerializer(serializers.ModelSerializer):
-    customer_name = serializers.SerializerMethodField()
-    product_name = serializers.SerializerMethodField()
+# class StockMovementReportSerializer(serializers.ModelSerializer):
+#     customer_name = serializers.SerializerMethodField()
+#     product_name = serializers.SerializerMethodField()
    
-    class Meta:
-        model = CustomerSupplyItems
-        fields = [ 'product', 'quantity','customer_name','product_name']
+#     class Meta:
+#         model = CustomerSupplyItems
+#         fields = [ 'product', 'quantity','customer_name','product_name']
         
-    def get_customer_name(self, obj):
-        return obj.customer_supply.customer.customer_name  
-    def get_product_name(self, obj):
-        return obj.product.product_name 
+#     def get_customer_name(self, obj):
+#         return obj.customer_supply.customer.customer_name  
+#     def get_product_name(self, obj):
+#         return obj.product.product_name 
 
 class CustomerSupplySerializers(serializers.ModelSerializer):
     class Meta:
@@ -1227,3 +1227,40 @@ class CustomerCouponPurchaseSerializer(serializers.ModelSerializer):
         model = CustomerOrders
         fields = ['id', 'created_date', 'order_status']
 
+class CustomerOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Customer_Order
+        fields = ['order_number', 'created_date', 'payment_option']
+
+class StockMovementProductsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StockMovementProducts
+        fields = ['id', 'product', 'quantity']
+
+class StockMovementSerializer(serializers.ModelSerializer):
+    products = StockMovementProductsSerializer(many=True, write_only=True)
+
+    class Meta:
+        model = StockMovement
+        fields = ['id', 'created_by', 'salesman', 'from_van', 'to_van', 'products']
+
+    def create(self, validated_data):
+        products_data = validated_data.pop('products')
+        stock_movement = StockMovement.objects.create(**validated_data)
+        
+        for product_data in products_data:
+            StockMovementProducts.objects.create(stock_movement=stock_movement, **product_data)
+
+            # Update stock for from_van
+            from_van_product = VanProductStock.objects.get(van=stock_movement.from_van, product=product_data['product'])
+            from_van_product.count -= product_data['quantity']
+            from_van_product.save()
+
+            # Update stock for to_van
+            to_van_product, created = VanProductStock.objects.get_or_create(van=stock_movement.to_van, product=product_data['product'])
+            to_van_product.count += product_data['quantity']
+            to_van_product.save()
+        
+        return stock_movement
+    
+    

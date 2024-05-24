@@ -215,3 +215,27 @@ class BottleAllocation(models.Model):
     def __str__(self):
         return f"{self.id}"
 
+class StockMovement(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created_by = models.CharField(max_length=100)
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_by = models.CharField(max_length=100, null=True, blank=True)
+    modified_date = models.DateTimeField(auto_now=True ,blank=True, null=True)
+    
+    salesman = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE)
+    from_van = models.ForeignKey(Van, on_delete=models.CASCADE,related_name='from_van')
+    to_van = models.ForeignKey(Van, on_delete=models.CASCADE,related_name='to_van')
+
+
+    def __str__(self):
+        return f"{self.id}"
+    
+class StockMovementProducts(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=0)
+    stock_movement = models.ForeignKey(StockMovement, on_delete=models.CASCADE)
+    
+
+    def __str__(self):
+        return f"{self.id}"

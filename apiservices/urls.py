@@ -176,7 +176,7 @@ urlpatterns = [
     # path('visit_report/', VisitReportAPI.as_view(), name='visit_report'),
     path('coupon_consumption_report/', CouponConsumptionReport.as_view(), name='coupon_consumption_report'),
     path('stockmovementreport/<str:salesman_id>/', StockMovementReportAPI.as_view(), name='stock_movement_report'),
-
+    
     path('visit_report/', VisitReportAPI.as_view(), name='visit_report'),
     path('nonvisited_report/', NonVisitedReportAPI.as_view(), name='nonvisited_report'),
 
@@ -203,18 +203,20 @@ urlpatterns = [
     
     path('pending-supply-report/<str:route_id>/', PendingSupplyReportView.as_view(), name='pending-supply-report'),
     
-    path('custody_report_view/', CustodyReportView.as_view(), name='custody_report_view'),
     path('can_stock/', CanStockView.as_view(), name='can_stock'),
     path('freshcanandemptybottle/', FreshcanEmptyBottleView.as_view(), name='freshcanandemptybottle'),
     path('freshcan_Vs_Coupon/', FreshcanVsCouponView.as_view(), name='freshcan_Vs_Coupon'),
-
-    path('custodyreport/', CustodyReportView.as_view(), name='custodyreport'),
     
     path('customer-orders/', CustomerOrdersAPIView.as_view(), name='customer_orders'),   
-    
+    path('custody_report_view/', CustodyReportView.as_view(), name='custody_report_view'),
+    path('water_bottle_purchases/', WaterBottlePurchaseAPIView.as_view(), name='water_bottle_purchases'),
+
     path('production/', ProductListAPIView.as_view(), name='product-list'),
     path('production/create/', ProductCreateAPIView.as_view(), name='product-create'),
     path('dispensers-coolers-purchases/', DispensersAndCoolersPurchasesAPIView.as_view(), name='dispensers-coolers-purchases'),
     path('customer-coupon-purchase/', CustomerCouponPurchaseView.as_view(), name='customer-coupon-purchase'),
+
+    path('stock_movement/', StockMovementCreateAPI.as_view(), name='stock-movement-create'),
+    path('stock_movement_details/', StockMovementDetailsAPIView.as_view(), name='stock-movement-details'),
 
 ]
