@@ -24,24 +24,26 @@ class RequestTypeMaster(models.Model):
 class DiffBottlesModel(models.Model):
 
     diffbottles_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    request_type = models.ForeignKey(RequestTypeMaster,on_delete=models.SET_NULL, null=True, blank=True)
+    product_item = models.ForeignKey(ProdutItemMaster,on_delete=models.CASCADE, null=True, blank=True)
     quantity_required = models.IntegerField(null=True, blank=True)
     delivery_date = models.DateTimeField(blank=True, null=True)
     assign_this_to  = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE,null=True,blank=True)
     mode = models.CharField(max_length=10, choices=[('custody', 'Custody'), ('paid', 'Paid')])
     amount = models.CharField(max_length=50,null=True, blank=True)
     discount_net_total = models.CharField(max_length=50,null=True, blank=True)
-    created_by = models.CharField(max_length=20,  blank=True)
+    created_by = models.CharField(max_length=100,  blank=True)
     created_date = models.DateTimeField(auto_now_add=True,blank=True, null=True)
     modified_by = models.CharField(max_length=20, null=True, blank=True)
     modified_date = models.DateTimeField(blank=True, null=True)
     customer = models.ForeignKey('accounts.Customers', on_delete=models.SET_NULL, null=True, blank=True,related_name='customer_bottles')
     status = models.CharField(max_length=20, default='Pending')  
+    
     class Meta:
-        ordering = ('request_type',)
+        ordering = ('-created_date',)
 
     def __str__(self):
         return str(self.customer)
+    
 class OtherRequirementModel(models.Model):
     requirement_id   = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     request_type = models.ForeignKey(RequestTypeMaster,on_delete=models.SET_NULL, null=True, blank=True)

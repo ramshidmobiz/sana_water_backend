@@ -5353,14 +5353,15 @@ class CustomerOrdersAPIView(APIView):
     
 #-----------------Supervisor app----------Production API------------
 class ProductListAPIView(APIView):
+    authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
-
     def get(self, request, *args, **kwargs):
         products = Product.objects.all().order_by('-created_date')
         serializer = ProductSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class ProductCreateAPIView(APIView):
+    authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
@@ -5396,3 +5397,30 @@ class ProductCreateAPIView(APIView):
 
             return Response({'detail': 'Product Successfully Added.'}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class DispensersAndCoolersPurchasesAPIView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        products = CustomerOrders.objects.filter(product__product_name__in=['Hot and  Cool', 'Dispenser'])
+        serializer = CustomerOrderSerializer(products, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+class CustomerCouponPurchaseView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user_id = request.user.id
+        # print("user_id", user_id)
+        coupon_category_products = ProdutItemMaster.objects.filter(category__category_name='Coupons')
+        # print("coupon_category_products",coupon_category_products)
+        coupon_product_ids = coupon_category_products.values_list('id', flat=True)
+        # print("coupon_product_ids",coupon_product_ids)
+        customer_orders = CustomerOrders.objects.filter(customer__customer_id=user_id,product__in=coupon_product_ids)
+        print("customer_orders",customer_orders)
+
+        serializer = CustomerCouponPurchaseSerializer(customer_orders, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

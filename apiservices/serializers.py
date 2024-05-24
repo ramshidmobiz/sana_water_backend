@@ -277,7 +277,7 @@ class SupplyItemFiveGallonWaterGetSerializer(serializers.ModelSerializer):
         
         if (reuests:=DiffBottlesModel.objects.filter(delivery_date__date=date.today(), customer__pk=customer_id)).exists():
             for r in reuests :
-                if r.request_type.request_name == "5 Gallon":
+                if r.product_item.product_name == "5 Gallon":
                     qty = qty + r.quantity_required
         return qty
     
@@ -295,7 +295,7 @@ class SupplyItemProductGetSerializer(serializers.ModelSerializer):
         qty = 1
         if (reuests:=DiffBottlesModel.objects.filter(delivery_date__date=date.today(), customer__pk=customer_id)).exists():
             for r in reuests :
-                if r.request_type.request_name == "5 Gallon":
+                if r.product_item.product_name == "5 Gallon":
                     qty = r.quantity_required
         return qty
     
@@ -323,10 +323,10 @@ class SupplyItemCustomersSerializer(serializers.ModelSerializer):
         
         supply_product_data = []
         
-        c_requests = DiffBottlesModel.objects.filter(delivery_date__date=date.today(), customer__pk=obj.pk, request_type__request_name__in=['1L Pet Bottle','Coolers','Water Cooler','Dispenser'])
+        c_requests = DiffBottlesModel.objects.filter(delivery_date__date=date.today(), customer__pk=obj.pk)
         if c_requests.exists():
             for r in c_requests:
-                items = ProdutItemMaster.objects.filter(product_name=r.request_type.request_name)
+                items = ProdutItemMaster.objects.filter(pk=r.product_item.pk)
                 if items.exists():
                     supply_product_serializer = SupplyItemProductGetSerializer(items.first(), many=False)
                     supply_product_data.append(supply_product_serializer.data)
@@ -849,12 +849,11 @@ class EmergencyCustomersSerializer(serializers.ModelSerializer):
     quantity_required = serializers.IntegerField()
     assign_this_to = serializers.CharField(source='assign_this_to.username', allow_null=True)
     mode = serializers.CharField()
-    request_type = serializers.CharField()  # Removed source='request_type'
     delivery_date = serializers.DateTimeField()
 
     class Meta:
         model = DiffBottlesModel
-        fields = ['customer', 'quantity_required', 'assign_this_to', 'mode', 'request_type', 'delivery_date']
+        fields = ['customer', 'quantity_required', 'assign_this_to', 'mode', 'product_item', 'delivery_date']
 
 
 #----------------------New sales Report-------------
@@ -1213,3 +1212,18 @@ class CustomerOrdersSerializer(serializers.ModelSerializer):
         model = CustomerOrders
         fields = ('id','product','quantity','total_amount','no_empty_bottle_return','empty_bottle_required','no_empty_bottle_required','empty_bottle_amount','total_net_amount','delivery_date','payment_option','order_status')
         read_only_fields = ('id','order_status')
+        
+class CustomerOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerOrders
+        fields = ['id', 'product', 'order_status', 'delivery_date']
+
+
+
+
+
+class CustomerCouponPurchaseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerOrders
+        fields = ['id', 'created_date', 'order_status']
+

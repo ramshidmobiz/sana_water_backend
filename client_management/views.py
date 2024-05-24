@@ -2,6 +2,7 @@ import random
 import uuid
 import json
 import datetime
+from customer_care.models import DiffBottlesModel
 from invoice_management.models import Invoice, InvoiceItems
 from van_management.models import *
 from decimal import Decimal
@@ -1386,8 +1387,19 @@ def customer_order_status_acknowledge(request,pk):
             data = form.save(commit=False)
             data.save()
             
-            # if data.order_status == "approve":
-                
+            if data.order_status == "approve":
+                DiffBottlesModel.objects.create(
+                    product_item=data.product,
+                    quantity_required=data.quantity,
+                    delivery_date=data.delivery_date,
+                    assign_this_to=data.customer.sales_staff,
+                    mode="paid",
+                    amount=data.total_amount,
+                    discount_net_total=data.total_net_amount,
+                    customer=data.customer,
+                    created_by=data.created_by,
+                    created_date=datetime.today(),
+                )
                 
             response_data = {
                 "status": "true",

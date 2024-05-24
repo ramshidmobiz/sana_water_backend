@@ -214,5 +214,7 @@ urlpatterns = [
     
     path('production/', ProductListAPIView.as_view(), name='product-list'),
     path('production/create/', ProductCreateAPIView.as_view(), name='product-create'),
+    path('dispensers-coolers-purchases/', DispensersAndCoolersPurchasesAPIView.as_view(), name='dispensers-coolers-purchases'),
+    path('customer-coupon-purchase/', CustomerCouponPurchaseView.as_view(), name='customer-coupon-purchase'),
 
 ]
