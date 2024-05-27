@@ -3604,40 +3604,7 @@ class CustodyCustomItemListAPI(APIView):
             user_id = request.user.id
             print("user_id", user_id)
             customer_objs = Customers.objects.filter(sales_staff=user_id)
-            
-            serialized_data = []
-            
-            for customer_obj in customer_objs:
-                custody_custom_objects = CustodyCustom.objects.filter(customer_id=customer_obj.customer_id)
-                
-                customer_products = []
-                customer_custody_stock = []
-                
-                for custody_custom_obj in custody_custom_objects:
-                    serialized_custody_custom = CustodyCustomSerializer(custody_custom_obj).data
-                    
-                    custody_items = CustodyCustomItems.objects.filter(custody_custom=custody_custom_obj).prefetch_related('product')
-                    serialized_items = []
-                    
-                    for custody_item in custody_items:
-                        product_name = custody_item.product.product_name if custody_item.product else None
-                        serialized_item = CustodyCustomItemsSerializer(custody_item).data
-                        serialized_item['product_name'] = product_name
-                        serialized_items.append(serialized_item)
-                    
-                    customer_products.extend(serialized_items)
-                
-                customer_custody_stock_objects = CustomerCustodyStock.objects.filter(customer=customer_obj)
-                print("customer_custody_stock_objects",customer_custody_stock_objects)
-                serialized_custody_stock = CustomerCustodyStockSerializer(customer_custody_stock_objects, many=True).data
-                
-                serialized_data.append({
-                    'customer': customer_obj.customer_id,
-                    'products': customer_products,
-                    'custody_stock': serialized_custody_stock
-                })
-            
-            print("Serialized Data:", serialized_data)
+            serialized_data = CustomerCustodyStockSerializer(customer_objs,many=True).data
             
             return Response({'status': True, 'data': serialized_data, 'message': 'Customer products list passed!'})
         
@@ -5513,3 +5480,32 @@ class StockMovementCreateAPI(APIView):
 class StockMovementDetailsAPIView(ListAPIView):
     queryset = StockMovement.objects.all()
     serializer_class = StockMovementSerializer
+
+
+class NonVisitReasonAPIView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get(self, request, *args, **kwargs):
+        try:
+            reasons = NonVisitReason.objects.all()
+            serializer = NonVisitReasonSerializer(reasons, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except NonVisitReason.DoesNotExist:
+            raise Http404("No reasons found")
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        
+class CustomerComplaintCreateView(APIView):
+    def get(self, request, *args, **kwargs):
+        complaints = CustomerComplaint.objects.all()
+        serializer = CustomerComplaintSerializer(complaints, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        serializer = CustomerComplaintSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    

@@ -1,4 +1,5 @@
 from django.db.models import Sum, Value, DecimalField
+from decimal import Decimal
 from rest_framework import serializers
 #from . models import *
 from rest_framework.generics import ListAPIView
@@ -12,7 +13,7 @@ from accounts.serializers import *
 from client_management.models  import *
 from sales_management.models import CollectionCheque, CollectionItems, CollectionPayment
 from van_management.serializers import *
-from customer_care.models import DiffBottlesModel
+from customer_care.models import *
 
 class CustomerCustodyItemSerializers(serializers.ModelSerializer):
     class Meta:
@@ -819,12 +820,39 @@ class CollectionPaymentSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = CustodyCustomItems
 #         fields = ['id', 'custody_custom', 'product', 'product_name', 'quantity', 'serialnumber', 'amount','reference_no','agreement_no','deposit_type']
-class CustomerCustodyStockSerializer(serializers.ModelSerializer):
-    customer_name = serializers.CharField(source='customer.customer_name', read_only=True)
+class CustomerCustodyStockProductsSerializer(serializers.ModelSerializer):
+    product_name = serializers.SerializerMethodField() 
+    deposit_form_number = serializers.SerializerMethodField() 
+    amount = serializers.SerializerMethodField() 
 
     class Meta:
         model = CustomerCustodyStock
-        fields = ['id', 'customer', 'customer_name', 'agreement_no', 'deposit_type', 'reference_no', 'product', 'quantity', 'serialnumber', 'amount']
+        fields = ['agreement_no','deposit_type','product','product_name','quantity','serialnumber','amount','deposit_form_number']
+        
+    def get_product_name(self,obj):
+        return obj.product.product_name
+    
+    def get_deposit_form_number(self,obj):
+        return ""
+    
+    def get_amount(self,obj):
+        return int(obj.amount)
+
+class CustomerCustodyStockSerializer(serializers.ModelSerializer):
+    products = serializers.SerializerMethodField() 
+    customer = serializers.SerializerMethodField() 
+
+    class Meta:
+        model = Customers
+        fields = ['customer_id','customer','customer_name','products']
+        
+    def get_products(self,obj):
+        instances = CustomerCustodyStock.objects.filter(customer=obj)
+        return CustomerCustodyStockProductsSerializer(instances,many=True).data
+    
+    def get_customer(self,obj):
+        return obj.customer_name
+    
 
 class CustodyCustomSerializer(serializers.ModelSerializer):
     class Meta:
@@ -1264,3 +1292,13 @@ class StockMovementSerializer(serializers.ModelSerializer):
         return stock_movement
     
     
+class NonVisitReasonSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NonVisitReason
+        fields = ['reason_text']
+        
+        
+class CustomerComplaintSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerComplaint
+        fields = '__all__'

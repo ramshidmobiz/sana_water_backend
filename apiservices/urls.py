@@ -218,5 +218,8 @@ urlpatterns = [
 
     path('stock_movement/', StockMovementCreateAPI.as_view(), name='stock-movement-create'),
     path('stock_movement_details/', StockMovementDetailsAPIView.as_view(), name='stock-movement-details'),
+    path('nonvisitreason/', NonVisitReasonAPIView.as_view(), name='nonvisitreason'),
+    
+    path('complaints_create/', CustomerComplaintCreateView.as_view(), name='create-complaint'),
 
 ]
