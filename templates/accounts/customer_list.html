@@ -105,7 +105,9 @@
                                         <tr>
                                             <td style="text-align:center;">{{forloop.counter}}</td>
                                             <td style="text-align:left;">{{data.custom_id}}</td>
-                                            <td style="text-align:left;">{{data.customer_name}}</td>
+                                            <td style="text-align:left;">
+                                                <a href="{% url 'customer_complaint' data.customer_id %}" aria-label="anchor">{{data.customer_name}}</a>
+                                            </td>
                                             <td style="text-align:left;">{{data.routes.route_name}}</td>
                                             <td style="text-align:left;">{{data.location.location_name}}</td>
                                             <td style="text-align:left;">{{data.mobile_no}}</td>

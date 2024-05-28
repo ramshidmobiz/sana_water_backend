@@ -153,3 +153,9 @@ class UserOTP(models.Model):
     expire_time = models.CharField(max_length=1024, null=True, blank=True)
     created_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL,null=True, blank=True, related_name='created_by')
     created_on = models.DateTimeField(auto_now=True)
+
+
+class Send_Notification(models.Model):
+    device_token = models.CharField(null=True,max_length=1024)
+    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL,null=True)
+    created_on = models.DateTimeField(auto_now=True)

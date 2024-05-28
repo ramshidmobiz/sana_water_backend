@@ -2505,6 +2505,7 @@ class create_customer_supply(APIView):
 
                 # Create CustomerSupplyItems instances
                 total_fivegallon_qty = 0
+                van = Van.objects.get(salesman=request.user)
                 
                 for item_data in items_data:
                     suply_items = CustomerSupplyItems.objects.create(
@@ -2519,13 +2520,13 @@ class create_customer_supply(APIView):
                         if not VanProductStock.objects.filter(product=suply_items.product,van__salesman=request.user,stock_type="emptycan").exists():
                             empty_bottle = VanProductStock.objects.create(
                                 product=suply_items.product,
-                                van__salesman=request.user,
+                                van=van,
                                 stock_type="emptycan",
                             )
                         else:
                             empty_bottle = VanProductStock.objects.get(
                                 product=suply_items.product,
-                                van__salesman=request.user,
+                                van=van,
                                 stock_type="emptycan",
                             )
                         empty_bottle.count += collected_empty_bottle
@@ -2549,6 +2550,7 @@ class create_customer_supply(APIView):
                         customer=customer_supply.customer,
                         product_type="emptycan",
                         created_by=request.user.id,
+                        created_date=datetime.today(),
                     )
 
                     outstanding_product = OutstandingProduct.objects.create(
@@ -4479,35 +4481,53 @@ class StockMovementReportAPI(APIView):
         stock_movement = CustomerSupplyItems.objects.filter(
             customer_supply__salesman_id=salesman_id,
             customer_supply__created_date__range=(from_date, to_date)
-        ).select_related('customer_supply')
+        ).select_related('customer_supply', 'product')
 
         if stock_movement.exists():
-            aggregated_stock_movement = stock_movement.values('product').annotate(
+            # Annotate sold and returned quantities
+            stock_movement = stock_movement.annotate(
+                sold_quantity=Case(
+                    When(quantity__gt=0, then=F('quantity')),
+                    default=0,
+                    output_field=IntegerField()
+                ),
+                returned_quantity=Case(
+                    When(quantity__lt=0, then=F('quantity')),
+                    default=0,
+                    output_field=IntegerField()
+                )
+            )
+
+            # Aggregate by product
+            aggregated_stock_movement = stock_movement.values('product__product_name', 'product__rate').annotate(
                 total_quantity=Sum('quantity'),
-                rate=F('product__rate')
+                total_sold_quantity=Sum('sold_quantity'),
+                total_returned_quantity=Sum('returned_quantity')
             )
 
-            total_sale_amount = aggregated_stock_movement.aggregate(total_sale=Sum(F('total_quantity') * F('rate')))['total_sale']
+            total_sale_amount = aggregated_stock_movement.aggregate(
+                total_sale=Sum(F('amount'))
+            )['total_sale']
 
-            # Count products sold, returned, and assigned
-            products_sold = aggregated_stock_movement.aggregate(
-                products_sold=Sum(Case(When(total_quantity__gt=0, then=F('total_quantity')), default=0, output_field=IntegerField())),
-                products_returned=Sum(Case(When(total_quantity__lt=0, then=F('total_quantity')), default=0, output_field=IntegerField())),
-                products_assigned=Sum(Case(When(total_quantity__gt=0, then=F('total_quantity')), default=0, output_field=IntegerField()))
+            # Prepare product stats data
+            products_stats = aggregated_stock_movement.values(
+                'product__product_name', 
+                'total_quantity', 
+                'total_sold_quantity', 
+                'total_returned_quantity', 
+                'product__rate'
             )
-            
-            total_sale_amount = stock_movement.aggregate(total_sale=Sum(F('quantity') * F('product__rate')))['total_sale']
-            serialized_data = StockMovementReportSerializer(stock_movement, many=True).data
-            return Response({'status': True, 
-                             'data': serialized_data, 
-                             'total_sale_amount': total_sale_amount,
-                             'products_sold': products_sold['products_sold'],
-                             'products_returned': products_sold['products_returned'],
-                             'products_assigned': products_sold['products_assigned']}, status=status.HTTP_200_OK)
+
+            product_stats_data = ProductStatsSerializer(products_stats, many=True).data
+            return Response({
+                'status': True, 
+                'products_stats': product_stats_data, 
+                'total_sale_amount': total_sale_amount
+            }, status=status.HTTP_200_OK)
         else:
             return Response({'status': False, 'message': 'No data found'}, status=status.HTTP_400_BAD_REQUEST)
-
-
+        
+        
 # from django.db.models import Sum, Count, Case, When, IntegerField
 
 # from django.utils.timezone import make_aware
@@ -5210,23 +5230,28 @@ class CustodyReportView(APIView):
 
         
 class CanStockView(APIView):
-    def get(self, request, format=None):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
         try:
             user_id = request.user.id
+            start_date = request.data.get('start_date')
+            end_date = request.data.get('end_date')
 
-            user_id = request.user.id
-            print("user_id",)
-            date_str = request.data['date_str']
-            print("date_str",date_str)
-            van=VanProductStock.objects.all()
-            for  v in van:
-                vans=v.van.salesman.id
-                print(vans,"vans")
+            if not (start_date and end_date):
+                return Response({"error": "Both start_date and end_date are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+                end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
+            except ValueError:
+                return Response({"error": "Invalid date format. Use 'YYYY-MM-DD'."}, status=status.HTTP_400_BAD_REQUEST)
 
             can_stock = VanProductStock.objects.filter(
                 stock_type='emptycan',
-                van__created_date__date=date_str,
-                van__salesman=user_id
+                van__salesman=user_id,
+                van__created_date__date__range=(start_datetime, end_datetime)
             )
 
             total_can_stock = can_stock.aggregate(total=Sum('count'))['total'] or 0
@@ -5247,20 +5272,30 @@ class FreshcanEmptyBottleView(APIView):
     def get(self, request, *args, **kwargs):
         try:
             user_id = request.user.id
-            print("user_id",)
-            date_str = request.data['date_str']
-            print("date_str",date_str)
-            van=VanProductStock.objects.all()
-            for  v in van:
-                vans=v.van.salesman.id
-                print(vans,"vans")
-            fresh_cans = VanProductStock.objects.filter(stock_type='opening_stock',van__created_date__date=date_str, van__salesman__id=user_id)
-            print(fresh_cans,'fresh_cans')
-            empty_bottles = VanProductStock.objects.filter(stock_type='emptycan', van__created_date__date=date_str, van__salesman__id=user_id)
-            print(empty_bottles,'empty_bottles')
+            start_date = request.GET.get('start_date')
+            end_date = request.GET.get('end_date')
+
+            if not (start_date and end_date):
+                return Response({"error": "Both start_date and end_date are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+            start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+            end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
+
+            fresh_cans = VanProductStock.objects.filter(
+                stock_type='opening_stock',
+                van__salesman__id=user_id,
+                van__created_date__date__gte=start_datetime,
+                van__created_date__date__lte=end_datetime
+            )
+
+            empty_bottles = VanProductStock.objects.filter(
+                stock_type='emptycan',
+                van__salesman__id=user_id,
+                van__created_date__date__gte=start_datetime,
+                van__created_date__date__lte=end_datetime
+            )
 
             total_fresh_cans = fresh_cans.aggregate(total=Sum('count'))['total'] or 0
-            print(total_fresh_cans,'total_fresh_cans')
             total_empty_bottles = empty_bottles.aggregate(total=Sum('count'))['total'] or 0
 
             customer = Customers.objects.filter(sales_staff__id=user_id).first()
@@ -5419,22 +5454,31 @@ class CustomerCouponPurchaseView(APIView):
         serializer = CustomerCouponPurchaseSerializer(customer_orders, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)    
 class CustodyReportView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, *args, **kwargs):
         user_id = request.user.id
         
-        date_str = request.data['date_str']
-        print("date_str",date_str)
-        van=CustodyCustom.objects.all()
-        for  v in van:
-            vans=v.customer.sales_staff.id
-            print(vans,"vans")
+        start_date = request.data.get('start_date')
+        end_date = request.data.get('end_date')
         
+        if not (start_date and end_date):
+            return Response({"error": "Both start_date and end_date are required."}, status=status.HTTP_400_BAD_REQUEST)
         
-        customers = CustodyCustom.objects.filter(customer__sales_staff__id=user_id, created_date__date=date_str)
-        print('customers',customers)
-    
+        try:
+            start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+            end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
+        except ValueError:
+            return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        customers = CustodyCustom.objects.filter(
+            customer__sales_staff__id=user_id,
+            created_date__date__gte=start_datetime,
+            created_date__date__lte=end_datetime
+        )
+        
         custody_items = CustodyCustomItems.objects.filter(custody_custom__in=customers)
-        print(custody_items)
         
         custody_custom_serializer = CustodyCustomSerializer(customers, many=True)
         custody_items_serializer = CustodyCustomItemsSerializer(custody_items, many=True)
@@ -5508,4 +5552,81 @@ class CustomerComplaintCreateView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class NonVisitReportCreateAPIView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def post(self, request, *args, **kwargs):
+        try:
+            # Retrieve the authenticated user (salesman)
+            salesman = request.user
+            customer_name = request.data.get('customer')
+            reason_text = request.data.get('reason')
+            supply_date = request.data.get('supply_date')
+
+            # Retrieve customer by name
+            customer = Customers.objects.get(customer_name=customer_name)
+            
+            # Retrieve reason by reason_text
+            reason = NonVisitReason.objects.get(reason_text=reason_text)
+
+            # Check if the customer is a pending customer (not visited)
+            if CustomerSupply.objects.filter(customer=customer,salesman =salesman, created_date__date=supply_date).exists():
+                return Response({'status': False, 'message': 'Customer has already been supplied on the given date.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Create the non-visit report
+            nonvisit_report = NonvisitReport.objects.create(
+                customer=customer,
+                salesman=salesman,
+                reason=reason,
+                supply_date=supply_date
+            )
+
+            serializer = NonvisitReportSerializer(nonvisit_report)
+            return Response({'status': True, 'data': serializer.data, 'message': 'Non-visit report created successfully!'}, status=status.HTTP_201_CREATED)
+        
+        except Customers.DoesNotExist:
+            return Response({'status': False, 'message': 'Customer not found.'}, status=status.HTTP_404_NOT_FOUND)
+        except NonVisitReason.DoesNotExist:
+            return Response({'status': False, 'message': 'Non-visit reason not found.'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'status': False, 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+    def get(self, request, *args, **kwargs):
+        try:
+            customer_name = request.data.get('customer')
+
+            if not customer_name:
+                return Response({'status': False, 'message': 'Customer name is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Retrieve customer by name
+            customer = Customers.objects.get(customer_name=customer_name)
+
+            # Retrieve non-visit reports for the customer
+            nonvisit_reports = NonvisitReport.objects.filter(customer=customer)
+
+            serializer = NonvisitReportSerializer(nonvisit_reports, many=True)
+            return Response({'status': True, 'data': serializer.data, 'message': 'Non-visit reports retrieved successfully!'}, status=status.HTTP_200_OK)
+
+        except Customers.DoesNotExist:
+            return Response({'status': False, 'message': 'Customer not found.'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'status': False, 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class Send_Device_API(APIView):
+    def post(self,request):
+        device_token = request.data['device_token']
+        user_id = request.data['user_id']
+      
+        user_not = Send_Notification.objects.filter(user=user_id).exists()
+        
+        if user_not :
+           
+            Send_Notification.objects.filter(user=user_id).update(device_token=device_token)
+        else :
+           
+            Send_Notification.objects.create(user=CustomUser.objects.get(id=user_id),device_token=device_token)
+        return Response({"status": True, 'data':[{"user_id":user_id,"device_token":device_token}], "message": "Succesfully !"})
     

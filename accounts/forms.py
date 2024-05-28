@@ -2,6 +2,8 @@ from django import forms
 from django.forms import ModelForm
 from .models import *
 from master.models import *
+from customer_care.models import *
+
 
 
 class User_Create_Form(forms.ModelForm):

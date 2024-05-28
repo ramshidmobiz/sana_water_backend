@@ -117,16 +117,18 @@ class CustodyPullOutModel(models.Model):
         return str(self.item_name)
 
 class CustomerComplaint(models.Model): 
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_by = models.CharField(max_length=100)
     created_date = models.DateTimeField(auto_now_add=True)
     modified_by = models.CharField(max_length=100, null=True, blank=True)
     modified_date = models.DateTimeField(auto_now=True ,blank=True, null=True)
-    
-    
+    category = models.CharField(max_length=20,default=0)
+    subcategory = models.CharField(max_length=20,default=0)
     customer = models.ForeignKey('accounts.Customers', on_delete=models.CASCADE)
     complaint= models.CharField(max_length=500)
-    status = models.CharField(max_length=30, default='Pending') 
+    status = models.CharField(max_length=30, default='Pending')
+  
     
     def __str__(self):
         return f"{self.id}"

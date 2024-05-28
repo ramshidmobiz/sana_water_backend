@@ -487,7 +487,11 @@ class VanProductStockSerializer(serializers.ModelSerializer):
         fields = '__all__'
         
     def get_product_name(self, obj):
-        return obj.product.product_name
+        if obj.product.product_name == "5 Gallon" and obj.stock_type == "emptycan":
+            pro_name = f"{obj.product.product_name} ({obj.get_stock_type_display()})"
+        else:
+            pro_name = obj.product.product_name
+        return pro_name
     
     def get_product_rate(self, obj):
         return obj.product.rate
@@ -962,7 +966,11 @@ class CustomerCouponCountsSerializer(serializers.Serializer):
     digital_coupons_count = serializers.IntegerField()
     manual_coupons_count = serializers.IntegerField()
 
-    
+class ProductStatsSerializer(serializers.Serializer):
+    product_name = serializers.CharField(source='product__product_name')
+    total_quantity = serializers.IntegerField()
+    total_sold_quantity = serializers.IntegerField()
+    total_returned_quantity = serializers.IntegerField()
     
 # class StockMovementReportSerializer(serializers.ModelSerializer):
 #     customer_name = serializers.SerializerMethodField()
@@ -1098,12 +1106,12 @@ class VanSerializer(serializers.ModelSerializer):
         model = Van
         fields = ['van_id', 'van_make', 'plate', 'capacity']
 
-class VanProductStockSerializer(serializers.ModelSerializer):
-    van = VanSerializer(read_only=True)
+# class VanProductStockSerializer(serializers.ModelSerializer):
+#     van = VanSerializer(read_only=True)
     
-    class Meta:
-        model = VanProductStock
-        fields = ['id', 'product', 'stock_type', 'count', 'van']
+#     class Meta:
+#         model = VanProductStock
+#         fields = ['id', 'product', 'stock_type', 'count', 'van']
 
 
 
@@ -1116,13 +1124,13 @@ class VanProductSerializer(serializers.ModelSerializer):
         model = VanProductStock
         fields = ['id', 'product', 'stock_type', 'count', 'van']
 
-class VanCouponStockSerializer(serializers.ModelSerializer):
-    van = VanSerializer()
-    coupon = serializers.StringRelatedField()
+# class VanCouponStockSerializer(serializers.ModelSerializer):
+#     van = VanSerializer()
+#     coupon = serializers.StringRelatedField()
 
-    class Meta:
-        model = VanCouponStock
-        fields = ['id', 'coupon', 'stock_type', 'count', 'van']
+#     class Meta:
+#         model = VanCouponStock
+#         fields = ['id', 'coupon', 'stock_type', 'count', 'van']
 
 
 class CouponConsumptionSerializer(serializers.Serializer):
@@ -1302,3 +1310,11 @@ class CustomerComplaintSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomerComplaint
         fields = '__all__'
+
+class NonvisitReportSerializer(serializers.ModelSerializer):
+    reason_text = serializers.CharField(source='reason.reason_text', read_only=True)
+
+    class Meta:
+        model = NonvisitReport
+        fields = ['id', 'customer', 'salesman', 'reason_text', 'supply_date', 'created_date']
+        read_only_fields = ['id', 'created_date']

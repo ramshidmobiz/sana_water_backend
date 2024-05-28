@@ -221,5 +221,8 @@ urlpatterns = [
     path('nonvisitreason/', NonVisitReasonAPIView.as_view(), name='nonvisitreason'),
     
     path('complaints_create/', CustomerComplaintCreateView.as_view(), name='create-complaint'),
+    path('nonvisit_report/', NonVisitReportCreateAPIView.as_view(), name='nonvisit_report'),
+    path('send_device_token/', Send_Device_API.as_view(),name='send_device_token'),
+
 
 ]

@@ -31,6 +31,8 @@ from reportlab.pdfgen import canvas
 from datetime import datetime, timedelta
 from client_management.models import *
 from django.db.models import Q, Sum, Count
+from customer_care.models import *
+
 
 # Create your views here.
 def user_login(request):
@@ -259,15 +261,35 @@ class Customer_List(View):
 
 
         return render(request, self.template_name, context)
+    
+
+class CustomerComplaintView(View):
+    template_name = 'accounts/customer_complaint.html'
+
+    def get(self, request, pk, *args, **kwargs):
+        customer = get_object_or_404(Customers, customer_id=pk)
+        complaints = CustomerComplaint.objects.filter(customer=customer)
+        return render(request, self.template_name, {'customer': customer, 'complaints': complaints})
+
+    def post(self, request, pk, *args, **kwargs):
+        customer = get_object_or_404(Customers, customer_id=pk)
+        complaint_id = request.POST.get('complaint_id')
+        status = request.POST.get('status')
+        complaint = get_object_or_404(CustomerComplaint, id=complaint_id, customer=customer)
+        if status == "Completed":
+            complaint.status = status
+            complaint.save()
+        return redirect('customer_complaint', pk=pk)
+
 
 def create_customer(request):
     branch = request.user.branch_id
-    form = CustomercreateForm(branch)
     template_name = 'accounts/create_customer.html'
     context = {"form":form}
     try:
         if request.method == 'POST':
             form = CustomercreateForm(branch,data = request.POST)
+            print(form)
             context = {"form":form}
             if form.is_valid():
                 data = form.save(commit=False)

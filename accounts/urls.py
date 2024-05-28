@@ -9,6 +9,8 @@ urlpatterns = [
     path('user_create',User_Create.as_view(), name='user_create'),
     path('user_edit/<str:pk>', User_Edit.as_view(), name='user_edit'),
     path('user_details/<str:pk>', User_Details.as_view(), name='user_details'),
+    path('customer_complaint/<str:pk>/', CustomerComplaintView.as_view(), name='customer_complaint'),
+
 
     path('customers', Customer_List.as_view(), name='customers'),
     path('customer_create',create_customer, name='customer_create'),

@@ -39,7 +39,7 @@
                             <tbody>
                                 {% for data in product_items %}
                                 <tr>
-                                    <td style="text-align:center;">{{data.product.product_name}}</td>
+                                    <td style="text-align:center;">{{data.product.product_name}} {% if data.product.product_name == "5 Gallon" and data.get_stock_type_display == "Empty Can" %} ({{data.get_stock_type_display}}){% endif %}</td>
                                     <td style="text-align:center;">{{data.count}}</td>
                                     <td style="text-align:center;">
                                         <form method="post" action="{% url 'edit_product_count' data.van.pk  data.product_id %}">
