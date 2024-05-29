@@ -825,18 +825,18 @@ def delete_customer_supply(request, pk):
         assign_this_to=customer_supply_instance.salesman,
         customer=customer_supply_instance.customer_id
         ).update(status='pending')
-    
-    invoice_instance = Invoice.objects.get(created_date__date=customer_supply_instance.created_date.date(),customer=customer_supply_instance.customer,reference_no=customer_supply_instance.reference_number)
-    invoice_items_instances = InvoiceItems.objects.filter(invoice=invoice_instance)
-    InvoiceDailyCollection.objects.filter(
-        invoice=invoice_instance,
-        created_date__date=customer_supply_instance.created_date.date(),
-        customer=customer_supply_instance.customer,
-        salesman=customer_supply_instance.salesman
-        ).delete()
-    invoice_items_instances.delete()
-    invoice_instance.delete()
-    
+    if Invoice.objects.filter(created_date__date=customer_supply_instance.created_date.date(),customer=customer_supply_instance.customer,reference_no=customer_supply_instance.reference_number).exists():
+        invoice_instance = Invoice.objects.get(created_date__date=customer_supply_instance.created_date.date(),customer=customer_supply_instance.customer,reference_no=customer_supply_instance.reference_number)
+        invoice_items_instances = InvoiceItems.objects.filter(invoice=invoice_instance)
+        InvoiceDailyCollection.objects.filter(
+            invoice=invoice_instance,
+            created_date__date=customer_supply_instance.created_date.date(),
+            customer=customer_supply_instance.customer,
+            salesman=customer_supply_instance.salesman
+            ).delete()
+        invoice_items_instances.delete()
+        invoice_instance.delete()
+        
     balance_amount = customer_supply_instance.subtotal - customer_supply_instance.amount_recieved
     if customer_supply_instance.amount_recieved < customer_supply_instance.subtotal:
         OutstandingAmount.objects.filter(
@@ -931,7 +931,7 @@ def delete_customer_supply(request, pk):
             if item_data.product.product_name == "5 Gallon" :
                 # total_fivegallon_qty -= Decimal(five_gallon_qty)
                 if VanProductStock.objects.filter(product=item_data.product,stock_type="emptycan",van__salesman=customer_supply_instance.salesman).exists():
-                    empty_bottle, _ = VanProductStock.objects.get(
+                    empty_bottle = VanProductStock.objects.get(
                         product=item_data.product,
                         van__salesman=customer_supply_instance.salesman,
                         stock_type="emptycan",
@@ -950,8 +950,7 @@ def delete_customer_supply(request, pk):
         "status": "true",
         "title": "Successfully Deleted",
         "message": "customer supply Successfully Deleted.",
-        "redirect": "true",
-        "redirect_url": reverse('customer_supply:customer_supply_list'),
+        "reload": "true",
     }
     
     return HttpResponse(json.dumps(response_data), content_type='application/javascript')
