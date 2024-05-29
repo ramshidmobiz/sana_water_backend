@@ -167,7 +167,7 @@ urlpatterns = [
     path('creditnote/', CreditNoteAPI.as_view(), name='creditnote'),
     
     path('dashboard/<uuid:route_id>/<str:trip>/', DashboardAPI.as_view(), name='dashboard'),
-    path('collectionreport/<int:salesman_id>/', CollectionReportAPI.as_view(), name='collectionreport'),
+    path('collectionreport/', CollectionReportAPI.as_view(), name='collectionreport'),
 
     path('coupon_supply_count/<int:salesman_id>/', CouponSupplyCountAPIView.as_view(), name='coupon_supply_count'),
 
@@ -203,13 +203,16 @@ urlpatterns = [
     
     path('pending-supply-report/<str:route_id>/', PendingSupplyReportView.as_view(), name='pending-supply-report'),
     
-    path('can_stock/', CanStockView.as_view(), name='can_stock'),
+    path('bottle_stock/', BottleStockView.as_view(), name='bottle_stock'),
     path('freshcanandemptybottle/', FreshcanEmptyBottleView.as_view(), name='freshcanandemptybottle'),
+    path('custody_report_view/', CustodyReportView.as_view(), name='custody_report_view'),
+
     path('freshcan_Vs_Coupon/', FreshcanVsCouponView.as_view(), name='freshcan_Vs_Coupon'),
     
     path('customer-orders/', CustomerOrdersAPIView.as_view(), name='customer_orders'),   
-    path('custody_report_view/', CustodyReportView.as_view(), name='custody_report_view'),
     path('water_bottle_purchases/', WaterBottlePurchaseAPIView.as_view(), name='water_bottle_purchases'),
+    path('custody_customer_view/', CustodyCustomerView.as_view(), name='custody_customer_view'),
+
 
     path('production/', ProductListAPIView.as_view(), name='product-list'),
     path('production/create/', ProductCreateAPIView.as_view(), name='product-create'),

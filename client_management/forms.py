@@ -277,10 +277,21 @@ class CustomerSupplyForm(forms.ModelForm):
 
     class Meta:
         model = CustomerSupply
-        fields = ['customer']
+        fields = ['customer','grand_total','discount','net_payable','vat','subtotal','amount_recieved','collected_empty_bottle','allocate_bottle_to_pending','allocate_bottle_to_custody','allocate_bottle_to_paid','reference_number']
 
         widgets = {
             'customer': forms.Select(attrs={'class': 'form-control', 'required': True}),
+            'grand_total': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter Grand Total'}),
+            'discount': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter Discount'}),
+            'net_payable': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter Net Payable'}),
+            'vat': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter VAT'}),
+            'subtotal': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter Sub Total'}),
+            'amount_recieved': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter Amount Recieved'}),
+            'collected_empty_bottle': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter Collected Empty Bottle'}),
+            'allocate_bottle_to_pending': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter Allocated to Bottle Pending'}),
+            'allocate_bottle_to_custody': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter Allocated to Bottle Custody'}),
+            'allocate_bottle_to_paid': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter Allocated to Bottle Paid'}),
+            'reference_number': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter Reference No.'}),
         }
 
 class CustomerSupplyItemsForm(forms.ModelForm):

@@ -2949,7 +2949,7 @@ class edit_customer_supply(APIView):
 
                                 outstanding_product = OutstandingProduct.objects.filter(
                                     empty_bottle=balance_empty_bottle,
-                                    customer_outstanding__in=customer_outstanding,
+                                    customer_outstanding=outstanding_instance,
                                 )
                                 outstanding_instance = {}
 
@@ -3297,57 +3297,57 @@ class edit_customer_supply(APIView):
         return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class edit_customer_supply(APIView):
-    authentication_classes = [BasicAuthentication]
-    permission_classes = [IsAuthenticated]
+# class edit_customer_supply(APIView):
+#     authentication_classes = [BasicAuthentication]
+#     permission_classes = [IsAuthenticated]
     
-    def get(self, request, pk, *args, **kwargs):
-        try:
-            supply_instance = CustomerSupply.objects.get(pk=pk)
-            supply_items_instances = CustomerSupplyItems.objects.filter(customer_supply=supply_instance)
+#     def get(self, request, pk, *args, **kwargs):
+#         try:
+#             supply_instance = CustomerSupply.objects.get(pk=pk)
+#             supply_items_instances = CustomerSupplyItems.objects.filter(customer_supply=supply_instance)
             
-            # Assuming CustomerSupplyCoupon has a ManyToMany relationship with Leaf model
-            supply_coupons = CustomerSupplyCoupon.objects.filter(customer_supply=supply_instance)
-            supply_coupons_leaves = []
-            for coupon in supply_coupons:
-                supply_coupons_leaves.extend(coupon.leaf.all())
+#             # Assuming CustomerSupplyCoupon has a ManyToMany relationship with Leaf model
+#             supply_coupons = CustomerSupplyCoupon.objects.filter(customer_supply=supply_instance)
+#             supply_coupons_leaves = []
+#             for coupon in supply_coupons:
+#                 supply_coupons_leaves.extend(coupon.leaf.all())
             
-            supply_data = {
-                "customer_supply": {
-                    "customer": str(supply_instance.customer.pk),
-                    "salesman": str(supply_instance.salesman.pk),
-                    "grand_total": supply_instance.grand_total,
-                    "discount": supply_instance.discount,
-                    "net_payable": supply_instance.net_payable,
-                    "vat": supply_instance.vat,
-                    "subtotal": supply_instance.subtotal,
-                    "amount_recieved": supply_instance.amount_recieved
-                },
-                "items": [
-                    {
-                        "product": str(item.product.id),
-                        "quantity": item.quantity,
-                        "amount": item.amount
-                    }
-                    for item in supply_items_instances
-                ],
-                "collected_empty_bottle": supply_instance.collected_empty_bottle,
-                "allocate_bottle_to_pending": supply_instance.allocate_bottle_to_pending,
-                "allocate_bottle_to_custody": supply_instance.allocate_bottle_to_custody,
-                "allocate_bottle_to_paid": supply_instance.allocate_bottle_to_paid,
-                "reference_number": supply_instance.reference_number,
-                "total_coupon_collected": len(supply_coupons_leaves),
-                "collected_coupon_ids": [
-                    str(coupon.pk) for coupon in supply_coupons_leaves
-                ]
-            }
+#             supply_data = {
+#                 "customer_supply": {
+#                     "customer": str(supply_instance.customer.pk),
+#                     "salesman": str(supply_instance.salesman.pk),
+#                     "grand_total": supply_instance.grand_total,
+#                     "discount": supply_instance.discount,
+#                     "net_payable": supply_instance.net_payable,
+#                     "vat": supply_instance.vat,
+#                     "subtotal": supply_instance.subtotal,
+#                     "amount_recieved": supply_instance.amount_recieved
+#                 },
+#                 "items": [
+#                     {
+#                         "product": str(item.product.id),
+#                         "quantity": item.quantity,
+#                         "amount": item.amount
+#                     }
+#                     for item in supply_items_instances
+#                 ],
+#                 "collected_empty_bottle": supply_instance.collected_empty_bottle,
+#                 "allocate_bottle_to_pending": supply_instance.allocate_bottle_to_pending,
+#                 "allocate_bottle_to_custody": supply_instance.allocate_bottle_to_custody,
+#                 "allocate_bottle_to_paid": supply_instance.allocate_bottle_to_paid,
+#                 "reference_number": supply_instance.reference_number,
+#                 "total_coupon_collected": len(supply_coupons_leaves),
+#                 "collected_coupon_ids": [
+#                     str(coupon.pk) for coupon in supply_coupons_leaves
+#                 ]
+#             }
 
-            return Response(supply_data, status=status.HTTP_200_OK)
+#             return Response(supply_data, status=status.HTTP_200_OK)
         
-        except CustomerSupply.DoesNotExist:
-            return Response({"error": "CustomerSupply not found"}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#         except CustomerSupply.DoesNotExist:
+#             return Response({"error": "CustomerSupply not found"}, status=status.HTTP_404_NOT_FOUND)
+#         except Exception as e:
+#             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class delete_customer_supply(APIView):
@@ -3454,7 +3454,7 @@ class delete_customer_supply(APIView):
 
                                 outstanding_product = OutstandingProduct.objects.filter(
                                     empty_bottle=balance_empty_bottle,
-                                    customer_outstanding__in=customer_outstanding,
+                                    customer_outstanding=outstanding_instance,
                                 )
                                 outstanding_instance = {}
 
@@ -4321,18 +4321,41 @@ class DashboardAPI(APIView):
 class CollectionReportAPI(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
+
     def get(self, request, *args, **kwargs):
-        salesman_id = self.kwargs.get('salesman_id')  # Retrieve the salesman_id from URL parameters
-        
-        if salesman_id is not None:
-            collection_items = CollectionItems.objects.filter(collection_payment__salesman_id=salesman_id).select_related('collection_payment__customer')
+        try:
+            user_id = request.user.id
+            print("user_id", user_id)
+
+            # Retrieve date parameters from request
+            start_date = request.data.get('start_date')
+            end_date = request.data.get('end_date')
+
+            if not (start_date and end_date):
+                return Response({"error": "Both start_date and end_date are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+                end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
+            except ValueError:
+                return Response({"error": "Invalid date format. Use 'YYYY-MM-DD'."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+            # Filter CollectionItems for the salesman within the date range
+            collection_items = CollectionItems.objects.filter(
+                collection_payment__salesman_id=user_id,
+                collection_payment__created_date__range=(start_datetime, end_datetime)
+            ).select_related('collection_payment__customer')
+
             if collection_items.exists():
                 serialized_data = CollectionReportSerializer(collection_items, many=True).data
                 return Response({'status': True, 'data': serialized_data}, status=status.HTTP_200_OK)
             else:
                 return Response({'status': False, 'message': 'No data found'}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            return Response({'status': False, 'message': 'Salesman ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 #----------------------Coupon Supply Report
 class CouponSupplyCountAPIView(APIView):
@@ -4608,26 +4631,46 @@ class VisitReportAPI(APIView):
     def get(self, request, *args, **kwargs):
         try:
             user_id = request.user.id
-            print("user_id", user_id)
-            customer_objs = Customers.objects.filter(sales_staff=user_id)
+            date = datetime.today().date()
 
-            date_str = str(datetime.today().date())
-            serialized_data = []
-            for customer_obj in customer_objs:
-                today_visits = CustomerSupply.objects.filter(salesman=customer_obj.sales_staff, created_date__date=date_str, customer=customer_obj)
-                serializer = CustomerSupplySerializers(today_visits, many=True)
-                serialized_data.append({
-                    'customer': customer_obj.customer_id,
-                    'customer_name': customer_obj.customer_name,
-                    'today_visits': serializer.data
-                })
+            van_route_id = request.query_params.get('van_route_id')
+            if not van_route_id:
+                return Response({'status': False, 'message': 'Van route ID is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response({'status': True, 'data': serialized_data, 'message': 'Customer products list passed!'})
-        
+            todays_customers = find_customers(request, str(date), van_route_id)
+            if not todays_customers:
+                return Response({'status': True, 'data': [], 'message': 'No customers scheduled for today'}, status=status.HTTP_200_OK)
+
+            todays_customer_ids = [customer['customer_id'] for customer in todays_customers]
+
+            today_visits = CustomerSupply.objects.filter(
+                salesman_id=user_id,
+                created_date__date=date,
+                customer_id__in=todays_customer_ids
+            )
+
+            customer_data = []
+            for customer in todays_customers:
+                customer_id = customer['customer_id']
+                customer_name = customer['customer_name']
+
+                customer_today_visits = today_visits.filter(customer_id=customer_id)
+                visit_serializer = CustomerSupplySerializers(customer_today_visits, many=True)
+
+                if visit_serializer.data:
+                    customer_data.append({
+                        'customer_id': customer_id,
+                        'customer_name': customer_name,
+                        'today_visits': visit_serializer.data
+                    })
+
+            return Response({'status': True, 'data': customer_data, 'message': 'Customer visit details fetched successfully!'})
+
         except Exception as e:
             return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+        
 class NonVisitedReportAPI(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
@@ -5214,25 +5257,22 @@ class PendingSupplyReportView(APIView):
         
         
         
-class CustodyReportView(APIView):
-    def get(self, request):
-        user_id = request.user.id
+# class CustodyReportView(APIView):
+#     def get(self, request):
+#         user_id = request.user.id
 
-        # Get the date from the request, if provided
-        if request.GET.get('date'):
-            date_str = request.GET.get('date')
-        else:
-            date_str = datetime.today().date()
-        instances = CustodyCustom.objects.filter(created_date__date=date_str).order_by("-created_date")
+#         # Get the date from the request, if provided
+#         if request.GET.get('date'):
+#             date_str = request.GET.get('date')
+#         else:
+#             date_str = datetime.today().date()
+#         instances = CustodyCustom.objects.filter(created_date__date=date_str).order_by("-created_date")
 
-        serializer = CustodyCustomSerializer(instances, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+#         serializer = CustodyCustomSerializer(instances, many=True)
+#         return Response(serializer.data, status=status.HTTP_200_OK)
 
         
-class CanStockView(APIView):
-    authentication_classes = [BasicAuthentication]
-    permission_classes = [IsAuthenticated]
-
+class BottleStockView(APIView):
     def get(self, request, *args, **kwargs):
         try:
             user_id = request.user.id
@@ -5247,33 +5287,44 @@ class CanStockView(APIView):
                 end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
             except ValueError:
                 return Response({"error": "Invalid date format. Use 'YYYY-MM-DD'."}, status=status.HTTP_400_BAD_REQUEST)
+            vans = Van.objects.filter(salesman=user_id)
 
-            can_stock = VanProductStock.objects.filter(
+            total_vanstock = sum(van.get_total_vanstock() for van in vans)
+            fresh_bottle_count = VanProductStock.objects.filter(
+                van__in=vans,
+                stock_type='opening_stock',
+                van__created_date__range=[start_datetime, end_datetime]
+            ).aggregate(total=Sum('count'))['total'] or 0
+
+            empty_bottle_count = VanProductStock.objects.filter(
+                van__in=vans,
                 stock_type='emptycan',
-                van__salesman=user_id,
-                van__created_date__date__range=(start_datetime, end_datetime)
-            )
+                van__created_date__range=[start_datetime, end_datetime]
+            ).aggregate(total=Sum('count'))['total'] or 0
 
-            total_can_stock = can_stock.aggregate(total=Sum('count'))['total'] or 0
+            total_bottle_count = fresh_bottle_count + empty_bottle_count
 
-            customer = Customers.objects.filter(sales_staff__id=user_id).first()
-            customer_name = customer.customer_name if customer else 'Unknown'
-
-            data = {
-                'customer_name': customer_name,
-                'total_can_stock': total_can_stock,
+            result = {
+                'total_vanstock': total_vanstock,
+                'fresh_bottle_count': fresh_bottle_count,
+                'empty_bottle_count': empty_bottle_count,
+                'total_bottle_count': total_bottle_count,
             }
 
-            return Response(data, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_200_OK)
+
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class FreshcanEmptyBottleView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    
     def get(self, request, *args, **kwargs):
         try:
             user_id = request.user.id
-            start_date = request.GET.get('start_date')
-            end_date = request.GET.get('end_date')
+            start_date = request.query_params.get('start_date')
+            end_date = request.query_params.get('end_date')
 
             if not (start_date and end_date):
                 return Response({"error": "Both start_date and end_date are required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -5281,47 +5332,61 @@ class FreshcanEmptyBottleView(APIView):
             start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
             end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
 
-            fresh_cans = VanProductStock.objects.filter(
-                stock_type='opening_stock',
-                van__salesman__id=user_id,
-                van__created_date__date__gte=start_datetime,
-                van__created_date__date__lte=end_datetime
-            )
+            customers = Customers.objects.filter(sales_staff__id=user_id)
+            serialized_data = FreshCanVsEmptyBottleSerializer(customers, many=True, context={'start_date': start_datetime,'end_date':end_datetime}).data
 
-            empty_bottles = VanProductStock.objects.filter(
-                stock_type='emptycan',
-                van__salesman__id=user_id,
-                van__created_date__date__gte=start_datetime,
-                van__created_date__date__lte=end_datetime
-            )
-
-            total_fresh_cans = fresh_cans.aggregate(total=Sum('count'))['total'] or 0
-            total_empty_bottles = empty_bottles.aggregate(total=Sum('count'))['total'] or 0
-
-            customer = Customers.objects.filter(sales_staff__id=user_id).first()
-            customer_name = customer.customer_name if customer else 'Unknown'
-
-            data = {
-                'customer_name': customer_name,
-                'fresh_cans': total_fresh_cans,
-                'empty_bottles': total_empty_bottles
-            }
-
-            return Response(data, status=status.HTTP_200_OK)
+            return Response({'status': True, 'data': serialized_data, 'message': 'Successfull'})
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+# class CustodyReportView(APIView):
+#     def get(self, request, *args, **kwargs):
+#         user_id = request.user.id
+        
+#         date_str = request.GET.get('date', str(datetime.today().date()))
+#         date = parse_date(date_str)
+        
+#         if date:
+#             customers = CustodyCustom.objects.filter(customer=user_id, created_date__date=date)
+#         else:
+#             customers = CustodyCustom.objects.filter(customer=user_id)
+        
+#         custody_items = CustodyCustomItems.objects.filter(custody_custom__in=customers)
+        
+#         custody_custom_serializer = CustodyCustomSerializer(customers, many=True)
+#         custody_items_serializer = CustodyCustomItemsSerializer(custody_items, many=True)
+        
+#         data = {
+#             'custody_custom': custody_custom_serializer.data,
+#             'custody_items': custody_items_serializer.data
+#         }
+        
+#         return Response(data, status=status.HTTP_200_OK)
 class CustodyReportView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, *args, **kwargs):
         user_id = request.user.id
         
-        date_str = request.GET.get('date', str(datetime.today().date()))
-        date = parse_date(date_str)
+        start_date = request.data.get('start_date')
+        end_date = request.data.get('end_date')
         
-        if date:
-            customers = CustodyCustom.objects.filter(customer=user_id, created_date__date=date)
-        else:
-            customers = CustodyCustom.objects.filter(customer=user_id)
+        if not (start_date and end_date):
+            return Response({"error": "Both start_date and end_date are required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+            end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
+        except ValueError:
+            return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        customers = CustodyCustom.objects.filter(
+            customer__sales_staff__id=user_id,
+            created_date__date__gte=start_datetime,
+            created_date__date__lte=end_datetime
+        )
         
         custody_items = CustodyCustomItems.objects.filter(custody_custom__in=customers)
         
@@ -5453,42 +5518,7 @@ class CustomerCouponPurchaseView(APIView):
 
         serializer = CustomerCouponPurchaseSerializer(customer_orders, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)    
-class CustodyReportView(APIView):
-    authentication_classes = [BasicAuthentication]
-    permission_classes = [IsAuthenticated]
 
-    def get(self, request, *args, **kwargs):
-        user_id = request.user.id
-        
-        start_date = request.data.get('start_date')
-        end_date = request.data.get('end_date')
-        
-        if not (start_date and end_date):
-            return Response({"error": "Both start_date and end_date are required."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
-            end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
-        except ValueError:
-            return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        customers = CustodyCustom.objects.filter(
-            customer__sales_staff__id=user_id,
-            created_date__date__gte=start_datetime,
-            created_date__date__lte=end_datetime
-        )
-        
-        custody_items = CustodyCustomItems.objects.filter(custody_custom__in=customers)
-        
-        custody_custom_serializer = CustodyCustomSerializer(customers, many=True)
-        custody_items_serializer = CustodyCustomItemsSerializer(custody_items, many=True)
-        
-        data = {
-            'custody_custom': custody_custom_serializer.data,
-            'custody_items': custody_items_serializer.data
-        }
-        
-        return Response(data, status=status.HTTP_200_OK)
 
 class WaterBottlePurchaseAPIView(APIView):
     def get(self, request, *args, **kwargs):
@@ -5500,6 +5530,22 @@ class WaterBottlePurchaseAPIView(APIView):
         serializer = CustomerOrderSerializer(customer_orders, many=True)
         
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CustodyCustomerView(APIView):
+    def get(self, request, *args, **kwargs):
+        # customer_id = request.user.id  
+        # print("customer_id",customer_id)
+        customer_id = Customers.objects.get(user_id=request.user)
+        print(customer_id,'customer_id')
+        custody_items = CustomerCustodyStock.objects.filter(customer=customer_id)
+        print(custody_items,'custody_items')
+        serializer = CustodyCustomerViewSerializer(custody_items, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)   
+
+
+
+
     
 class StockMovementCreateAPI(APIView):
     authentication_classes = [BasicAuthentication]

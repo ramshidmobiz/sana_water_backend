@@ -39,10 +39,10 @@
                                             <p>Start and <br> End Date</p>
                                         </div>
                                         <div class="col-md-5">
-                                            <input name="start_date" type="date" class="form-select" style="width: min-content;" value="{% if start_date %}{{ start_date }}{% endif %}">
+                                            <input name="start_date" type="date" class="form-select" style="width: min-content;" value="{{ filter_data.start_date|date:'Y-m-d' }}">
                                         </div>
                                         <div class="col-md-4">
-                                            <input name="end_date" type="date" class="form-select" style="width: min-content;" value="{% if end_date %}{{ end_date }}{% endif %}">
+                                            <input name="end_date" type="date" class="form-select" style="width: min-content;" value="{{ filter_data.end_date|date:'Y-m-d' }}">
                                         </div>
                                     </div>
                                 </div>
@@ -54,9 +54,9 @@
                                         <select name="route_name" class="form-select" style="width:100%">
                                             <option value="">-- Select Route --</option>
                                             {% for route in routes %}
-                                                <option value="{{ route.route_name }}" {% if route.route_name == route_name %}selected{% endif %}>{{ route.route_name }}</option>
+                                                <option value="{{ route.route_name }}" {% if route.route_name == filter_data.route_name %}selected{% endif %}>{{ route.route_name }}</option>
                                             {% endfor %}
-                                        </select>3
+                                        </select>
                                     </div> 
                                     <div class="col-md-5 text-end">
                                         <input type="submit" class="btn btn-primary btn-sm" value="Apply Filter">

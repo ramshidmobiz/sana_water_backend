@@ -3,11 +3,11 @@
 {% block content %}
 
 <div class="page-header-breadcrumb d-md-flex d-block align-items-center justify-content-between ">
-    <h4 class="fw-medium mb-0">Create Supply</h4>
+    <h4 class="fw-medium mb-0">Create Customer Supply</h4>
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="javascript:void(0);" class="text-white-50">Client Management</a>
+        <li class="breadcrumb-item"><a href="javascript:void(0);" class="text-white-50">Customer Supply Management</a>
         </li>
-        <li class="breadcrumb-item active" aria-current="page">Create Supply</li>
+        <li class="breadcrumb-item active" aria-current="page">Create Customer Supply</li>
     </ol>
 </div>
 <div class="main-content app-content">
@@ -18,58 +18,181 @@
                 <div class="card custom-card">
                     <div class="card-header">
                         <div class="card-title mx-auto">
-                            Create Supply
+                            Create Customer Supply
                         </div>
                     </div>
-                    {% comment %} <input type="hidden" id="customer_id_hfield" value="{{customer_instance.customer_id}}"> {% endcomment %}
+                    <input type="hidden" id="customer_id_hfield" value="{{customer_instance.customer_id}}">
                     <div class="card-body">
-                        <form url="." enctype="multipart/form-data" role="form" method="post" id="differentsectionbottle" class="row g-3 needs-validation ajax redirect">
+                        <form action="." role="form" method="post" enctype="multipart/form-data"  class="row g-3 ajax redirect" autocomplete="off" novalidate>
                             {% csrf_token %}
                             <!--row 1-->
-                            <div class="col-md-6">
-                                <div class="form-group required">
-                                    <label class='control-label'>Customer</label>
-                                    {{ customer_supply_form.customer }}
-                                    <span style="color: red;">{{ form.customer.errors }}</span>
-                                </div>
+                            <div class="row mt-2">
+                                <div class="col-12" style="overflow: auto;">
+                                    <table class="table table-bordered text-nowrap" style="width:100%;">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col" class="text-center">Customer Id</th>
+                                                <th scope="col" class="text-center">Customer Name</th>
+                                                <th scope="col" class="text-left">Mobile No</th>
+                                                <th scope="col" class="text-left">Building Name</th>
+                                                <th scope="col" class="text-center">Door House No</th>
+                                                <th scope="col" class="text-center">Route Name</th>
+                                                <th scope="col" class="text-center">Outstanding Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="customerTableBody">
+                                            <tr>
+                                                <td class="text-center">{{customer_instance.custom_id}}</td>
+                                                <td>{{customer_instance.customer_name}}</td>
+                                                <td class="text-center">{{customer_instance.mobile_no}}</td>
+                                                <td>{{customer_instance.building_name}}</td>
+                                                <td class="text-center">{{customer_instance.door_house_no}}</td>
+                                                <td class="text-center">{{customer_instance.routes.route_name}}</td>
+                                                <td class="text-center"></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div> 
                             </div>
-                            
-                            <div class="col-md-6">
-                                <div class="form-group required">
-                                    <label class='control-label'>Product</label>
-                                    {{ customer_supply_items_form.product }}
-                                    <span style="color: red;">{{ customer_supply_items_form.product.errors }}</span>
-                                    <!--                                <small class="form-text text-muted">Select Category.</small>-->
-                                </div>
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <div class="form-group required">
-                                    <label class='control-label'>Quantity</label>
-                                    {{ customer_supply_items_form.quantity }}
-                                    <span style="color: red;">{{ customer_supply_items_form.quantity.errors }}</span>
-                                    <!--                                <small class="form-text text-muted">Select Category.</small>-->
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="col-md-6">
-                                    <div class="form-group required">
-                                        <label class='control-label'>Amount</label>
-                                        {{ customer_supply_items_form.amount }}
-                                        <span style="color: red;">{{ customer_supply_items_form.amount.errors }}</span>
-                                        <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                            <div class="row mt-2">
+                                <div class="row">
+                                    <div class="table-responsive card-body add_item_container customer_supply_items_formset">
+                                        <table id="data-table-basic" class="table table-striped table-vmiddle">
+                                            <thead>
+                                                <tr>
+                                                    <th data-column-id="image" colspan="4">Add Customer Supply Items</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <th style="min-width: 15px;">Product</th>
+                                                <th style="min-width: 15px;">Quantity</th>
+                                                <th style="min-width: 15px;">Amount</th>
+                                                <th style="min-width: 15px;"></th>
+                                                {% for item in customer_supply_items_formset.forms %}
+                                                <tr class="form_set_row customer_supply_items_formset">
+                                                    {{item.id}}
+                                                    <td>
+                                                        <span class="product">
+                                                            {{ item.product }}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="quantity">
+                                                            {{ item.quantity }}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="amount">
+                                                            {{ item.amount }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="delete">
+                                                        {% if item.instance.pk %}{{ item.DELETE }}{% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                        {{ customer_supply_items_formset.management_form }}
                                     </div>
                                 </div>
-                            </div>
-                           
-                            <div class="col-12 text-end mt-5">
-                                <input type="submit" class="btn btn-primary me-2 mb-2 submitcls" value="Submit">
-                                <button class="btn btn-success   me-md-2  mb-2" type="button"
-                                    onClick="javascript:history.go(-1);">
-                                    <i class="bi bi-backspace-fill pe-1"></i>Back</button>
-                                <a class="btn btn-success me-md-2  mb-2" href="{% url 'branch' %}">
-                                    <i class="bi bi-backspace-fill pe-1"></i> Back to Dashboard
-                                </a>
+
+                                <div class="row d-flex justify-content-end">
+                                    <div class="col-2">
+                                        <div class="row">
+                                            <div class="form-group required">
+                                                <label class='control-label'>Collected Empty Bottle</label>
+                                                {{customer_supply_form.collected_empty_bottle}}
+                                                <span style="color: red;">{{ customer_supply_form.collected_empty_bottle.errors }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="form-group required">
+                                                <label class='control-label'>Allocated Pending Bottle</label>
+                                                {{customer_supply_form.allocate_bottle_to_pending}}
+                                                <span style="color: red;">{{ customer_supply_form.allocate_bottle_to_pending.errors }}</span>
+                                            </div>
+                                        </div> 
+                                        <div class="row">
+                                            <div class="form-group required">
+                                                <label class='control-label'>Allocated Bottle to Custody</label>
+                                                {{customer_supply_form.allocate_bottle_to_custody}}
+                                                <span style="color: red;">{{ customer_supply_form.allocate_bottle_to_custody.errors }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="form-group required">
+                                                <label class='control-label'>Allocated Bottle to Paid</label>
+                                                {{customer_supply_form.allocate_bottle_to_paid}}
+                                                <span style="color: red;">{{ customer_supply_form.allocate_bottle_to_paid.errors }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="form-group required">
+                                                <label class='control-label'>Reference No.</label>
+                                                {{customer_supply_form.reference_number}}
+                                                <span style="color: red;">{{ customer_supply_form.reference_number.errors }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-2">
+                                        <div class="row">
+                                            <div class="form-group required">
+                                                <label class='control-label'>Grand Total</label>
+                                                {{customer_supply_form.grand_total}}
+                                                <span style="color: red;"></span>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="form-group required">
+                                                <label class='control-label'>Discount</label>
+                                                {{customer_supply_form.discount}}
+                                                <span style="color: red;">{{ customer_supply_form.discount.errors }}</span>
+                                            </div>
+                                        </div> 
+                                        <div class="row">
+                                            <div class="form-group required">
+                                                <label class='control-label'>Net Payable</label>
+                                                {{customer_supply_form.net_payable}}
+                                                <span style="color: red;">{{ customer_supply_form.net_payable.errors }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="form-group required">
+                                                <label class='control-label'>VAT (%)</label>
+                                                {{customer_supply_form.vat}}
+                                                <span style="color: red;">{{ customer_supply_form.vat.errors }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="form-group required">
+                                                <label class='control-label'>Sub Total</label>
+                                                {{customer_supply_form.subtotal}}
+                                                <span style="color: red;">{{ customer_supply_form.subtotal.errors }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="form-group required">
+                                                <label class='control-label'>Amount Recieved</label>
+                                                {{customer_supply_form.amount_recieved}}
+                                                <span style="color: red;">{{ customer_supply_form.amount_recieved.errors }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="form-group required">
+                                                <label class='control-label'>Balance</label>
+                                                <input type="text" value="0" class="required form-control text-right" required="" id="id_balance_amount"  style="text-align: right;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12 text-end mt-5">
+                                        <input type="submit" class="btn btn-primary me-2 mb-2" value="Submit">
+                                        <button class="btn btn-success   me-md-2  mb-2" type="button" onClick="javascript:history.go(-1);"> <i class="bi bi-backspace-fill pe-1"></i>Back</button>
+                                    </div>
+                                </div>
                             </div>
                         </form>
                     </div>
@@ -85,17 +208,17 @@
     .dynamic-formset-add td{
         text-align: center !important;
     }
-    .invoice_items_formset a.add-row::before{
+    .customer_supply_items_formset a.add-row::before{
         content: "+ Add"
     }
-    .invoice_items_formset a.remove::before{
+    .customer_supply_items_formset a.remove::before{
         content: "Remove"
     }
 </style>
 <script>
     $(document).ready(function () {
-        $('.invoice_items_formset table tr.form_set_row').formset({
-            prefix: '{{ invoice_items_formset.prefix }}',
+        $('.customer_supply_items_formset table tr.form_set_row').formset({
+            prefix: '{{ customer_supply_items_formset.prefix }}',
             formCssClass: 'dynamic-formset',
 
             'added': function (row) {
@@ -178,16 +301,16 @@
                 type: 'GET',
                 dataType: 'json',
                 success: function(data){
-                    $('#id_invoice_items_formset-'+formCount+'-product').empty();
-                    $('#id_invoice_items_formset-'+formCount+'-product').append($('<option>').text('Select Product').attr('value', ''));
+                    $('#id_customer_supply_items_formset-'+formCount+'-product').empty();
+                    $('#id_customer_supply_items_formset-'+formCount+'-product').append($('<option>').text('Select Product').attr('value', ''));
                     $.each(data.data, function(index, product){
-                        $('#id_invoice_items_formset-'+formCount+'-product').append($('<option>').text(product.product_name).attr('value', product.product_id));
+                        $('#id_customer_supply_items_formset-'+formCount+'-product').append($('<option>').text(product.product_name).attr('value', product.product_id));
                     });
                 }
             });
         }else{
-            $('#id_invoice_items_formset-'+formCount+'-product').empty();
-            $('#id_invoice_items_formset-'+formCount+'-product').append($('<option>').text('Select Product').attr('value', ''));
+            $('#id_customer_supply_items_formset-'+formCount+'-product').empty();
+            $('#id_customer_supply_items_formset-'+formCount+'-product').append($('<option>').text('Select Product').attr('value', ''));
         }
     });
 </script>
@@ -205,11 +328,11 @@
                 type: 'GET',
                 dataType: 'json',
                 success: function(data){
-                    $('#id_invoice_items_formset-'+formCount+'-rate').val(data.product_price);
+                    $('#id_customer_supply_items_formset-'+formCount+'-rate').val(data.product_price);
                 }
             });
         }else{
-            $('#id_invoice_items_formset-'+formCount+'-rate').empty();
+            $('#id_customer_supply_items_formset-'+formCount+'-rate').empty();
         }
     });
 </script>
@@ -218,7 +341,7 @@
         var elemId = $(this).attr("id");
         var formCount = elemId.match(/\d+/);
         var qty = $(this).val(); 
-        var productId = $('#id_invoice_items_formset-'+formCount+'-product').val(); 
+        var productId = $('#id_customer_supply_items_formset-'+formCount+'-product').val(); 
         var customerId = $("#customer_id_hfield").val();
         
         if(productId && customerId){
@@ -228,7 +351,7 @@
                 dataType: 'json',
                 success: function(data){
                     var vat = data.total_include_vat
-                    var productAmt = $('#id_invoice_items_formset-'+formCount+'-rate').val();
+                    var productAmt = $('#id_customer_supply_items_formset-'+formCount+'-rate').val();
 
                     totalAmnt = productAmt * qty
                     totalInclude = totalAmnt + vat
@@ -236,17 +359,17 @@
                     // console.log(totalAmnt + "totalAmnt")
                     // console.log(totalInclude)
 
-                    $('#id_invoice_items_formset-'+formCount+'-total_including_vat').val(totalInclude);
+                    $('#id_customer_supply_items_formset-'+formCount+'-total_including_vat').val(totalInclude);
                     calculateGrandTotal();
                 }
             });
         }else{
-            $('#id_invoice_items_formset-'+formCount+'-rate').empty();
+            $('#id_customer_supply_items_formset-'+formCount+'-rate').empty();
         }
     });
 </script>
 <script>
-    function createInvoiceBtn(button){
+    function createCustomer SupplyBtn(button){
         var customerId = $(button).data("customer_id");
         $('#customer_id_hfield').val(customerId);        
     };

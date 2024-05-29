@@ -935,16 +935,23 @@ class CollectionReportSerializer(serializers.ModelSerializer):
     receipt_no = serializers.CharField(source='invoice.reference_no')
     mode_of_payment = serializers.CharField(source='collection_payment.payment_method')
     collected_amount = serializers.DecimalField(source='amount_received', max_digits=10, decimal_places=2)
+    custom_amount_received = serializers.SerializerMethodField()
 
     class Meta:
         model = CollectionItems
-        fields = ['customer_id', 'customer_name', 'receipt_no', 'mode_of_payment', 'collected_amount']
+        fields = ['customer_id', 'customer_name', 'receipt_no', 'mode_of_payment', 'collected_amount', 'custom_amount_received']
 
     def get_customer_id(self, obj):
         return obj.collection_payment.customer.customer_id
 
     def get_customer_name(self, obj):
         return obj.collection_payment.customer.customer_name
+    
+    def get_custom_amount_received(self, obj):
+        if obj.amount_received > 0:
+            return obj.amount_received
+        return 0  # Or any other value you want to set if amount_received is not greater than 0
+
 
 class CouponSupplyCountSerializer(serializers.ModelSerializer):
     customer__customer_name = serializers.CharField()  
@@ -1088,18 +1095,20 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
 
 class CustodyCustomItemsSerializer(serializers.ModelSerializer):
-    product = ProductSerializer()
+    Customer = CustomerCustodyStockProductsSerializer()
 
     class Meta:
         model = CustodyCustomItems
-        fields = '__all__'
+        fields = ['Customer']
 
-class CustodyCustomSerializer(serializers.ModelSerializer):
-    custody_custom_items = CustodyCustomItemsSerializer(many=True, source='custodycustomitems_set')
 
-    class Meta:
-        model = CustodyCustom
-        fields = '__all__'
+# class CustodyCustomSerializer(serializers.ModelSerializer):
+#     custody_custom_items = CustodyCustomItemsSerializer(many=True, source='custodycustomitems_set')
+
+#     class Meta:
+#         model = CustodyCustom
+#         fields = ['customer', 'custody_custom_items']
+
 
 class VanSerializer(serializers.ModelSerializer):
     class Meta:
@@ -1318,3 +1327,29 @@ class NonvisitReportSerializer(serializers.ModelSerializer):
         model = NonvisitReport
         fields = ['id', 'customer', 'salesman', 'reason_text', 'supply_date', 'created_date']
         read_only_fields = ['id', 'created_date']
+        
+class FreshCanVsEmptyBottleSerializer(serializers.ModelSerializer):
+    fresh_cans = serializers.SerializerMethodField()
+    empty_bottles = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Customers
+        fields = ['custom_id', 'customer_name', 'building_name', 'door_house_no', 'floor_no', 'customer_type', 'sales_type', 'fresh_cans', 'empty_bottles']
+
+    def get_fresh_cans(self, obj):
+        start_date = self.context.get('start_date')
+        end_date = self.context.get('end_date')
+        print(start_date)
+        print(end_date)
+        return CustomerSupplyItems.objects.filter(
+            customer_supply__created_date__date__gte=start_date,
+            customer_supply__created_date__date__lte=end_date,
+            customer_supply__customer=obj,
+            product__product_name="5 Gallon"
+        ).aggregate(total_qty=Sum('quantity'))['total_qty'] or 0
+
+    def get_empty_bottles(self, obj):
+        return CustomerOutstandingReport.objects.filter(
+            customer=obj,
+            product_type="emptycan"
+        ).aggregate(total_values=Sum('value'))['total_values'] or 0
