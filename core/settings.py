@@ -72,8 +72,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-cred = credentials.Certificate("nationalwaterfcm-4cd9e-firebase-adminsdk-ijou8-4ac8e65e75.json")
-firebase_admin.initialize_app(cred, name='Sanawaterfcm')
+# cred = credentials.Certificate("nationalwaterfcm-4cd9e-firebase-adminsdk-ijou8-4ac8e65e75.json")
+# firebase_admin.initialize_app(cred, name='Sanawaterfcm')
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
