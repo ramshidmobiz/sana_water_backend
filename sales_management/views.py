@@ -3251,7 +3251,8 @@ def dsr_summary(request):
         coupon_amount_collected = CustomerCoupon.objects.filter(created_date__date=date,salesman=salesman,amount_recieved__gt=0).aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
         cash_sales_amount_collected = supply_amount_collected + coupon_amount_collected
         
-        credit_sales_amount_collected = dialy_collections.filter(created_date__date=date).aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
+        dialy_collections = dialy_collections.filter(created_date__date=date)
+        credit_sales_amount_collected = dialy_collections.aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
         total_sales_amount_collected = cash_sales_amount_collected + credit_sales_amount_collected
         
         cheque_collection = CollectionPayment.objects.filter(payment_method="CHEQUE",created_date__date=date,salesman=salesman)
@@ -3399,11 +3400,11 @@ def print_dsr_summary(request):
     
     if date:
         date = datetime.strptime(date, '%Y-%m-%d').date()
+        filter_data['filter_date'] = date.strftime('%Y-%m-%d')
     else:
         date = datetime.today().date()
+        filter_data['filter_date'] = date.strftime('%Y-%m-%d')
     
-    filter_data['filter_date'] = date.strftime('%Y-%m-%d')
-    filter_data['filter_date_formatted'] = date.strftime('%d-%m-%Y')
     
     if route_name:
         data_filter = True
@@ -3509,7 +3510,8 @@ def print_dsr_summary(request):
         coupon_amount_collected = CustomerCoupon.objects.filter(created_date__date=date,salesman=salesman,amount_recieved__gt=0).aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
         cash_sales_amount_collected = supply_amount_collected + coupon_amount_collected
         
-        credit_sales_amount_collected = dialy_collections.filter(created_date__date=date).aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
+        dialy_collections = dialy_collections.filter(created_date__date=date)
+        credit_sales_amount_collected = dialy_collections.aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
         total_sales_amount_collected = cash_sales_amount_collected + credit_sales_amount_collected
         
         cheque_collection = CollectionPayment.objects.filter(payment_method="CHEQUE",created_date__date=date,salesman=salesman)
