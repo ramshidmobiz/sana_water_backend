@@ -250,7 +250,7 @@
     }); {% endcomment %}
 
 </script>
-<script type="text/javascript">
+{% comment %} <script type="text/javascript">
     function calculateSubTotal() {
         var subTotal = 0;
         var grandTotal = parseFloat($('#id_grand_total').val().trim());
@@ -258,8 +258,8 @@
         var total = grandTotal - discount
         $('#id_amout_total').val(total.toFixed(2));
     }
-</script>
-<script type="text/javascript">
+</script> {% endcomment %}
+{% comment %} <script type="text/javascript">
     function calculateGrandTotal() {
         var grandTotal = 0;
         $('.total_including_vat').each(function() {
@@ -288,32 +288,7 @@
         $('#id_balance_amount').val(balanceAmt.toFixed(2));
 
     });
-</script>
-<script>
-    $('.product-category').change(function(){
-        var elemId = $(this).attr("id");
-        var formCount = elemId.match(/\d+/);
-        var category_id = $(this).val(); // Parse the amount as a float
-        
-        if(category_id){
-            $.ajax({
-                url: '/invoice-management/get-products/' + category_id, 
-                type: 'GET',
-                dataType: 'json',
-                success: function(data){
-                    $('#id_customer_supply_items_formset-'+formCount+'-product').empty();
-                    $('#id_customer_supply_items_formset-'+formCount+'-product').append($('<option>').text('Select Product').attr('value', ''));
-                    $.each(data.data, function(index, product){
-                        $('#id_customer_supply_items_formset-'+formCount+'-product').append($('<option>').text(product.product_name).attr('value', product.product_id));
-                    });
-                }
-            });
-        }else{
-            $('#id_customer_supply_items_formset-'+formCount+'-product').empty();
-            $('#id_customer_supply_items_formset-'+formCount+'-product').append($('<option>').text('Select Product').attr('value', ''));
-        }
-    });
-</script>
+</script> {% endcomment %}
 
 <script>
     $('.product-item').change(function(){

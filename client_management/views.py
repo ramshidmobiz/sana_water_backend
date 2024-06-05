@@ -749,20 +749,20 @@ def edit_customer_supply(request,pk):
                         outstanding_product.delete()
                         
             for item_data in supply_items_instances:
-                if VanProductStock.objects.filter(product=item_data.product,stock_type="opening_stock",van__salesman=customer_supply_instance.salesman).exists():
+                if VanProductStock.objects.filter(created_date=customer_supply_instance.created_date.date(),product=item_data.product,van__salesman=customer_supply_instance.salesman).exists():
                     if item_data.product.product_name == "5 Gallon" :
                         # total_fivegallon_qty -= Decimal(five_gallon_qty)
-                        if VanProductStock.objects.filter(product=item_data.product,stock_type="emptycan",van__salesman=customer_supply_instance.salesman).exists():
-                            empty_bottle, _ = VanProductStock.objects.get(
+                        if VanProductStock.objects.filter(created_date=customer_supply_instance.created_date.date(),product=item_data.product,van__salesman=customer_supply_instance.salesman).exists():
+                            empty_bottle = VanProductStock.objects.get(
                                 product=item_data.product,
+                                created_date=customer_supply_instance.created_date.date(),
                                 van__salesman=customer_supply_instance.salesman,
-                                stock_type="emptycan",
                             )
-                            empty_bottle.count -= customer_supply_instance.collected_empty_bottle
+                            empty_bottle.empty_can_count -= customer_supply_instance.collected_empty_bottle
                             empty_bottle.save()
                         
-                    vanstock = VanProductStock.objects.get(product=item_data.product,stock_type="opening_stock",van__salesman=customer_supply_instance.salesman)
-                    vanstock.count += item_data.quantity
+                    vanstock = VanProductStock.objects.get(created_date=customer_supply_instance.created_date.date(),product=item_data.product,van__salesman=customer_supply_instance.salesman)
+                    vanstock.stock += item_data.quantity
                     vanstock.save()
             
             customer_supply_instance.delete()
@@ -923,24 +923,24 @@ def delete_customer_supply(request, pk):
                         outstanding_instance.save()
                     except:
                         pass
+                    outstanding_product.delete()
                 leaflets_to_update.update(used=False)
-                outstanding_product.delete()
                 
     for item_data in supply_items_instances:
-        if VanProductStock.objects.filter(product=item_data.product,stock_type="opening_stock",van__salesman=customer_supply_instance.salesman).exists():
+        if VanProductStock.objects.filter(created_date=customer_supply_instance.created_date.date(),product=item_data.product,van__salesman=customer_supply_instance.salesman).exists():
             if item_data.product.product_name == "5 Gallon" :
                 # total_fivegallon_qty -= Decimal(five_gallon_qty)
-                if VanProductStock.objects.filter(product=item_data.product,stock_type="emptycan",van__salesman=customer_supply_instance.salesman).exists():
+                if VanProductStock.objects.filter(created_date=customer_supply_instance.created_date.date(),product=item_data.product,van__salesman=customer_supply_instance.salesman).exists():
                     empty_bottle = VanProductStock.objects.get(
                         product=item_data.product,
+                        created_date=customer_supply_instance.created_date.date(),
                         van__salesman=customer_supply_instance.salesman,
-                        stock_type="emptycan",
                     )
-                    empty_bottle.count -= customer_supply_instance.collected_empty_bottle
+                    empty_bottle.empty_can_count -= customer_supply_instance.collected_empty_bottle
                     empty_bottle.save()
                 
-            vanstock = VanProductStock.objects.get(product=item_data.product,stock_type="opening_stock",van__salesman=customer_supply_instance.salesman)
-            vanstock.count += item_data.quantity
+            vanstock = VanProductStock.objects.get(created_date=customer_supply_instance.created_date.date(),product=item_data.product,van__salesman=customer_supply_instance.salesman)
+            vanstock.stock += item_data.quantity
             vanstock.save()
     
     customer_supply_instance.delete()

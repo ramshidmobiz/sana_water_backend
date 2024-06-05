@@ -27,18 +27,18 @@
                         <table id="datatable-basic" class="table table-bordered text-nowrap" style="width:100%">
                             <thead>
                                 <tr>
-                                    <th scope="col">Sl.No</th>
-                                    <th scope="col">Product Name</th>
-                                    <th scope="col">Stock Quantity</th>
-                                    <th scope="col">Branch</th>
-                                    <th scope="col">Status</th>
+                                    <th scope="col" style="text-align:center;">Sl.No</th>
+                                    <th scope="col" style="text-align:center;">Product Name</th>
+                                    <th scope="col" style="text-align:center;">Stock Quantity</th>
+                                    <th scope="col" style="text-align:center;">Branch</th>
+                                    <th scope="col" style="text-align:center;">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for instance in instances %}
                                 <tr>
                                     <td style="text-align:center;">{{forloop.counter}}</td>
-                                    <td style="text-align:center;">{{instance.product_name}}</td>
+                                    <td>{{instance.product_name}}</td>
                                     <td style="text-align:center;">{{instance.quantity}}</td>
                                     <td style="text-align:center;">{{instance.branch}}</td>
                                     <td style="text-align:center;">{{instance.status}}</td>

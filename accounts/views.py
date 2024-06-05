@@ -285,6 +285,7 @@ class CustomerComplaintView(View):
 def create_customer(request):
     branch = request.user.branch_id
     template_name = 'accounts/create_customer.html'
+    form = CustomercreateForm(branch)
     context = {"form":form}
     try:
         if request.method == 'POST':
@@ -297,7 +298,7 @@ def create_customer(request):
                 data.created_date = datetime.now()
                 data.emirate = data.location.emirate
                 branch_id=request.user.branch_id.branch_id
-                branch = BranchMaster.objects.get(branch_id=branch_id)  # Adjust the criteria based on your model
+                branch = BranchMaster.objects.get(branch_id=branch_id)
                 data.branch_id = branch
                 data.custom_id = get_custom_id(Customers)
                 data.save()

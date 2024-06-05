@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 from decouple import config, Csv
+import firebase_admin
+from firebase_admin import credentials
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -70,6 +72,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
+cred = credentials.Certificate("nationalwaterfcm-4cd9e-firebase-adminsdk-ijou8-4ac8e65e75.json")
+firebase_admin.initialize_app(cred, name='Sanawaterfcm')
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases

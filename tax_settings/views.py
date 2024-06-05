@@ -32,8 +32,15 @@ def create_tax_type(request):
             data = form.save(commit=False)
             data.created_by = str(request.user.id)
             data.save()
-            messages.success(request, 'Tax created successfully!')
-            return redirect('tax_settings:tax_types')
+            
+            response_data = {
+                "status": "true",
+                "title": "Successfully Created",
+                "message": "Tax created successfully.",
+                'redirect': 'true',
+                "redirect_url": reverse('tax_settings:tax_types')
+            }
+            return HttpResponse(json.dumps(response_data), content_type='application/javascript')
         else:
             messages.error(request, 'Invalid form data. Please check the input.')
     else:
@@ -61,7 +68,14 @@ def edit_tax_type(request, pk):
             data.modified_date = datetime.now()
             data.save()
             
-            return redirect('tax_settings:tax_types')
+            response_data = {
+                "status": "true",
+                "title": "Successfully Created",
+                "message": "Tax Update successfully.",
+                'redirect': 'true',
+                "redirect_url": reverse('tax_settings:tax_types')
+            }
+            return HttpResponse(json.dumps(response_data), content_type='application/javascript')
     else:
         form = TaxTypesForm(instance=instance)
         

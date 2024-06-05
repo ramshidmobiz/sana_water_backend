@@ -199,7 +199,7 @@ urlpatterns = [
     path('competitors/', CompetitorsAPIView.as_view(), name='competitors'),
     path('competitors_list/', CompetitorsListAPIView.as_view(), name='competitors_list'),
     path('market_share/',MarketShareAPI.as_view(), name='market_share'),
-    path('offload_coupon/', OffloadCouponAPI.as_view(), name='offload_coupon'),
+    # path('offload_coupon/', OffloadCouponAPI.as_view(), name='offload_coupon'),
     
     path('pending-supply-report/<str:route_id>/', PendingSupplyReportView.as_view(), name='pending-supply-report'),
     
@@ -226,6 +226,12 @@ urlpatterns = [
     path('complaints_create/', CustomerComplaintCreateView.as_view(), name='create-complaint'),
     path('nonvisit_report/', NonVisitReportCreateAPIView.as_view(), name='nonvisit_report'),
     path('send_device_token/', Send_Device_API.as_view(),name='send_device_token'),
+    path('customer_Wise_Coupon_sale/', CustomerWiseCouponSaleAPIView.as_view(),name='customer_Wise_Coupon_sale'),
+    path('total_coupon_consumed/', CouponConsumedAPIView.as_view(), name='total_coupon_consumed'),
 
-
+    path('offloads/', OffloadAPIView.as_view(), name='offload-list'),
+    path('edit-product/<str:pk>/', EditProductAPIView.as_view(), name='edit-product'),
+    path('offload-coupons/', GetVanCouponBookNoAPIView.as_view(), name='offload-coupon-list'),
+    path('edit-coupon/<str:pk>/', EditCouponAPIView.as_view(), name='edit-coupon'),
+    
 ]

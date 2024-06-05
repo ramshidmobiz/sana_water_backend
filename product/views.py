@@ -424,16 +424,20 @@ def staff_issue_orders_details_list(request,staff_order_id):
 def staffIssueOrdersCreate(request, staff_order_details_id):
     issue = get_object_or_404(Staff_Orders_details, staff_order_details_id=staff_order_details_id)
     van = Van.objects.get(salesman_id__id=issue.staff_order_id.created_by)
-    vanstock_count = VanProductStock.objects.filter(van=van,product__product_name="5 Gallon",stock_type__in=["opening_stock","closing"]).aggregate(total_amount=Sum('count'))['total_amount'] or 0
-    
-    product_stock = ProductStock.objects.get(product_name=issue.product_id)
-    stock_quantity = issue.count
+    try:
+        vanstock = VanProductStock.objects.get(created_date=issue.staff_order_id.order_date,van=van,product__product_name="5 Gallon")
+        vanstock_count = vanstock.stock + vanstock.opening_count
+    except :
+        vanstock_count = 0
     
     if request.method == 'POST':
         form = StaffIssueOrdersForm(request.POST)
         if form.is_valid():
             try:
                 with transaction.atomic():
+                    product_stock = ProductStock.objects.get(product_name=issue.product_id)
+                    stock_quantity = issue.count
+                    
                     quantity_issued = form.cleaned_data.get('quantity_issued')
                     
                     if issue.product_id.product_name == "5 Gallon":
@@ -479,16 +483,16 @@ def staffIssueOrdersCreate(request, staff_order_details_id):
                                 van_stock=vanstock,
                             )
                             
-                            if VanProductStock.objects.filter(product=issue.product_id,stock_type='opening_stock',van=van).exists():
-                                van_product_stock = VanProductStock.objects.get(product=issue.product_id,stock_type='opening_stock',van=van)
-                                van_product_stock.count += int(quantity_issued)
+                            if VanProductStock.objects.filter(created_date=datetime.today().date(),product=issue.product_id,van=van).exists():
+                                van_product_stock = VanProductStock.objects.get(created_date=datetime.today().date(),product=issue.product_id,van=van)
+                                van_product_stock.stock += int(quantity_issued)
                                 van_product_stock.save()
                             else:
                                 van_product_stock = VanProductStock.objects.create(
+                                    created_date=datetime.now().date(),
                                     product=issue.product_id,
-                                    stock_type='opening_stock',
                                     van=van,
-                                    count=int(quantity_issued)
+                                    stock=int(quantity_issued)
                                     )
                             
                             issue.issued_qty += int(quantity_issued)
@@ -862,24 +866,22 @@ def issue_coupons_orders(request):
     if request.method == 'POST':
         request_id = request.POST.get("request_id")
         book_numbers = request.POST.getlist("coupon_book_no")
-        print("Request ID:", request_id)
-        print("Selected Book Numbers:", book_numbers)
+        
         issue = get_object_or_404(Staff_Orders_details, staff_order_details_id=request_id)
         
         for book_no in book_numbers :
             coupon = NewCoupon.objects.get(book_num=book_no,coupon_type__coupon_type_name=issue.product_id.product_name)
-            print(coupon)
             update_purchase_stock = ProductStock.objects.filter(product_name=issue.product_id)
             
-            # if update_purchase_stock.exists():  
-            #     ptoduct_stockQuantity = update_purchase_stock.first().quantity
-            #     if ptoduct_stockQuantity is None:
-            #         ptoduct_stockQuantity = 0
-            # else:
-            #     ptoduct_stockQuantity = 0
-            #     quantity_issued = issue.issued_qty
+            if update_purchase_stock.exists():  
+                ptoduct_stockQuantity = update_purchase_stock.first().quantity
+                if ptoduct_stockQuantity is None:
+                    ptoduct_stockQuantity = 0
+            else:
+                ptoduct_stockQuantity = 0
+                quantity_issued = issue.issued_qty
             
-            # if 0 < int(issue.issued_qty) <= ptoduct_stockQuantity:
+            # if int(issue.issued_qty) > 0 and ptoduct_stockQuantity >= int(issue.issued_qty):
             try:
                 with transaction.atomic():
                     issue_order = Staff_IssueOrders.objects.create(
@@ -887,7 +889,6 @@ def issue_coupons_orders(request):
                         modified_by = str(request.user.id),
                         modified_date = datetime.now(),
                         # created_date = datetime.now(),
-                        
                         product_id = issue.product_id,
                         staff_Orders_details_id = issue,
                         coupon_book = coupon,
@@ -896,15 +897,15 @@ def issue_coupons_orders(request):
                     
                     #  ProductStock
                     update_purchase_stock = update_purchase_stock.first()
-                    update_purchase_stock.quantity -= int(issue_order.quantity_issued)
+                    update_purchase_stock.quantity -= 1
                     update_purchase_stock.save()
                     
                     # Update VanStock
                     van = Van.objects.get(salesman_id__id=issue.staff_order_id.created_by)
                     
-                    if (update_van_stock:=VanCouponStock.objects.filter(van=van,coupon=coupon,stock_type="opening_stock")).exists():
+                    if (update_van_stock:=VanCouponStock.objects.filter(created_date=datetime.today().date(),van=van,coupon=coupon)).exists():
                         van_stock = update_van_stock.first()
-                        van_stock.count += int(issue_order.quantity_issued)
+                        van_stock.stock += 1
                         van_stock.save()
                     else:
                         vanstock = VanStock.objects.create(
@@ -922,13 +923,13 @@ def issue_coupons_orders(request):
                         )
                         
                         van_stock = VanCouponStock.objects.create(
+                            created_date=datetime.now().date(),
                             coupon=coupon,
-                            stock_type="opening_stock",
-                            count=int(issue_order.quantity_issued),
+                            stock=1,
                             van=van
                         )
                         
-                        issue.issued_qty += issue_order.quantity_issued
+                        issue.issued_qty += 1
                         issue.save()
                             
                         CouponStock.objects.filter(couponbook=coupon).update(coupon_stock="van")

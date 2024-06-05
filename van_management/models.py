@@ -1,3 +1,4 @@
+from datetime import timedelta
 import uuid
 
 from django.db import models
@@ -39,9 +40,14 @@ class Van(models.Model):
     def __str__(self):
         return str(self.van_make)
     
-    def get_total_vanstock(self):
-        product_count = VanProductStock.objects.filter(van=self,stock_type="opening_stock").aggregate(total_amount=Sum('count'))['total_amount'] or 0
-        coupon_count = VanCouponStock.objects.filter(van=self,stock_type="opening_stock").aggregate(total_amount=Sum('count'))['total_amount'] or 0
+    def get_total_vanstock(self,date):
+        if date:
+            date = datetime.strptime(date, '%Y-%m-%d').date()
+        else:
+            date = datetime.today().date()
+        
+        product_count = VanProductStock.objects.filter(created_date=date,van=self).aggregate(total_amount=Sum('stock'))['total_amount'] or 0
+        coupon_count = VanCouponStock.objects.filter(created_date=date,van=self).aggregate(total_amount=Sum('stock'))['total_amount'] or 0
         return product_count + coupon_count
     
     def get_van_route(self):
@@ -133,28 +139,67 @@ class VanCouponItems(models.Model):
     def __str__(self):
         return f"{self.id}"
     
+# class VanProductStock(models.Model):
+#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+#     product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE)
+#     stock_type = models.CharField(max_length=100,choices=STOCK_TYPES)
+#     count = models.PositiveIntegerField(default=0)
+#     van = models.ForeignKey(Van, on_delete=models.CASCADE,null=True,blank=True)
+
+#     def __str__(self):
+#         return f"{self.id}"
+
 class VanProductStock(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE)
-    stock_type = models.CharField(max_length=100,choices=STOCK_TYPES)
-    count = models.PositiveIntegerField(default=0)
+    created_date = models.DateField()
+    opening_count = models.PositiveIntegerField(default=0)
+    closing_count = models.PositiveIntegerField(default=0)
+    change_count = models.PositiveIntegerField(default=0)
+    damage_count = models.PositiveIntegerField(default=0)
+    empty_can_count = models.PositiveIntegerField(default=0)
+    return_count = models.PositiveIntegerField(default=0)
+    requested_count = models.PositiveIntegerField(default=0)
+    pending_count = models.PositiveIntegerField(default=0)
+    sold_count = models.PositiveIntegerField(default=0)
+    stock = models.PositiveIntegerField(default=0)
+    
+    product = models.ForeignKey(ProdutItemMaster,on_delete=models.CASCADE)
     van = models.ForeignKey(Van, on_delete=models.CASCADE,null=True,blank=True)
 
     def __str__(self):
         return f"{self.id}"
     
+    def save(self, *args, **kwargs):
+        self.closing_count = self.stock
+        
+        super(VanProductStock, self).save(*args, **kwargs)
+        
 class VanCouponStock(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created_date = models.DateField()
+    opening_count = models.PositiveIntegerField(default=0)
+    closing_count = models.PositiveIntegerField(default=0)
+    change_count = models.PositiveIntegerField(default=0)
+    damage_count = models.PositiveIntegerField(default=0)
+    return_count = models.PositiveIntegerField(default=0)
+    requested_count = models.PositiveIntegerField(default=0)
+    pending_count = models.PositiveIntegerField(default=0)
+    sold_count = models.PositiveIntegerField(default=0)
+    stock = models.PositiveIntegerField(default=0)
+    
     coupon = models.ForeignKey(NewCoupon, on_delete=models.CASCADE)
-    stock_type = models.CharField(max_length=100,choices=STOCK_TYPES)
-    count = models.PositiveIntegerField(default=0)
     van = models.ForeignKey(Van, on_delete=models.CASCADE,null=True,blank=True)
 
     def __str__(self):
         return f"{self.id}"
     
+    def save(self, *args, **kwargs):
+        self.closing_count = self.stock
+        
+        super(VanCouponStock, self).save(*args, **kwargs)
     
-class Offload(models.Model): #Product offload model
+    
+class Offload(models.Model): 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_by = models.CharField(max_length=30, blank=True)
     created_date = models.DateTimeField(auto_now_add=True)
@@ -179,9 +224,25 @@ class OffloadCoupon(models.Model):
     
     salesman = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE)
     van = models.ForeignKey(Van, on_delete=models.CASCADE)
-    coupon = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE)
+    coupon = models.ForeignKey(NewCoupon, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=0)
     stock_type = models.CharField(max_length=100,choices=STOCK_TYPES)
+
+    def __str__(self):
+        return f"{self.id}"
+    
+class OffloadReturnStocks(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created_by = models.CharField(max_length=30, blank=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_by = models.CharField(max_length=20, null=True, blank=True)
+    modified_date = models.DateTimeField(auto_now=True ,blank=True, null=True)
+    
+    salesman = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE)
+    van = models.ForeignKey(Van, on_delete=models.CASCADE)
+    product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE)
+    scrap_count = models.PositiveIntegerField(default=0)
+    washing_count = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return f"{self.id}"
@@ -239,3 +300,25 @@ class StockMovementProducts(models.Model):
 
     def __str__(self):
         return f"{self.id}"
+    
+STOCK= (
+    ('fresh','Fresh'),
+    ('used','Used'),
+)
+    
+class BottleCount(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    van = models.ForeignKey(Van,on_delete=models.CASCADE)
+    comment = models.CharField(max_length=100, blank=True)
+    stock = models.CharField(max_length=100,choices=STOCK)
+
+    created_by = models.CharField(max_length=100, blank=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_by = models.CharField(max_length=20, null=True, blank=True)
+    modified_date = models.DateTimeField(auto_now=True ,blank=True, null=True)
+    
+    class Meta:
+        ordering = ('-id',)
+        
+    def __str__(self):
+        return str(self.id)

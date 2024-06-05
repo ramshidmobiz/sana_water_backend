@@ -33,7 +33,7 @@
                                     <th scope="col">Plate no</th>
                                     <th scope="col">Route</th>
                                     <th scope="col">Salesman</th>
-                                    <th scope="col">Total Stock <small>(Product + Coupon)</small></th>
+                                    {% comment %} <th scope="col">Total Stock <small>(Product + Coupon)</small></th> {% endcomment %}
                                     <th scope="col">Actions</th>
                                 </tr>
                             </thead>
@@ -44,7 +44,7 @@
                                     <td>{{data.plate}}</td>
                                     <td>{{data.driver}}</td>
                                     <td>{{data.salesman}}</td>
-                                    <td style="text-align:center;">{{data.get_total_vanstock }}</td>
+                                    {% comment %} <td style="text-align:center;">{{data|get_total_vanstock:filter_data.filter_date}}</td> {% endcomment %}
                                     <td>
                                         <div class="g-2">
                                             <a href="{% url 'view_item_details' data.pk %}" aria-label="anchor" class="btn  btn-warning-light btn-sm" data-bs-toggle="tooltip" data-bs-original-title="View">

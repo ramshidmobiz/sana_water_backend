@@ -49,15 +49,23 @@ urlpatterns = [
     path('van-stock-product', VanProductStockList.as_view(), name="vanstock_product"),
     
     path('offload', offload, name="offload"),
+    path('get-van-coupon-bookno/', get_van_coupon_bookno, name="get_van_coupon_bookno"),
     path('view_item_details/<str:pk>/', View_Item_Details.as_view(), name="view_item_details"),
-    path('edit-product-count/<uuid:van_id>/<uuid:product_id>/', EditProductView.as_view(), name="edit_product_count"),
-    path('edit-coupon-count/<uuid:van_id>/<uuid:coupon_id>/', EditCouponView.as_view(), name="edit_coupon_count"),
+    path('edit-product-count/<uuid:pk>/', EditProductView.as_view(), name="edit_product_count"),
+    path('edit-coupon-count/<uuid:van_pk>/', EditCouponView.as_view(), name="edit_coupon_count"),
     
     path('salesman-requests/',salesman_requests, name="salesman_requests"),
 
 
     path('bottle_allocation/',BottleAllocationn, name='bottle_allocation'),
     path('edit_bottle_allocation/<uuid:route_id>/',EditBottleAllocation, name='edit_bottle_allocation'),
+
+    path('vans_route_bottle_count/', VansRouteBottleCount, name='vans_route_bottle_count'),
+    path('vans_route_bottle_count_add/<uuid:van_id>/',VansRouteBottleCountAdd, name='vans_route_bottle_count_add'),
+    path('vans_route_bottle_count_deduct/<uuid:van_id>/',VansRouteBottleCountDeduct, name='vans_route_bottle_count_deduct'),
+
+
+    
 
 
     

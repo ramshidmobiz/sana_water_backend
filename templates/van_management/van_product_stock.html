@@ -39,6 +39,7 @@
                                         <thead>
                                             <tr>
                                                 <th scope="col">Sl.No</th>
+                                                <th scope="col">Date</th>
                                                 <th scope="col">Van</th>
                                                 <th scope="col">Product Name</th>
 
@@ -49,26 +50,28 @@
                                                 <th scope="col">Sold</th>
                                                 <th scope="col">Returned</th>
                                                 <th scope="col">Offload</th>
+                                                <th scope="col">Stock</th>
                                                 <th scope="col">Closing</th>
                                                 <th scope="col">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {% for van_data in van_instances %}
-                                            {% for product_data in products %}
+                                            {% for van_data in van_product_stock %}
+                                            {% get_van_product_wise_stock filter_data.filter_date van_data.van.pk van_data.product.pk as stock_details %}
                                             <tr>
                                                 <td style="text-align:center;">{{forloop.counter}}</td>
-                                                <td style="text-align:center;">{{van_data.van_make}}</td>
-                                                <td style="text-align:center;">{{product_data.product_name}}</td>
-                                                {% get_van_product_wise_stock filter_data.filter_date van_data.pk product_data.pk as stock_details %}
-                                                <td style="text-align:center;">{{stock_details.opening_stock}}</td>
+                                                <td style="text-align:center;">{{van_data.created_date|date}}</td>
+                                                <td style="text-align:center;">{{van_data.van.van_make}} - {{van_data.van.plate}}</td>
+                                                <td style="text-align:center;">{{van_data.product.product_name}}</td>
+                                                <td style="text-align:center;">{{van_data.opening_count}}</td>
                                                 <td style="text-align:center;">{{stock_details.requested_count}}</td>
                                                 <td style="text-align:center;">{{stock_details.issued_count}}</td>
-                                                <td style="text-align:center;">{% if product_data.product_name == "5 Gallon" %}{{stock_details.empty_bottle_collected}}{% else %}0{% endif %}</td>
-                                                <td style="text-align:center;">{{ stock_details.sold_count }}</td>
-                                                <td style="text-align:center;">{{stock_details.return_count}}</td>
+                                                <td style="text-align:center;">{{van_data.empty_can_count}}</td>
+                                                <td style="text-align:center;">{{van_data.sold_count }}</td>
+                                                <td style="text-align:center;">{{van_data.return_count}}</td>
                                                 <td style="text-align:center;">{{stock_details.offload_count}}</td>
-                                                <td style="text-align:center;">{{stock_details.closing_count}}</td>
+                                                <td style="text-align:center;">{{van_data.stock}}</td>
+                                                <td style="text-align:center;">{{van_data.closing_count}}</td>
                                                 <td>
                                                     <div class="g-2">
                                                        
@@ -77,7 +80,6 @@
                                                         </a>
                                                 </div>
                                             </tr>
-                                            {% endfor %}
                                             {% endfor %}
                                         </tbody>
                                     </table>

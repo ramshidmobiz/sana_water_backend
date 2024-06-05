@@ -85,7 +85,7 @@ class Customers(models.Model):
     )
     SALES_TYPE_CHOICES = (
         ('CASH COUPON', 'CASH COUPON'),
-        ('CREDIT COUPON', 'CREDIT COUPON'),
+        ('FOC', 'FOC'),
         ('CASH', 'CASH'),
         ('CREDIT', 'CREDIT')
     )

@@ -64,7 +64,7 @@
                                         <p>Route: {{van_route.routes.route_name}}</p>
                                     </div>
                                     <div class="col-4">
-                                        <p>Date: {{ filter_data.filter_date }}</p>
+                                        <p>Date: {{ filter_data.filter_date_formatted }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -75,21 +75,23 @@
                                 <table  class="table table-bordered text-wrap" style="width: 100%">
                                     <thead>
                                         <tr>
-                                            <th class="text-center text-bold" colspan="4">Visit Statistics</th>
+                                            <th class="text-center text-bold" colspan="5">Visit Statistics</th>
                                         </tr>
                                         <tr>
-                                            <th>New Customer Created</th>
-                                            <th>Planned Visit</th>
-                                            <th>Emergency Supply</th>
-                                            <th>Non Visited</th>
+                                            <th style="text-align:center;">New Customer Created</th>
+                                            <th style="text-align:center;">Planned Visit</th>
+                                            <th style="text-align:center;">Visited</th>
+                                            <th style="text-align:center;">Non Visited</th>
+                                            <th style="text-align:center;">Emergency Supply</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td>{{new_customers_count}}</td>
-                                            <td>{{planned_visit_count}}</td>
-                                            <td>{{emergency_supply_count}}</td>
-                                            <td>{{non_visited_count}}</td>
+                                            <td style="text-align:center;">{{new_customers_count}}</td>
+                                            <td style="text-align:center;">{{planned_visit_count}}</td>
+                                            <td style="text-align:center;">{{visited_customers_count}}</td>
+                                            <td style="text-align:center;">{{non_visited_count}}</td>
+                                            <td style="text-align:center;">{{emergency_supply_count}}</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -104,39 +106,33 @@
                                             <th class="text-center text-bold" colspan="10">Stock Report</th>
                                         </tr>
                                         <tr>
-                                            <th scope="col">Sl No</th>
-                                            <th scope="col">Item Name</th>
-                                            <th scope="col">Opening Stock</th>
-                                            <th scope="col">Stock Requested</th>
-                                            <th scope="col">Stock Issued</th>
-                                            <th scope="col">Total Stock</th>
-                                            <th scope="col">Sold</th>
-                                            <th scope="col">Returned</th>
-                                            <th scope="col">Empty Can</th>
-                                            <th scope="col">Offloaded</th>
-                                            <th scope="col">Closing</th>
+                                            <th scope="col" style="text-align:center;">Product Name</th>
+                                            <th scope="col" style="text-align:center;">Opening Stock</th>
+                                            <th scope="col" style="text-align:center;">Requested Stock</th>
+                                            <th scope="col" style="text-align:center;">Issued</th>
+                                            <th scope="col" style="text-align:center;">Empty Bottle</th>
+                                            <th scope="col" style="text-align:center;">Sold</th>
+                                            <th scope="col" style="text-align:center;">Returned</th>
+                                            <th scope="col" style="text-align:center;">Offload</th>
+                                            <th scope="col" style="text-align:center;">Total Stock</th>
+                                            <th scope="col" style="text-align:center;">Closing</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for van_data in van_instances %}
-                                        {% for product_data in products %}
-                                        {% get_van_product_wise_stock filter_data.filter_date van_data.pk product_data.pk as stock_details %}
-                                        {% if stock_details.opening_stock > 0 or stock_details.requested_count > 0 or stock_details.issued_count > 0 or stock_details.empty_bottle_collected > 0 or stock_details.sold_count > 0 or stock_details.return_count > 0 or stock_details.offload_count > 0 or stock_details.closing_count > 0 %}
+                                        {% for van_data in van_product_stock %}
+                                        {% get_van_product_wise_stock filter_data.filter_date van_data.van.pk van_data.product.pk as stock_details %}
                                         <tr>
-                                            <td style="text-align:center;">{{forloop.counter}}</td>
-                                            <td style="text-align:center;">{{product_data.product_name}}</td>
-                                            <td style="text-align:center;">{{stock_details.opening_stock}}</td>
+                                            <td style="text-align:center;">{{van_data.product.product_name}}</td>
+                                            <td style="text-align:center;">{{van_data.opening_count}}</td>
                                             <td style="text-align:center;">{{stock_details.requested_count}}</td>
                                             <td style="text-align:center;">{{stock_details.issued_count}}</td>
-                                            <td style="text-align:center;">{{stock_details.sold_count}}</td>
-                                            <td style="text-align:center;">{{stock_details.total_stock}}</td>
-                                            <td style="text-align:center;">{{stock_details.return_count}}</td>
-                                            <td style="text-align:center;">{% if product_data.product_name == "5 Gallon" %}{{stock_details.empty_bottle_collected}}{% else %}0{% endif %}</td>
+                                            <td style="text-align:center;">{{van_data.empty_can_count}}</td>
+                                            <td style="text-align:center;">{{van_data.sold_count }}</td>
+                                            <td style="text-align:center;">{{van_data.return_count}}</td>
                                             <td style="text-align:center;">{{stock_details.offload_count}}</td>
-                                            <td style="text-align:center;">{{stock_details.closing_count}}</td>
+                                            <td style="text-align:center;">{{stock_report_total}}</td>
+                                            <td style="text-align:center;">{{van_data.closing_count}}</td>
                                         </tr>
-                                        {% endif %}
-                                        {% endfor %} 
                                         {% endfor %}
                                     </tbody>
                                 </table>
@@ -151,12 +147,12 @@
                                             <th class="text-center text-bold" colspan="10">Pending Bottle</th>
                                         </tr>
                                         <tr>
-                                            <th scope="col">Sl No</th>
-                                            <th scope="col">Customer Name</th>
-                                            <th scope="col">Building Name /Room No</th>
-                                            <th scope="col">Mode Of Supply</th>
-                                            <th scope="col">Qty Supplied</th>
-                                            <th scope="col">Bottles Pending</th>
+                                            <th scope="col" style="text-align:center;">Sl No</th>
+                                            <th scope="col" style="text-align:center;">Customer Name</th>
+                                            <th scope="col" style="text-align:center;">Building Name /Room No</th>
+                                            <th scope="col" style="text-align:center;">Mode Of Supply</th>
+                                            <th scope="col" style="text-align:center;">Qty Supplied</th>
+                                            <th scope="col" style="text-align:center;">Bottles Pending</th>
                                         </tr>
                                     </thead>
                                    <tbody>
@@ -165,9 +161,9 @@
                                             <td>{{ forloop.counter }}</td>
                                             <td>{{ row.customer.customer_name }}</td>
                                             <td>{{ row.customer.building_name }}</td>
-                                            <td>{{ row.mode_of_supply }}</td>                                      
-                                            <td>{{ row.total_supplied_quantity }}</td>
-                                            <td>{{ row.empty_bottle_pending }}</td>
+                                            <td style="text-align:center;">{{ row.customer.get_sales_type_display }}</td>                                      
+                                            <td style="text-align:center;">{{ row.get_total_supply_qty }}</td>
+                                            <td style="text-align:center;">{{ row.allocate_bottle_to_pending }}</td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
@@ -180,25 +176,25 @@
                                 <table  class="table table-bordered text-wrap" style="width: 100%">
                                     <thead>
                                         <tr>
-                                            <th class="text-center text-bold" colspan="10">Bottle Count 5 Gallon empty + fresh</th>
+                                            <th class="text-center text-bold" colspan="10">Bottle Count 5 Gallon</th>
                                         </tr>
                                         <tr>
-                                            <th scope="col">Van Closing Stock</th>
-                                            <th scope="col">Today supplied</th>
-                                            <th scope="col">Custody</th>
-                                            <th scope="col">Pending</th>
-                                            <th scope="col">Damaged</th>
-                                            <th scope="col">Total</th>
+                                            <th scope="col" style="text-align:center;">Van Closing Stock</th>
+                                            <th scope="col" style="text-align:center;">Today supplied</th>
+                                            <th scope="col" style="text-align:center;">Custody</th>
+                                            <th scope="col" style="text-align:center;">Pending</th>
+                                            <th scope="col" style="text-align:center;">Damaged</th>
+                                            <th scope="col" style="text-align:center;">Total</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td>{{ closing_stock_count }}</td>
-                                            <td>{{ total_supplied_bottles }}</td>
-                                            <td>{{ total_empty_bottles }}</td>
-                                            <td>{{ pending_bottle_count }}</td>
-                                            <td>{{ damage_bottle_count }}</td>
-                                            <td>{{ total_count }}</td>
+                                            <td style="text-align:center;">{{ closing_stock_count }}</td>
+                                            <td style="text-align:center;">{{ total_supplied_bottles }}</td>
+                                            <td style="text-align:center;">{{ total_empty_bottles }}</td>
+                                            <td style="text-align:center;">{{ pending_bottle_count }}</td>
+                                            <td style="text-align:center;">{{ damage_bottle_count }}</td>
+                                            <td style="text-align:center;">{{ total_count }}</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -213,29 +209,29 @@
                                             <th class="text-center text-bold" colspan="8">Coupon Book Sales</th>
                                         </tr>
                                         <tr>
-                                            <th>Sl No</th>
-                                            <th>Ref No</th>
+                                            <th style="text-align:center;">Sl No</th>
+                                            <th style="text-align:center;">Ref No</th>
                                             <th>Customer</th>
                                             <th>Building Name/no</th>
-                                            <th>Book No</th>
-                                            <th>Coupon Book Type</th>
-                                            <th>Coupon Method</th>
-                                            <th>Amount</th>
+                                            <th style="text-align:center;">Book No</th>
+                                            <th style="text-align:center;">Coupon Book Type</th>
+                                            <th style="text-align:center;">Coupon Method</th>
+                                            <th style="text-align:center;">Amount</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for customer_coupon_item in customer_coupon_items %}
                                         <tr>
-                                            <td>{{ forloop.counter }}</td>
-                                            <td>{{ customer_coupon_item.customer_coupon.reference_number }}</td>
+                                            <td style="text-align:center;">{{ forloop.counter }}</td>
+                                            <td style="text-align:center;">{{ customer_coupon_item.customer_coupon.reference_number }}</td>
                                             <td>{{ customer_coupon_item.customer_coupon.customer.customer_name }}</td>
                                             <td>{{ customer_coupon_item.customer_coupon.customer.building_name }} /{{ customer_coupon_item.customer_coupon.customer.door_house_no }}/
                                                 {{ customer_coupon_item.customer_coupon.customer.floor_no }}
                                             </td>
-                                            <td>{{ customer_coupon_item.coupon.book_num }}</td>
+                                            <td style="text-align:center;">{{ customer_coupon_item.coupon.book_num }}</td>
                                             <td>{{ customer_coupon_item.coupon.coupon_type.coupon_type_name }}</td>
                                             <td>{{ customer_coupon_item.coupon.coupon_method }}</td>
-                                            <td>{{ customer_coupon_item.rate }}</td>
+                                            <td style="text-align:center;">{{ customer_coupon_item.rate }}</td>
     
                                         </tr>
                                     {% endfor %} 
@@ -249,42 +245,42 @@
                                 <table  class="table table-bordered text-wrap" style="width: 100%">
                                     <thead>
                                         <tr>
-                                            <th class="text-center text-bold" colspan="7">Cash Sales</th>
+                                            <th class="text-center text-bold" colspan="8">Cash Sales</th>
                                         </tr>
                                         <tr>
-                                            <th>Sl No</th>
-                                            <th scope="col">Reference No</th>
-                                            <th scope="col">Customer Name</th>
-                                            <th scope="col">Building Name</th>
-                                            <th scope="col">Net taxable</th>
-                                            <th scope="col">Vat</th>
-                                            <th scope="col">Grand Total</th>
-                                            <th scope="col">Cash Recieved</th>
+                                            <th style="text-align:center;">Sl No</th>
+                                            <th style="text-align:center;" scope="col">Reference No</th>
+                                            <th style="text-align:center;" scope="col">Customer Name</th>
+                                            <th style="text-align:center;" scope="col">Total QTY</th>
+                                            <th style="text-align:center;" scope="col">Net taxable</th>
+                                            <th style="text-align:center;" scope="col">Vat</th>
+                                            <th style="text-align:center;" scope="col">Grand Total</th>
+                                            <th style="text-align:center;" scope="col">Cash Recieved</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for sale in cash_sales %}
                                         <tr>
-                                            <td>{{forloop.counter}}</td>
-                                            <td>{{sale.reference_number}}</td>
+                                            <td style="text-align:center;">{{forloop.counter}}</td>
+                                            <td style="text-align:center;">{{sale.reference_number}}</td>
                                             <td>{{sale.customer.customer_name}}</td>
-                                            <td>{{sale.customer.building_name}}</td>
-                                            <td>{{sale.net_payable}}</td>
-                                            <td>{{sale.vat}}</td>
-                                            <td>{{sale.subtotal}}</td>
-                                            <td>{{sale.amount_recieved}}</td>
+                                            <td style="text-align:center;">{{sale.get_total_supply_qty}}</td>
+                                            <td style="text-align:center;">{{sale.net_payable}}</td>
+                                            <td style="text-align:center;">{{sale.vat}}</td>
+                                            <td style="text-align:center;">{{sale.subtotal}}</td>
+                                            <td style="text-align:center;">{{sale.amount_recieved}}</td>
                                         </tr>
                                         {% endfor %}
                                         {% for sale in recharge_cash_sales %}
                                         <tr>
-                                            <td>{{forloop.counter}}</td>
-                                            <td>{{sale.reference_number}}</td>
+                                            <td style="text-align:center;">{{forloop.counter}}</td>
+                                            <td style="text-align:center;">{{sale.reference_number}}</td>
                                             <td>{{sale.customer.customer_name}}</td>
-                                            <td>{{sale.customer.building_name}}</td>
-                                            <td>{{sale.net_amount}}</td>
-                                            <td>0</td>
-                                            <td>{{sale.grand_total}}</td>
-                                            <td>{{sale.amount_recieved}}</td>
+                                            <td style="text-align:center;">1</td>
+                                            <td style="text-align:center;">{{sale.net_amount}}</td>
+                                            <td style="text-align:center;">0</td>
+                                            <td style="text-align:center;">{{sale.grand_total}}</td>
+                                            <td style="text-align:center;">{{sale.amount_recieved}}</td>
                                         </tr>
                                     {% endfor %}  
                                     </tbody>
@@ -292,10 +288,10 @@
                                     <tfoot>
                                         <tr>
                                             <td colspan="4" style="text-align: right;">Total:</td>
-                                            <td>{{ cash_total_net_taxable }}</td>
-                                            <td>{{ cash_total_vat }}</td>
-                                            <td>{{ cash_total_subtotal }}</td>
-                                            <td>{{ cash_total_amount_recieved }}</td>
+                                            <td style="text-align:center;">{{ cash_total_net_taxable }}</td>
+                                            <td style="text-align:center;">{{ cash_total_vat }}</td>
+                                            <td style="text-align:center;">{{ cash_total_subtotal }}</td>
+                                            <td style="text-align:center;">{{ cash_total_amount_recieved }}</td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -307,43 +303,43 @@
                                 <table  class="table table-bordered text-wrap" style="width: 100%">
                                     <thead>
                                         <tr>
-                                            <th class="text-center text-bold" colspan="7">Credit Sales</th>
+                                            <th class="text-center text-bold" colspan="8">Credit Sales</th>
                                         </tr>
                                         <tr>
-                                            <th>Sl No</th>
-                                            <th scope="col">Reference No</th>
-                                            <th scope="col">Customer Name</th>
-                                            <th scope="col">Building Name</th>
-                                            <th scope="col">Net taxable</th>
-                                            <th scope="col">Vat</th>
-                                            <th scope="col">Grand Total</th>
-                                            <th scope="col">Cash Recieved</th>
+                                            <th style="text-align:center;">Sl No</th>
+                                            <th style="text-align:center;" scope="col">Reference No</th>
+                                            <th style="text-align:center;" scope="col">Customer Name</th>
+                                            <th style="text-align:center;" scope="col">Total QTY</th>
+                                            <th style="text-align:center;" scope="col">Net taxable</th>
+                                            <th style="text-align:center;" scope="col">Vat</th>
+                                            <th style="text-align:center;" scope="col">Grand Total</th>
+                                            <th style="text-align:center;" scope="col">Cash Recieved</th>
                                             
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for sale in credit_sales %}
                                         <tr>
-                                            <td>{{forloop.counter}}</td>
-                                            <td>{{sale.reference_number}}</td>
+                                            <td style="text-align:center;">{{forloop.counter}}</td>
+                                            <td style="text-align:center;">{{sale.reference_number}}</td>
                                             <td>{{sale.customer.customer_name}}</td>
-                                            <td>{{sale.customer.building_name}}</td>
-                                            <td>{{sale.net_payable}}</td>
-                                            <td>{{sale.vat}}</td>
-                                            <td>{{sale.subtotal}}</td>
-                                            <td>{{sale.amount_recieved}}</td>
+                                            <td style="text-align:center;">{{sale.get_total_supply_qty}}</td>
+                                            <td style="text-align:center;">{{sale.net_payable}}</td>
+                                            <td style="text-align:center;">{{sale.vat}}</td>
+                                            <td style="text-align:center;">{{sale.subtotal}}</td>
+                                            <td style="text-align:center;">{{sale.amount_recieved}}</td>
                                         </tr>
                                     {% endfor %} 
                                     {% for sale in recharge_credit_sales %}
                                         <tr>
-                                            <td>{{forloop.counter}}</td>
-                                            <td>{{sale.reference_number}}</td>
+                                            <td style="text-align:center;">{{forloop.counter}}</td>
+                                            <td style="text-align:center;">{{sale.reference_number}}</td>
                                             <td>{{sale.customer.customer_name}}</td>
-                                            <td>{{sale.customer.building_name}}</td>
-                                            <td>{{sale.net_payable}}</td>
-                                            <td>{{sale.vat}}</td>
-                                            <td>{{sale.subtotal}}</td>
-                                            <td>{{sale.amount_recieved}}</td>
+                                            <td style="text-align:center;">1</td>
+                                            <td style="text-align:center;">{{sale.net_payable}}</td>
+                                            <td style="text-align:center;">{{sale.vat}}</td>
+                                            <td style="text-align:center;">{{sale.subtotal}}</td>
+                                            <td style="text-align:center;">{{sale.amount_recieved}}</td>
                                         </tr>
                                     {% endfor %} 
                                     </tbody>
@@ -351,10 +347,10 @@
                                     <tfoot>
                                         <tr>
                                             <td colspan="4" style="text-align: right;">Total:</td>
-                                            <td>{{ credit_total_net_taxable }}</td>
-                                            <td>{{ credit_total_vat }}</td>
-                                            <td>{{ credit_total_subtotal }}</td>
-                                            <td>{{ credit_total_amount_recieved }}</td>
+                                            <td style="text-align:center;">{{ credit_total_net_taxable }}</td>
+                                            <td style="text-align:center;">{{ credit_total_vat }}</td>
+                                            <td style="text-align:center;">{{ credit_total_subtotal }}</td>
+                                            <td style="text-align:center;">{{ credit_total_amount_recieved }}</td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -369,16 +365,16 @@
                                             <th class="text-center text-bold" colspan="7">Credit Outstanding</th>
                                         </tr>
                                         <tr>
-                                            <th scope="col">Credit Outstanding</th>
-                                            <th scope="col">Credit Outstanding Collection</th>
-                                            <th scope="col">Net Outstanding</th>
+                                            <th style="text-align:center;" scope="col">Credit Outstanding</th>
+                                            <th style="text-align:center;" scope="col">Credit Outstanding Collection</th>
+                                            <th style="text-align:center;" scope="col">Net Outstanding</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td>{{outstanding_credit_notes_total_amount}}</td>
-                                            <td>{{outstanding_credit_notes_received_amount}}</td>
-                                            <td>{{outstanding_credit_notes_balance}}</td>
+                                            <td style="text-align:center;">{{outstanding_credit_notes_total_amount}}</td>
+                                            <td style="text-align:center;">{{outstanding_credit_notes_received_amount}}</td>
+                                            <td style="text-align:center;">{{outstanding_credit_notes_balance}}</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -393,18 +389,18 @@
                                             <th class="text-center text-bold" colspan="3">5 Gallon Supplied Retes</th>
                                         </tr>
                                         <tr>
-                                            <th scope="col">Rate</th>
-                                            <th scope="col">Credit</th>
-                                            <th scope="col">Cash</th>
+                                            <th style="text-align:center;" scope="col">Rate</th>
+                                            <th style="text-align:center;" scope="col">Credit</th>
+                                            <th style="text-align:center;" scope="col">Cash</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for rate in five_gallon_rates %}
                                         <tr>
-                                            <td>{{ rate }}</td>
+                                            <td style="text-align:center;">{{ rate }}</td>
                                             {% get_five_gallon_ratewise_count rate filter_data.filter_date salesman_id as ratewise_count %}
-                                            <td>{{ ratewise_count.credit_amount_count }}</td>
-                                            <td>{{ ratewise_count.debit_amount_count }}</td>
+                                            <td style="text-align:center;">{{ ratewise_count.credit_amount_count }}</td>
+                                            <td style="text-align:center;">{{ ratewise_count.debit_amount_count }}</td>
                                         </tr>
                                     {% endfor %} 
                                     </tbody>
@@ -420,23 +416,23 @@
                                             <th class="text-center text-bold" colspan="6">Outstanding Amount Collected</th>
                                         </tr>
                                         <tr>
-                                            <th scope="col">Sl.no</th>
-                                            <th scope="col">Customer Name</th>
-                                            <th scope="col">Building Name/Room no</th>
-                                            <th scope="col">Customer Type</th>
-                                            <th scope="col">Amount Collected</th>
-                                            <th scope="col">Mode</th>
+                                            <th style="text-align:center;" scope="col">Sl.no</th>
+                                            <th style="text-align:center;" scope="col">Customer Name</th>
+                                            <th style="text-align:center;" scope="col">Building Name/Room no</th>
+                                            <th style="text-align:center;" scope="col">Customer Type</th>
+                                            <th style="text-align:center;" scope="col">Amount Collected</th>
+                                            <th style="text-align:center;" scope="col">Mode</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for instance in dialy_collections %}
                                         <tr>
-                                            <td>{{ forloop.counter }}</td>
+                                            <td style="text-align:center;">{{ forloop.counter }}</td>
                                             <td>{{ instance.customer.customer_name }}</td>
                                             <td>{{ instance.customer.building_name }} {% if instance.customer.door_house_no %} / {{ instance.customer.door_house_no }} {% endif %}</td>
-                                            <td>{{ instance.customer.customer_type }}</td>
-                                            <td>{{ instance.amount_received }}</td>
-                                            <td>{{ instance.payment_method }}</td>
+                                            <td style="text-align:center;">{{ instance.customer.customer_type }}</td>
+                                            <td style="text-align:center;">{{ instance.amount_received }}</td>
+                                            <td style="text-align:center;">{{ instance.payment_method }}</td>
                                         </tr>
                                     {% endfor %} 
                                     </tbody>
@@ -452,17 +448,17 @@
                                             <th class="text-center text-bold" colspan="3">Expense</th>
                                         </tr>
                                         <tr>
-                                            <th>Sl No</th>
-                                            <th scope="col">Expense Head</th>
-                                            <th scope="col">Amount</th>
+                                            <th style="text-align:center;">Sl No</th>
+                                            <th style="text-align:center;" scope="col">Expense Head</th>
+                                            <th style="text-align:center;" scope="col">Amount</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for expense in expenses_instanses %}
                                         <tr>
-                                            <td>{{ forloop.counter }}</td>
+                                            <td style="text-align:center;">{{ forloop.counter }}</td>
                                             <td>{{ expense.expence_type.name }}</td>
-                                            <td>{{ expense.amount }}</td>
+                                            <td style="text-align:center;">{{ expense.amount }}</td>
                                         </tr>
                                     {% endfor %} 
                                     </tbody>
@@ -523,16 +519,16 @@
                                             <th class="text-center text-bold" colspan="5">Suspense</th>
                                         </tr>
                                         <tr>
-                                            <th>Opening</th>
-                                            <th>Paid</th> 
-                                            <th>Closing</th> 
+                                            <th style="text-align:center;">Opening</th>
+                                            <th style="text-align:center;">Paid</th> 
+                                            <th style="text-align:center;">Closing</th> 
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td>{{ net_payble }}</td>
-                                            <td></td>
-                                            <td></td>
+                                            <td style="text-align:center;">{{ net_payble }}</td>
+                                            <td style="text-align:center;"></td>
+                                            <td style="text-align:center;"></td>
                                         </tr>
                                     </tbody>
                                 </table>

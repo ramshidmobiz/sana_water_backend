@@ -38,9 +38,9 @@ def get_van_current_stock(van,product):
     try :
         product = ProdutItemMaster.objects.get(pk=product)
         if product.category.category_name=="Coupons":
-            count = VanCouponStock.objects.filter(van__pk=van,coupon__coupon_type__coupon_type_name=product.product_name,stock_type__in=["opening_stock","closing"]).aggregate(total_amount=Sum('count'))['total_amount']
+            count = VanCouponStock.objects.filter(created_date=datetime.datetime.today().date(),van__pk=van,coupon__coupon_type__coupon_type_name=product.product_name,stock_type__in=["opening_stock","closing"]).aggregate(total_amount=Sum('count'))['total_amount']
         else:
-            count = VanProductStock.objects.filter(van__pk=van,product=product,stock_type__in=["opening_stock","closing"]).aggregate(total_amount=Sum('count'))['total_amount']
+            count = VanProductStock.objects.get(created_date=datetime.datetime.today().date(),van__pk=van,product=product).stock
     except:
         count = 0
     

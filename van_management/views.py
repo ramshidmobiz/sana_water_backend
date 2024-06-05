@@ -3,14 +3,15 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.timezone import now
 
 from coupon_management.models import CouponStock
+from coupon_management.serializers import couponStockSerializers
 from .models import Van, Van_Routes, Van_License, BottleAllocation
 from accounts.models import CustomUser, Customers
 from master.models import EmirateMaster, RouteMaster
 from customer_care.models import DiffBottlesModel
 from client_management.models import Vacation,CustomerSupply
-from product.models import ProductStock, Staff_IssueOrders
+from product.models import ProductStock, ScrapProductStock, Staff_IssueOrders, WashingProductStock
 
-
+from django.db import transaction, IntegrityError
 from .forms import  *
 import json
 from django.core.serializers import serialize
@@ -28,11 +29,30 @@ from datetime import datetime
 import math
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
 from django.urls import reverse
 
 
+def get_van_coupon_bookno(request):
+    coupon_type = request.GET.get("productName")
+    if (instances := VanCouponStock.objects.filter(coupon__coupon_type__coupon_type_name=coupon_type,stock__gt=0)).exists():
+        instance = instances.values_list('coupon__pk')
+        stock_instances = CouponStock.objects.filter(couponbook__pk__in=instance)
+        serialized = couponStockSerializers(stock_instances, many=True)
+        status_code = 200
+        response_data = {
+            "status": "true",
+            "data": serialized.data,
+        }
+    else:
+        status_code = 404
+        response_data = {
+            "status": "false",
+            "title": "Failed",
+            "message": "item not found",
+        }
 
+    return HttpResponse(json.dumps(response_data),status=status_code, content_type="application/json")
 
 
 # Van
@@ -888,8 +908,18 @@ from datetime import time
 class VanStockList(View):
     
     def get(self, request, *args, **kwargs):
-        instances = VanCouponStock.objects.all()
-        van_stock = VanProductStock.objects.all()
+        filter_data = {}
+        
+        date = request.GET.get('date')
+        if date:
+            date = datetime.strptime(date, '%Y-%m-%d').date()
+            filter_data['filter_date'] = date.strftime('%Y-%m-%d')
+        else:
+            date = datetime.today().date()
+            filter_data['filter_date'] = date.strftime('%Y-%m-%d')
+        
+        instances = VanCouponStock.objects.filter(created_date=date)
+        van_stock = VanProductStock.objects.filter(created_date=date)
         requested_quantity=CustomerSupply.objects.all()
         issued_orders = Staff_IssueOrders.objects.filter(salesman_id=request.user.id)
         
@@ -933,14 +963,27 @@ class VanStockList(View):
 class VanProductStockList(View):
     
     def get(self, request, *args, **kwargs):
-        products = ProdutItemMaster.objects.filter()
-        van_instances = Van.objects.all()
-        van_product_stock = VanProductStock.objects.filter()
+        filter_data = {}
+        
+        date = request.GET.get('date')
+        if date:
+            date = datetime.strptime(date, '%Y-%m-%d').date()
+            filter_data['filter_date'] = date.strftime('%Y-%m-%d')
+        else:
+            date = datetime.today().date()
+            filter_data['filter_date'] = date.strftime('%Y-%m-%d')
+        
+        # products = ProdutItemMaster.objects.filter()
+        # van_instances = Van.objects.all()
+        print(date)
+        van_product_stock = VanProductStock.objects.filter(created_date=date)
     
         context = {
-            'products': products,
-            'van_instances': van_instances,
-            'van_product_stock': van_product_stock, 
+            # 'products': products,
+            # 'van_instances': van_instances,
+            'van_product_stock': van_product_stock,
+            
+            'filter_data': filter_data,
         }
         return render(request, 'van_management/van_product_stock.html', context)
     
@@ -959,63 +1002,175 @@ class View_Item_Details(View):
 
     @method_decorator(login_required)
     def get(self, request, pk, *args, **kwargs):
-        product_items = VanProductStock.objects.filter(van__pk=pk,count__gt=0)
-        coupon_items = VanCouponStock.objects.filter(van__pk=pk,count__gt=0)
+        filter_data = {}
+        
+        date = request.GET.get('date')
+        if date:
+            date = datetime.strptime(date, '%Y-%m-%d').date()
+            filter_data['filter_date'] = date.strftime('%Y-%m-%d')
+        else:
+            date = datetime.today().date()
+            filter_data['filter_date'] = date.strftime('%Y-%m-%d')
+            
+        product_items = VanProductStock.objects.filter(created_date=date,van__pk=pk)
+        coupon_items = ProdutItemMaster.objects.filter(category__category_name__iexact="coupons")
+        # VanCouponStock.objects.filter(created_date=date,van__pk=pk,stock__gt=0)
         
         context = {
             'product_items': product_items,
             'coupon_items': coupon_items,
+            'van_pk': pk,
+            'filter_data': filter_data,
             }
         
         return render(request, self.template_name, context)   
     
 class EditProductView(View):
-    def post(self, request, van_id, product_id):
+    def post(self, request, pk):
         count = request.POST.get('count')
-        item = VanProductStock.objects.get(van__pk=van_id,product=product_id)
-        if not int(count) > item.count :
-            item.count -= int(count)
-            item.save()
+        stock_type = request.POST.get('stock_type')
+        item = VanProductStock.objects.get(pk=pk)
+        # print(stock_type)
+        # print(count)
+        
+        try:
+            with transaction.atomic():
+                item_stock = item.stock
+                if stock_type == "empty_can":
+                    item_stock = item.empty_can_count
+                    
+                if item.product.product_name == "5 Gallon" and stock_type == "stock":
+                    item.stock -= int(count)
+                    item.save()
+                    
+                    product_stock = ProductStock.objects.get(branch=item.van.branch_id,product_name=item.product)
+                    product_stock.quantity += int(count)
+                    product_stock.save()
+                    
+                elif item.product.product_name == "5 Gallon" and stock_type == "empty_can":
+                    # print("empty_can 1225")
+                    item.empty_can_count -= int(count)
+                    item.save()
+                    
+                elif item.product.product_name == "5 Gallon" and stock_type == "return_count":
+                    scrap_count = int(request.POST.get('scrap_count'))
+                    washing_count = int(request.POST.get('washing_count'))
+                    
+                    # print(scrap_count)
+                    # print(washing_count)
+                    
+                    OffloadReturnStocks.objects.create(
+                        created_by=request.user.id,
+                        created_date=datetime.today(),
+                        salesman=item.van.salesman,
+                        van=item.van,
+                        product=item.product,
+                        scrap_count=scrap_count,
+                        washing_count=washing_count
+                    )
+                    
+                    if scrap_count > 0 :
+                        if not ScrapProductStock.objects.filter(created_date__date=datetime.today().date(),product=item.product).exists():
+                            scrap_instance=ScrapProductStock.objects.create(created_by=request.user.id,created_date=datetime.today(),product=item.product)
+                        else:
+                            scrap_instance=ScrapProductStock.objects.get(created_date__date=datetime.today().date(),product=item.product)
+                        scrap_instance.quantity = scrap_count
+                        scrap_instance.save()
+                    
+                    if washing_count > 0 :
+                        if not WashingProductStock.objects.filter(created_date__date=datetime.today().date(),product=item.product).exists():
+                            washing_instance=WashingProductStock.objects.create(created_by=request.user.id,created_date=datetime.today(),product=item.product)
+                        else:
+                            washing_instance=WashingProductStock.objects.get(created_date__date=datetime.today().date(),product=item.product)
+                        washing_instance.quantity = washing_count
+                        washing_instance.save()
+                        
+                    count = scrap_count + washing_count
+                    # print(count)
+                    item.return_count -= int(count)
+                    item.save()
+                    
+                else : 
+                    item.stock -= int(count)
+                    item.save()
+                    
+                    product_stock = ProductStock.objects.get(branch=item.van.branch_id,product_name=item.product)
+                    product_stock.quantity += int(count)
+                    product_stock.save()
+                
+                Offload.objects.create(
+                    created_by=request.user.id,
+                    created_date=datetime.today(),
+                    salesman=item.van.salesman,
+                    van=item.van,
+                    product=item.product,
+                    quantity=int(count),
+                    stock_type=stock_type
+                )
+                
+                response_data = {
+                    "status": "true",
+                    "title": "Successfully Offloaded",
+                    "message": "Offload successfully.",
+                    'reload': 'true',
+                }
+                
+        except IntegrityError as e:
+            # Handle database integrity error
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": str(e),
+            }
+
+        except Exception as e:
+            # Handle other exceptions
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": str(e),
+            }
             
-            product_stock = ProductStock.objects.get(branch=item.van.branch_id,product_name=item.product)
-            product_stock.quantity += int(count)
-            product_stock.save()
+        return HttpResponse(json.dumps(response_data), content_type='application/javascript')
             
-            Offload.objects.create(
-                created_by=request.user.id,
-                created_date=datetime.now(),
-                salesman=item.van.salesman,
-                van=item.van,
-                product=item.product,
-                quantity=int(count),
-                stock_type=item.stock_type
-            )
-            
-        return HttpResponseRedirect(reverse('offload'))
         
 class EditCouponView(View):
-    def post(self, request, van_id, coupon_id):
-        count = request.POST.get('count')
-        item = VanCouponStock.objects.get(van__pk=van_id,coupon=coupon_id)
-        if not int(count) > item.count :
-            item.count -= int(count)
-            item.save()
+    def post(self, request, van_pk):
+        book_numbers = request.POST.getlist("coupon_book_no")
+        
+        for book_number in book_numbers:
+            coupon_instance = NewCoupon.objects.get(book_num=book_number)
             
-            coupon = CouponStock.objects.get(couponbook__pk=coupon_id)
+            van_coupon_stock = VanCouponStock.objects.get(van__pk=van_pk,coupon=coupon_instance)
+            van_coupon_stock.stock -= 1
+            van_coupon_stock.save()
+            
+            product_stock = ProductStock.objects.get(branch=van_coupon_stock.van.branch_id,product_name__product_name=coupon_instance.coupon_type.coupon_type_name)
+            product_stock.quantity += 1
+            product_stock.save()
+            
+            coupon = CouponStock.objects.get(couponbook=coupon_instance)
             coupon.coupon_stock = "company"
             coupon.save()
             
             OffloadCoupon.objects.create(
                 created_by=request.user.id,
                 created_date=datetime.now(),
-                salesman=item.van.salesman,
-                van=item.van,
-                coupon=item.coupon,
-                quantity=int(count),
-                stock_type=item.stock_type
+                salesman=van_coupon_stock.van.salesman,
+                van=van_coupon_stock.van,
+                coupon=van_coupon_stock.coupon,
+                quantity = 1,
+                stock_type="stock"
             )
-
-        return HttpResponseRedirect(reverse('offload'))
+            
+        response_data = {
+                "status": "true",
+                "title": "Successfully Created",
+                "message": "Coupon Offload successfully.",
+                'reload': 'true',
+            }
+        
+        return JsonResponse(response_data)
     
 def salesman_requests(request):
     
@@ -1060,11 +1215,22 @@ def salesman_requests(request):
 from django.db.models import Max
 
 def BottleAllocationn(request):
-    van_routes = Van_Routes.objects.all()
+    filter_data = {}
     route_details = []
+    
+    van_routes = Van_Routes.objects.all()
+    
+    date = request.GET.get('date')
+    
+    if date:
+        date = datetime.strptime(date, '%Y-%m-%d').date()
+        filter_data['filter_date'] = date.strftime('%Y-%m-%d')
+    else:
+        date = datetime.today().date()
+        filter_data['filter_date'] = date.strftime('%Y-%m-%d')
 
     for route in van_routes:
-        five_gallon_stock = VanProductStock.objects.filter(van=route.van, stock_type='opening_stock').aggregate(total_stock=Sum('count'))['total_stock']
+        five_gallon_stock = VanProductStock.objects.get(created_date=date,van=route.van,product__product_name="5 Gallon").stock
         latest_update = CustomerSupply.objects.filter(customer__routes=route.routes).aggregate(latest_update=Max('modified_date'))['latest_update']
 
         route_details.append({
@@ -1151,3 +1317,81 @@ def EditBottleAllocation(request, route_id=None):
     }
 
     return render(request, 'van_management/edit_bottle_allocation.html', context)
+
+
+def VansRouteBottleCount(request):
+    date = request.GET.get('date')
+    print(date,'date')
+    if date:
+        date = datetime.strptime(date, '%Y-%m-%d').date()
+    else:
+        date = datetime.today().date()
+    van_details = []
+
+    if date:
+        van_product_stocks = VanProductStock.objects.filter(created_date=date)
+        print("van_product_stocks",van_product_stocks)
+        for stock in van_product_stocks:
+            van = stock.van
+            route_name = van.get_van_route() if van else 'No route'
+            bottle_count = stock.stock
+            van_details.append({
+                'route': route_name,
+                'bottle_count': bottle_count,
+                'van_id': van.van_id
+            })
+
+    context = {
+        'van_details': van_details,
+        'date': date,
+    }
+    return render(request, 'van_management/van_route_bottle_count.html', context)
+
+def VansRouteBottleCountAdd(request, van_id):
+    van = get_object_or_404(Van, pk=van_id)
+    
+    if request.method == 'POST':
+        form = VansRouteBottleCountAddForm(request.POST)
+        if form.is_valid():
+            bottle_count = form.save(commit=False)
+            bottle_count.van = van
+            bottle_count.created_by = request.user.username
+            bottle_count.save()
+
+            # Update the bottle_count field in the Van model
+            van.bottle_count += form.cleaned_data['qty_issued']
+            van.save()
+
+            return redirect('vans_route_bottle_count')  # Redirect to your bottle count report view
+    else:
+        form = VansRouteBottleCountAddForm()
+
+    context = {
+        'form': form,
+        'van': van,
+    }
+    return render(request,'van_management/van_route_bottle_count_add.html', context)
+def VansRouteBottleCountDeduct(request, van_id):
+    van = get_object_or_404(Van, pk=van_id)
+    
+    if request.method == 'POST':
+        form = VansRouteBottleCountDeductForm(request.POST)
+        if form.is_valid():
+            bottle_count = form.save(commit=False)
+            bottle_count.van = van
+            bottle_count.created_by = request.user.username
+            bottle_count.save()
+
+            # Deduct the bottle_count field in the Van model
+            van.bottle_count -= form.cleaned_data['qty_deducted']
+            van.save()
+
+            return redirect('vans_route_bottle_count')  # Redirect to your bottle count report view
+    else:
+        form = VansRouteBottleCountDeductForm()
+
+    context = {
+        'form': form,
+        'van': van,
+    }
+    return render(request, 'van_management/van_route_bottle_count_deduct.html', context)

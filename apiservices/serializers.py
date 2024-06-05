@@ -14,6 +14,7 @@ from client_management.models  import *
 from sales_management.models import CollectionCheque, CollectionItems, CollectionPayment
 from van_management.serializers import *
 from customer_care.models import *
+from coupon_management.models import *
 
 class CustomerCustodyItemSerializers(serializers.ModelSerializer):
     class Meta:
@@ -100,8 +101,8 @@ class StaffOrderDetailsSerializers(serializers.ModelSerializer):
         fields = '__all__'
 class CustomerOrderSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Customer_Order
-        fields = '__all__'
+        model = CustomerOrders
+        fields = ['id', 'created_date', 'order_status']
 
 from client_management.models import CustodyCustomItems
 
@@ -284,6 +285,7 @@ class SupplyItemFiveGallonWaterGetSerializer(serializers.ModelSerializer):
     
 class SupplyItemProductGetSerializer(serializers.ModelSerializer):
     quantity = serializers.SerializerMethodField()
+    rate = serializers.SerializerMethodField()
 
     class Meta:
         model = ProdutItemMaster
@@ -300,7 +302,15 @@ class SupplyItemProductGetSerializer(serializers.ModelSerializer):
                     qty = r.quantity_required
         return qty
     
-
+    def get_rate(self, obj):
+        customer_id = self.context.get('customer_id')
+        customer_rate = Customers.objects.get(pk=customer_id).rate
+        if int(customer_rate) > 0:
+           rate = customer_rate
+        else:
+            rate = obj.rate 
+        return rate
+    
 class CouponLeafSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -329,7 +339,7 @@ class SupplyItemCustomersSerializer(serializers.ModelSerializer):
             for r in c_requests:
                 items = ProdutItemMaster.objects.filter(pk=r.product_item.pk)
                 if items.exists():
-                    supply_product_serializer = SupplyItemProductGetSerializer(items.first(), many=False)
+                    supply_product_serializer = SupplyItemProductGetSerializer(items.first(), many=False,context={"customer_id": obj.pk})
                     supply_product_data.append(supply_product_serializer.data)
         
         return [five_gallon_data] + supply_product_data
@@ -451,10 +461,11 @@ class VanCouponStockSerializer(serializers.ModelSerializer):
     coupon_method = serializers.SerializerMethodField()
     coupon_type = serializers.SerializerMethodField()
     rate = serializers.SerializerMethodField()
+    count = serializers.SerializerMethodField()
     
     class Meta:
         model = VanCouponStock
-        fields = ['id','coupon','stock_type','count','van','book_no','number_of_coupons','number_of_free_coupons','total_number_of_coupons','coupon_method','coupon_type','rate']
+        fields = ['id','coupon','count','van','book_no','number_of_coupons','number_of_free_coupons','total_number_of_coupons','coupon_method','coupon_type','rate']
         
     def get_book_no(self, obj):
         return obj.coupon.book_num
@@ -478,28 +489,35 @@ class VanCouponStockSerializer(serializers.ModelSerializer):
     def get_rate(self, obj):
         product_item = ProdutItemMaster.objects.get(product_name=obj.coupon.coupon_type.coupon_type_name)
         return product_item.rate
-        
-class VanProductStockSerializer(serializers.ModelSerializer):
+    
+    def get_count(self, obj):
+        return obj.stock
+
+class VanProductStockSerializer(serializers.Serializer):
+    id = serializers.SerializerMethodField()
     product_name = serializers.SerializerMethodField()
-    product_rate = serializers.SerializerMethodField()
-    class Meta:
-        model = VanProductStock
-        fields = '__all__'
-        
+    stock_type = serializers.SerializerMethodField()
+    count = serializers.SerializerMethodField()
+    product = serializers.SerializerMethodField()
+    van = serializers.SerializerMethodField()
+
+    def get_id(self, obj):
+        return obj['id']
+
     def get_product_name(self, obj):
-        if obj.product.product_name == "5 Gallon" and obj.stock_type == "emptycan":
-            pro_name = f"{obj.product.product_name} ({obj.get_stock_type_display()})"
-        else:
-            pro_name = obj.product.product_name
-        return pro_name
-    
-    def get_product_rate(self, obj):
-        return obj.product.rate
-    
+        return obj['product_name']
 
+    def get_stock_type(self, obj):
+        return obj['stock_type']
 
+    def get_count(self, obj):
+        return obj['count']
 
+    def get_product(self, obj):
+        return obj['product']
 
+    def get_van(self, obj):
+        return obj['van']
 
 
 # class CustomerCouponStockSerializer(serializers.ModelSerializer):
@@ -967,11 +985,13 @@ class CouponSupplyCountSerializer(serializers.ModelSerializer):
         fields = ['customer__customer_name', 'manual_coupon_paid_count', 'manual_coupon_free_count', 'digital_coupon_paid_count', 'digital_coupon_free_count', 'total_amount_collected', 'payment_type']
 
 
-class CustomerCouponCountsSerializer(serializers.Serializer):
-    customer_name = serializers.CharField()
-    building_name = serializers.CharField()
+class CustomerCouponCountsSerializer(serializers.ModelSerializer):
     digital_coupons_count = serializers.IntegerField()
     manual_coupons_count = serializers.IntegerField()
+
+    class Meta:
+        model = Customers
+        fields = ['customer_name', 'building_name', 'door_house_no', 'digital_coupons_count', 'manual_coupons_count']
 
 class ProductStatsSerializer(serializers.Serializer):
     product_name = serializers.CharField(source='product__product_name')
@@ -1131,16 +1151,7 @@ class VanProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = VanProductStock
-        fields = ['id', 'product', 'stock_type', 'count', 'van']
-
-# class VanCouponStockSerializer(serializers.ModelSerializer):
-#     van = VanSerializer()
-#     coupon = serializers.StringRelatedField()
-
-#     class Meta:
-#         model = VanCouponStock
-#         fields = ['id', 'coupon', 'stock_type', 'count', 'van']
-
+        fields = ['id','product','created_date','opening_count','change_count','damage_count','empty_can_count','stock','return_count','requested_count','sold_count','closing_count','pending_count']
 
 class CouponConsumptionSerializer(serializers.Serializer):
     customer__customer_name = serializers.CharField()
@@ -1152,7 +1163,10 @@ class FreshCanStockSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = VanProductStock
-        fields = ['id', 'product', 'stock_type', 'count', 'van']
+        fields = ['id', 'product','stock',]
+        
+        
+    
 class ManualCustomerCouponSerializer(serializers.ModelSerializer):
     van = CouponConsumptionSerializer(read_only=True)
     
@@ -1170,7 +1184,7 @@ class DigitalCouponSerializer(serializers.ModelSerializer):
 class FreshCanStockSerializer(serializers.ModelSerializer):
     class Meta:
         model = VanProductStock
-        fields = ['count']
+        fields = ['stock']
 
 class FreshvsCouponCustomerSerializer(serializers.ModelSerializer):
     fresh_cans = serializers.SerializerMethodField()
@@ -1188,11 +1202,10 @@ class FreshvsCouponCustomerSerializer(serializers.ModelSerializer):
         start_datetime = request.data.get('start_date')
         end_datetime = request.data.get('end_date')
 
-        fresh_cans = Staff_IssueOrders.objects.filter(
-            salesman_id=obj.sales_staff,
-            # created_date__range=[start_datetime, end_datetime],
-            status='Order Issued'
-        ).aggregate(total_fresh_cans=Sum('quantity_issued'))
+        fresh_cans = VanProductStock.objects.filter(
+            van__salesman=obj.sales_staff,
+            created_date__range=[start_datetime, end_datetime]
+        ).aggregate(total_fresh_cans=Sum('stock'))
         print("fresh_cans", fresh_cans)
 
         return fresh_cans.get('total_fresh_cans', 0) or 0
@@ -1230,9 +1243,8 @@ class FreshvsCouponCustomerSerializer(serializers.ModelSerializer):
         
         opening_cans = VanProductStock.objects.filter(
             van__salesman=obj.sales_staff,
-            stock_type='opening_stock',
-            van__created_date__range=[start_datetime, end_datetime]
-        ).aggregate(total_opening_cans=Sum('count'))
+            created_date__range=[start_datetime, end_datetime]
+        ).aggregate(total_opening_cans=Sum('opening_count'))
         print("opening_cans", opening_cans)
         
         return opening_cans.get('total_fresh_cans', 0) or 0
@@ -1242,11 +1254,10 @@ class FreshvsCouponCustomerSerializer(serializers.ModelSerializer):
         start_datetime = request.data.get('start_date')
         end_datetime = request.data.get('end_date')
         
-        pending_cans = Staff_Orders_details.objects.filter(
-            # staff_order_id__salesman_id=obj.sales_staff,
-            status='Pending',
+        pending_cans = VanProductStock.objects.filter(
+            van__salesman=obj.sales_staff,
             created_date__range=[start_datetime, end_datetime]
-        ).aggregate(total_pending_cans=Sum('count'))
+        ).aggregate(total_pending_cans=Sum('pending_count'))
         print("pending_cans", pending_cans)
         
         return pending_cans.get('total_pending_cans', 0) or 0
@@ -1290,6 +1301,10 @@ class StockMovementSerializer(serializers.ModelSerializer):
         fields = ['id', 'created_by', 'salesman', 'from_van', 'to_van', 'products']
 
     def create(self, validated_data):
+        if self.context.get("date_str"):
+            date_str = self.context.get("date_str")
+        else :
+            date_str = str(datetime.today().date())
         products_data = validated_data.pop('products')
         stock_movement = StockMovement.objects.create(**validated_data)
         
@@ -1297,13 +1312,13 @@ class StockMovementSerializer(serializers.ModelSerializer):
             StockMovementProducts.objects.create(stock_movement=stock_movement, **product_data)
 
             # Update stock for from_van
-            from_van_product = VanProductStock.objects.get(van=stock_movement.from_van, product=product_data['product'])
-            from_van_product.count -= product_data['quantity']
+            from_van_product = VanProductStock.objects.get(created_date=date_str,van=stock_movement.from_van, product=product_data['product'])
+            from_van_product.stock -= product_data['quantity']
             from_van_product.save()
 
             # Update stock for to_van
-            to_van_product, created = VanProductStock.objects.get_or_create(van=stock_movement.to_van, product=product_data['product'])
-            to_van_product.count += product_data['quantity']
+            to_van_product, created = VanProductStock.objects.get_or_create(created_date=date_str,van=stock_movement.to_van, product=product_data['product'])
+            to_van_product.stock += product_data['quantity']
             to_van_product.save()
         
         return stock_movement
@@ -1328,6 +1343,15 @@ class NonvisitReportSerializer(serializers.ModelSerializer):
         fields = ['id', 'customer', 'salesman', 'reason_text', 'supply_date', 'created_date']
         read_only_fields = ['id', 'created_date']
         
+class NonvisitReportDetailSerializer(serializers.ModelSerializer):
+    reason_text = serializers.CharField(source='reason.reason_text', read_only=True)
+    customer_name = serializers.CharField(source='customer.customer_name', read_only=True)
+
+    class Meta:
+        model = NonvisitReport
+        fields = ['id', 'customer', 'customer_name', 'salesman', 'reason_text', 'supply_date', 'created_date']
+        read_only_fields = ['id', 'created_date']
+        
 class FreshCanVsEmptyBottleSerializer(serializers.ModelSerializer):
     fresh_cans = serializers.SerializerMethodField()
     empty_bottles = serializers.SerializerMethodField()
@@ -1339,8 +1363,8 @@ class FreshCanVsEmptyBottleSerializer(serializers.ModelSerializer):
     def get_fresh_cans(self, obj):
         start_date = self.context.get('start_date')
         end_date = self.context.get('end_date')
-        print(start_date)
-        print(end_date)
+        # print(start_date)
+        # print(end_date)
         return CustomerSupplyItems.objects.filter(
             customer_supply__created_date__date__gte=start_date,
             customer_supply__created_date__date__lte=end_date,
@@ -1353,3 +1377,87 @@ class FreshCanVsEmptyBottleSerializer(serializers.ModelSerializer):
             customer=obj,
             product_type="emptycan"
         ).aggregate(total_values=Sum('value'))['total_values'] or 0
+
+class CustomerCustodyReportSerializer(serializers.ModelSerializer):
+    products = serializers.SerializerMethodField() 
+    customer = serializers.SerializerMethodField() 
+
+    class Meta:
+        model = Customers
+        fields = ['customer','building_name','mobile_no','products',]
+        
+    def get_products(self,obj):
+        start_date = self.context.get('start_date')
+        end_date = self.context.get('end_date')
+        instances = CustomerCustodyStock.objects.filter(customer=obj,customer__created_date__date__gte=start_date,
+                                                        customer__created_date__date__lte=end_date,)
+        return CustomerCustodyStockProductsSerializer(instances,many=True).data
+    
+    def get_customer(self,obj):
+        return obj.customer_name
+    
+
+class CustomerCustodyStocksSerializer(serializers.ModelSerializer):
+    product_name = serializers.SerializerMethodField()
+    quantity = serializers.IntegerField()
+
+    class Meta:
+        model = CustomerCustodyStock
+        fields = ('product_name', 'quantity')
+
+    def get_product_name(self,obj):
+        return obj.product.product_name   
+
+class VisitedCustomerSerializers(serializers.ModelSerializer):
+    customer_id = serializers.SerializerMethodField()
+    customer_name = serializers.SerializerMethodField()
+    bottles_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = CustomerSupply
+        fields = ('id','customer_id','customer_name','subtotal','vat','amount_recieved','discount','grand_total','collected_empty_bottle','allocate_bottle_to_pending','allocate_bottle_to_custody','allocate_bottle_to_paid','bottles_count')
+        
+    def get_bottles_count(self,obj):
+        return CustomerSupplyItems.objects.filter(customer_supply=obj,product__product_name="5 Gallon").aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+    
+    def get_customer_id(self,obj):
+        return obj.customer.pk
+    
+    def get_customer_name(self,obj):
+        return obj.customer.customer_name
+    
+class VanCouponsStockSerializer(serializers.ModelSerializer):
+    book_no = serializers.SerializerMethodField()
+    coupon_type = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = VanCouponStock
+        fields = ['book_no','coupon_type']
+        
+    def get_book_no(self, obj):
+        return obj.coupon.book_num
+    
+    def get_coupon_type(self, obj):
+        coupon_type = CouponType.objects.get(pk=obj.coupon.coupon_type_id).coupon_type_name
+        return coupon_type
+
+class PotentialBuyersSerializer(serializers.Serializer):
+    customer_name = serializers.CharField()
+    building_name = serializers.CharField()
+    digital_coupons_count = serializers.IntegerField()
+    manual_coupons_count = serializers.IntegerField()
+      
+class TotalCouponCountSerializer(serializers.Serializer):
+    total_digital_coupons = serializers.IntegerField()
+    total_manual_coupons = serializers.IntegerField()
+
+class OffloadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Offload
+        fields = '__all__'
+
+
+class CouponStockSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CouponStock
+        fields = '__all__'    

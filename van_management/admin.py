@@ -13,8 +13,8 @@ class ExpenseAdmin(admin.ModelAdmin):
 admin.site.register(Expense,ExpenseAdmin)
 
 class VanProductStockAdmin(admin.ModelAdmin):
-    list_display = ('product','stock_type','count','van')
+    list_display = ('product','van','created_date','opening_count','change_count','damage_count','empty_can_count','stock','return_count','requested_count','sold_count','closing_count')
 admin.site.register(VanProductStock,VanProductStockAdmin)
 class VanCouponStockAdmin(admin.ModelAdmin):
-    list_display = ('van','coupon','stock_type','count')
+    list_display = ('van','coupon','created_date','opening_count','change_count','damage_count','stock','return_count','requested_count','sold_count','closing_count')
 admin.site.register(VanCouponStock,VanCouponStockAdmin)

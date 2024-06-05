@@ -7,7 +7,7 @@ from accounts.models import *
 from coupon_management.models import COUPON_METHOD_CHOICES, Coupon, CouponLeaflet, CouponType, NewCoupon
 from product.models import *
 from django.http import HttpResponse
-from django.db.models import Count
+from django.db.models import Count,Sum
 
 COUPON_TYPE = (
     ('cash_coupon','Cash Coupon'),
@@ -62,6 +62,9 @@ class CustodyCustomItems(models.Model):
     quantity = models.IntegerField(blank=True,null=True)
     serialnumber = models.CharField(max_length=20, null=True, blank=True)
     amount = models.IntegerField(blank=True,null=True)
+    can_deposite_chrge = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    five_gallon_water_charge = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    amount_collected = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     class Meta:
         ordering = ('custody_custom__created_date',)
@@ -79,6 +82,9 @@ class CustomerCustodyStock(models.Model):
     quantity = models.IntegerField(blank=True,null=True)
     serialnumber = models.CharField(max_length=20, null=True, blank=True)
     amount = models.DecimalField(default=0, decimal_places=2, max_digits=10)
+    can_deposite_chrge = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    five_gallon_water_charge = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    amount_collected = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     class Meta:
         ordering = ('id',)
 
@@ -215,7 +221,7 @@ def delete_expired_vacations(sender, instance, created, **kwargs):
             
 class CustomerCoupon(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    customer = models.ForeignKey('accounts.Customers',on_delete = models.CASCADE)
+    customer = models.ForeignKey('accounts.Customers',on_delete = models.CASCADE,related_name="customercoupon")
     salesman = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE)
     
     payment_type = models.CharField(max_length=100,choices=PAYMENT_METHOD,null=True,blank=True)
@@ -368,6 +374,9 @@ class CustomerSupply(models.Model):
             ordering = ('-created_date',)
         def __str__(self):
             return str(self.customer)
+        
+        def get_total_supply_qty(self):
+            return CustomerSupplyItems.objects.filter(customer_supply=self).aggregate(total_qty=Sum('quantity'))['total_qty'] or 0
 
 class CustomerSupplyItems(models.Model):
         id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

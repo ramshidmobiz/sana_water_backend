@@ -36,8 +36,8 @@
                                             <th scope="col">Sl.No</th>
                                             <th scope="col">Product Category</th>
                                             <th scope="col">Product Name</th>
-                                            <th scope="col">Unit</th>
-                                            <th scope="col">Quantity</th>                                                                      
+                                            <th scope="col" style="text-align:center;">Unit</th>
+                                            <th scope="col" style="text-align:center;">Quantity</th>                                                                      
                                             <th scope="col" class="text-center">Rate</th>  
                                             <th scope="col" class="text-end">Actions</th>
                                         </tr>
@@ -50,9 +50,9 @@
                                             <td style="text-align:center;">{{forloop.counter}}</td>
                                             <td>{{data.product_name.category}}</td>
                                             <td>{{data.product_name.product_name}}</td>
-                                            <td>{{data.product_name.unit}}</td>
+                                            <td style="text-align:center;">{{data.product_name.unit}}</td>
                                             <td style="text-align:center;">{{data.quantity}}</td>
-                                            <td style="text-align:right;">{{data.rate}}</td>
+                                            <td style="text-align:right;">{{data.product_name.rate}}</td>
                                            
                                             <td style="text-align:right;">
                                                 <div class="g-2">
