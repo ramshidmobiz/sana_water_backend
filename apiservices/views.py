@@ -5229,7 +5229,7 @@ class CustomerLoginApi(APIView):
                         token = generate_random_string(20)
                         
                         five_gallon = ProdutItemMaster.objects.get(product_name="5 Gallon")
-                        if instances.first().rate > 0:
+                        if instances.first().rate != None and int(instances.first().rate) > 0:
                             water_rate = instances.first().rate
                         else:
                             water_rate = five_gallon.rate
