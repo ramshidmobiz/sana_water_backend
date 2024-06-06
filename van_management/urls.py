@@ -64,8 +64,8 @@ urlpatterns = [
     path('vans_route_bottle_count_add/<uuid:van_id>/',VansRouteBottleCountAdd, name='vans_route_bottle_count_add'),
     path('vans_route_bottle_count_deduct/<uuid:van_id>/',VansRouteBottleCountDeduct, name='vans_route_bottle_count_deduct'),
 
+    path('van_coupon_stock/', VanCouponStockList.as_view(), name='van_coupon_stock'),
 
-    
 
 
     

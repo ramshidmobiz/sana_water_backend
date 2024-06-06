@@ -33,7 +33,7 @@
                                     <th scope="col">Sl.No</th>
                                     <th scope="col">Coupon Type</th>
                                     <th scope="col">Opening Stock</th>
-                                    <th scope="col">Qty Received</th>
+                                    {% comment %} <th scope="col">Qty Received</th> {% endcomment %}
                                     <th scope="col">Total Stock</th>
                                     {% comment %} <th scope="col">Unit</th> {% endcomment %}
                                     {% comment %} <th scope="col">Actions</th> {% endcomment %}
@@ -45,7 +45,7 @@
                                     <td style="text-align:center;">{{forloop.counter}}</td>
                                     <td style="text-align:center;">{{data.coupon.coupon_type.coupon_type_name}}</td>
                                     <td style="text-align:center;">{{data.count}}</td>
-                                    <td style="text-align:center;">{{ data.product.quantity}}</td>
+                                    {% comment %} <td style="text-align:center;">{{ data.product.quantity}}</td> {% endcomment %}
                                     
                                     <td style="text-align:center;">{{ data.total_stock }}</td>
                                     {% comment %} <td>

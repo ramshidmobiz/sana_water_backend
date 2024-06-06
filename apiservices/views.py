@@ -2330,71 +2330,130 @@ class GetProductAPI(APIView):
             print(e, "error")
             return Response({"status": False, "data": str(e), "message": "Something went wrong!"})
 
-# class CustodyCustomItemAPI(APIView):
-#     authentication_classes = [BasicAuthentication]
-#     permission_classes = [IsAuthenticated]
-#     serializer_class = CustodyCustomItemSerializer
 
-#     def post(self, request, *args, **kwargs):
+# class CustodyCustomAPIView(APIView):
+#     def post(self, request):
 #         try:
-#             customer_id = request.data['customer_id'] 
-#             product_id = request.data['product_id']
-#             serial_number = request.data['serialnumber']
-#             quantity = request.data['count']
-#             deposit_type = request.data['deposit_type'] 
-#             agreement_number = request.data['agreement_no']
-#             amount = request.data['amount']
+#             customer = Customers.objects.get(customer_id=request.data['customer_id'])
+#             agreement_no = request.data['agreement_no']
+#             total_amount = int(request.data['total_amount'])
+#             deposit_type = request.data['deposit_type']
+#             reference_no = request.data['reference_no']
+#             product = ProdutItemMaster.objects.get(id=request.data['product_id'])
+#             quantity = int(request.data['quantity'])
+#             serialnumber = request.data['serialnumber']
+#             amount_collected = request.data['amount_collected']
+#             can_deposite_chrge = request.data.get('can_deposite_chrge', 0)
+            
+#             # Calculate the five_gallon_water_charge based on the quantity and customer's rate
+#             five_gallon_water_charge = quantity * total_amount
 
-#             # Retrieve the ProdutItemMaster instance
-#             product_instance = get_object_or_404(ProdutItemMaster, id=product_id)
-
-#             # Create or retrieve CustodyCustom instance
-#             custody_custom, _ = CustodyCustom.objects.get_or_create(
-#                 customer_id=customer_id,
-#                 agreement_no=agreement_number,
-#                 deposit_type=deposit_type 
+#             # Create CustodyCustom instance
+#             custody_custom_instance = CustodyCustom.objects.create(
+#                 customer=customer,
+#                 agreement_no=agreement_no,
+#                 total_amount=total_amount,
+#                 deposit_type=deposit_type,
+#                 reference_no=reference_no
 #             )
-#             productinstance = CustodyCustomItems.objects.get( product=product_instance)
-#             if productinstance:
-#                 old_quantity = productinstance.quantity
-#                 new_qty = old_quantity + quantity
-#                 productinstance.quantity = new_qty
-#                 productinstance.save()
-#             else :
 
-#                 # Create CustodyCustomItems instance
-#                 custody_item = CustodyCustomItems.objects.create(
-#                     custody_custom=custody_custom,
-#                     product=product_instance,
-#                     amount=amount,
-#                     serialnumber=serial_number,
-#                     quantity=quantity
+#             # Create CustodyCustomItems instance
+#             CustodyCustomItems.objects.create(
+#                 custody_custom=custody_custom_instance,
+#                 product=product,
+#                 quantity=quantity,
+#                 serialnumber=serialnumber,
+#                 amount=total_amount,
+#                 can_deposite_chrge=can_deposite_chrge,
+#                 five_gallon_water_charge=five_gallon_water_charge,
+#                 amount_collected=amount_collected
+#             )
+
+#             try:
+#                 stock_instance = CustomerCustodyStock.objects.get(customer=customer, product=product)
+#                 stock_instance.agreement_no += ', ' + agreement_no
+#                 stock_instance.serialnumber += ', ' + serialnumber
+#                 stock_instance.amount += total_amount
+#                 stock_instance.quantity += quantity
+#                 stock_instance.save()
+#             except CustomerCustodyStock.DoesNotExist:
+#                 CustomerCustodyStock.objects.create(
+#                     customer=customer,
+#                     agreement_no=agreement_no,
+#                     deposit_type=deposit_type,
+#                     reference_no=reference_no,
+#                     product=product,
+#                     quantity=quantity,
+#                     serialnumber=serialnumber,
+#                     amount=total_amount,
+#                     can_deposite_chrge=can_deposite_chrge,
+#                     five_gallon_water_charge=five_gallon_water_charge,
+#                     amount_collected=amount_collected
 #                 )
+
+#             if product.product_name.lower() == "5 gallon":
+#                 random_part = str(random.randint(1000, 9999))
+#                 invoice_number = f'WTR-{random_part}'
+
+#                 net_taxable = total_amount
+#                 discount = 0  
+#                 amount_total = total_amount + can_deposite_chrge + five_gallon_water_charge
+#                 amount_received = amount_collected
+
+#                 invoice_instance = Invoice.objects.create(
+#                     invoice_no=invoice_number,
+#                     created_date=datetime.today(),
+#                     net_taxable=net_taxable,
+#                     discount=discount,
+#                     amount_total=total_amount,
+#                     amount_received=amount_collected,
+#                     customer=customer,
+#                     reference_no=reference_no
+#                 )
+                
+#                 if invoice_instance.amount_total == invoice_instance.amount_received:
+#                     invoice_instance.invoice_status = "paid"
+#                     invoice_instance.save()
+
+#                 InvoiceItems.objects.create(
+#                     category=product.category,
+#                     product_items=product,
+#                     qty=quantity,
+#                     rate=product.rate,
+#                     invoice=invoice_instance,
+#                     remarks='Invoice generated from custody item creation'
+#                 )
+
+#                 # Create daily collection record
+#                 InvoiceDailyCollection.objects.create(
+#                     invoice=invoice_instance,
+#                     created_date=datetime.today(),
+#                     customer=invoice_instance.customer,
+#                     salesman=request.user,
+#                     amount=invoice_instance.amount_received,
+#                 )
+
+#             return Response({'status': True, 'message': 'Created Successfully'})
+#         except Exception as e:
+#             print(e)
+#             return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'})
 
 class CustodyCustomAPIView(APIView):
     def post(self, request):
         try:
-            customer = get_object_or_404(Customers, customer_id=request.data['customer_id'])
+            customer = Customers.objects.get(customer_id=request.data['customer_id'])
             agreement_no = request.data['agreement_no']
             total_amount = int(request.data['total_amount'])
             deposit_type = request.data['deposit_type']
             reference_no = request.data['reference_no']
-            product = get_object_or_404(ProdutItemMaster, id=request.data['product_id'])
+            product = ProdutItemMaster.objects.get(id=request.data['product_id'])
             quantity = int(request.data['quantity'])
             serialnumber = request.data['serialnumber']
             amount_collected = request.data['amount_collected']
             can_deposite_chrge = request.data.get('can_deposite_chrge', 0)
-            five_gallon_water_charge = request.data.get('five_gallon_water_charge', 0)
-
-            if product.product_name == '5 Gallon':
-                if deposit_type == 'nondeposit':
-                    can_deposite_chrge = 0
-                    five_gallon_water_charge = 0
-                else:
-                    can_deposite_chrge = request.data['can_deposite_chrge']
-                    five_gallon_water_charge = request.data['five_gallon_water_charge']
-                    
-            amount_collected = (can_deposite_chrge + five_gallon_water_charge) * quantity
+            
+            # Calculate the five_gallon_water_charge based on the quantity and customer's rate
+            five_gallon_water_charge = quantity * float(customer.rate)
 
             # Create CustodyCustom instance
             custody_custom_instance = CustodyCustom.objects.create(
@@ -2417,16 +2476,12 @@ class CustodyCustomAPIView(APIView):
                 amount_collected=amount_collected
             )
 
-            # Update or create CustomerCustodyStock
             try:
                 stock_instance = CustomerCustodyStock.objects.get(customer=customer, product=product)
                 stock_instance.agreement_no += ', ' + agreement_no
                 stock_instance.serialnumber += ', ' + serialnumber
                 stock_instance.amount += total_amount
                 stock_instance.quantity += quantity
-                stock_instance.can_deposite_chrge += can_deposite_chrge
-                stock_instance.five_gallon_water_charge += five_gallon_water_charge
-                stock_instance.amount_collected += amount_collected
                 stock_instance.save()
             except CustomerCustodyStock.DoesNotExist:
                 CustomerCustodyStock.objects.create(
@@ -2443,11 +2498,52 @@ class CustodyCustomAPIView(APIView):
                     amount_collected=amount_collected
                 )
 
+            if product.product_name.lower() == "5 gallon":
+                random_part = str(random.randint(1000, 9999))
+                invoice_number = f'WTR-{random_part}'
+
+                net_taxable = total_amount
+                discount = 0  
+                amount_total = total_amount + can_deposite_chrge + five_gallon_water_charge
+                amount_received = amount_collected
+
+                invoice_instance = Invoice.objects.create(
+                    invoice_no=invoice_number,
+                    created_date=datetime.today(),
+                    net_taxable=net_taxable,
+                    discount=discount,
+                    amout_total=amount_total,  # Corrected field name
+                    amout_recieved=amount_received,  # Corrected field name
+                    customer=customer,
+                    reference_no=reference_no
+                )
+                
+                if invoice_instance.amout_total == invoice_instance.amout_recieved:
+                    invoice_instance.invoice_status = "paid"
+                    invoice_instance.save()
+
+                InvoiceItems.objects.create(
+                    category=product.category,
+                    product_items=product,
+                    qty=quantity,
+                    rate=product.rate,
+                    invoice=invoice_instance,
+                    remarks='Invoice generated from custody item creation'
+                )
+
+                # Create daily collection record
+                InvoiceDailyCollection.objects.create(
+                    invoice=invoice_instance,
+                    created_date=datetime.today(),
+                    customer=invoice_instance.customer,
+                    salesman=request.user,
+                    amount=invoice_instance.amout_recieved,
+                )
+
             return Response({'status': True, 'message': 'Created Successfully'})
         except Exception as e:
             print(e)
             return Response({'status': False, 'data': str(e), 'message': 'Something went wrong!'})
-
 
 class supply_product(APIView):
     def get(self, request, *args, **kwargs):
@@ -3794,11 +3890,8 @@ class VanStockAPI(APIView):
             van_coupon_stock = van_coupon_stock.filter(van__pk=van_pk)
             van_product_stock = van_product_stock.filter(van__pk=van_pk)
         else:
-            try:
-                van_coupon_stock = van_coupon_stock.filter(van__salesman=request.user)
-                van_product_stock = van_product_stock.filter(van__salesman=request.user)
-            except:
-                pass
+            van_coupon_stock = van_coupon_stock.filter(van__salesman=request.user)
+            van_product_stock = van_product_stock.filter(van__salesman=request.user)
             
         coupon_serialized_data = VanCouponStockSerializer(van_coupon_stock, many=True).data
 
@@ -4337,10 +4430,10 @@ class DashboardAPI(APIView):
         temperary_schedule_unsupply_count = DiffBottlesModel.objects.filter(customer__routes__pk=route_id,status="pending",delivery_date__date=date).count()
         temperary_schedule_supplied_count = DiffBottlesModel.objects.filter(customer__routes__pk=route_id,status="supplied",delivery_date__date=date).count()
         
+        van_route = Van_Routes.objects.get(routes__pk=route_id,van__salesman=request.user)
         coupon_sale_count = CustomerCouponItems.objects.filter(customer_coupon__customer__routes__pk=route_id,customer_coupon__created_date__date=date).count()
         empty_bottle_count = VanProductStock.objects.get(created_date=date,van=van_route.van,product__product_name="5 Gallon").empty_can_count
         
-        van_route = Van_Routes.objects.get(routes__pk=route_id,van__salesman=request.user)
         filled_bottle_count = VanProductStock.objects.get(created_date=date,van=van_route.van,product__product_name="5 Gallon").stock
         
         used_coupon_count = CustomerSupplyCoupon.objects.filter(customer_supply__customer__routes__pk=route_id,customer_supply__created_date__date=date).aggregate(leaf_count=Count('leaf'))['leaf_count']
@@ -5134,11 +5227,20 @@ class CustomerLoginApi(APIView):
                         login(request, user)
                         user_obj = CustomUser.objects.filter(username=username).first()
                         token = generate_random_string(20)
+                        
+                        five_gallon = ProdutItemMaster.objects.get(product_name="5 Gallon")
+                        if instances.first().rate > 0:
+                            water_rate = instances.first().rate
+                        else:
+                            water_rate = five_gallon.rate
+                            
                         data = {
                             'id': user_obj.id,
                             'username': username,
                             'user_type': user_obj.user_type,
                             'sales_type': instances.first().sales_type,
+                            'water_rate': water_rate,
+                            'water_id': five_gallon.pk,
                             'token': token
                         }
                         # else:
@@ -5818,45 +5920,111 @@ class EditProductAPIView(APIView):
     def post(self, request, pk):
         count = request.data.get('count')
         stock_type = request.data.get('stock_type')
-        item = get_object_or_404(VanProductStock, pk=pk)
+        try:
+            item = VanProductStock.objects.get(pk=pk)
+        except VanProductStock.DoesNotExist:
+            return Response({
+                "status": "false",
+                "title": "Failed",
+                "message": "Item not found",
+            }, status=status.HTTP_404_NOT_FOUND)
 
-        item_stock = item.stock
-        if stock_type == "empty_can":
-            item_stock = item.empty_can_count
+        try:
+            with transaction.atomic():
+                item_stock = item.stock
+                if stock_type == "empty_can":
+                    item_stock = item.empty_can_count
 
-        if int(count) <= item_stock:
-            if item.product.product_name == "5 Gallon" and stock_type == "stock":
-                item.stock -= int(count)
-                item.save()
+                if item.product.product_name == "5 Gallon" and stock_type == "stock":
+                    item.stock -= int(count)
+                    item.save()
 
-                product_stock = ProductStock.objects.get(branch=item.van.branch_id, product_name=item.product)
-                product_stock.quantity += int(count)
-                product_stock.save()
+                    product_stock = ProductStock.objects.get(branch=item.van.branch_id, product_name=item.product)
+                    product_stock.quantity += int(count)
+                    product_stock.save()
 
-            elif item.product.product_name == "5 Gallon" and stock_type == "empty_can":
-                item.empty_can_count -= int(count)
-                item.save()
+                elif item.product.product_name == "5 Gallon" and stock_type == "empty_can":
+                    item.empty_can_count -= int(count)
+                    item.save()
 
-            else:
-                item.stock -= int(count)
-                item.save()
+                elif item.product.product_name == "5 Gallon" and stock_type == "return_count":
+                    scrap_count = int(request.data.get('scrap_count', 0))
+                    washing_count = int(request.data.get('washing_count', 0))
 
-                product_stock = ProductStock.objects.get(branch=item.van.branch_id, product_name=item.product)
-                product_stock.quantity += int(count)
-                product_stock.save()
+                    OffloadReturnStocks.objects.create(
+                        created_by=request.user.id,
+                        created_date=timezone.now(),
+                        salesman=item.van.salesman,
+                        van=item.van,
+                        product=item.product,
+                        scrap_count=scrap_count,
+                        washing_count=washing_count
+                    )
 
-            Offload.objects.create(
-                created_by=request.user.id,
-                created_date=datetime.now(),
-                salesman=item.van.salesman,
-                van=item.van,
-                product=item.product,
-                quantity=int(count),
-                stock_type=stock_type
-            )
-            return Response({'status': 'success'}, status=status.HTTP_200_OK)
+                    if scrap_count > 0:
+                        scrap_instance, created = ScrapProductStock.objects.get_or_create(
+                            created_date__date=timezone.now().date(), product=item.product,
+                            defaults={'created_by': request.user.id, 'created_date': timezone.now(), 'quantity': scrap_count}
+                        )
+                        if not created:
+                            scrap_instance.quantity += scrap_count
+                            scrap_instance.save()
 
-        return Response({'error': 'Invalid count'}, status=status.HTTP_400_BAD_REQUEST)
+                    if washing_count > 0:
+                        washing_instance, created = WashingProductStock.objects.get_or_create(
+                            created_date__date=timezone.now().date(), product=item.product,
+                            defaults={'created_by': request.user.id, 'created_date': timezone.now(), 'quantity': washing_count}
+                        )
+                        if not created:
+                            washing_instance.quantity += washing_count
+                            washing_instance.save()
+
+                    count = scrap_count + washing_count
+                    item.return_count -= int(count)
+                    item.save()
+
+                else:
+                    item.stock -= int(count)
+                    item.save()
+
+                    product_stock = ProductStock.objects.get(branch=item.van.branch_id, product_name=item.product)
+                    product_stock.quantity += int(count)
+                    product_stock.save()
+
+                Offload.objects.create(
+                    created_by=request.user.id,
+                    created_date=timezone.now(),
+                    salesman=item.van.salesman,
+                    van=item.van,
+                    product=item.product,
+                    quantity=int(count),
+                    stock_type=stock_type
+                )
+
+                response_data = {
+                    "status": "true",
+                    "title": "Successfully Offloaded",
+                    "message": "Offload successfully.",
+                    'reload': 'true',
+                }
+
+                return Response(response_data, status=status.HTTP_200_OK)
+
+        except IntegrityError as e:
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": str(e),
+            }
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": str(e),
+            }
+            return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 class GetVanCouponBookNoAPIView(APIView):
     authentication_classes = [BasicAuthentication]

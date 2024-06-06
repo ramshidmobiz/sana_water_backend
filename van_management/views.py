@@ -1348,7 +1348,7 @@ def VansRouteBottleCount(request):
     return render(request, 'van_management/van_route_bottle_count.html', context)
 
 def VansRouteBottleCountAdd(request, van_id):
-    van = get_object_or_404(Van, pk=van_id)
+    van = get_object_or_404(Van, van_id=van_id)
     
     if request.method == 'POST':
         form = VansRouteBottleCountAddForm(request.POST)
@@ -1372,7 +1372,7 @@ def VansRouteBottleCountAdd(request, van_id):
     }
     return render(request,'van_management/van_route_bottle_count_add.html', context)
 def VansRouteBottleCountDeduct(request, van_id):
-    van = get_object_or_404(Van, pk=van_id)
+    van = get_object_or_404(Van, van_id=van_id)
     
     if request.method == 'POST':
         form = VansRouteBottleCountDeductForm(request.POST)
@@ -1395,3 +1395,24 @@ def VansRouteBottleCountDeduct(request, van_id):
         'van': van,
     }
     return render(request, 'van_management/van_route_bottle_count_deduct.html', context)
+
+
+class VanCouponStockList(View):
+    def get(self, request, *args, **kwargs):
+        filter_data = {}
+        
+        date = request.GET.get('date')
+        if date:
+            date = datetime.strptime(date, '%Y-%m-%d').date()
+            filter_data['filter_date'] = date.strftime('%Y-%m-%d')
+        else:
+            date = datetime.today().date()
+            filter_data['filter_date'] = date.strftime('%Y-%m-%d')
+        
+        van_coupon_stock = VanCouponStock.objects.filter(created_date=date)
+    
+        context = {
+            'van_coupon_stock': van_coupon_stock,
+            'filter_data': filter_data,
+        }
+        return render(request, 'van_management/van_coupon_stock.html', context)

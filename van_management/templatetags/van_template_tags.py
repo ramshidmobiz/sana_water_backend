@@ -64,3 +64,47 @@ def get_five_gallon_ratewise_count(rate,date,salesman):
 def get_coupon_vanstock_count(van_pk,date,coupon_type):
     return VanCouponStock.objects.filter(created_date=date,van__pk=van_pk,coupon__coupon_type__coupon_type_name=coupon_type).aggregate(total_stock=Sum('stock'))['total_stock'] or 0
     
+
+@register.simple_tag
+def get_van_coupon_wise_stock(date, van, coupon):
+    if VanCouponStock.objects.filter(created_date=date, van=van, coupon__pk=coupon).exists():
+        if date:
+            date = datetime.strptime(date, '%Y-%m-%d').date()
+        else:
+            date = datetime.today().date()
+
+        van = Van.objects.get(pk=van)
+        van_stock = VanCouponStock.objects.get(created_date=date, van=van, coupon__pk=coupon)
+
+        staff_order_details = Staff_Orders_details.objects.filter(
+            staff_order_id__created_date__date=date,
+            product_id__pk=coupon,
+            staff_order_id__created_by=van.salesman.pk
+        )
+        issued_count = staff_order_details.aggregate(total_count=Sum('issued_qty'))['total_count'] or 0
+
+        total_stock = van_stock.stock + van_stock.opening_count
+        sold_count = van_stock.sold_count
+        offload_count = Offload.objects.filter(
+            van=van,
+            product__pk=coupon,
+            created_date__date=date
+        ).aggregate(total_count=Sum('quantity'))['total_count'] or 0
+
+        return {
+            "opening_stock": van_stock.opening_count,
+            "requested_count": Staff_Orders_details.objects.filter(
+                product_id__pk=coupon,
+                staff_order_id__created_date__date=date,
+                created_by=van.salesman.pk
+            ).aggregate(total_count=Sum('count'))['total_count'] or 0,
+            "issued_count": issued_count,
+            "return_count": van_stock.return_count,
+            "sold_count": sold_count,
+            "closing_count": van_stock.closing_count,
+            "offload_count": offload_count,
+            "change_count": van_stock.change_count,
+            "damage_count": van_stock.damage_count,
+            "total_stock": total_stock
+        }
+    return {}
