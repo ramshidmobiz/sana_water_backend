@@ -1462,6 +1462,10 @@ class CouponStockSerializer(serializers.ModelSerializer):
         model = CouponStock
         fields = '__all__'    
 class CouponsProductsSerializer(serializers.ModelSerializer):
+    leaf_count = serializers.SerializerMethodField()
     class Meta:
         model = ProdutItemMaster
-        fields = ['product_name', 'rate']
+        fields = ['id','product_name', 'rate','leaf_count']
+        
+    def get_leaf_count(self,obj):
+        return CouponType.objects.filter(coupon_type_name=obj.product_name).first().no_of_leaflets
