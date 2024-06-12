@@ -122,9 +122,9 @@ class Staff_Orders_details(models.Model):
 class Staff_IssueOrders(models.Model):
     staff_issuesorder_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     order_number = models.CharField(max_length=30, null=True, blank=True, unique=True)
-    salesman_id = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='salesman_orders',limit_choices_to={'designation_id__designation_name__in': ['Sales Executive', 'Sales Supervisor']})
+    salesman_id = models.ForeignKey('accounts.CustomUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='salesman_orders',limit_choices_to={'designation_id__designation_name__in': ['Sales Executive', 'Sales Supervisor']})
     staff_Orders_details_id = models.ForeignKey(Staff_Orders_details, on_delete=models.SET_NULL, null=True, blank=True, related_name='salesman_order_details')
-    van_route_id = models.ForeignKey(RouteMaster, on_delete=models.SET_NULL, null=True, blank=True, related_name='van_route_orders')
+    van_route_id = models.ForeignKey('master.RouteMaster', on_delete=models.SET_NULL, null=True, blank=True, related_name='van_route_orders')
     product_id = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE, related_name='issued_products')
     coupon_book= models.ForeignKey('coupon_management.NewCoupon',on_delete=models.SET_NULL, null=True, blank=True, related_name='couponsales')
     quantity_issued = models.CharField(max_length=50,null=True, blank=True)

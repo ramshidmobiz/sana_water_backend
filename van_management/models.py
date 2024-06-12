@@ -322,3 +322,13 @@ class BottleCount(models.Model):
         
     def __str__(self):
         return str(self.id)
+    
+class EmptyCanStock(models.Model): 
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created_date = models.DateTimeField(auto_now_add=True)
+    product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=0)
+    
+
+    def __str__(self):
+        return f"{self.id}"   

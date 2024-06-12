@@ -3,7 +3,7 @@ import datetime
 from django import template
 from django.db.models import Q, Sum
 
-from client_management.models import CustomerCoupon, CustomerSupply
+from client_management.models import CustomerCoupon, CustomerCouponItems, CustomerSupply
 from invoice_management.models import SuspenseCollection
 from sales_management.models import CollectionPayment
 from van_management.models import Expense
@@ -36,3 +36,8 @@ def get_suspense_collection(date,salesman):
         'amount_paid': amount_paid,
         'amount_balance': amount_balance,
     }
+    
+@register.simple_tag
+def get_customer_coupon_details(pk):
+    instances = CustomerCouponItems.objects.filter(customer_coupon=pk)
+    return instances

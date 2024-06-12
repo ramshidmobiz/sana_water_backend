@@ -287,32 +287,30 @@ def create_customer(request):
     template_name = 'accounts/create_customer.html'
     form = CustomercreateForm(branch)
     context = {"form":form}
-    try:
-        if request.method == 'POST':
-            form = CustomercreateForm(branch,data = request.POST)
-            print(form)
-            context = {"form":form}
-            if form.is_valid():
-                data = form.save(commit=False)
-                data.created_by = str(request.user)
-                data.created_date = datetime.now()
-                data.emirate = data.location.emirate
-                branch_id=request.user.branch_id.branch_id
-                branch = BranchMaster.objects.get(branch_id=branch_id)
-                data.branch_id = branch
-                data.custom_id = get_custom_id(Customers)
-                data.save()
-                Staff_Day_of_Visit.objects.create(customer = data)
-                messages.success(request, 'Customer Created successfully!')
-                return redirect('customers')
-            else:
-                messages.success(request, 'Invalid form data. Please check the input.')
-                return render(request, template_name,context)
-        return render(request, template_name,context)
-    except Exception as e:
-            print(":::::::::::::::::::::::",e)
-            messages.success(request, 'Something went wrong')
+    # try:
+    if request.method == 'POST':
+        form = CustomercreateForm(branch,data = request.POST)
+        context = {"form":form}
+        if form.is_valid():
+            data = form.save(commit=False)
+            data.created_by = str(request.user)
+            data.created_date = datetime.now()
+            data.emirate = data.location.emirate
+            branch_id=request.user.branch_id.branch_id
+            branch = BranchMaster.objects.get(branch_id=branch_id)
+            data.branch_id = branch
+            data.custom_id = get_custom_id(Customers)
+            data.save()
+            Staff_Day_of_Visit.objects.create(customer = data)
+            messages.success(request, 'Customer Created successfully!')
+            return redirect('customers')
+        else:
+            messages.success(request, 'Invalid form data. Please check the input.')
             return render(request, template_name,context)
+    return render(request, template_name,context)
+    # except Exception as e:
+    #         messages.success(request, 'Something went wrong')
+    #         return render(request, template_name,context)
 
 class Customer_Details(View):
     template_name = 'accounts/customer_details.html'

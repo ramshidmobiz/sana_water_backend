@@ -426,7 +426,7 @@ def staffIssueOrdersCreate(request, staff_order_details_id):
     van = Van.objects.get(salesman_id__id=issue.staff_order_id.created_by)
     try:
         vanstock = VanProductStock.objects.get(created_date=issue.staff_order_id.order_date,van=van,product__product_name="5 Gallon")
-        vanstock_count = vanstock.stock + vanstock.opening_count
+        vanstock_count = vanstock.stock
     except :
         vanstock_count = 0
     

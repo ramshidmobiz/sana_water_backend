@@ -4,6 +4,7 @@ from django.contrib.auth.models import AbstractUser,Group,Permission
 
 from coupon_management.models import Coupon
 from master.models import *
+from product.models import ProdutItemMaster
 
 class CustomUser(AbstractUser):
     USER_TYPE_CHOICES = (
@@ -108,6 +109,13 @@ class Customers(models.Model):
     
     def __str__(self):
         return str(self.customer_name)
+    
+    def get_water_rate(self):
+        if int(self.rate) > 0 :
+            rate = self.rate
+        else:
+            rate = ProdutItemMaster.objects.get(product_name="5 Gallon").rate
+        return str(rate)
 
 class Staff_Day_of_Visit(models.Model):
     visit_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

@@ -1052,6 +1052,12 @@ class EditProductView(View):
                     item.empty_can_count -= int(count)
                     item.save()
                     
+                    emptycan=EmptyCanStock.objects.create(
+                        product=item.product,
+                        quantity=int(count)
+                    )
+                    emptycan.save()
+                    
                 elif item.product.product_name == "5 Gallon" and stock_type == "return_count":
                     scrap_count = int(request.POST.get('scrap_count'))
                     washing_count = int(request.POST.get('washing_count'))

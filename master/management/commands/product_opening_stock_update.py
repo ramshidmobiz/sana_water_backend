@@ -22,7 +22,7 @@ class Command(BaseCommand):
 
             if today_stock:
                 today_stock.opening_count = yesterday_stock.closing_count
-                today_stock.stock = yesterday_stock.closing_count
+                today_stock.stock += yesterday_stock.closing_count
                 today_stock.save()
                 self.stdout.write(self.style.SUCCESS(f'Updated opening count for {today_stock.id}'))
             else:

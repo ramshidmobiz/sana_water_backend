@@ -75,12 +75,12 @@ class CustodyCustomItems(models.Model):
 class CustomerCustodyStock(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customer = models.ForeignKey('accounts.Customers', on_delete=models.CASCADE,null=True,blank=True)
-    agreement_no = models.CharField(max_length=50, null=True, blank=True)
+    agreement_no = models.CharField(max_length=400, null=True, blank=True)
     deposit_type = models.CharField(max_length=20,choices=DEPOSIT_TYPES,null=True,blank=True)
     reference_no = models.CharField(max_length=100)
     product = models.ForeignKey('product.ProdutItemMaster', on_delete=models.CASCADE,null=True,blank=True)
     quantity = models.IntegerField(blank=True,null=True)
-    serialnumber = models.CharField(max_length=20, null=True, blank=True)
+    serialnumber = models.CharField(max_length=400, null=True, blank=True)
     amount = models.DecimalField(default=0, decimal_places=2, max_digits=10)
     can_deposite_chrge = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     five_gallon_water_charge = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -242,6 +242,14 @@ class CustomerCoupon(models.Model):
         ordering = ('-created_date',)
     def __str__(self):
         return str(self.customer)
+    
+    def get_coupon_rates(self):
+        return list(CustomerCouponItems.objects.filter(customer_coupon=self).values_list('rate', flat=True))
+    
+    def display_coupon_rates(self):
+        rates = self.get_coupon_rates()
+        return ", ".join(str(rate) for rate in rates) if rates else "No coupon rates available"
+
     
 class CustomerCouponItems(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

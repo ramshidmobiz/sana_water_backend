@@ -3119,7 +3119,7 @@ def dsr_summary(request):
     balance_in_hand = 0
     net_payble = 0
     stock_report_total = 0
-    
+   
     van_instances = Van.objects.none
     van_route = Van_Routes.objects.none
     salesman_id =  ""
@@ -3131,10 +3131,11 @@ def dsr_summary(request):
     expenses_instanses = Expense.objects.none
     routes_instances = RouteMaster.objects.all()
     van_product_stock = VanProductStock.objects.none
-    customer_coupon_items = CustomerCouponItems.objects.none
+    customer_coupons = CustomerCoupon.objects.none
     unique_amounts = CustomerCouponItems.objects.none
     dialy_collections = InvoiceDailyCollection.objects.none
     pending_bottle_customer_instances = CustomerSupply.objects.none
+    foc_customers = CustomerSupply.objects.none
     
     date = request.GET.get('date')
     route_name = request.GET.get('route_name')
@@ -3179,7 +3180,7 @@ def dsr_summary(request):
         total_count = van_product_stock.aggregate(total_stock=Sum('stock'))['total_stock'] or 0
         
         #### coupon sales count ####
-        customer_coupon_items=CustomerCouponItems.objects.filter(customer_coupon__salesman=salesman,customer_coupon__created_date__date=date).order_by("-customer_coupon__created_date")
+        customer_coupons=CustomerCoupon.objects.filter(salesman=salesman,created_date__date=date)
         
         ### cash sales ####
         cash_sales = CustomerSupply.objects.filter(created_date__date=date,salesman=salesman,amount_recieved__gt=0)
@@ -3262,6 +3263,11 @@ def dsr_summary(request):
         balance_in_hand = total_sales_amount_collected - collected_cheque_amount - today_expense
         net_payble = total_sales_amount_collected - today_expense
         
+        
+        foc_customers = CustomerSupply.objects.filter(created_date__date=date, customer__sales_type='FOC', salesman=salesman)
+
+        
+        
     context = {
         'data_filter': data_filter,
         'salesman_id': salesman_id,
@@ -3288,7 +3294,7 @@ def dsr_summary(request):
         'pending_bottle_count': pending_bottle_count,
         'total_count': total_count,
         #coupon book sale
-        'customer_coupon_items':customer_coupon_items,
+        'customer_coupons':customer_coupons,
         #cash sales
         'cash_sales': cash_sales,
         'recharge_cash_sales': recharge_cash_sales,
@@ -3331,7 +3337,9 @@ def dsr_summary(request):
         'balance_in_hand': balance_in_hand,
         'net_payble': net_payble,
         
-        'filter_data': filter_data
+        'filter_data': filter_data,
+        # FOC customer
+        'foc_customers':foc_customers,
     }
     
     return render(request, 'sales_management/dsr_summary.html', context)
@@ -3390,7 +3398,7 @@ def print_dsr_summary(request):
     expenses_instanses = Expense.objects.none
     routes_instances = RouteMaster.objects.all()
     van_product_stock = VanProductStock.objects.none
-    customer_coupon_items = CustomerCouponItems.objects.none
+    customer_coupons = CustomerCoupon.objects.none
     unique_amounts = CustomerCouponItems.objects.none
     dialy_collections = InvoiceDailyCollection.objects.none
     pending_bottle_customer_instances = CustomerSupply.objects.none
@@ -3438,7 +3446,7 @@ def print_dsr_summary(request):
         total_count = van_product_stock.aggregate(total_stock=Sum('stock'))['total_stock'] or 0
         
         #### coupon sales count ####
-        customer_coupon_items=CustomerCouponItems.objects.filter(customer_coupon__salesman=salesman,customer_coupon__created_date__date=date).order_by("-customer_coupon__created_date")
+        customer_coupons=CustomerCoupon.objects.filter(salesman=salesman,created_date__date=date)
         
         ### cash sales ####
         cash_sales = CustomerSupply.objects.filter(created_date__date=date,salesman=salesman,amount_recieved__gt=0)
@@ -3547,7 +3555,7 @@ def print_dsr_summary(request):
         'pending_bottle_count': pending_bottle_count,
         'total_count': total_count,
         #coupon book sale
-        'customer_coupon_items':customer_coupon_items,
+        'customer_coupons':customer_coupons,
         #cash sales
         'cash_sales': cash_sales,
         'recharge_cash_sales': recharge_cash_sales,
@@ -3590,7 +3598,8 @@ def print_dsr_summary(request):
         'balance_in_hand': balance_in_hand,
         'net_payble': net_payble,
         
-        'filter_data': filter_data
+        'filter_data': filter_data,
+        'filter_date_formatted': date.strftime('%d-%m-%Y'),
     }
     
     return render(request, 'sales_management/dsr_summary_print.html', context)

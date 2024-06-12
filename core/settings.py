@@ -72,7 +72,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-# cred = credentials.Certificate("nationalwaterfcm-4cd9e-firebase-adminsdk-ijou8-4ac8e65e75.json")
+# cred = credentials.Certificate("Sanawaterfcm-4cd9e-firebase-adminsdk-ijou8-4ac8e65e75.json")
 # firebase_admin.initialize_app(cred, name='Sanawaterfcm')
 
 # Database
@@ -149,7 +149,7 @@ AUTHENTICATION_BACKENDS = [
     # ...
 ]
 
-# Internationalization
+# InterSanaization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'

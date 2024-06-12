@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     {% load van_template_tags %}
+    {% load sales_templatetags %}
     {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -64,7 +65,7 @@
                                         <p>Route: {{van_route.routes.route_name}}</p>
                                     </div>
                                     <div class="col-4">
-                                        <p>Date: {{ filter_data.filter_date_formatted }}</p>
+                                        <p>Date: {{ filter_date_formatted }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -201,7 +202,7 @@
                             </div>
                         </div>
     
-                        <div id="table-container">
+                        {% comment %} <div id="table-container">
                             <div class="card-body">
                                 <table  class="table table-bordered text-wrap" style="width: 100%">
                                     <thead>
@@ -238,6 +239,66 @@
                                     </tbody>
                                 </table>
                             </div>
+                        </div> {% endcomment %}
+    
+                        <div id="table-container">
+                            <div class="card-body">
+                                <table  class="table table-bordered text-wrap" style="width: 100%">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-center text-bold" colspan="8">Coupon Book Sales</th>
+                                        </tr>
+                                        <tr>
+                                            <th style="text-align:center;">Sl No</th>
+                                            <th style="text-align:center;">Ref No</th>
+                                            <th>Customer</th>
+                                            <th style="text-align:center;">Coupon Details</th>
+                                            
+                                            <th style="text-align:center;">Grand Total</th>
+                                            <th style="text-align:center;">Discount</th>
+                                            <th style="text-align:center;">Total Payeble</th>
+                                            <th style="text-align:center;">Amount Recieved</th>
+                                            <th style="text-align:center;">Balance</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for customer_coupon in customer_coupons %}
+                                        <tr>
+                                            <td style="text-align:center;">{{ forloop.counter }}</td>
+                                            <td style="text-align:center;">{{ customer_coupon.reference_number }}</td>
+                                            <td>{{ customer_coupon.customer.customer_name }}</td>
+                                            {% comment %} <td>{{ customer_coupon.customer.building_name }} /{{ customer_coupon.customer.door_house_no }}/
+                                                {{ customer_coupon.customer.floor_no }}
+                                            </td> {% endcomment %}
+                                            <td class="p-0">
+                                                <table  class="table table-bordered" style="width: 100%">
+                                                    <tr>
+                                                        <th>Coupon Type</th>
+                                                        <th style="text-align:center;">Book No.</th>
+                                                        <th style="text-align:center;">Method</th>
+                                                        <th style="text-align:center;">Rate</th>
+                                                    </tr>
+                                                    {% get_customer_coupon_details customer_coupon.pk as coupon_items %}
+                                                    {% for item in coupon_items %}
+                                                    <tr>
+                                                        <td>{{ item.coupon.coupon_type.coupon_type_name }}</td>
+                                                        <td style="text-align:center;">{{ item.coupon.book_num }}</td>
+                                                        <td>{{ item.coupon.coupon_method }}</td>
+                                                        <td style="text-align:center;">{{ item.rate }}</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </table>
+                                            </td>
+                                            <td style="text-align:center;">{{ customer_coupon.grand_total }}</td>
+                                            <td style="text-align:center;">{{ customer_coupon.discount }}</td>
+                                            <td style="text-align:center;">{{ customer_coupon.total_payeble }}</td>
+                                            <td style="text-align:center;">{{ customer_coupon.amount_recieved }}</td>
+                                            <td style="text-align:center;">{{ customer_coupon.balance }}</td>
+                                        </tr>
+                                    {% endfor %} 
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
     
                         <div id="table-container">
@@ -252,9 +313,10 @@
                                             <th style="text-align:center;" scope="col">Reference No</th>
                                             <th style="text-align:center;" scope="col">Customer Name</th>
                                             <th style="text-align:center;" scope="col">Total QTY</th>
-                                            <th style="text-align:center;" scope="col">Net taxable</th>
-                                            <th style="text-align:center;" scope="col">Vat</th>
+                                            <th style="text-align:center;" scope="col">Rate</th>
+                                            {% comment %} <th style="text-align:center;" scope="col">Vat</th> {% endcomment %}
                                             <th style="text-align:center;" scope="col">Grand Total</th>
+                                            <th style="text-align:center;" scope="col">Net Payable</th>
                                             <th style="text-align:center;" scope="col">Cash Recieved</th>
                                         </tr>
                                     </thead>
@@ -265,9 +327,10 @@
                                             <td style="text-align:center;">{{sale.reference_number}}</td>
                                             <td>{{sale.customer.customer_name}}</td>
                                             <td style="text-align:center;">{{sale.get_total_supply_qty}}</td>
-                                            <td style="text-align:center;">{{sale.net_payable}}</td>
-                                            <td style="text-align:center;">{{sale.vat}}</td>
+                                            <td style="text-align:center;">{{sale.customer.get_water_rate}}</td>
+                                            {% comment %} <td style="text-align:center;">{{sale.vat}}</td> {% endcomment %}
                                             <td style="text-align:center;">{{sale.subtotal}}</td>
+                                            <td style="text-align:center;">{{sale.net_payable}}</td>
                                             <td style="text-align:center;">{{sale.amount_recieved}}</td>
                                         </tr>
                                         {% endfor %}
@@ -277,9 +340,10 @@
                                             <td style="text-align:center;">{{sale.reference_number}}</td>
                                             <td>{{sale.customer.customer_name}}</td>
                                             <td style="text-align:center;">1</td>
-                                            <td style="text-align:center;">{{sale.net_amount}}</td>
-                                            <td style="text-align:center;">0</td>
+                                            <td style="text-align:center;">{{sale.display_coupon_rates}}</td>
+                                            {% comment %} <td style="text-align:center;">0</td> {% endcomment %}
                                             <td style="text-align:center;">{{sale.grand_total}}</td>
+                                            <td style="text-align:center;">{{sale.net_amount}}</td>
                                             <td style="text-align:center;">{{sale.amount_recieved}}</td>
                                         </tr>
                                     {% endfor %}  
@@ -287,10 +351,10 @@
                                     <!-- Table Footer -->
                                     <tfoot>
                                         <tr>
-                                            <td colspan="4" style="text-align: right;">Total:</td>
-                                            <td style="text-align:center;">{{ cash_total_net_taxable }}</td>
-                                            <td style="text-align:center;">{{ cash_total_vat }}</td>
+                                            <td colspan="5" style="text-align: right;">Total:</td>
+                                            {% comment %} <td style="text-align:center;">{{ cash_total_vat }}</td> {% endcomment %}
                                             <td style="text-align:center;">{{ cash_total_subtotal }}</td>
+                                            <td style="text-align:center;">{{ cash_total_net_taxable }}</td>
                                             <td style="text-align:center;">{{ cash_total_amount_recieved }}</td>
                                         </tr>
                                     </tfoot>
@@ -310,9 +374,10 @@
                                             <th style="text-align:center;" scope="col">Reference No</th>
                                             <th style="text-align:center;" scope="col">Customer Name</th>
                                             <th style="text-align:center;" scope="col">Total QTY</th>
-                                            <th style="text-align:center;" scope="col">Net taxable</th>
-                                            <th style="text-align:center;" scope="col">Vat</th>
+                                            <th style="text-align:center;" scope="col">Rate</th>
+                                            {% comment %} <th style="text-align:center;" scope="col">Vat</th> {% endcomment %}
                                             <th style="text-align:center;" scope="col">Grand Total</th>
+                                            <th style="text-align:center;" scope="col">Net Payable</th>
                                             <th style="text-align:center;" scope="col">Cash Recieved</th>
                                             
                                         </tr>
@@ -324,9 +389,10 @@
                                             <td style="text-align:center;">{{sale.reference_number}}</td>
                                             <td>{{sale.customer.customer_name}}</td>
                                             <td style="text-align:center;">{{sale.get_total_supply_qty}}</td>
-                                            <td style="text-align:center;">{{sale.net_payable}}</td>
-                                            <td style="text-align:center;">{{sale.vat}}</td>
+                                            <td style="text-align:center;">{{sale.customer.get_water_rate}}</td>
+                                            {% comment %} <td style="text-align:center;">{{sale.vat}}</td> {% endcomment %}
                                             <td style="text-align:center;">{{sale.subtotal}}</td>
+                                            <td style="text-align:center;">{{sale.net_payable}}</td>
                                             <td style="text-align:center;">{{sale.amount_recieved}}</td>
                                         </tr>
                                     {% endfor %} 
@@ -336,9 +402,10 @@
                                             <td style="text-align:center;">{{sale.reference_number}}</td>
                                             <td>{{sale.customer.customer_name}}</td>
                                             <td style="text-align:center;">1</td>
-                                            <td style="text-align:center;">{{sale.net_payable}}</td>
-                                            <td style="text-align:center;">{{sale.vat}}</td>
-                                            <td style="text-align:center;">{{sale.subtotal}}</td>
+                                            <td style="text-align:center;">{{sale.display_coupon_rates}}</td>
+                                            {% comment %} <td style="text-align:center;">0</td> {% endcomment %}
+                                            <td style="text-align:center;">{{sale.grand_total}}</td>
+                                            <td style="text-align:center;">{{sale.net_amount}}</td>
                                             <td style="text-align:center;">{{sale.amount_recieved}}</td>
                                         </tr>
                                     {% endfor %} 
@@ -346,10 +413,10 @@
                                     <!-- Table Footer -->
                                     <tfoot>
                                         <tr>
-                                            <td colspan="4" style="text-align: right;">Total:</td>
-                                            <td style="text-align:center;">{{ credit_total_net_taxable }}</td>
-                                            <td style="text-align:center;">{{ credit_total_vat }}</td>
+                                            <td colspan="5" style="text-align: right;">Total:</td>
+                                            {% comment %} <td style="text-align:center;">{{ credit_total_vat }}</td> {% endcomment %}
                                             <td style="text-align:center;">{{ credit_total_subtotal }}</td>
+                                            <td style="text-align:center;">{{ credit_total_net_taxable }}</td>
                                             <td style="text-align:center;">{{ credit_total_amount_recieved }}</td>
                                         </tr>
                                     </tfoot>
@@ -534,7 +601,6 @@
                                 </table>
                             </div>
                         </div>
-                    </div>
 
                     <div class="card-footer">
                         <div>

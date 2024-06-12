@@ -6,5 +6,5 @@ tags:
   - world
   - translate
   - global
-  - international
+  - interSana
 ---
