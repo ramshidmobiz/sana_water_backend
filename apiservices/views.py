@@ -5217,48 +5217,48 @@ class MarketShareAPI(APIView):
 
 class CustomerLoginApi(APIView):
     def post(self, request, *args, **kwargs):
-        try:
-            mobile_number = request.data.get('mobile_number')
-            password = request.data.get('password')
-            if (instances:=Customers.objects.filter(mobile_no=mobile_number)).exists():
-                username = instances.first().user_id.username
-                if username and password:
-                    user = authenticate(username=username, password=password)
-                    if user is not None:
-                        # if user.is_active:
-                        login(request, user)
-                        user_obj = CustomUser.objects.filter(username=username).first()
-                        token = generate_random_string(20)
-                        
-                        five_gallon = ProdutItemMaster.objects.get(product_name="5 Gallon")
-                        if instances.first().rate != None and int(instances.first().rate) > 0:
-                            water_rate = instances.first().rate
-                        else:
-                            water_rate = five_gallon.rate
-                            
-                        data = {
-                            'id': user_obj.id,
-                            'username': username,
-                            'user_type': user_obj.user_type,
-                            'sales_type': instances.first().sales_type,
-                            'water_rate': water_rate,
-                            'water_id': five_gallon.pk,
-                            'token': token
-                        }
-                        # else:
-                        #     return Response({'status': False, 'message': 'User Inactive!'})
-                        return Response({'status': True, 'data': data, 'message': 'Authenticated User!'})
+        # try:
+        mobile_number = request.data.get('mobile_number')
+        password = request.data.get('password')
+        if (instances:=Customers.objects.filter(mobile_no=mobile_number)).exists():
+            username = instances.first().user_id.username
+            if username and password:
+                user = authenticate(username=username, password=password)
+                if user is not None:
+                    # if user.is_active:
+                    login(request, user)
+                    user_obj = CustomUser.objects.filter(username=username).first()
+                    token = generate_random_string(20)
+                    
+                    five_gallon = ProdutItemMaster.objects.get(product_name="5 Gallon")
+                    if instances.first().rate != None and Decimal(instances.first().rate) > 0:
+                        water_rate = instances.first().rate
                     else:
-                        return Response({'status': False, 'message': 'Unauthenticated User!'})
+                        water_rate = five_gallon.rate
+                        
+                    data = {
+                        'id': user_obj.id,
+                        'username': username,
+                        'user_type': user_obj.user_type,
+                        'sales_type': instances.first().sales_type,
+                        'water_rate': water_rate,
+                        'water_id': five_gallon.pk,
+                        'token': token
+                    }
+                    # else:
+                    #     return Response({'status': False, 'message': 'User Inactive!'})
+                    return Response({'status': True, 'data': data, 'message': 'Authenticated User!'})
                 else:
                     return Response({'status': False, 'message': 'Unauthenticated User!'})
             else:
-                return Response({'status': False, 'message': 'This mobile Number not registered contact your salesman'})
-        except CustomUser.DoesNotExist:
-            return Response({'status': False, 'message': 'User does not exist!'})
-        except Exception as e:
-            print(f'Something went wrong: {e}')
-            return Response({'status': False, 'message': 'Something went wrong!'})
+                return Response({'status': False, 'message': 'Unauthenticated User!'})
+        else:
+            return Response({'status': False, 'message': 'This mobile Number not registered contact your salesman'})
+        # except CustomUser.DoesNotExist:
+        #     return Response({'status': False, 'message': 'User does not exist!'})
+        # except Exception as e:
+        #     print(f'Something went wrong: {e}')
+        #     return Response({'status': False, 'message': 'Something went wrong!'})
 
 class NextVisitDateAPI(APIView):
     authentication_classes = [BasicAuthentication]
