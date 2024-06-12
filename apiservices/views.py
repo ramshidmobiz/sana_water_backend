@@ -5611,9 +5611,8 @@ class DispensersAndCoolersPurchasesAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request, *args, **kwargs):
-        user_id = request.user.id
-        products = CustomerOrders.objects.filter(customer__customer_id=user_id,product__product_name__in=['Hot and  Cool', 'Dispenser'])
-        serializer = CustomerOrderSerializer(products, many=True)
+        products = CustomerOrders.objects.filter(product__product_name__in=['Hot and  Cool', 'Dispenser'])
+        serializer = CustomerOrdersSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 class CustomerCouponPurchaseView(APIView):
@@ -6137,3 +6136,11 @@ class EditCouponAPIView(APIView):
   
     
 #-----------------------------end offload--------------------------------    
+
+
+class CouponsProductsAPIView(APIView):
+    def get(self, request):
+        coupons_category = 'Coupons'
+        products = ProdutItemMaster.objects.filter(category__category_name=coupons_category)
+        serializer = CouponsProductsSerializer(products, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

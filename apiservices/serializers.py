@@ -1285,7 +1285,7 @@ class CustomerCouponPurchaseSerializer(serializers.ModelSerializer):
 
 class CustomerOrderSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Customer_Order
+        model = CustomerOrders
         fields = ['order_number', 'created_date', 'payment_option']
 
 class StockMovementProductsSerializer(serializers.ModelSerializer):
@@ -1461,3 +1461,7 @@ class CouponStockSerializer(serializers.ModelSerializer):
     class Meta:
         model = CouponStock
         fields = '__all__'    
+class CouponsProductsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProdutItemMaster
+        fields = ['product_name', 'rate']

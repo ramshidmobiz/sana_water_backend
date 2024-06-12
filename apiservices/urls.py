@@ -234,4 +234,5 @@ urlpatterns = [
     path('offload-coupons/', GetVanCouponBookNoAPIView.as_view(), name='offload-coupon-list'),
     path('edit-coupon/<str:pk>/', EditCouponAPIView.as_view(), name='edit-coupon'),
     
+    path('coupons-products/', CouponsProductsAPIView.as_view(), name='coupons_products'),
 ]
