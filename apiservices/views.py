@@ -1119,8 +1119,9 @@ class Customer_API(APIView):
                     first_name=request.data['customer_name'],
                     email=request.data['email_id'],
                     user_type='Customer')
+                
                 data=serializer.save(
-                    user_id=customer_data.id,
+                    user_id=customer_data,
                     custom_id = get_custom_id(Customers)
                     )
                 Staff_Day_of_Visit.objects.create(customer = data)
@@ -5612,7 +5613,7 @@ class DispensersAndCoolersPurchasesAPIView(APIView):
     
     def get(self, request, *args, **kwargs):
         products = CustomerOrders.objects.filter(product__product_name__in=['Hot and  Cool', 'Dispenser'])
-        serializer = CustomerOrdersSerializer(products, many=True)
+        serializer = CustomerOrderssSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 class CustomerCouponPurchaseView(APIView):

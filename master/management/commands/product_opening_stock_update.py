@@ -36,9 +36,6 @@ class Command(BaseCommand):
                     damage_count=yesterday_stock.damage_count,
                     empty_can_count=yesterday_stock.empty_can_count,
                     return_count=yesterday_stock.return_count,
-                    requested_count=yesterday_stock.requested_count,
-                    pending_count=yesterday_stock.pending_count,
-                    sold_count=yesterday_stock.sold_count,
                     stock=yesterday_stock.closing_count
                 )
                 self.stdout.write(self.style.SUCCESS(f'Created new stock entry for product {yesterday_stock.product.pk} in van {yesterday_stock.van.pk}'))

@@ -1269,7 +1269,7 @@ class CustomerOrdersSerializer(serializers.ModelSerializer):
         fields = ('id','product','quantity','total_amount','no_empty_bottle_return','empty_bottle_required','no_empty_bottle_required','empty_bottle_amount','total_net_amount','delivery_date','payment_option','order_status')
         read_only_fields = ('id','order_status')
         
-class CustomerOrderSerializer(serializers.ModelSerializer):
+class CustomerOrderssSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomerOrders
         fields = ['id', 'product', 'order_status', 'delivery_date']
@@ -1461,6 +1461,7 @@ class CouponStockSerializer(serializers.ModelSerializer):
     class Meta:
         model = CouponStock
         fields = '__all__'    
+        
 class CouponsProductsSerializer(serializers.ModelSerializer):
     leaf_count = serializers.SerializerMethodField()
     class Meta:
