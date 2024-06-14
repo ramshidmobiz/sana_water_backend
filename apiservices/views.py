@@ -5612,7 +5612,7 @@ class DispensersAndCoolersPurchasesAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request, *args, **kwargs):
-        products = CustomerOrders.objects.filter(product__product_name__in=['Hot and Cool', 'Dispenser'])
+        products = CustomerOrders.objects.filter(customer__user_id=request.user,product__product_name__in=['Hot and Cool', 'Dispenser'])
         serializer = CustomerOrderssSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
@@ -5621,13 +5621,11 @@ class CustomerCouponPurchaseView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        user_id = request.user.id
-        # print("user_id", user_id)
         coupon_category_products = ProdutItemMaster.objects.filter(category__category_name='Coupons')
         # print("coupon_category_products",coupon_category_products)
         coupon_product_ids = coupon_category_products.values_list('id', flat=True)
         # print("coupon_product_ids",coupon_product_ids)
-        customer_orders = CustomerOrders.objects.filter(customer__customer_id=user_id,product__in=coupon_product_ids)
+        customer_orders = CustomerOrders.objects.filter(customer__user_id=request.user,product__in=coupon_product_ids)
         print("customer_orders",customer_orders)
 
         serializer = CustomerCouponPurchaseSerializer(customer_orders, many=True)
@@ -5639,11 +5637,10 @@ class WaterBottlePurchaseAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request, *args, **kwargs):
-        customer_id = request.user.id  
-        print("customer_id",customer_id)        
-        customer_orders = CustomerOrders.objects.filter(customer__customer_id=customer_id)
+        customer_orders = CustomerOrders.objects.filter(customer__user_id=request.user,product__category__category_name='Water')
         serializer = CustomerOrderSerializer(customer_orders, many=True)        
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
 class CustodyCustomerView(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
