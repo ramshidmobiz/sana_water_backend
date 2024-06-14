@@ -3119,12 +3119,16 @@ def dsr_summary(request):
     balance_in_hand = 0
     net_payble = 0
     stock_report_total = 0
+    manual_coupon_total = 0
+    digital_coupon_total = 0
+    total_coupon_sales_count = 0
    
     van_instances = Van.objects.none
     van_route = Van_Routes.objects.none
     salesman_id =  ""
     cash_sales = CustomerSupply.objects.none
     credit_sales = CustomerSupply.objects.none
+    coupon_sales = CustomerSupply.objects.none
     recharge_cash_sales = CustomerCoupon.objects.none
     recharge_credit_sales = CustomerCoupon.objects.none
     products = ProdutItemMaster.objects.none
@@ -3218,7 +3222,14 @@ def dsr_summary(request):
         
         total_credit_sales_count = credit_sales.count() + recharge_credit_sales.count()
         
-        total_sales_count = total_cash_sales_count + total_credit_sales_count
+        # Coupon sales
+        coupon_sales = CustomerSupply.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CASH COUPON")
+        manual_coupon_total = CustomerSupplyCoupon.objects.filter(customer_supply__in=coupon_sales).aggregate(Count('leaf'))['leaf__count']
+        digital_coupon_total = CustomerSupplyDigitalCoupon.objects.filter(customer_supply__in=coupon_sales).aggregate(total_count=Sum('count'))['total_count'] or 0
+        
+        total_coupon_sales_count = coupon_sales.count()
+        
+        total_sales_count = total_cash_sales_count + total_credit_sales_count + total_coupon_sales_count
         
         
         ### expenses ####
@@ -3309,6 +3320,11 @@ def dsr_summary(request):
         'credit_total_vat':credit_total_vat,
         'credit_total_subtotal':credit_total_subtotal,
         'credit_total_amount_recieved': credit_total_amount_recieved,
+        # coupon sales
+        'coupon_sales': coupon_sales,
+        'manual_coupon_total':manual_coupon_total,
+        'digital_coupon_total':digital_coupon_total,
+        'total_coupon_sales_count': total_coupon_sales_count,
         # expenses
         'expenses_instanses': expenses_instanses,
         # suspense
@@ -3386,12 +3402,16 @@ def print_dsr_summary(request):
     balance_in_hand = 0
     net_payble = 0
     stock_report_total = 0
-    
+    manual_coupon_total = 0
+    digital_coupon_total = 0
+    total_coupon_sales_count = 0
+   
     van_instances = Van.objects.none
     van_route = Van_Routes.objects.none
     salesman_id =  ""
     cash_sales = CustomerSupply.objects.none
     credit_sales = CustomerSupply.objects.none
+    coupon_sales = CustomerSupply.objects.none
     recharge_cash_sales = CustomerCoupon.objects.none
     recharge_credit_sales = CustomerCoupon.objects.none
     products = ProdutItemMaster.objects.none
@@ -3402,6 +3422,7 @@ def print_dsr_summary(request):
     unique_amounts = CustomerCouponItems.objects.none
     dialy_collections = InvoiceDailyCollection.objects.none
     pending_bottle_customer_instances = CustomerSupply.objects.none
+    foc_customers = CustomerSupply.objects.none
     
     date = request.GET.get('date')
     route_name = request.GET.get('route_name')
@@ -3484,7 +3505,14 @@ def print_dsr_summary(request):
         
         total_credit_sales_count = credit_sales.count() + recharge_credit_sales.count()
         
-        total_sales_count = total_cash_sales_count + total_credit_sales_count
+        # Coupon sales
+        coupon_sales = CustomerSupply.objects.filter(created_date__date=date,salesman=salesman,customer__sales_type="CASH COUPON")
+        manual_coupon_total = CustomerSupplyCoupon.objects.filter(customer_supply__in=coupon_sales).aggregate(Count('leaf'))['leaf__count']
+        digital_coupon_total = CustomerSupplyDigitalCoupon.objects.filter(customer_supply__in=coupon_sales).aggregate(total_count=Sum('count'))['total_count'] or 0
+        
+        total_coupon_sales_count = coupon_sales.count()
+        
+        total_sales_count = total_cash_sales_count + total_credit_sales_count + total_coupon_sales_count
         
         
         ### expenses ####
@@ -3529,6 +3557,11 @@ def print_dsr_summary(request):
         balance_in_hand = total_sales_amount_collected - collected_cheque_amount - today_expense
         net_payble = total_sales_amount_collected - today_expense
         
+        
+        foc_customers = CustomerSupply.objects.filter(created_date__date=date, customer__sales_type='FOC', salesman=salesman)
+
+        
+        
     context = {
         'data_filter': data_filter,
         'salesman_id': salesman_id,
@@ -3570,6 +3603,11 @@ def print_dsr_summary(request):
         'credit_total_vat':credit_total_vat,
         'credit_total_subtotal':credit_total_subtotal,
         'credit_total_amount_recieved': credit_total_amount_recieved,
+        # coupon sales
+        'coupon_sales': coupon_sales,
+        'manual_coupon_total':manual_coupon_total,
+        'digital_coupon_total':digital_coupon_total,
+        'total_coupon_sales_count': total_coupon_sales_count,
         # expenses
         'expenses_instanses': expenses_instanses,
         # suspense
@@ -3594,6 +3632,8 @@ def print_dsr_summary(request):
         'total_sales_count': total_sales_count,
         'no_of_collected_cheque': no_of_collected_cheque,
         'collected_cheque_amount': collected_cheque_amount,
+        # FOC customer
+        'foc_customers':foc_customers,
         
         'balance_in_hand': balance_in_hand,
         'net_payble': net_payble,

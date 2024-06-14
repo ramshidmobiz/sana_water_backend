@@ -28,6 +28,8 @@ def get_van_product_wise_stock(date,van,product):
         else:
             date = datetime.today().date()
             
+        print(date)
+            
         van = Van.objects.get(pk=van)
         van_stock = VanProductStock.objects.get(created_date=date,van=van,product__pk=product)
             
@@ -57,7 +59,8 @@ def get_five_gallon_ratewise_count(rate,date,salesman):
     instances = CustomerSupplyItems.objects.filter(customer_supply__created_date__date=date,customer_supply__salesman_id=salesman,product__product_name="5 Gallon",customer_supply__customer__rate=rate)
     return {
         "debit_amount_count": instances.filter(customer_supply__customer__sales_type="CASH").aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0,
-        "credit_amount_count": instances.filter(customer_supply__customer__sales_type="CREDIT").aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+        "credit_amount_count": instances.filter(customer_supply__customer__sales_type="CREDIT").aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0,
+        "coupon_amount_count": instances.filter(customer_supply__customer__sales_type="CASH COUPON").aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
     }
     
 @register.simple_tag

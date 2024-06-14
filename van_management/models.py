@@ -170,7 +170,9 @@ class VanProductStock(models.Model):
         return f"{self.id}"
     
     def save(self, *args, **kwargs):
-        self.closing_count = self.stock
+        # offload_count = Offload.objects.filter(van=self.van,product=self.product,created_date__date=self.created_date).aggregate(total_count=Sum('quantity'))['total_count'] or 0
+        # if self.stock > 0:
+        self.closing_count = self.stock + self.empty_can_count + self.return_count
         
         super(VanProductStock, self).save(*args, **kwargs)
         
@@ -194,7 +196,7 @@ class VanCouponStock(models.Model):
         return f"{self.id}"
     
     def save(self, *args, **kwargs):
-        self.closing_count = self.stock
+        self.closing_count = self.stock + self.damage_count + self.return_count
         
         super(VanCouponStock, self).save(*args, **kwargs)
     

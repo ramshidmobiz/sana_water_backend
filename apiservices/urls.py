@@ -230,7 +230,7 @@ urlpatterns = [
     path('total_coupon_consumed/', CouponConsumedAPIView.as_view(), name='total_coupon_consumed'),
 
     path('offloads/', OffloadAPIView.as_view(), name='offload-list'),
-    path('edit-product/<str:pk>/', EditProductAPIView.as_view(), name='edit-product'),
+    path('edit-product/', EditProductAPIView.as_view(), name='edit-product'),
     path('offload-coupons/', GetVanCouponBookNoAPIView.as_view(), name='offload-coupon-list'),
     path('edit-coupon/<str:pk>/', EditCouponAPIView.as_view(), name='edit-coupon'),
     
