@@ -5972,7 +5972,7 @@ class EditProductAPIView(APIView):
                         
                         item.return_count -= (scrap_count + washing_count)
                         item.save()
-                    else:
+                    elif stock_type == "stock":
                         item.stock -= count
                         item.save()
                         

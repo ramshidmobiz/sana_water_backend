@@ -17,6 +17,7 @@ urlpatterns = [
     re_path(r'^edit-invoice/(?P<pk>.*)/$', views.edit_invoice, name='edit_invoice'),
     re_path(r'^delete-invoice/(?P<pk>.*)/$', views.delete_invoice, name='delete_invoice'),
     re_path(r'^customerwise-invoice/$', views.customerwise_invoice, name='customerwise_invoice'), 
+    re_path(r'^edit_customerwise_invoice/(?P<customer_id>.*)/$', views.edit_customerwise_invoice, name='edit_customerwise_invoice'), 
     re_path(r'^make-payment/$', views.make_payment, name='make_payment'),
 ]
 

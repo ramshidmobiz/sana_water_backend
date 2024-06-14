@@ -22,39 +22,7 @@
                         </div>
                     </div>
 
-                    <div class="" >
-                        <form method="get">
-                            <div class="row mt-3">
-                                <div class="row col-md-6">
-                                    <div class="col-md-3 col-form-label text-end">
-                                        <p>Customer</p>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <select name="customer_name"  class="form-select" style="width:100%">
-                                            <option value="" disabled {% if not selected_customer %}selected{% endif %}>-----------------------------</option>
-
-                                            {% if selected_customer %}
-                                                <option value="{{ selected_customer_id }}" selected>{{ selected_customer }}</option>
-                                            {% endif %}
-                                            {% for cust in invoices %}
-                                                <option value="{{ cust.customer.customer_name }}">{{ cust.customer.customer_name }}</option>
-                                            {% endfor %}
-                                        </select>
-                                        {% comment %} <select name="customer_name" class="form-select" style="width:100%">
-                                            <option value="" disabled {% if not selected_customer %}selected{% endif %}>-----------------------------</option>
-                                            {% for cust in invoices %}
-                                                <option value="{{ cust.customer.customer_name }}" {% if cust.customer.customer_name == selected_customer %}selected{% endif %}>{{ cust.customer.customer_name }}</option>
-                                            {% endfor %}
-                                        </select> {% endcomment %}
-                                    </div> 
-                                    <div class="col-md-5 text-end">
-                                        <input type="submit" class="btn btn-primary btn-sm" value="Apply Filter">
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick="resetFilters()">Reset Filter</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
+                    
                     
                     <div class="card-body">
                        
@@ -97,17 +65,20 @@
                         <form method="post" action="{% url 'invoice:make_payment' %}">
                             {% csrf_token %}
                             <div class="row mt-3">
-                                <div class="col-md-3">
-                                    <input type="hidden" name="customer_id" value="{{ selected_customer_id }}">
-                                    <label class='control-label'>Total Amount</label>
-                                    <input type="number" name="total_amount_total" value="{{total_amount_total}}" class="form-control">
+                                <div class="col-md-6">
+                                    
                                 </div>
-                                <div class="col-md-3">
+                               
+                                <div class="col-md-2">
+                                    <input type="hidden" name="customer_id" value="{{ selected_customer_id }}">
+                                    <label class='control-label'>Balance Amount</label>
+                                    <input type="number" name="total_balance_amount" value="{{total_balance_amount}}" class="form-control" readonly>
+                                </div>
+                                <div class="col-md-2">
                                     <label class='control-label'>Recieved Amount</label>
                                     <input type="number" name="payment_amount" class="form-control" placeholder="Enter Payment Amount" required>
                                 </div>
-                                <div class="col-md-3">
-                                    <label class='control-label' hidden>Recieved Amount</label>
+                                <div class="col-md-2 mt-3">
                                     <input type="submit" class="btn btn-primary" value="Make Payment">
                                 </div>
                             </div>

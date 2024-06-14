@@ -235,4 +235,5 @@ urlpatterns = [
     path('edit-coupon/<str:pk>/', EditCouponAPIView.as_view(), name='edit-coupon'),
     
     path('coupons-products/', CouponsProductsAPIView.as_view(), name='coupons_products'),
+    path('potential_buyers/', PotentialBuyersAPI.as_view(), name='potential_buyers'),
 ]

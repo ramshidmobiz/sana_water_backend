@@ -445,20 +445,39 @@ def invoice(request,pk):
     return render(request, 'invoice_management/invoice.html', context)
 
 @login_required
+
 def customerwise_invoice(request):
-    customer_name = request.GET.get('customer_name', '')
-    customers = Customers.objects.all()
     
-    selected_customer = None
-    selected_customer_id = None
-    
-    if customer_name:
-        customers = customers.filter(customer_name__icontains=customer_name)
-        if customers.exists():
-            selected_customer = customers.first().customer_name
-            selected_customer_id = customers.first().customer_id
-    
-    invoices = Invoice.objects.filter(customer__in=customers, invoice_status="non_paid",is_deleted=False).exclude(amout_total__lt=1)
+    invoices = Invoice.objects.filter( invoice_status="non_paid",is_deleted=False).exclude(amout_total__lt=1)
+    query = request.GET.get("q")
+    route_filter = request.GET.get('route_name')
+
+    if query:
+            invoices = invoices.filter(
+                Q(customer__customer_name__icontains=query) |
+                Q(customer__routes__route_name__icontains=query) 
+            )
+
+    if route_filter:
+            invoices = invoices.filter(customer__routes__route_name=route_filter)
+
+    route_li = RouteMaster.objects.all()
+    invoices = invoices.values(
+        'customer__customer_name',
+        'customer__routes__route_name',
+        'customer__customer_id'
+    ).distinct()
+
+    context = {
+        'route_li':route_li,
+        'invoices': invoices,
+        
+    }
+    return render(request, 'invoice_management/customerwiseinvoice_list.html', context)
+@login_required
+def edit_customerwise_invoice(request,customer_id):
+    print("customer_id",customer_id)
+    invoices = Invoice.objects.filter(customer__customer_id=customer_id, invoice_status="non_paid",is_deleted=False).exclude(amout_total__lt=1)
     total_amount_total = 0
     total_amount_received = 0
     total_balance_amount = 0
@@ -472,10 +491,7 @@ def customerwise_invoice(request):
            
            
     context = {
-        'customers': customers,
         'invoices': invoices,
-        'selected_customer': selected_customer,
-        'selected_customer_id': selected_customer_id,
         'total_amount_total': total_amount_total,
         'total_amount_received': total_amount_received,
         'total_balance_amount': total_balance_amount,
@@ -483,31 +499,35 @@ def customerwise_invoice(request):
     return render(request, 'invoice_management/customerwiseinvoice.html', context)
 
 from django.contrib import messages
-
 def make_payment(request):
-    if request.method == 'POST':
-        customer_id = request.POST.get('customer_id')
-        payment_amount = float(request.POST.get('payment_amount'))
-        
-        customer = get_object_or_404(Customers, pk=customer_id)
-        invoices = Invoice.objects.filter(customer=customer, invoice_status="non_paid", is_deleted=False).exclude(amout_total__lt=1).order_by('created_date')
+        if request.method == 'POST':
+            customer_id = request.POST.get('customer_id')
+            payment_amount = float(request.POST.get('payment_amount')) 
+            
+            customer = get_object_or_404(Customers, pk=customer_id)
+            invoices = Invoice.objects.filter(
+                customer=customer, 
+                invoice_status="non_paid", 
+                is_deleted=False
+            ).exclude(amout_total__lt=1).order_by('created_date')
 
-        with transaction.atomic():
-            for invoice in invoices:
-                balance_amount = invoice.amout_total - invoice.amout_recieved
-                if payment_amount > 0:
-                    if payment_amount >= balance_amount:
-                        invoice.amout_recieved += balance_amount
-                        invoice.invoice_status = "paid"
-                        payment_amount -= balance_amount
+            with transaction.atomic():
+                for invoice in invoices:
+                    balance_amount = float(invoice.amout_total) - float(invoice.amout_recieved)  
+                    if payment_amount > 0:
+                        if payment_amount >= balance_amount:
+                            invoice.amout_recieved = float(invoice.amout_recieved) + balance_amount 
+                            invoice.invoice_status = "paid"
+                            payment_amount -= balance_amount
+                        else:
+                            invoice.amout_recieved = float(invoice.amout_recieved) + payment_amount  
+                            payment_amount = 0
+                        invoice.save()
                     else:
-                        invoice.amout_recieved += payment_amount
-                        payment_amount = 0
-                    invoice.save()
-                else:
-                    break
-        
-        messages.success(request, 'Payment applied successfully!')
-        return redirect('invoice:customerwise_invoice')
+                        break
+            
+            messages.success(request, 'Payment applied successfully!')
+            return redirect('invoice:customerwise_invoice')
 
-    return redirect('invoice:customerwise_invoice')
+        return redirect('invoice:customerwise_invoice')
+    
