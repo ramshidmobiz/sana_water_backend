@@ -534,10 +534,12 @@ def visit_days_assign(request, customer_id):
 
         if visit_schedule_data is not None:
             if isinstance(visit_schedule_data, str):
-                visit_schedule_data = json.loads(visit_schedule_data)
+                visit_schedule_data = visit_schedule_data
         else:
             visit_schedule_data = {}  # Initialize an empty dictionary if it's None
-
+            
+        print(visit_schedule_data)
+        
     except Customers.DoesNotExist:
         messages.error(request, 'Customer does not exist.')
         return redirect('customers')
@@ -559,6 +561,8 @@ def visit_days_assign(request, customer_id):
                 visit_schedule_data[day] = [",".join(visit_schedule_data[day])]
             else:
                 visit_schedule_data[day] = [""]
+                
+        print(visit_schedule_data)
 
         # Save the JSON data to the database field
         customer_data.visit_schedule = visit_schedule_data

@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load accounts_templatetags %}
 {% block content %}
 <div class="page-header-breadcrumb d-md-flex d-block align-items-center justify-content-between ">
     <h4 class="fw-medium mb-0">Mark Customer Visit Days for {{customer_data.customer_name}}</h4>
@@ -82,7 +83,8 @@
                             <div class="col-md-12 d-flex">
                                 {% for day in days_of_week %}
                                 <label class="d-flex m-2 p-2 text-center" style="height:70px;align-items: center;border: 1px solid rgb(128,128,128); border-radius: 6px">
-                                    <input type="checkbox" class="week-checkbox m-2" name="Week{{ week_number }}[]" value="{{ day }}"> {{ day }}
+                                    <input type="checkbox" class="week-checkbox m-2" name="Week{{ week_number }}[]" value="{{ day }}">
+                                    {{ day }}
                                 </label><br>
                                 {% endfor %}
                             </div>
@@ -91,6 +93,7 @@
                     {% endfor %}
                 </div>
             </div>
+            
             <div class="row">
                 <div class="col-12 text-end mt-5">
                     <input type="submit" class="btn btn-primary me-2 mb-2" value="Submit">
@@ -110,15 +113,24 @@
 {% load static %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        var visitScheduleData = {{ visit_schedule_data|safe }};
-        for (var weekNumber = 1; weekNumber <= 4; weekNumber++) {
-            var weekData = visitScheduleData['week' + weekNumber];
-            for (var i = 0; i < weekData.length; i++) {
-                var day = weekData[i];
-                $('input[name="week' + weekNumber + '[]"][value="' + day + '"]').prop('checked', true);
-            }
-        }
-    });    
+        // Replace with the actual JSON data from Django template context
+        var visit_schedule_data = {{ visit_schedule_data|safe }};
+        
+        // Check checkboxes based on visit_schedule_data
+        Object.keys(visit_schedule_data).forEach(day => {
+            visit_schedule_data[day].forEach(week => {
+                const weeks = week.split(','); // Split weeks if there are multiple
+                weeks.forEach(weekNumber => {
+                    const trimmedWeekNumber = weekNumber.trim().replace('Week', ''); // Trim and remove 'Week' prefix
+                    const checkbox = document.querySelector(`input[name="Week${trimmedWeekNumber}[]"][value="${day}"]`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                    }
+                });
+            });
+        });
+    });
+    
 </script>
 {% endblock static %}
 

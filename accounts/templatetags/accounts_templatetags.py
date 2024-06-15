@@ -38,3 +38,8 @@ def bottle_stock(customer_pk):
     return total_bottle_count
 
 
+@register.filter
+def get_item(dictionary, key):
+    return dictionary.get(key)
+
+
