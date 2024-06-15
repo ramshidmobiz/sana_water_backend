@@ -111,11 +111,18 @@ class Customers(models.Model):
         return str(self.customer_name)
     
     def get_water_rate(self):
-        if int(self.rate) > 0 :
-            rate = self.rate
+        from decimal import Decimal
+
+        if Decimal(self.rate) > 0:
+            rate = Decimal(self.rate)
         else:
-            rate = ProdutItemMaster.objects.get(product_name="5 Gallon").rate
-        return str(rate)
+            rate = Decimal(ProdutItemMaster.objects.get(product_name="5 Gallon").rate)
+        return rate
+        # if int(self.rate) > 0 :
+        #     rate = self.rate
+        # else:
+        #     rate = ProdutItemMaster.objects.get(product_name="5 Gallon").rate
+        # return rate
 
 class Staff_Day_of_Visit(models.Model):
     visit_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

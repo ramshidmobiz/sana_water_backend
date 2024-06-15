@@ -34,4 +34,40 @@ class Create_Customers_Serializers(serializers.ModelSerializer):
         model = Customers
         fields = '__all__'
 
+
+class VisitScheduleSerializer(serializers.Serializer):
+    week1 = serializers.ListField(
+        child=serializers.ChoiceField(choices=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]),
+        required=False
+    )
+    week2 = serializers.ListField(
+        child=serializers.ChoiceField(choices=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]),
+        required=False
+    )
+    week3 = serializers.ListField(
+        child=serializers.ChoiceField(choices=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]),
+        required=False
+    )
+    week4 = serializers.ListField(
+        child=serializers.ChoiceField(choices=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]),
+        required=False
+    )
+    
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        visit_schedule = {day: [] for day in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]}
+
+        for week_number in ["week1", "week2", "week3", "week4"]:
+            days = data.get(week_number, [])
+            for day in days:
+                visit_schedule[day].append(week_number.capitalize())
+
+        for day, weeks in visit_schedule.items():
+            if not weeks:
+                visit_schedule[day] = [""]
+            else:
+                visit_schedule[day] = [",".join(weeks)]
+
+        return visit_schedule
+
         

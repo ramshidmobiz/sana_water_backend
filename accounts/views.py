@@ -473,43 +473,95 @@ def customer_list_excel(request):
 #     return render(request,template_name ,context)
 
 
+# def visit_days_assign(request, customer_id):
+#     template_name = 'accounts/assign_dayof_visit.html'
+    
+#     try:
+#         customer_data = Customers.objects.get(customer_id=customer_id)
+#         visit_schedule_data = customer_data.visit_schedule
+        
+#         if visit_schedule_data is not None:
+#             if isinstance(visit_schedule_data, str):
+#                 visit_schedule_data = json.loads(visit_schedule_data)
+#                 print(visit_schedule_data)
+#             else:
+#                 print("Visit schedule data is already a dictionary.")
+#                 # Handle the case where visit_schedule_data is already a dictionary
+            
+#         else:
+#             print("Visit schedule data is None.")
+#     except Customers.DoesNotExist:
+#         messages.error(request, 'Customer does not exist.')
+#         return redirect('customers')
+    
+#     if request.method == 'POST':
+#         visit_schedule_data = {}
+#         for week_number in "1234":
+#             selected_days = []
+#             for day in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]:
+#                 checkbox_name = f'week{week_number}[]'
+#                 if checkbox_name in request.POST:
+#                     if day in request.POST.getlist(checkbox_name):
+#                         selected_days.append(day)
+#             visit_schedule_data["week" + week_number] = selected_days
+
+#         # Convert the dictionary to JSON
+#         visit_schedule_json = json.dumps(visit_schedule_data)
+
+#         # Save the JSON data to the database field
+#         customer_data.visit_schedule = visit_schedule_json
+#         customer_data.save()
+
+#         messages.success(request, 'Visit schedule updated successfully!')
+#         return redirect('customers')
+    
+#     # Render the form if it's a GET request
+#     context = {
+#         "customer_data": customer_data,
+#         "visit_schedule_data": visit_schedule_data
+#     }
+#     return render(request, template_name, context)
+
+
 def visit_days_assign(request, customer_id):
     template_name = 'accounts/assign_dayof_visit.html'
+    
+    days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     
     try:
         customer_data = Customers.objects.get(customer_id=customer_id)
         visit_schedule_data = customer_data.visit_schedule
-        
+
         if visit_schedule_data is not None:
             if isinstance(visit_schedule_data, str):
                 visit_schedule_data = json.loads(visit_schedule_data)
-                print(visit_schedule_data)
-            else:
-                print("Visit schedule data is already a dictionary.")
-                # Handle the case where visit_schedule_data is already a dictionary
-            
         else:
-            print("Visit schedule data is None.")
+            visit_schedule_data = {}  # Initialize an empty dictionary if it's None
+
     except Customers.DoesNotExist:
         messages.error(request, 'Customer does not exist.')
         return redirect('customers')
     
     if request.method == 'POST':
-        visit_schedule_data = {}
-        for week_number in "1234":
-            selected_days = []
-            for day in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]:
-                checkbox_name = f'week{week_number}[]'
-                if checkbox_name in request.POST:
-                    if day in request.POST.getlist(checkbox_name):
-                        selected_days.append(day)
-            visit_schedule_data["week" + week_number] = selected_days
+        # Initialize an empty dictionary to store the new visit schedule data
+        visit_schedule_data = {day: [] for day in days_of_week}
 
-        # Convert the dictionary to JSON
-        visit_schedule_json = json.dumps(visit_schedule_data)
+        # Iterate over the days of the week and update the dictionary based on the POST data
+        for week_number in "1234":
+            week_key = f"Week{week_number}[]"
+            selected_days = request.POST.getlist(week_key)
+            for day in selected_days:
+                visit_schedule_data[day].append(f"Week{week_number}")
+                
+        # Convert lists to comma-separated strings and handle empty lists
+        for day in days_of_week:
+            if visit_schedule_data[day]:
+                visit_schedule_data[day] = [",".join(visit_schedule_data[day])]
+            else:
+                visit_schedule_data[day] = [""]
 
         # Save the JSON data to the database field
-        customer_data.visit_schedule = visit_schedule_json
+        customer_data.visit_schedule = visit_schedule_data
         customer_data.save()
 
         messages.success(request, 'Visit schedule updated successfully!')
@@ -518,6 +570,7 @@ def visit_days_assign(request, customer_id):
     # Render the form if it's a GET request
     context = {
         "customer_data": customer_data,
-        "visit_schedule_data": visit_schedule_data
+        "visit_schedule_data": visit_schedule_data,
+        "days_of_week": days_of_week
     }
     return render(request, template_name, context)

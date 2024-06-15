@@ -80,18 +80,15 @@
                         </div>
                         <div class="card-body row g-3">
                             <div class="col-md-12 d-flex">
-                                <label class="d-flex m-2 p-2 text-center" style="height:70px;align-items: center;border: 1px solid rgb(128,128,128); border-radius: 6px"><input type="checkbox" class="week-checkbox m-2" name="week{{ week_number }}[]" value="Monday"> Monday</label><br>
-                                <label class="d-flex m-2 p-2 text-center" style="height:70px;align-items: center;border: 1px solid rgb(128,128,128); border-radius: 6px"><input type="checkbox" class="week-checkbox m-2" name="week{{ week_number }}[]" value="Tuesday"> Tuesday</label><br>
-                                <label class="d-flex m-2 p-2 text-center" style="height:70px;align-items: center;border: 1px solid rgb(128,128,128); border-radius: 6px"><input type="checkbox" class="week-checkbox m-2" name="week{{ week_number }}[]" value="Wednesday"> Wednesday</label><br>
-                                <label class="d-flex m-2 p-2 text-center" style="height:70px;align-items: center;border: 1px solid rgb(128,128,128); border-radius: 6px"><input type="checkbox" class="week-checkbox m-2" name="week{{ week_number }}[]" value="Thursday"> Thursday</label><br>
-                                <label class="d-flex m-2 p-2 text-center" style="height:70px;align-items: center;border: 1px solid rgb(128,128,128); border-radius: 6px"><input type="checkbox" class="week-checkbox m-2" name="week{{ week_number }}[]" value="Friday"> Friday</label><br>
-                                <label class="d-flex m-2 p-2 text-center" style="height:70px;align-items: center;border: 1px solid rgb(128,128,128); border-radius: 6px"><input type="checkbox" class="week-checkbox m-2" name="week{{ week_number }}[]" value="Saturday"> Saturday</label><br>
-                                <label class="d-flex m-2 p-2 text-center" style="height:70px;align-items: center;border: 1px solid rgb(128,128,128); border-radius: 6px"><input type="checkbox" class="week-checkbox m-2" name="week{{ week_number }}[]" value="Sunday"> Sunday</label><br>
+                                {% for day in days_of_week %}
+                                <label class="d-flex m-2 p-2 text-center" style="height:70px;align-items: center;border: 1px solid rgb(128,128,128); border-radius: 6px">
+                                    <input type="checkbox" class="week-checkbox m-2" name="Week{{ week_number }}[]" value="{{ day }}"> {{ day }}
+                                </label><br>
+                                {% endfor %}
                             </div>
                         </div>
                     </div>
-                {% endfor %}
-
+                    {% endfor %}
                 </div>
             </div>
             <div class="row">
