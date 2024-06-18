@@ -670,7 +670,7 @@
                     <!-- End::header-element -->
 
                     <!-- Start::header-element -->
-                    <div class="header-element notifications-dropdown ">
+                    {% comment %} <div class="header-element notifications-dropdown ">
                         <!-- Start::header-link|dropdown-toggle -->
                         <a href="javascript:void(0);" class="header-link dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside" id="messageDropdown" aria-expanded="false">
                              <i class="bx bx-bell bx-flip-horizontal header-link-icon ionicon"></i>
@@ -792,20 +792,20 @@
                             </div>
                         </div>
                         <!-- End::main-header-dropdown -->
-                    </div>
+                    </div> {% endcomment %}
                     <!-- End::header-element -->
-                    <div class="header-element d-flex header-settings header-shortcuts-dropdown">
+                    {% comment %} <div class="header-element d-flex header-settings header-shortcuts-dropdown">
                         <a aria-label="anchor" href="javascript:void(0);" class=" header-link nav-link icon" data-bs-toggle="offcanvas" data-bs-target="#apps" aria-controls="apps">
                          <i class="bx bx-category  header-link-icon"></i>
                         </a>
-                     </div>
+                     </div> {% endcomment %}
 
-                    <div class="offcanvas offcanvas-end wd-330" tabindex="-1" id="apps" aria-labelledby="appsLabel">
+                    {% comment %} <div class="offcanvas offcanvas-end wd-330" tabindex="-1" id="apps" aria-labelledby="appsLabel">
                     <div class="offcanvas-header border-bottom">
                         <h5 id="appsLabel" class="mb-0 fs-18">Related Apps</h5>
                         <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"> <i class="bx bx-x   apps-btn-close"></i></button>
-                    </div>
-                    <div class="p-3">
+                    </div> {% endcomment %}
+                    {% comment %} <div class="p-3">
                         <div class="row g-3">
                             <div class="col-6">
                                     <a href="full-calendar.html">
@@ -869,26 +869,26 @@
                             </div>
                         </div>
                     </div>
-                    </div>
+                    </div> {% endcomment %}
                     <!-- Start::header-element -->
 
                     <!-- Start::header-element -->
-                    <div class="header-element header-fullscreen">
+                    {% comment %} <div class="header-element header-fullscreen">
                         <!-- Start::header-link -->
                         <a aria-label="anchor" onclick="openFullscreen();" href="javascript:void(0);" class="header-link">
                                 <i class="bx bx-fullscreen header-link-icon  full-screen-open"></i>
                                 <i class="bx bx-exit-fullscreen header-link-icon  full-screen-close  d-none"></i>
                            </a>
                         <!-- End::header-link -->
-                    </div>
+                    </div> {% endcomment %}
                     <!-- End::header-element -->
 
                      <!-- Start::header-element -->
-                     <div class="header-element d-flex header-settings">
+                     {% comment %} <div class="header-element d-flex header-settings">
                         <a aria-label="anchor"  href="javascript:void(0);" class=" header-link nav-link icon me-1" data-bs-toggle="offcanvas" data-bs-target="#sidebar-right" aria-controls="sidebar-right">
                          <i class="bx bx-slider header-link-icon"></i>
                         </a>
-                     </div>
+                     </div> {% endcomment %}
                    <!-- End::header-element -->
 
                     <!-- Start::header-element -->
@@ -906,23 +906,23 @@
                         </a>
                         <!-- End::header-link|dropdown-toggle -->
                         <ul class="dropdown-menu  border-0 main-header-dropdown  overflow-hidden header-profile-dropdown" aria-labelledby="mainHeaderProfile">
-                            <li><a class="dropdown-item border-bottom" href="profile.html"><i class="fs-13 me-2 bx bx-user"></i>Profile</a></li>
-                            <li><a class="dropdown-item border-bottom" href="mail.html"><i class="fs-13 me-2 bx bx-comment"></i>Message</a></li>
-                            <li><a class="dropdown-item border-bottom" href="mail-settings.html"><i class="fs-13 me-2 bx bx-cog"></i>Settings</a></li>
-                            <li><a class="dropdown-item border-bottom" href="faq's.html"><i class="fs-13 me-2 bx bx-help-circle"></i>Help</a></li>
+                            {% comment %} <li><a class="dropdown-item border-bottom" href="profile.html"><i class="fs-13 me-2 bx bx-user"></i>Profile</a></li> {% endcomment %}
+                            {% comment %} <li><a class="dropdown-item border-bottom" href="mail.html"><i class="fs-13 me-2 bx bx-comment"></i>Message</a></li> {% endcomment %}
+                            {% comment %} <li><a class="dropdown-item border-bottom" href="mail-settings.html"><i class="fs-13 me-2 bx bx-cog"></i>Settings</a></li> {% endcomment %}
+                            {% comment %} <li><a class="dropdown-item border-bottom" href="faq's.html"><i class="fs-13 me-2 bx bx-help-circle"></i>Help</a></li> {% endcomment %}
                             <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="fs-13 me-2 bx bx-arrow-to-right"></i>Log Out</a></li>
                         </ul>
                     </div>
                     <!-- End::header-element -->
 
                     <!-- Start::header-element -->
-                    <div class="header-element">
+                    {% comment %} <div class="header-element">
                         <!-- Start::header-link|switcher-icon -->
                         <a aria-label="anchor" href="javascript:void(0);" class="header-link switcher-icon ms-1" data-bs-toggle="offcanvas" data-bs-target="#switcher-canvas">
                              <i class="bx bx-cog bx-spin header-link-icon"></i>
                           </a>
                         <!-- End::header-link|switcher-icon -->
-                    </div>
+                    </div> {% endcomment %}
                     <!-- End::header-element -->
 
                 </div>
@@ -1032,7 +1032,7 @@
                                 <li class="slide side-menu__label1">
                                     <a href="javascript:void(0)"></a>
                                 </li>
-                                <li class="slide">
+                                {% comment %} <li class="slide">
                                     <a href="{% url 'sale_entry_log_view' %}" class="side-menu__item">Create Purchase Order</a>
                                 </li>
                                 <li class="slide">
@@ -1046,13 +1046,13 @@
                                 </li>
                                 <li class="slide">
                                     <a href="{% url 'coupon_sale' %}" class="side-menu__item">Create Coupon Sale</a>
-                                </li>
+                                </li> {% endcomment %}
 				                <li class="slide">
                                     <a href="{% url 'staff_issue_orders_list' %}" class="side-menu__item">Orders</a>
                                 </li>
-                                <li class="slide">
+                                {% comment %} <li class="slide">
                                     <a href="{% url 'salesreport' %}" class="side-menu__item">Sales Report</a>
-                                </li>
+                                </li> {% endcomment %}
                                 <li class="slide">
                                     <a href="{% url 'collectionreport' %}" class="side-menu__item">Periodic Collection Report</a>
                                 </li>
@@ -1063,7 +1063,7 @@
                                     <a href="{% url 'product_route_salesreport' %}" class="side-menu__item">Product Wise Sales Report</a>
                                 </li>
                                 <li class="slide">
-                                    <a href="{% url 'customerSales_report' %}" class="side-menu__item">New Sales Report</a>
+                                    <a href="{% url 'customerSales_report' %}" class="side-menu__item">Sales Report</a>
                                 </li>
                                 {% comment %} <li class="slide">
                                     <a href="{% url 'suspense_report' %}" class="side-menu__item">Suspense Report</a>
@@ -1083,7 +1083,7 @@
                                 <li class="slide side-menu__label1">
                                     <a href="javascript:void(0)"></a>
                                 </li>
-                                <li class="slide">
+                                {% comment %} <li class="slide">
                                     <a href="{%url 'visitstatistics_report'%}" class="side-menu__item">DSR Visit statistics</a>
                                 </li>
                                 <li class="slide">
@@ -1106,7 +1106,7 @@
                                 </li>
                                 <li class="slide">
                                     <a href="" class="side-menu__item">DSR Expence</a>
-                                </li>
+                                </li> {% endcomment %}
                                  <li class="slide">
                                     <a href="{% url 'suspense_report' %}" class="side-menu__item">DSR Suspence</a>
                                 </li>

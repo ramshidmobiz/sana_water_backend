@@ -15,7 +15,6 @@ from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.hashers import make_password, check_password
 from .models import *
 
-
 from . serializers import *
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -23,6 +22,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authentication import BasicAuthentication 
 from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import render, redirect, get_object_or_404
+
 
 
 # Create your views here.
@@ -115,7 +116,19 @@ class Branch_Details(View):
         branch_det = BranchMaster.objects.get(branch_id=pk)
         context = {'branch_det': branch_det}
         return render(request, self.template_name, context)    
+class Branch_Delete(View):
 
+    def get(self, request, pk, *args, **kwargs):
+        rec = get_object_or_404(BranchMaster, branch_id=pk)
+        return render(request, 'master/branch_delete.html', {'branch': rec})
+    
+    def post(self, request, pk, *args, **kwargs):
+        rec = get_object_or_404(BranchMaster, branch_id=pk)
+        rec.delete()
+        messages.success(request, 'Route Deleted Successfully', 'alert-success')
+        return redirect('branch')    
+
+   
 class Route_List(View):
     template_name = 'master/route_list.html'
 
@@ -192,7 +205,20 @@ class Route_Details(View):
     def get(self, request, pk, *args, **kwargs):
         route_det = RouteMaster.objects.get(route_id=pk)
         context = {'route_det': route_det}
-        return render(request, self.template_name, context)    
+        return render(request, self.template_name, context)  
+
+class Route_Delete(View):
+
+    def get(self, request, pk, *args, **kwargs):
+        rec = get_object_or_404(RouteMaster, route_id=pk)
+        return render(request, 'master/route_delete.html', {'route': rec})
+    
+    def post(self, request, pk, *args, **kwargs):
+        rec = get_object_or_404(RouteMaster, route_id=pk)
+        rec.delete()
+        messages.success(request, 'Route Deleted Successfully', 'alert-success')
+        return redirect('route')
+  
 
 class Designation_List(View):
     template_name = 'master/designation_list.html'
@@ -266,7 +292,20 @@ class Designation_Details(View):
         designation_det = DesignationMaster.objects.get(designation_id=pk)
         context = {'designation_det': designation_det}
         return render(request, self.template_name, context)
-    
+ 
+class Designation_Delete(View):
+    @method_decorator(login_required)
+    def get(self, request, pk, *args, **kwargs):
+        del_designation = get_object_or_404(DesignationMaster, designation_id=pk)
+        return render(request, 'master/designation_delete.html', {'del': del_designation})
+
+    @method_decorator(login_required)
+    def post(self, request, pk, *args, **kwargs):
+        designation_del = get_object_or_404(DesignationMaster, designation_id=pk)
+        designation_del.delete()
+        messages.success(request, 'Designation Successfully Deleted.', 'alert-success')
+        return redirect('designation')
+       
 def branch(request):
     context = {}
     return render(request, 'master/branch_list.html',context)

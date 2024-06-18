@@ -34,18 +34,18 @@
                         <table id="datatable-basic" class="table table-bordered text-nowrap" style="width: 100%">
                             <thead>
                                 <tr>
-                                    <th scope="col">Sl No</th>
-                                    <th scope="col">Emirate</th>
-                                    <th scope="col">Location</th>
-                                    <th scope="col">Action</th>
+                                    <th style="text-align:center !important;width:5%;" scope="col">Sl No</th>
+                                    <th style="text-align:center !important;" scope="col">Emirate</th>
+                                    <th style="text-align:center !important;" scope="col">Location</th>
+                                    <th style="text-align:center !important;" scope="col">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for location in location_li %}
                                 <tr>
-                                    <td>{{ forloop.counter }}</td>
-                                    <td>{{ location.emirate }}</td>
-                                    <td>{{ location.location_name }}</td>
+                                    <td style="text-align:right;">{{ forloop.counter }}</td>
+                                    <td style="text-align:left;">{{ location.emirate }}</td>
+                                    <td style="text-align:left;">{{ location.location_name }}</td>
                                     <td>
                                         <div class="g-2">
                                             <a href="{% url 'location_edit' location.location_id %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Edit">

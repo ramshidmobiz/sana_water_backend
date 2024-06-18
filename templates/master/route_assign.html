@@ -34,12 +34,12 @@
                                 <table id="datatable-basic" class="table table-bordered text-nowrap" style="width: 100%">
                                     <thead>
                                         <tr>
-                                            <th scope="col">Sl No</th>
-                                            <th scope="col">Plate</th>
-                                            <th scope="col">Driver</th>
-                                            <th scope="col">Salesman</th>
-                                            <th scope="col">Route</th>
-                                            <th scope="col">Actions</th>
+                                            <th style="text-align:center;" scope="col">Sl No</th>
+                                            <th style="text-align:center;" scope="col">Plate</th>
+                                            <th style="text-align:center;" scope="col">Driver</th>
+                                            <th style="text-align:center;" scope="col">Salesman</th>
+                                            <th style="text-align:center;" scope="col">Route</th>
+                                            <th style="text-align:center;" scope="col">Actions</th>
                                             
                                         </tr>
                                     </thead>
@@ -47,11 +47,11 @@
                                         
                                         {% for van_route in van_routes_data %}
                                             <tr>
-                                                <td>{{ forloop.counter }}</td>
-                                                <td>{{van_route.van.plate}}</td>
-                                                <td>{{van_route.van.driver}}</td>
-                                                <td>{{van_route.van.salesman}}</td>
-                                                <td>{{van_route.routes}}</td>
+                                                <td style="text-align:right;">{{ forloop.counter }}</td>
+                                                <td style="text-align:right;">{{van_route.van.plate}}</td>
+                                                <td style="text-align:left;">{{van_route.van.driver}}</td>
+                                                <td style="text-align:let;">{{van_route.van.salesman}}</td>
+                                                <td style="text-align:left;">{{van_route.routes}}</td>
 
                                                 <td>
                                                     <div class="g-2">

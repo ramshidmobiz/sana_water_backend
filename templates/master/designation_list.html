@@ -41,9 +41,9 @@
                                 <table id="responsiveDataTable" class="table table-bordered text-nowrap" style="width:100%">
                                     <thead>
                                         <tr>
-                                            <th scope="col">Sl.No</th>
-                                            <th scope="col">Designation</th>
-                                            <th scope="col">Actions</th>
+                                            <th style="text-align:center !important;width:5%;">Sl.No</th>
+                                            <th style="text-align:center !important;" scope="col">Designation</th>
+                                            <th style="text-align:center !important;" scope="col">Actions</th>
                                             
                                         </tr>
                                     </thead>
@@ -60,7 +60,7 @@
                                                     <a href="{% url 'designation_edit' data.designation_id %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Edit">
                                                         <span class="ri-pencil-line fs-14"></span>
                                                     </a>
-                                                    <a aria-label="anchor" class="btn btn-danger-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Delete">
+                                                    <a href="{% url 'designation_delete' data.designation_id %}" aria-label="anchor" class="btn btn-danger-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Delete">
                                                         <span class="ri-delete-bin-7-line fs-14"></span>
                                                     </a>
                                             </div>

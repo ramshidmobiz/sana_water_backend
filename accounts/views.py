@@ -138,7 +138,18 @@ class User_Details(View):
         context = {'user_det': user_det}
         return render(request, self.template_name, context)  
     
+class User_Delete(View):
+    @method_decorator(login_required)
+    def get(self, request, pk, *args, **kwargs):
+        user = get_object_or_404(CustomUser, id=pk)
+        return render(request, 'accounts/user_delete.html', {'user': user})
 
+    @method_decorator(login_required)
+    def post(self, request, pk, *args, **kwargs):
+        user = get_object_or_404(CustomUser, id=pk)
+        user.delete()
+        messages.success(request, 'User Successfully Deleted.', 'alert-success')
+        return redirect('users')
 # class Customer_List(View):
 #     template_name = 'accounts/customer_list.html'
 
