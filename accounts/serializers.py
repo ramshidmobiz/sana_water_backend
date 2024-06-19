@@ -24,10 +24,16 @@ class CustomersSerializers(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_location(self, obj):
-        return obj.location.pk
+        location_id=""
+        if obj.location:
+            location_id=obj.location.pk
+        return location_id
     
     def get_location_name(self, obj):
-        return obj.location.location_name
+        location_name=""
+        if obj.location:
+            location_name=obj.location.location_name
+        return location_name
         
 class Create_Customers_Serializers(serializers.ModelSerializer):
     class Meta :
