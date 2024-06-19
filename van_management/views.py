@@ -519,10 +519,13 @@ def find_customers(request, def_date, route_id):
                     
         # List to store trip-wise customer details
         trip_customers = []
+        location_name = ""
         for trip in trips:
             for building in trips[trip]:
                 for customer in todays_customers:
-                    if customer.building_name ==building:
+                    if customer.building_name == building:
+                        if customer.location :
+                            location_name = customer.location.location_name
                         trip_customer = {
                             "customer_name" : customer.customer_name,
                             "mobile":customer.mobile_no,
@@ -530,7 +533,7 @@ def find_customers(request, def_date, route_id):
                             "building":customer.building_name,
                             "route" : customer.routes.route_name,
                             "no_of_bottles": customer.no_of_bottles_required,
-                            "location" : customer.location.location_name,
+                            "location" : location_name,
                             "building": customer.building_name,
                             "door_house_no": customer.door_house_no,
                             "floor_no": customer.floor_no,
