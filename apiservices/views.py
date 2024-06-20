@@ -1103,69 +1103,71 @@ class UserSignUpView(APIView):
 
 class Customer_API(APIView):
     serializer_class = CustomersSerializers
-    permission_classes=[IsAuthenticated]
-    authentication_classes=[BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [BasicAuthentication]
 
-    def get(self,request,id=None):
+    def get(self, request, id=None):
         try:
-            if id :
-                queryset=Customers.objects.get(customer_id=id)
-                serializer=CustomersSerializers(queryset)
-                return Response(serializer.data)
-            queryset= Customers.objects.all()
-            serializer= CustomersSerializers(queryset,many=True)
-            return Response(serializer.data)
+            if id:
+                queryset = Customers.objects.get(customer_id=id)
+                serializer = CustomersSerializers(queryset)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            queryset = Customers.objects.all()
+            serializer = CustomersSerializers(queryset, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Customers.DoesNotExist:
+            return Response({'status': False, 'message': 'Customer not found!'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             print(e)
-            return Response({'status': False, 'message': 'Something went wrong!'})
+            return Response({'status': False, 'message': 'Something went wrong!'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def post(self,request):
+    def post(self, request):
         try:
-            serializer=CustomersSerializers(data=request.data)
+            serializer = CustomersSerializers(data=request.data)
             if serializer.is_valid(raise_exception=True):
-                username=request.data["mobile_no"]
-                password=request.data["password"]
-                hashed_password=make_password(password)
-
-                if Customers.objects.filter(mobile_no=request.data["mobile_no"]).exists() :
-                    data = {'data': 'Customer with this mobile number already exist !! Try another number'}
-                    return Response(data,status=status.HTTP_201_CREATED)
-                customer_data=CustomUser.objects.create(
+                if Customers.objects.filter(mobile_no=request.data["mobile_no"]).exists():
+                    return Response({'data': 'Customer with this mobile number already exists! Try another number'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                username = request.data["mobile_no"]
+                password = request.data["password"]
+                hashed_password = make_password(password)
+                
+                customer_data = CustomUser.objects.create(
                     password=hashed_password,
                     username=username,
                     first_name=request.data['customer_name'],
                     email=request.data['email_id'],
-                    user_type='Customer')
-                
-                data=serializer.save(
+                    user_type='Customer'
+                )
+
+                data = serializer.save(
                     user_id=customer_data,
-                    custom_id = get_custom_id(Customers)
-                    )
-                Staff_Day_of_Visit.objects.create(customer = data)
-                data = {'data': 'successfully added'}
-                return Response(data,status=status.HTTP_201_CREATED)
-            return Response({'status': False,'data':serializer.errors},status=status.HTTP_400_BAD_REQUEST)
-        except  Exception as e:
-            user_exist = CustomUser.objects.filter(username=request.data['mobile_no']).exists()
-            if user_exist:
+                    custom_id=get_custom_id(Customers)
+                )
+                Staff_Day_of_Visit.objects.create(customer=data)
+                return Response({'data': 'Successfully added'}, status=status.HTTP_201_CREATED)
+            return Response({'status': False, 'data': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            if CustomUser.objects.filter(username=request.data['mobile_no']).exists():
                 user_obj = CustomUser.objects.get(username=request.data['mobile_no'])
                 user_obj.delete()
-                return Response({"status": False, 'data': e, "message": "Something went wrong!"})
             print(e)
-            return Response({'status': False, 'message': 'Something went wrong!'})
-
+            return Response({'status': False, 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def put(self, request, id):
         try:
-            product = Customers.objects.get(customer_id=id)
-            serializer = CustomersSerializers(product, data=request.data)
+            customer = Customers.objects.get(customer_id=id)
+            serializer = CustomersSerializers(customer, data=request.data)
             if serializer.is_valid():
-                serializer.save(modified_by=request.user.id,modified_date = datetime.now())
-                return Response(serializer.data,status=status.HTTP_200_OK)
-            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-        except  Exception as e:
+                serializer.save(modified_by=request.user.id, modified_date=datetime.now())
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Customers.DoesNotExist:
+            return Response({'status': False, 'message': 'Customer not found!'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
             print(e)
-            return Response({'status': False, 'message': 'Something went wrong!'})
+            return Response({'status': False, 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 class Customer_Custody_Item_API(APIView):
@@ -1508,7 +1510,7 @@ class Create_Customer(APIView):
         try:
             username = request.headers['username']
             user=CustomUser.objects.get(username=username)
-            print(request.data,"<--request.data")
+            # print(request.data,"<--request.data")
             serializer=Create_Customers_Serializers(data=request.data)
 
             if serializer.is_valid():

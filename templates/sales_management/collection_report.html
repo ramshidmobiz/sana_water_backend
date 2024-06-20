@@ -101,17 +101,17 @@
                         <table class="table table-bordered text-nowrap" style="width:100%">
                             <thead>
                                 <tr>
-                                <th scope="col" class="text-center">Sl.No</th>
-                                <th scope="col" class="text-left">Date</th>
-                                <th scope="col" class="text-center">Customer/<br>Mobile No</th>
-                                <th scope="col" class="text-right">Route</th>
-                                <th scope="col" class="text-right">Building Name<br>No</th>
-                                <th scope="col" class="text-right">Receipt No/<br>Reference No</th>
-                                <th scope="col" class="text-right">Amount</th>
-                                <th scope="col" class="text-right">Amount Recieved</th>
-                                <th scope="col" class="text-right">Balance</th>
-                                <th scope="col" class="text-right">Mode of Payment</th>
-                                <th scope="col" class="text-right">Sales Type</th>
+                                <th style="text-align:center;width:5%;" scope="col" class="text-center">Sl.No</th>
+                                <th style="text-align:center;" scope="col" class="text-left">Date</th>
+                                <th style="text-align:center;" scope="col" class="text-center">Customer/<br>Mobile No</th>
+                                <th style="text-align:center;" scope="col" class="text-right">Route</th>
+                                <th style="text-align:center;" scope="col" class="text-right">Building Name<br>No</th>
+                                <th style="text-align:center;" scope="col" class="text-right">Receipt No/<br>Reference No</th>
+                                <th style="text-align:center;" scope="col" class="text-right">Amount</th>
+                                <th style="text-align:center;" scope="col" class="text-right">Amount Recieved</th>
+                                <th style="text-align:center;" scope="col" class="text-right">Balance</th>
+                                <th style="text-align:center;" scope="col" class="text-right">Mode of Payment</th>
+                                <th style="text-align:center;" scope="col" class="text-right">Sales Type</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -119,17 +119,17 @@
                                 {% paginate 20 collection_payments %}
                                 {% for data in collection_payments %}
                                 <tr>
-                                    <td class="text-center">{{ forloop.counter }}</td>
-                                    <td class="text-center">{{ data.collection_payment.created_date|date }}</td>
-                                    <td class="text-center">{{ data.collection_payment.customer.customer_name }}<br>{{ data.collection_payment.customer.mobile_no }}</td>
-                                    <td class="text-center">{{ data.collection_payment.customer.routes.route_name }}</td>
-                                    <td class="text-center">{{ data.collection_payment.customer.building_name }}<br>{{ data.collection_payment.customer.door_house_no }}</td>
-                                    <td class="text-center">{{ data.invoice.reference_no }}</td>
-                                    <td class="text-center">{{ data.amount }}</td>
-                                    <td class="text-center">{{ data.amount_received }}</td>
-                                    <td class="text-center">{{ data.balance }}</td>
-                                    <td class="text-center">{{ data.collection_payment.payment_method }}</td>
-                                    <td class="text-center">{{ data.collection_payment.customer.sales_type }}</td>
+                                    <td style="text-align:right;" class="text-center">{{ forloop.counter }}</td>
+                                    <td style="text-align:right;" class="text-center">{{ data.collection_payment.created_date|date }}</td>
+                                    <td style="text-align:left;" class="text-center">{{ data.collection_payment.customer.customer_name }}<br>{{ data.collection_payment.customer.mobile_no }}</td>
+                                    <td style="text-align:left;" class="text-center">{{ data.collection_payment.customer.routes.route_name }}</td>
+                                    <td style="text-align:left;" class="text-center">{{ data.collection_payment.customer.building_name }}<br>{{ data.collection_payment.customer.door_house_no }}</td>
+                                    <td style="text-align:right;" class="text-center">{{ data.invoice.reference_no }}</td>
+                                    <td style="text-align:right;" class="text-center">{{ data.amount }}</td>
+                                    <td style="text-align:right;" class="text-center">{{ data.amount_received }}</td>
+                                    <td style="text-align:right;" class="text-center">{{ data.balance }}</td>
+                                    <td style="text-align:left;" class="text-center">{{ data.collection_payment.payment_method }}</td>
+                                    <td style="text-align:left;" class="text-center">{{ data.collection_payment.customer.sales_type }}</td>
                                 </tr>
                             {%endfor%}
                             </tbody>
@@ -163,32 +163,32 @@
     <table class="table table-bordered text-wrap " style="width: 100%; margin-top: 1em;">
         <thead>
             <tr>
-                <th scope="col" style="border-bottom: 1; max-width: 5em;">Sl No</th>
-                <th scope="col" style="border-bottom: 1; ">Date & Time</th>
-                <th scope="col" style="border-bottom: 1;">Customer/<br>Mobile No</th>
-                <th scope="col" style="border-bottom: 1;">Route</th>
-                <th scope="col" style="border-bottom: 1;">Building Name<br>No</th>
-                <th scope="col" style="border-bottom: 1;">Receipt No/<br>Reference No</th>
-                <th scope="col">Amount</th>
-                <th scope="col">Amount Recieved</th>
-                <th scope="col">Balance</th>
-                <th scope="col" style="border-bottom: 1; ">Mode of Payment</th>
+                <th style="text-align:center;width:5%;" scope="col" style="border-bottom: 1; max-width: 5em;">Sl No</th>
+                <th style="text-align:center;" scope="col" style="border-bottom: 1; ">Date & Time</th>
+                <th style="text-align:center;" scope="col" style="border-bottom: 1;">Customer/<br>Mobile No</th>
+                <th style="text-align:center;" scope="col" style="border-bottom: 1;">Route</th>
+                <th style="text-align:center;" scope="col" style="border-bottom: 1;">Building Name<br>No</th>
+                <th style="text-align:center;" scope="col" style="border-bottom: 1;">Receipt No/<br>Reference No</th>
+                <th style="text-align:center;" scope="col">Amount</th>
+                <th style="text-align:center;" scope="col">Amount Recieved</th>
+                <th style="text-align:center;" scope="col">Balance</th>
+                <th style="text-align:center;" scope="col" style="border-bottom: 1; ">Mode of Payment</th>
             </tr>
         </thead>
         <tbody>
             {% for data in collection_payments %}
                                 
             <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ data.collection_payment.created_date }}</td>
-                <td>{{ data.collection_payment.customer.customer_name }}<br>{{ data.collection_payment.customer.mobile_no }}</td>
-                <td>{{ data.collection_payment.customer.routes.route_name }}</td>
-                <td>{{ data.collection_payment.customer.building_name }}<br>{{ data.collection_payment.customer.door_house_no }}</td>
-                <td>{{ data.invoice.reference_no }}</td>
-                <td>{{ data.amount }}</td>
-                <td>{{ data.amount_received }}</td>
-                <td>{{ data.balance }}</td>
-                <td>{{ data.collection_payment.payment_method }}</td>
+                <td style="text-align:right;" >{{ forloop.counter }}</td>
+                <td style="text-align:right;" >{{ data.collection_payment.created_date }}</td>
+                <td style="text-align:left;" >{{ data.collection_payment.customer.customer_name }}<br>{{ data.collection_payment.customer.mobile_no }}</td>
+                <td style="text-align:left;" >{{ data.collection_payment.customer.routes.route_name }}</td>
+                <td style="text-align:left;" >{{ data.collection_payment.customer.building_name }}<br>{{ data.collection_payment.customer.door_house_no }}</td>
+                <td style="text-align:right;" >{{ data.invoice.reference_no }}</td>
+                <td style="text-align:right;" >{{ data.amount }}</td>
+                <td style="text-align:right;" >{{ data.amount_received }}</td>
+                <td style="text-align:right;" >{{ data.balance }}</td>
+                <td style="text-align:left;" >{{ data.collection_payment.payment_method }}</td>
             </tr>
         {% endfor %}
         </tbody>

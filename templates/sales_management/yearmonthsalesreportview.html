@@ -39,11 +39,11 @@
                             <table id="datatable-basic" class="table table-bordered text-wrap " style="width: 100%;">
                                 <thead>
                                     <tr>
-                                        <th scope="col" style="border-bottom: 1; max-width: 5em;">Sl No</th>
-                                        <th scope="col" style="border-bottom: 1; max-width: 11em;">Customer Name</th>
+                                        <th style="text-align:center;width:5%;" scope="col" style="border-bottom: 1; max-width: 5em;">Sl No</th>
+                                        <th style="text-align:center;" scope="col" style="border-bottom: 1; max-width: 11em;">Customer Name</th>
                                         {% comment %} Iterate over the months and display headers {% endcomment %}
                                         {% comment %} {% for i in ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"] %} {% endcomment %}
-                                        <th scope="col" style="border-bottom: 1; max-width: 11em;">MTD</th>  
+                                        <th style="text-align:center;" scope="col" style="border-bottom: 1; max-width: 11em;">MTD</th>  
                                         {% comment %} {% endfor %} {% endcomment %}
                                         <th scope="col"></th>
                                         <th scope="col"></th>
@@ -63,11 +63,11 @@
                                 <tbody>
                                     {% for customer_data in monthly_sales %}
                                     <tr>
-                                        <td>{{ forloop.counter }}</td>
-                                        <td>{{ customer_data.customer.customer_name }}</td>
+                                        <td style="text-align:right;">{{ forloop.counter }}</td>
+                                        <td style="text-align:left;">{{ customer_data.customer.customer_name }}</td>
                                         {% comment %} Iterate over monthly sales data for the current customer {% endcomment %}
                                         {% for month_data in customer_data.monthly_sales %}
-                                        <td>{{ month_data }}</td>
+                                        <td style="text-align:left;">{{ month_data }}</td>
                                         {% endfor %}
                                     </tr>
                                     {% endfor %}

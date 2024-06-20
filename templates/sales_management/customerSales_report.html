@@ -47,59 +47,60 @@
                     </div>
                     <div id="table-container" style="overflow:scroll;">
                         <div class="card-body">
-                            <table class="table table-bordered text-wrap" style="width: 100%">
+                            <table id="responsiveDataTable" class="table table-bordered text-nowrap" style="width:100%">
                                 <thead>
                                     <tr>
-                                        <th>Sl No</th>
-                                        <th>Date</th>
-                                        <th>Ref/Invoice No</th>
-                                        <th>Customer Name</th>
-                                        <th>Building Name/Room No/Floor No</th>
-                                        <th>Customer Sales Type</th>
-                                        <th>Route</th>
-                                        <th>Salesman</th>
-                                        <th>Amount</th>
-                                        <th>Discount</th>
-                                        <th>Net Taxable</th>
-                                        <th>Vat Amount</th>
-                                        <th>Grand Total </th>
-                                        <th>Amount Collected </th>
+                                        <th style="text-align:center !important;" scope="col">Sl No</th>
+                                        <th style="text-align:center !important;" scope="col">Date</th>
+                                        <th style="text-align:center !important;" scope="col">Ref/Invoice No</th>
+                                        <th style="text-align:center !important;" scope="col">Customer Name</th>
+                                        <th style="text-align:center !important;" scope="col">Building Name/Room No/Floor No</th>
+                                        <th style="text-align:center !important;" scope="col">Customer Sales Type</th>
+                                        <th style="text-align:center !important;" scope="col">Route</th>
+                                        <th style="text-align:center !important;" scope="col">Salesman</th>
+                                        <th style="text-align:center !important;" scope="col">Amount</th>
+                                        <th style="text-align:center !important;" scope="col">Discount</th>
+                                        <th style="text-align:center !important;" scope="col">Net Taxable</th>
+                                        <th style="text-align:center !important;" scope="col">Vat Amount</th>
+                                        <th style="text-align:center !important;" scope="col">Grand Total</th>
+                                        <th style="text-align:center !important;" scope="col">Amount Collected</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% load el_pagination_tags %}
-                                    {% paginate 20 customersales %}
+                                    {% paginate 10 customersales %}
                                     {% for data in customersales %}
                                     <tr>
-                                        <td>{{ forloop.counter }}</td>
-                                        <td>{{ data.date }}</td>
-                                        <td>{{ data.ref_invoice_no }}</td>
-                                        <td>{{ data.customer_name }}</td>
-                                        <td>{{ data.building_name }} {% if data.door_house_no %}/ {{ data.door_house_no }} {% endif %} {% if data.floor_no %}/ {{ data.floor_no }} {% endif %}</td>
-                                        <td>{{ data.sales_type }}</td>
-                                        <td>{{ data.route_name }}</td>
-                                        <td>{{ data.salesman }}</td>
-                                        <td>{{ data.amount }}</td>
-                                        <td>{{ data.discount }}</td>
-                                        <td>{{ data.net_taxable }}</td>
-                                        <td>{{ data.vat_amount}}</td>
-                                        <td>{{ data.grand_total}}</td>
-                                        <td>{{ data.amount_collected }}</td>
+                                        <td style="text-align:left;">{{ forloop.counter }}</td>
+                                        <td style="text-align:left;">{{ data.date|date:"d/m/Y" }}</td>
+                                        <td style="text-align:left;">{{ data.ref_invoice_no }}</td>
+                                        <td style="text-align:left;">{{ data.customer_name }}</td>
+                                        <td style="text-align:left;">{{ data.building_name }} {% if data.door_house_no %}/ {{ data.door_house_no }} {% endif %} {% if data.floor_no %}/ {{ data.floor_no }} {% endif %}</td>
+                                        <td style="text-align:left;">{{ data.sales_type }}</td>
+                                        <td style="text-align:left;">{{ data.route_name }}</td>
+                                        <td style="text-align:left;">{{ data.salesman }}</td>
+                                        <td style="text-align:right;">{{ data.amount }}</td>
+                                        <td style="text-align:right;">{{ data.discount }}</td>
+                                        <td style="text-align:right;">{{ data.net_taxable }}</td>
+                                        <td style="text-align:right;">{{ data.vat_amount }}</td>
+                                        <td style="text-align:right;">{{ data.grand_total }}</td>
+                                        <td style="text-align:right;">{{ data.amount_collected }}</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
-                                <!-- Table Footer -->
+                              
                                 <tfoot>
                                     <tr>
                                         <td colspan="8" style="text-align: right;">Total:</td>
-                                        <td>{{ total_amount }}</td>
-                                        <td>{{ total_discount }}</td>
-                                        <td>{{ total_net_payable }}</td>
-                                        <td>{{ total_vat }}</td>
-                                        <td>{{ total_grand_total }}</td>
-                                        <td>{{ total_amount_recieved }}</td>
+                                        <td style="text-align:right;">{{ total_amount }}</td>
+                                        <td style="text-align:right;">{{ total_discount }}</td>
+                                        <td style="text-align:right;">{{ total_net_payable }}</td>
+                                        <td style="text-align:right;">{{ total_vat }}</td>
+                                        <td style="text-align:right;">{{ total_grand_total }}</td>
+                                        <td style="text-align:right;">{{ total_amount_recieved }}</td>
                                     </tr>
                                 </tfoot>
+                             
                             </table>
                         </div>
                     </div>
@@ -113,8 +114,7 @@
                         </div>
                         <div class="col-sm-6 col-xs-6 pagination-btn-div">{% show_pages %}</div>
                     </div>
-</div>
-
+                </div>
             </div>
         </div>
     </div>
@@ -123,11 +123,7 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
 <script>
- $('#submit').click(function(e){ 
-    e.preventDefault();       
-            // Show the table when dates are selected
-            $('#table-container').show();
-    });
+// This script seems unnecessary for achieving the pagination logic described.
 </script>
 
 {% endblock %}

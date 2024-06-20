@@ -46,9 +46,9 @@
                         <table id="datatable-basic" class="table table-bordered text-wrap " style="width: 100%">
                             <thead>
                                 <tr>
-                                    <th scope="col" style="border-bottom: 1;">Sl No</th>
-                                    <th scope="col" style="border-bottom: 1;">Route Name</th>
-                                    <th scope="col" style="border-bottom: 1;">YTD</th>
+                                    <th style="text-align:center !important;" scope="col" style="border-bottom: 1;">Sl No</th>
+                                    <th style="text-align:center !important;" scope="col" style="border-bottom: 1;">Route Name</th>
+                                    <th style="text-align:center !important;" scope="col" style="border-bottom: 1;">YTD</th>
                                     {% comment %} <th scope="col" style="border-bottom: 1;">MTD</th> {% endcomment %}
 
                                    
@@ -58,9 +58,9 @@
                                 {% for route in route_sales %}
                                 
                                     <tr>
-                                        <td>{{ forloop.counter }}</td>
-                                        <td>{{ route.route.route_name}}</td>
-                                        <td><a href="{% url 'yearmonthsalesreportview' route.route.route_id %}">{{ route.ytd_sales }}<br>{{ route.year  }}</a>
+                                        <td style="text-align:left;">{{ forloop.counter }}</td>
+                                        <td style="text-align:left;">{{ route.route.route_name}}</td>
+                                        <td style="text-align:left;"><a href="{% url 'yearmonthsalesreportview' route.route.route_id %}">{{ route.ytd_sales }}<br>{{ route.year  }}</a>
 
                                         {% comment %} <td>{{ route.ytd_sales }} ({{ route.year }})</td> {% endcomment %}
                                         {% comment %} <td>{{ route.ytd_sales  }}</td> {% endcomment %}

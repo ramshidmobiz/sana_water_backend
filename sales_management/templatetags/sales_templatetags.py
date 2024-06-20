@@ -41,3 +41,5 @@ def get_suspense_collection(date,salesman):
 def get_customer_coupon_details(pk):
     instances = CustomerCouponItems.objects.filter(customer_coupon=pk)
     return instances
+
+
