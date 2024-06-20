@@ -4440,9 +4440,13 @@ class DashboardAPI(APIView):
         
         van_route = Van_Routes.objects.get(routes__pk=route_id,van__salesman=request.user)
         coupon_sale_count = CustomerCouponItems.objects.filter(customer_coupon__customer__routes__pk=route_id,customer_coupon__created_date__date=date).count()
-        empty_bottle_count = VanProductStock.objects.get(created_date=date,van=van_route.van,product__product_name="5 Gallon").empty_can_count
-        
-        filled_bottle_count = VanProductStock.objects.get(created_date=date,van=van_route.van,product__product_name="5 Gallon").stock
+        try:
+            van_product_stock = VanProductStock.objects.get(created_date=date, van=van_route.van, product__product_name="5 Gallon")
+            empty_bottle_count = van_product_stock.empty_can_count or 0
+            filled_bottle_count = van_product_stock.stock or 0
+        except VanProductStock.DoesNotExist:
+            empty_bottle_count = 0
+            filled_bottle_count = 0
         
         used_coupon_count = CustomerSupplyCoupon.objects.filter(customer_supply__customer__routes__pk=route_id,customer_supply__created_date__date=date).aggregate(leaf_count=Count('leaf'))['leaf_count']
         
