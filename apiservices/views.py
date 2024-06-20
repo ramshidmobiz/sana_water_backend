@@ -898,15 +898,27 @@ class ExpenseHeadDetailAPI(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 class ExpenseListAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     def get(self, request):
         expenses = Expense.objects.all()
         serializer = ExpenseSerializer(expenses, many=True)
         return Response(serializer.data)
 
     def post(self, request):
+        van = Van.objects.get(salesman=request.user)
+        
+        route = ""
+        if request.GET.get("route_id"):
+            route_id = request.GET.get("route_id")
+            route = RouteMaster.objects.get(pk=route_id)
+            
         serializer = ExpenseSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(
+                van = van,
+                routes = route,
+                )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
