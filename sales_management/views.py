@@ -1283,52 +1283,62 @@ def product_route_salesreport(request):
     selected_product = None
     if selected_product_id:
         selected_product = get_object_or_404(ProdutItemMaster, id=selected_product_id)
-        filter_data["product_id"]=selected_product.pk
+        filter_data["product_id"] = selected_product.pk
 
-    query = request.GET.get("q")
-    route_filter = request.GET.get('route_name')  # Modify to use POST instead of GET
+    route_filter = request.GET.get('route_name')
 
     # Start with all customers
     user_li = Customers.objects.all()
 
-    # Apply filters if they exist
+    query = request.GET.get("q")
     if query:
         user_li = user_li.filter(
             Q(custom_id__icontains=query) |
             Q(customer_name__icontains=query) |
             Q(sales_type__icontains=query) |
-
             Q(mobile_no__icontains=query) |
             Q(routes__route_name__icontains=query) |
             Q(location__location_name__icontains=query) |
             Q(building_name__icontains=query)
         )
-        # print("user_li",user_li)
 
     if route_filter:
         user_li = user_li.filter(routes__route_name=route_filter)
-        filter_data["route_name"]=route_filter
+        filter_data["route_name"] = route_filter
 
-    # Get all route names for the dropdown
     route_li = RouteMaster.objects.all()
-
     customersupplyitems = CustomerSupplyItems.objects.all()
     coupons_collected = CustomerSupplyCoupon.objects.all()
     products = ProdutItemMaster.objects.all()
     today = datetime.today().date()
 
+    # Apply date range filter if both start_date and end_date are provided
     if start_date and end_date:
-        customersupplyitems = customersupplyitems.filter(customer_supply__created_date__range=[start_date, end_date], product=selected_product,customer_supply__customer__routes__route_name=route_filter)
-        # coupons_collected = coupons_collected.filter(customer_supply__created_date__range=[start_date, end_date],customer_supply__customersales_type='CASH COUPON')
-        coupons_collected = coupons_collected.filter(customer_supply__created_date__range=[start_date, end_date], customer_supply__customer__sales_type='CASH COUPON')
+        customersupplyitems = customersupplyitems.filter(
+            customer_supply__created_date__range=[start_date, end_date]
+        )
+        coupons_collected = coupons_collected.filter(
+            customer_supply__created_date__range=[start_date, end_date],
+            customer_supply__customer__sales_type='CASH COUPON'
+        )
         filter_data['start_date'] = start_date
         filter_data['end_date'] = end_date
-    else:
-        customersupplyitems = customersupplyitems.filter(customer_supply__created_date=timezone.now().date(), product=selected_product,customer_supply__customer__routes__route_name=route_filter)
-        coupons_collected = coupons_collected.filter(customer_supply__created_date=timezone.now().date(),customer_supply__customer__sales_type='CASH COUPON')
-        filter_data['start_date'] = today
-        filter_data['end_date'] = today
 
+    # Apply product filter if selected_product is provided
+    if selected_product:
+        customersupplyitems = customersupplyitems.filter(product=selected_product)
+
+    # Apply route filter if route_filter is provided
+    if route_filter:
+        customersupplyitems = customersupplyitems.filter(
+            customer_supply__customer__routes__route_name=route_filter
+        )
+        coupons_collected = coupons_collected.filter(
+            customer_supply__customer__routes__route_name=route_filter,
+            customer_supply__customer__sales_type='CASH COUPON'
+        )
+        filter_data["route_name"] = route_filter
+    
     context = {
         'customersupplyitems': customersupplyitems.order_by("-customer_supply__created_date"),
         'products': products,
@@ -1466,11 +1476,9 @@ def download_product_sales_print(request):
 
 #     return render(request,'sales_management/yearmonthsalesreport.html',context)
 def yearmonthsalesreport(request):
-    # Get all customers and routes
     user_li = Customers.objects.all()
     route_li = RouteMaster.objects.all()
 
-    # Calculate YTD and MTD sales for each route
     route_sales = []
     current_year = datetime.now().year
     print(route_sales,"route_sales")

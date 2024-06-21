@@ -103,6 +103,22 @@ class RequestType_Details(View):
         category_det = RequestTypeMaster.objects.get(request_id=pk)
         context = {'category_det': category_det}
         return render(request, self.template_name, context)
+    
+class RequestType_Delete(View):
+
+    def get(self, request, pk, *args, **kwargs):
+        rec = get_object_or_404(RequestTypeMaster, request_id=pk)
+        rec.delete()
+        messages.success(request, 'Request type deleted successfully', 'alert-success')
+        return redirect('requesttype_list')
+
+    def post(self, request, pk, *args, **kwargs):
+        rec = get_object_or_404(RequestTypeMaster, request_id=pk)
+        rec.delete()
+        messages.success(request, 'Request type deleted successfully', 'alert-success')
+        return redirect('requesttype_list')
+
+
 
 
 

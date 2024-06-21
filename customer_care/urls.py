@@ -6,6 +6,8 @@ path('requesttype_list', RequestType_List.as_view(), name='requesttype_list'),
 path('requesttype_create',RequestType_Create.as_view(), name='requesttype_create'),
 path('requesttype_edit/<str:pk>', RequestType_Edit.as_view(), name='requesttype_edit'),
 path('requesttype_details/<str:pk>', RequestType_Details.as_view(), name='requesttype_details'),
+path('requesttype_delete/<uuid:pk>/', RequestType_Delete.as_view(), name='requesttype_delete'),
+
 
 path('bottle_list/<str:pk>', Bottle_List.as_view(), name='bottle_list'),
 path('diffbottles_create/<str:pk>', Diffbottles_Create.as_view(), name='diffbottles_create'),

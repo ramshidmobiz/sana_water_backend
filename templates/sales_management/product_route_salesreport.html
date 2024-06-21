@@ -2,7 +2,6 @@
 {% block title %} Product RouteWise Sales Report {% endblock %}
 {% block content %}
 
-
 <!-- Page Header -->
 <div class="page-header-breadcrumb d-md-flex d-block align-items-center justify-content-between ">
     <h4 class="fw-medium mb-0">Product RouteWise Sales Report</h4>
@@ -56,7 +55,6 @@
                                         <button type="button" class="btn btn-secondary btn-sm mx-1" onclick="resetFilters()" style="width:max-content">Reset Filter</button>
                                         <a href="{% url 'download_product_sales_excel' %}?start_date={{ filter_data.start_date }}&end_date={{ filter_data.end_date }}&route_name={{ filter_data.route_name }}&selected_product_id={{ filter_data.product_id }}" class="btn btn-outline-success"><i class="fas fa-file-excel"></i>Excel</a>
                                         <a href="{% url 'download_product_sales_print' %}?start_date={{ filter_data.start_date }}&end_date={{ filter_data.end_date }}&route_name={{ filter_data.route_name }}&selected_product_id={{ filter_data.product_id }}" class="btn btn-outline-success"><i class="fas fa-file-excel"></i>Print</a>
-
                                     </div>
                                 </div>
                             </div>
@@ -65,19 +63,19 @@
 
                     <div id="table-container" style="overflow:scroll;">
                         <div class="card-body">
-                            <table  class="table table-bordered text-wrap" style="width: 100%">
+                            <table id="responsiveDataTable" class="table table-bordered text-wrap" style="width: 100%">
                                 <thead>
                                     <tr>
-                                        <th>Sl No</th>
-                                        <th>Time of Supply</th>
-                                        <th>Ref/Invoice No</th>
-                                        <th>Route Name</th>
-                                        <th>Customer Name</th>
-                                        <th>Mode of Supply</th>
-                                        <th>Quantity</th>
-                                        <th>Empty Bottle Collected</th>
-                                        <th>Coupon Collected</th>
-                                        <th>Amount Collected</th>
+                                        <th style="text-align:center !important;width:5%;">Sl No</th>
+                                        <th style="text-align:center !important;">Time of Supply</th>
+                                        <th style="text-align:center !important;">Ref/Invoice No</th>
+                                        <th style="text-align:center !important;">Route Name</th>
+                                        <th style="text-align:center !important;">Customer Name</th>
+                                        <th style="text-align:center !important;">Mode of Supply</th>
+                                        <th style="text-align:center !important;">Quantity</th>
+                                        <th style="text-align:center !important;">Empty Bottle Collected</th>
+                                        <th style="text-align:center !important;">Coupon Collected</th>
+                                        <th style="text-align:center !important;">Amount Collected</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -85,22 +83,22 @@
                                     {% paginate 20 customersupplyitems %}
                                     {% for customersupplyitem in customersupplyitems %}
                                         <tr>
-                                            <td>{{ forloop.counter }}</td>
-                                            <td>{{ customersupplyitem.customer_supply.created_date|date}}</td>
-                                            <td>{{ customersupplyitem.customer_supply.reference_number}}</td>
-                                            <td>{{ customersupplyitem.customer_supply.customer.routes.route_name }}</td>
-                                            <td>{{ customersupplyitem.customer_supply.customer.customer_name }}</td>
-                                            <td>{{ customersupplyitem.customer_supply.customer.sales_type }}</td>
-                                            <td>{{ customersupplyitem.quantity }}</td>
-                                            <td>{{ customersupplyitem.customer_supply.collected_empty_bottle }}</td>
-                                            <td>{{ customersupplyitem.leaf_count }}</td>
-                                            <td>{{ customersupplyitem.amount }}</td>
+                                            <td style="text-align:center;">{{ forloop.counter }}</td>
+                                            <td style="text-align:center;">{{ customersupplyitem.customer_supply.created_date|date }}</td>
+                                            <td style="text-align:center;">{{ customersupplyitem.customer_supply.reference_number }}</td>
+                                            <td style="text-align:left;">{{ customersupplyitem.customer_supply.customer.routes.route_name }}</td>
+                                            <td style="text-align:left;">{{ customersupplyitem.customer_supply.customer.customer_name }}</td>
+                                            <td style="text-align:left;">{{ customersupplyitem.customer_supply.customer.sales_type }}</td>
+                                            <td style="text-align:center;">{{ customersupplyitem.quantity }}</td>
+                                            <td style="text-align:center;">{{ customersupplyitem.customer_supply.collected_empty_bottle }}</td>
+                                            <td style="text-align:center;">{{ customersupplyitem.leaf_count }}</td>
+                                            <td style="text-align:center;">{{ customersupplyitem.amount }}</td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
-                        {% get_pages %}
+                        {% comment %} {% get_pages %}
                         <div class="clearfix"></div>
                         <div class="row pagi my-3">
                             <div class="col-sm-6 col-xs-6 tot my-pagination">
@@ -112,18 +110,13 @@
                                 </div>
                             </div>
                             <div class="col-sm-6 col-xs-6 pagination-btn-div">{% show_pages %}</div>
-                        </div>
+                        </div> {% endcomment %}
                     </div>
                 </div>
             </div>
         </div>
-
     </div>
 </div>
-
-
-
-
 
 <script>
     function resetFilters() {

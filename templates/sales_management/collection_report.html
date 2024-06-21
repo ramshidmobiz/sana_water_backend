@@ -5,10 +5,10 @@
 
 <!-- Page Header -->
 <div class="page-header-breadcrumb d-md-flex d-block align-items-center justify-content-between ">
-    <h4 class="fw-medium mb-0">Periodic Collection Report</h4>
+    <h4 class="fw-medium mb-0">Collection Report</h4>
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="javascript:void(0);" class="text-white-30">Sales Management </a></li>
-        <li class="breadcrumb-item active" aria-current="page">Periodic Collection Report</li>
+        <li class="breadcrumb-item active" aria-current="page">Collection Report</li>
     </ol>
 </div>
 <div class="main-content app-content">
@@ -19,139 +19,101 @@
                 <div class="card custom-card">
                     <div class="card-header">
                         <div class="card-title">
-                            Periodic Collection Report
+                             Collection Report
                         </div>
                     </div>
-
-                    <div class="" >
-                        <form method="get">
-                            <div class="row mt-3">
-                                <div class="row col-md-6">
-                                    <div id="datePeriodDiv" class="row col-12">
-                                        <div class="col-md-3 col-form-label text-end" >
-                                            <p>Start and <br> End Date</p>
+                        <div class="mt">
+                            <form method="GET">
+                                <div class="card-body">
+                                    <div class="row align-items-center">
+                                        <div class="col">
+                                            <label for="start_date">From Date:</label>
+                                            <input type="date" class="form-control" id="start_date" name="start_date" value="{{ filter_data.start_date }}">
+                                        </div>
+                                        <div class="col">
+                                            <label for="end_date">To Date:</label>
+                                            <input type="date" class="form-control" id="end_date" name="end_date" value="{{ filter_data.end_date }}">
                                         </div>
                                         
-                                            <div class="col-md-5" >
-                                                <input name="start_date" type="date" class="form-select" style="width: min-content;" value="{{ filter_data.start_date }}">
-                                            </div>
-                                            
-                                            <div class="col-md-4" >
-                                                <input name="end_date" type="date" class="form-select" style="width: min-content;" value="{{ filter_data.end_date }}">
-                                            
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row col-md-6" style="">
-                                    <div class="col-md-3 col-form-label text-end">
-                                        <p>Route</p>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <select name="route_name"  class="form-select" style="width:100%">
-                                            <option value="" disabled {% if not selected_route %}selected{% endif %}>-----------------------------</option>
-
-                                            {% if selected_route %}
-                                                <option value="{{ selected_route_id }}" selected>{{ selected_route }}</option>
-                                            {% endif %}
+                                        <div class="row col-md-6" style="">
+                                        <div class="col">
+                                        <label for="product">Routes :</label>
+                                        <select name="route_name" class="form-select">
+                                            <option value="">All Routes</option>
                                             {% for route in routes %}
-                                                <option value="{{ route.route_name }}">{{ route.route_name }}</option>
+                                                <option value="{{ route.route_name }}"  {% if route.route_name == filter_data.route_name %}selected{% endif %}>{{ route.route_name }}</option>
                                             {% endfor %}
                                         </select>
-                                    </div> 
-                                    <div class="col-md-5 text-end">
-                                        <input type="submit" class="btn btn-primary btn-sm" value="Apply Filter">
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick="resetFilters()">Reset Filter</button>
+                                    </div>
+                                    <div class="col d-flex align-items-end justify-content-end">
+                                        <input type="submit" class="btn btn-primary btn-sm mx-1" value="Apply Filter">
+                                        <button type="button" class="btn btn-secondary btn-sm mx-1" onclick="resetFilters()" style="width:max-content">Reset Filter</button>
+                                        <a href="{% url 'collection_report_excel' %}?start_date={{ filter_data.start_date }}&end_date={{ filter_data.end_date }}&route_name={{ filter_data.route_name }}&selected_product_id={{ filter_data.product_id }}" class="btn btn-outline-success"><i class="fas fa-file-excel"></i>Excel</a>
+                                        <a onclick="printDiv('printArea'); return false;"class="btn btn-outline-success"><i class="fas fa-print"></i>Print</a>
+                                    </div>
+                                        
                                     </div>
                                 </div>
+                            </form>
+                        </div>  
+                        <div id="table-container" style="overflow:scroll;">
+                            <div class="card-body">
+                                <table id="responsiveDataTable" class="table table-bordered text-wrap" style="width: 100%">
+                                    <thead>
+                                        <tr>
+                                        <th style="text-align:center;width:5%;" scope="col">Sl.No</th>
+                                        <th style="text-align:center;" scope="col">Date</th>
+                                        <th style="text-align:center;" scope="col">Customer/<br>Mobile No</th>
+                                        <th style="text-align:center;" scope="col">Route</th>
+                                        <th style="text-align:center;" scope="col">Building Name<br>No</th>
+                                        <th style="text-align:center;" scope="col">Receipt No/<br>Reference No</th>
+                                        <th style="text-align:center;" scope="col">Amount</th>
+                                        <th style="text-align:center;" scope="col">Amount Recieved</th>
+                                        <th style="text-align:center;" scope="col">Balance</th>
+                                        <th style="text-align:center;" scope="col">Mode of Payment</th>
+                                        <th style="text-align:center;" scope="col">Sales Type</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% load el_pagination_tags %}
+                                        {% paginate 20 collection_payments %}
+                                        {% for data in collection_payments %}
+                                        <tr>
+                                            <td style="text-align:right;">{{ forloop.counter }}</td>
+                                            <td style="text-align:right;">{{ data.collection_payment.created_date|date }}</td>
+                                            <td style="text-align:left;">{{ data.collection_payment.customer.customer_name }}<br>{{ data.collection_payment.customer.mobile_no }}</td>
+                                            <td style="text-align:left;">{{ data.collection_payment.customer.routes.route_name }}</td>
+                                            <td style="text-align:left;">{{ data.collection_payment.customer.building_name }}<br>{{ data.collection_payment.customer.door_house_no }}</td>
+                                            <td style="text-align:right;">{{ data.invoice.reference_no }}</td>
+                                            <td style="text-align:right;">{{ data.amount }}</td>
+                                            <td style="text-align:right;">{{ data.amount_received }}</td>
+                                            <td style="text-align:right;">{{ data.balance }}</td>
+                                            <td style="text-align:left;">{{ data.collection_payment.payment_method }}</td>
+                                            <td style="text-align:left;">{{ data.collection_payment.customer.sales_type }}</td>
+                                        </tr>
+                                    {%endfor%}
+                                    </tbody>
+                                </table>
                             </div>
-                        </form>
-                        
-                    </div>
-                    <div class="row" style=" align-items: center;">
-                        <div class="col-md-6 text-center"> <!-- Column for the text, taking half the width -->
-                            <!-- Add your text here -->
-                            <!-- <h6>Date: {% if start_date and end_date %}{{ start_date }} -> {{ end_date }}{% elif selected_date %}{{ selected_date }}{% else %}{{ today|date:"Y-m-d" }}{% endif %}</h6> -->
-                        </div>
-                        <div class="col-4"></div>
-                        <!-- <div class="col-md-2"> 
-                            <div class="ms-auto">
-                                <a href="{% url 'filter_route' action="change" %}">
-                                    <button type="button" class="btn btn-success btn-wave text-end d-flex me-4 my-auto">
-                                        <i class="bi bi-plus-circle me-1"></i>Create
-                                    </button>
-                                </a>
-                            </div>
-                        </div> -->
-                    </div>
-                    <div class="card-body">
-                        <div style="float:right;padding:10px 0px">
-                                        
-                            <div class="input-group">
-                               
-                                <a href="{% url 'collection_report_excel' %}?start_date={{start_date_str}}&route_name={{route_filter}}&end_date={{end_date_str}}" class="btn btn-outline-success" style="width: 7em;"><i class="fas fa-file-excel"></i> Excel</a>
-                            </div>
-                           
-                        </div>
-                        <div style="float:right;padding:10px 0px">
-                            <a  onclick="printDiv('printArea'); return false;" class="btn btn-outline-success " style="width: 7em;">
-                                <i class="fas fa-print"></i> Print
-                            </a>
-
-                        </div>
-                        <table class="table table-bordered text-nowrap" style="width:100%">
-                            <thead>
-                                <tr>
-                                <th style="text-align:center;width:5%;" scope="col" class="text-center">Sl.No</th>
-                                <th style="text-align:center;" scope="col" class="text-left">Date</th>
-                                <th style="text-align:center;" scope="col" class="text-center">Customer/<br>Mobile No</th>
-                                <th style="text-align:center;" scope="col" class="text-right">Route</th>
-                                <th style="text-align:center;" scope="col" class="text-right">Building Name<br>No</th>
-                                <th style="text-align:center;" scope="col" class="text-right">Receipt No/<br>Reference No</th>
-                                <th style="text-align:center;" scope="col" class="text-right">Amount</th>
-                                <th style="text-align:center;" scope="col" class="text-right">Amount Recieved</th>
-                                <th style="text-align:center;" scope="col" class="text-right">Balance</th>
-                                <th style="text-align:center;" scope="col" class="text-right">Mode of Payment</th>
-                                <th style="text-align:center;" scope="col" class="text-right">Sales Type</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                                {% load el_pagination_tags %}
-                                {% paginate 20 collection_payments %}
-                                {% for data in collection_payments %}
-                                <tr>
-                                    <td style="text-align:right;" class="text-center">{{ forloop.counter }}</td>
-                                    <td style="text-align:right;" class="text-center">{{ data.collection_payment.created_date|date }}</td>
-                                    <td style="text-align:left;" class="text-center">{{ data.collection_payment.customer.customer_name }}<br>{{ data.collection_payment.customer.mobile_no }}</td>
-                                    <td style="text-align:left;" class="text-center">{{ data.collection_payment.customer.routes.route_name }}</td>
-                                    <td style="text-align:left;" class="text-center">{{ data.collection_payment.customer.building_name }}<br>{{ data.collection_payment.customer.door_house_no }}</td>
-                                    <td style="text-align:right;" class="text-center">{{ data.invoice.reference_no }}</td>
-                                    <td style="text-align:right;" class="text-center">{{ data.amount }}</td>
-                                    <td style="text-align:right;" class="text-center">{{ data.amount_received }}</td>
-                                    <td style="text-align:right;" class="text-center">{{ data.balance }}</td>
-                                    <td style="text-align:left;" class="text-center">{{ data.collection_payment.payment_method }}</td>
-                                    <td style="text-align:left;" class="text-center">{{ data.collection_payment.customer.sales_type }}</td>
-                                </tr>
-                            {%endfor%}
-                            </tbody>
-                        </table>
-                        {% get_pages %}
-                        <div class="clearfix"></div>
-                        <div class="row pagi my-3">
-                            <div class="col-sm-6 col-xs-6 tot my-pagination">
-                                <div class="m-t-10 text-start">
-                                    Showing {{title}}
-                                    <span class="current_page_index">{{ pages.current_start_index }}</span> - <span
-                                    class="current_end_status">{{ pages.current_end_index }}</span> of <span
-                                    class="total_count">{{ pages.total_count }}</span>
+                            {% get_pages %}
+                            <div class="clearfix"></div>
+                            <div class="row pagi my-3">
+                                <div class="col-sm-6 col-xs-6 tot my-pagination">
+                                    <div class="m-t-10 text-start">
+                                        Showing {{title}}
+                                        <span class="current_page_index">{{ pages.current_start_index }}</span> - <span
+                                        class="current_end_status">{{ pages.current_end_index }}</span> of <span
+                                        class="total_count">{{ pages.total_count }}</span>
+                                    </div>
                                 </div>
+                                <div class="col-sm-6 col-xs-6 text-end pagination-btn-div">{% show_pages %}</div>
                             </div>
-                            <div class="col-sm-6 col-xs-6 text-end pagination-btn-div">{% show_pages %}</div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
+        </div>
     </div>
 </div>
 <div id="printArea"  style="display: none; padding: 10em;">

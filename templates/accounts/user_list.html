@@ -38,7 +38,17 @@
                             </div>
                             
                             <div class="card-body">
-                                <table id="responsiveDataTable" class="table table-bordered text-nowrap" style="width:100%">
+                                <div style="float:right;padding:10px 0px">
+                                    <form >
+                                        <div class="input-group">
+                                            <input type="text" name="q" class="form-control" placeholder="Search ...">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="bi bi-search"></i> Search
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                                <table class="table table-bordered text-nowrap" style="width:100%">
                                     <thead>
                                         <tr>
                                         <th style="text-align:center !important;width:5%;">Sl.No</th>
@@ -53,7 +63,8 @@
                                     </tr>
                                     </thead>
                                     <tbody>
-                                      
+                                        {% load el_pagination_tags %}
+                                        {% paginate 50 user_li %}
                                         {% for data in user_li %}
                                         <tr>
                                             <td style="text-align:center;">{{forloop.counter}}</td>
@@ -82,6 +93,19 @@
                                     {% endfor %}
                                     </tbody>
                                 </table>
+                                {% get_pages %}
+                                <div class="clearfix"></div>
+                                <div class="row pagi my-3">
+                                    <div class="col-sm-6 col-xs-6 tot my-pagination">
+                                        <div class="m-t-10 text-start">
+                                            Showing {{title}}
+                                            <span class="current_page_index">{{ pages.current_start_index }}</span> - <span
+                                            class="current_end_status">{{ pages.current_end_index }}</span> of <span
+                                            class="total_count">{{ pages.total_count }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6 col-xs-6 text-end pagination-btn-div">{% show_pages %}</div>
+                                </div>
                             </div>
                         </div>
                     </div>

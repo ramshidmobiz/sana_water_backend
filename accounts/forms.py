@@ -35,7 +35,7 @@ class User_Create_Form(forms.ModelForm):
             'user_type': forms.Select(attrs={'class': 'form-control', 'required': 'true',}),
             'designation_id': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
             'staff_id': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
-            'phone': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'required': 'true','pattern': '[0-9]{10,15}', 'title': 'Enter a valid phone number'}),
             "blood_group" : forms.TextInput(attrs={'class': 'form-control', 'required': False}),
             "permanent_address" : forms.TextInput(attrs={'class': 'form-control', 'required': False}),
             "present_address" :forms.TextInput(attrs={'class': 'form-control', 'required': False}),
@@ -78,7 +78,7 @@ class User_Edit_Form(forms.ModelForm):
           
             'designation_id': forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
             'staff_id': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
-            'phone': forms.TextInput(attrs={'class': 'form-control', 'required': 'true'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'required': 'true','pattern': '[0-9]{10,15}', 'title': 'Enter a valid phone number'}),
             "blood_group" : forms.TextInput(attrs={'class': 'form-control', 'required': False}),
             "permanent_address" : forms.TextInput(attrs={'class': 'form-control', 'required': False}),
             "present_address" :forms.TextInput(attrs={'class': 'form-control', 'required': False}),

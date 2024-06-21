@@ -349,7 +349,7 @@ def licence_delete(request, plate):
         van_licence = Van_License.objects.filter(van_id = van_id)
         van_licence.delete()
         return redirect('licence_list')
-    return render(request, 'master/licence_delete.html', {'van' : van})
+    return render(request, 'van_management/licence_delete.html', {'van' : van})
 
 
 # Trip schedule

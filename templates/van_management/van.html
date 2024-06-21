@@ -37,17 +37,17 @@
                                 <table id="datatable-basic" class="table table-bordered text-nowrap" style="width: 100%">
                                     <thead>
                                         <tr>
-                                            <th scope="col">Sl No</th>
-                                            <th scope="col">Van Make</th>
-                                            <th scope="col">Plate</th>
-                                            <th scope="col">Renewal Date</th>
-                                            <th scope="col">Insurance Expiry Date</th>
-                                            <th scope="col">Capacity</th>
-                                            <th scope="col">Max Bottle Count</th>
-                                            <th scope="col">Driver</th>
-                                            <th scope="col">Salesman</th>
-                                            <th scope="col">Route</th>
-                                            <th scope="col">Actions</th>
+                                            <th style="text-align:center !important;" scope="col">Sl No</th>
+                                            <th style="text-align:center !important;" scope="col">Van Make</th>
+                                            <th style="text-align:center !important;" scope="col">Plate</th>
+                                            <th style="text-align:center !important;" scope="col">Renewal Date</th>
+                                            <th style="text-align:center !important;" scope="col">Insurance Expiry Date</th>
+                                            <th style="text-align:center !important;" scope="col">Capacity</th>
+                                            <th style="text-align:center !important;" scope="col">Max Bottle Count</th>
+                                            <th style="text-align:center !important;" scope="col">Driver</th>
+                                            <th style="text-align:center !important;" scope="col">Salesman</th>
+                                            <th style="text-align:center !important;" scope="col">Route</th>
+                                            <th style="text-align:center !important;" scope="col">Actions</th>
                                             
                                         </tr>
                                     </thead>
@@ -55,15 +55,15 @@
                                         
                                             {% for van in all_van %}
                                             <tr>
-                                                <td>{{ forloop.counter }}</td>
-                                                <td>{{van.van_make}}</td>
-                                                <td>{{van.plate}}</td>
-                                                <td>{{van.renewal_date|date:"d-m-Y"}}</td>
-                                                <td>{{van.insurance_expiry_date|date:"d-m-Y"}}</td>
-                                                <td>{{van.capacity}}</td>
-                                                <td>{{van.bottle_count}}</td>
-                                                <td>{{van.driver}}</td>
-                                                <td>{{van.salesman}}</td>
+                                                <td style="text-align:left;">{{ forloop.counter }}</td>
+                                                <td style="text-align:left;">{{van.van_make}}</td>
+                                                <td style="text-align:left;">{{van.plate}}</td>
+                                                <td style="text-align:left;">{{van.renewal_date|date:"d-m-Y"}}</td>
+                                                <td style="text-align:left;">{{van.insurance_expiry_date|date:"d-m-Y"}}</td>
+                                                <td style="text-align:right;">{{van.capacity}}</td>
+                                                <td style="text-align:right;">{{van.bottle_count}}</td>
+                                                <td style="text-align:left;">{{van.driver}}</td>
+                                                <td style="text-align:left;">{{van.salesman}}</td>
                                                 
                                                 <td>
                                                     {% for van_id, route_names in routes_assigned.items %}

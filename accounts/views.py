@@ -73,8 +73,22 @@ class Users_List(View):
     template_name = 'accounts/user_list.html'
 
     def get(self, request, *args, **kwargs):
+        query = request.GET.get("q")
+
         user_li = CustomUser.objects.filter()
-        context = {'user_li': user_li}
+        if query:
+            user_li = user_li.filter(
+                Q(first_name__icontains=query) |
+                Q(designation_id__designation_name__icontains=query) |
+                Q(staff_id__icontains=query) |
+                Q(username__icontains=query) |
+                Q(branch_id__name__icontains=query) 
+            )
+
+        context = {
+            'user_li': user_li,
+            'q': query
+            }
         return render(request, self.template_name, context)
 
 class User_Create(View):

@@ -27,6 +27,7 @@
                             <div class="card-body">
                                 <div class="row align-items-center">
                                     <div class="col">
+                                        
                                         <label for="start_date">From Date:</label>
                                         <input type="date" class="form-control" id="start_date" name="start_date" value="{{ filter_data.start_date }}">
                                     </div>
@@ -67,8 +68,8 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% load el_pagination_tags %}
-                                    {% paginate 10 customersales %}
+                                    {% comment %} {% load el_pagination_tags %}
+                                    {% paginate 10 customersales %} {% endcomment %}
                                     {% for data in customersales %}
                                     <tr>
                                         <td style="text-align:left;">{{ forloop.counter }}</td>
@@ -104,7 +105,7 @@
                             </table>
                         </div>
                     </div>
-                    {% get_pages %}
+                    {% comment %} {% get_pages %}
                     <div class="clearfix"></div>
                     <div class="row pagi my-3">
                         <div class="col-sm-6 col-xs-6 tot my-pagination">
@@ -113,7 +114,7 @@
                             </div>
                         </div>
                         <div class="col-sm-6 col-xs-6 pagination-btn-div">{% show_pages %}</div>
-                    </div>
+                    </div> {% endcomment %}
                 </div>
             </div>
         </div>
@@ -122,8 +123,6 @@
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
-<script>
-// This script seems unnecessary for achieving the pagination logic described.
-</script>
+
 
 {% endblock %}
