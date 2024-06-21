@@ -40,7 +40,7 @@ class Branch_List(View):
 
     @method_decorator(login_required)
     def get(self, request, *args, **kwargs):
-        branch_li = BranchMaster.objects.filter()
+        branch_li = BranchMaster.objects.all().order_by("-created_date")
         context = {'branch_li': branch_li}
         return render(request, self.template_name, context)
 
