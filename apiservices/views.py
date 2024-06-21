@@ -1125,25 +1125,33 @@ class Customer_API(APIView):
         try:
             serializer = CustomersSerializers(data=request.data)
             if serializer.is_valid(raise_exception=True):
-                if Customers.objects.filter(mobile_no=request.data["mobile_no"]).exists():
+                if request.data["mobile_no"] and Customers.objects.filter(mobile_no=request.data["mobile_no"]).exists():
                     return Response({'data': 'Customer with this mobile number already exists! Try another number'}, status=status.HTTP_400_BAD_REQUEST)
                 
-                username = request.data["mobile_no"]
-                password = request.data["password"]
-                hashed_password = make_password(password)
+                if request.data["email_id"] and Customers.objects.filter(email_id=request.data["email_id"]).exists():
+                    return Response({'data': 'Customer with this Email Id already exists! Try another Email Id'}, status=status.HTTP_400_BAD_REQUEST)
                 
-                customer_data = CustomUser.objects.create(
-                    password=hashed_password,
-                    username=username,
-                    first_name=request.data['customer_name'],
-                    email=request.data['email_id'],
-                    user_type='Customer'
-                )
+                if request.data["mobile_no"]:
+                    username = request.data["mobile_no"]
+                    password = request.data["password"]
+                    hashed_password = make_password(password)
+                    
+                    customer_data = CustomUser.objects.create(
+                        password=hashed_password,
+                        username=username,
+                        first_name=request.data['customer_name'],
+                        email=request.data['email_id'],
+                        user_type='Customer'
+                    )
 
                 data = serializer.save(
-                    user_id=customer_data,
                     custom_id=get_custom_id(Customers)
                 )
+                
+                if request.data["mobile_no"]:
+                    data.user_id = customer_data
+                    data.save()
+                    
                 Staff_Day_of_Visit.objects.create(customer=data)
                 return Response({'data': 'Successfully added'}, status=status.HTTP_201_CREATED)
             return Response({'status': False, 'data': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
