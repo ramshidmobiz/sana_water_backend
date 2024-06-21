@@ -1125,25 +1125,34 @@ class Customer_API(APIView):
         try:
             serializer = CustomersSerializers(data=request.data)
             if serializer.is_valid(raise_exception=True):
-                if Customers.objects.filter(mobile_no=request.data["mobile_no"]).exists():
+                if request.data["mobile_no"] and Customers.objects.filter(mobile_no=request.data["mobile_no"]).exists():
                     return Response({'data': 'Customer with this mobile number already exists! Try another number'}, status=status.HTTP_400_BAD_REQUEST)
                 
-                username = request.data["mobile_no"]
-                password = request.data["password"]
-                hashed_password = make_password(password)
+                if request.data["email_id"] and Customers.objects.filter(email_id=request.data["email_id"]).exists():
+                    return Response({'data': 'Customer with this Email Id already exists! Try another Email Id'}, status=status.HTTP_400_BAD_REQUEST)
                 
-                customer_data = CustomUser.objects.create(
-                    password=hashed_password,
-                    username=username,
-                    first_name=request.data['customer_name'],
-                    email=request.data['email_id'],
-                    user_type='Customer'
-                )
+                customer_data = CustomUser.objects.none
+                if request.data["mobile_no"] and request.data["password"] :
+                    username = request.data["mobile_no"]
+                    password = request.data["password"]
+                    hashed_password = make_password(password)
+                    
+                    customer_data = CustomUser.objects.create(
+                        password=hashed_password,
+                        username=username,
+                        first_name=request.data['customer_name'],
+                        email=request.data['email_id'],
+                        user_type='Customer'
+                    )
 
                 data = serializer.save(
-                    user_id=customer_data,
+                    # user_id=customer_data,
                     custom_id=get_custom_id(Customers)
                 )
+                if request.data["mobile_no"] and request.data["password"] :
+                    data.user_id = customer_data
+                    data.save()
+                    
                 Staff_Day_of_Visit.objects.create(customer=data)
                 return Response({'data': 'Successfully added'}, status=status.HTTP_201_CREATED)
             return Response({'status': False, 'data': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
@@ -1970,52 +1979,54 @@ class VacationDeleteAPI(APIView):
 class ScheduleView(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
+    
     def get(self, request, date_str):
         if date_str:
             date = datetime.strptime(date_str, '%Y-%m-%d')
         else:
             return Response({'error': 'Date parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
-        # print(staff_id)
-
+        
         staff = CustomUser.objects.get(id=request.user.id)
         if staff.user_type not in ['Driver', 'Salesman', 'Supervisor', 'Manager']:
             return Response({'error': 'Invalid user type'}, status=status.HTTP_400_BAD_REQUEST)
 
         if staff.user_type == "Driver":
-            van = Van.objects.filter(driver = staff)
+            van = Van.objects.filter(driver=staff)
         elif staff.user_type == "Salesman":
-            van = Van.objects.filter(salesman = staff)
+            van = Van.objects.filter(salesman=staff)
 
-        routes=[]
+        routes = []
         for v in van:
             van_routes = Van_Routes.objects.filter(van=v)
             for v_r in van_routes:
                 if v_r.routes not in routes:
                     routes.append(v_r.routes)
 
-        # routes = RouteMaster.objects.all()
         route_details = []
         for route in routes:
             trip_count = 0
             customer_count = 0
-            bottle_count=0
+            bottle_count = 0
             todays_customers = find_customers(request, date_str, route.route_id)
-            trips=[]
+            trips = []
             for customer in todays_customers:
-                customer_count+=1
-                bottle_count+=customer['no_of_bottles']
+                customer_count += 1
+                bottle_count += customer['no_of_bottles']
                 if customer['trip'] not in trips:
                     trips.append(customer['trip'])
+            if not trips:
+                trips.append('trip1')
             if bottle_count > 0:
                 route_details.append({
-                    'route_name':route.route_name,
-                    'route_id':route.route_id,
-                    'no_of_customers':customer_count,
-                    'no_of_bottles':bottle_count,
-                    'no_of_trips':len(trips),
+                    'route_name': route.route_name,
+                    'route_id': route.route_id,
+                    'no_of_customers': customer_count,
+                    'no_of_bottles': bottle_count,
+                    'no_of_trips': len(trips),
                     'trips': trips
                 })
-        return Response({'def_date': date_str,'staff': staff.first_name, 'details': route_details}, status=status.HTTP_200_OK)
+
+        return Response({'def_date': date_str, 'staff': staff.first_name, 'details': route_details}, status=status.HTTP_200_OK)
 
 
 class ScheduleByRoute(APIView):
