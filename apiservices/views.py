@@ -1979,13 +1979,13 @@ class VacationDeleteAPI(APIView):
 class ScheduleView(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
-    
+
     def get(self, request, date_str):
         if date_str:
             date = datetime.strptime(date_str, '%Y-%m-%d')
         else:
             return Response({'error': 'Date parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         staff = CustomUser.objects.get(id=request.user.id)
         if staff.user_type not in ['Driver', 'Salesman', 'Supervisor', 'Manager']:
             return Response({'error': 'Invalid user type'}, status=status.HTTP_400_BAD_REQUEST)
@@ -2009,22 +2009,28 @@ class ScheduleView(APIView):
             bottle_count = 0
             todays_customers = find_customers(request, date_str, route.route_id)
             trips = []
-            for customer in todays_customers:
-                customer_count += 1
-                bottle_count += customer['no_of_bottles']
-                if customer['trip'] not in trips:
-                    trips.append(customer['trip'])
+
+            if todays_customers is None:
+                todays_customers = []
+                trips.append('trip1')
+            else:
+                for customer in todays_customers:
+                    customer_count += 1
+                    bottle_count += customer['no_of_bottles']
+                    if customer['trip'] not in trips:
+                        trips.append(customer['trip'])
+
             if not trips:
                 trips.append('trip1')
-            if bottle_count > 0:
-                route_details.append({
-                    'route_name': route.route_name,
-                    'route_id': route.route_id,
-                    'no_of_customers': customer_count,
-                    'no_of_bottles': bottle_count,
-                    'no_of_trips': len(trips),
-                    'trips': trips
-                })
+
+            route_details.append({
+                'route_name': route.route_name,
+                'route_id': route.route_id,
+                'no_of_customers': customer_count,
+                'no_of_bottles': bottle_count,
+                'no_of_trips': len(trips),
+                'trips': trips
+            })
 
         return Response({'def_date': date_str, 'staff': staff.first_name, 'details': route_details}, status=status.HTTP_200_OK)
 
@@ -2036,6 +2042,9 @@ class ScheduleByRoute(APIView):
         # print(route)
         todays_customers = find_customers(request, date_str, route_id)
 
+        customers = []
+        totale_bottle = 0
+        
         if todays_customers:
             customers = [
                 {
@@ -2047,7 +2056,6 @@ class ScheduleByRoute(APIView):
             ]
             # print(customers)
 
-            totale_bottle=0
             is_supplied = False
             for customer in customers:
                 totale_bottle+=customer['no_of_bottles']
@@ -2063,7 +2071,16 @@ class ScheduleByRoute(APIView):
                 'todays_customers': customers,
             }, status=status.HTTP_200_OK)
         else:
-            return Response({'error': 'No customers found for today'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                'def_date': date_str,
+                'totale_bottle':totale_bottle,
+                'route': {
+                    'route_id': route.route_id,
+                    'route_name': route.route_name,
+                    'trip' : trip
+                },
+                'todays_customers': customers,
+            }, status=status.HTTP_200_OK)
 
 class Get_Category_API(APIView):
     def get(self, request):
