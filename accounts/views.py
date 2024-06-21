@@ -336,6 +336,10 @@ def create_customer(request):
     # except Exception as e:
     #         messages.success(request, 'Something went wrong')
     #         return render(request, template_name,context)
+def load_locations(request):
+    emirate_id = request.GET.get('emirate_id')
+    locations = LocationMaster.objects.filter(emirate=emirate_id).all()
+    return JsonResponse(list(locations.values('id', 'location_name')), safe=False)
 
 class Customer_Details(View):
     template_name = 'accounts/customer_details.html'
