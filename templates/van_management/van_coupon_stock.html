@@ -10,7 +10,7 @@
     <h4 class="fw-medium mb-0">Van Management</h4>
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="javascript:void(0);" class="text-white-50">Dashboards</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Admin Dashboard</li>
+        <li class="breadcrumb-item active" aria-current="page">Van Coupon Stock</li>
     </ol>
 </div>
 
@@ -22,32 +22,44 @@
                     <div class="card-header">
                         <div class="card-title">Van Coupon Stock</div>
                     </div>
-                    <div class="m-4">
+                    {% comment %} <div class="m-4">
                         <div class="tab-content">
-                            <div class="tab-pane fade show active" id="products">
+                            <div class="tab-pane fade show active" id="products"> {% endcomment %}
                                 <div class="card-body">
-                                    <form method="get" action="">
+                                    <div class="row justify-content-left mb-5">
+                                        <div class="col-md-3">
+                                            <form method="get" action="" class="d-flex align-items-center">
+                                                <div class="form-group me-2 flex-grow-1">
+                                                    <label for="filter_date" class="visually-hidden">Select Date:</label>
+                                                    <input type="date" id="filter_date" name="date" class="form-control" value="{{ filter_data.filter_date }}">
+                                                </div>
+                                                <button type="submit" class="btn btn-primary mt-0">Filter</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    {% comment %} <form method="get" action="">
                                         <div class="form-group">
                                             <label for="filter_date">Select Date:</label>
                                             <input type="date" id="filter_date" name="date" class="form-control" value="{{ filter_data.filter_date }}">
                                         </div>
                                         <button type="submit" class="btn btn-primary mt-2">Filter</button>
-                                    </form>
+                                    </form> {% endcomment %}
+                                    
                                     <table id="datatable-basic" class="table table-bordered text-nowrap" style="width:100%">
                                         <thead>
                                             <tr>
-                                                <th scope="col">Sl.No</th>
-                                                <th scope="col">Date</th>
-                                                <th scope="col">Van</th>
-                                                <th scope="col">Coupon Type</th>
-                                                <th scope="col">Opening Stock</th>
-                                                <th scope="col">Requested Stock</th>
-                                                <th scope="col">Issued</th>
-                                                <th scope="col">Sold</th>
-                                                <th scope="col">Returned</th>
-                                                <th scope="col">Offload</th>
-                                                <th scope="col">Stock</th>
-                                                <th scope="col">Closing</th>
+                                                <th style="text-align:center !important;" scope="col">Sl.No</th>
+                                                <th style="text-align:center !important;" scope="col">Date</th>
+                                                <th style="text-align:center !important;" scope="col">Van</th>
+                                                <th style="text-align:center !important;" scope="col">Coupon Type</th>
+                                                <th style="text-align:center !important;" scope="col">Opening Stock</th>
+                                                <th style="text-align:center !important;" scope="col">Requested Stock</th>
+                                                <th style="text-align:center !important;" scope="col">Issued</th>
+                                                <th style="text-align:center !important;" scope="col">Sold</th>
+                                                <th style="text-align:center !important;" scope="col">Returned</th>
+                                                <th style="text-align:center !important;" scope="col">Offload</th>
+                                                <th style="text-align:center !important;" scope="col">Stock</th>
+                                                <th style="text-align:center !important;" scope="col">Closing</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -55,9 +67,9 @@
                                             {% get_van_coupon_wise_stock filter_data.filter_date van_data.van.pk van_data.coupon.pk as stock_details %}
                                             <tr>
                                                 <td style="text-align:center;">{{ forloop.counter }}</td>
-                                                <td style="text-align:center;">{{ van_data.created_date|date }}</td>
-                                                <td style="text-align:center;">{{ van_data.van.van_make }} - {{ van_data.van.plate }}</td>
-                                                <td style="text-align:center;">{{ van_data.coupon.book_num }}</td>
+                                                <td style="text-align:left;">{{ van_data.created_date|date:"d/m/Y" }}</td>
+                                                <td style="text-align:left;">{{ van_data.van.van_make }} - {{ van_data.van.plate }}</td>
+                                                <td style="text-align:left;">{{ van_data.coupon.book_num }}</td>
                                                 <td style="text-align:center;">{{ van_data.opening_count }}</td>
                                                 <td style="text-align:center;">{{ stock_details.requested_count }}</td>
                                                 <td style="text-align:center;">{{ stock_details.issued_count }}</td>
@@ -71,9 +83,9 @@
                                         </tbody>
                                     </table>
                                 </div>
-                            </div>
+                            {% comment %} </div>
                         </div>
-                    </div>
+                    </div> {% endcomment %}
                 </div>
             </div>
         </div>

@@ -7,7 +7,7 @@
 <div class="page-header-breadcrumb d-md-flex d-block align-items-center justify-content-between ">
     <h4 class="fw-medium mb-0">Returned Orders</h4>
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="javascript:void(0);" class="text-white-30">Order </a></li>
+        <li class="breadcrumb-item"><a href="javascript:void(0);" class="text-white-30">van </a></li>
         <li class="breadcrumb-item active" aria-current="page">Returned Orders</li>
     </ol>
 </div>
@@ -22,70 +22,63 @@
                             Returned Orders
                         </div>
                     </div>
-
-                    <div class="" >
+                    <div class="mt">
                         <form method="post">
                             {% csrf_token %}
-                            <div class="row mt-3">
-                                <div class="row col-md-6">
-                                    <div id="datePeriodDiv" class="row col-12">
-                                        <div class="col-md-3 col-form-label text-end" >
-                                            <p>Start and <br> End Date</p>
+                            <div class="card-body">
+                                <div class="row  align-items-center">
+                                    <div class="col">
+                                        <label for="start_date">From Date:</label>
+                                        <input name="start_date" type="date" class="form-select"  value="{% if start_date and end_date %}{{ start_date }}{% endif %}">
+                                    </div>
+                                    <div class="col">
+                                        <label for="end_date">To Date:</label>
+                                        <input name="end_date" type="date" class="form-select"  value="{% if start_date and end_date %}{{ end_date }}{% endif %}">
+                                    </div>
+                                    
+                                    <div class="row col-md-6" style="">
+                                        <div class="col">
+                                            <label for="product">Product :</label>
+                                            <select name="product" id="product" class="form-select" style="width:100%">
+                                                <option value="" disabled {% if not selected_product %}selected{% endif %}>-----------------------------</option>
+                                                {% if selected_product %}
+                                                    <option value="{{ selected_product_id }}" selected>{{ selected_product }}</option>
+                                                {% endif %}
+                                                {% for product in products %}
+                                                    <option value="{{ product.product_id }}">{{ product }}</option>
+                                                {% endfor %}
+                                            </select>
                                         </div>
+                                        <div class="col d-flex align-items-end justify-content-end">
+                                            <input type="submit" class="btn btn-primary btn-sm mx-1" value="Apply Filter">
+                                            <button type="button" class="btn btn-secondary btn-sm mx-1" onclick="resetFilters()" style="width:max-content">Reset Filter</button>
                                         
-                                            <div class="col-md-5" >
-                                                <input name="start_date" type="date" class="form-select" style="width: min-content;" value="{% if start_date and end_date %}{{ start_date }}{% endif %}">
-                                            </div>
-                                            
-                                            <div class="col-md-4" >
-                                                <input name="end_date" type="date" class="form-select" style="width: min-content;" value="{% if start_date and end_date %}{{ end_date }}{% endif %}">
-                                            
                                         </div>
-                                    </div>
-                                </div>
-                                <div class="row col-md-6" style="">
-                                    <div class="col-md-3 col-form-label text-end">
-                                        <hp>Product</p>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <select name="product" id="product" class="form-select" style="width:100%">
-                                            <option value="" disabled {% if not selected_product %}selected{% endif %}>-----------------------------</option>
-                                            {% if selected_product %}
-                                                <option value="{{ selected_product_id }}" selected>{{ selected_product }}</option>
-                                            {% endif %}
-                                            {% for product in products %}
-                                                <option value="{{ product.product_id }}">{{ product }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-md-5 text-end">
-                                        <input type="submit" class="btn btn-primary btn-sm" value="Apply Filter">
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick="resetFilters()">Reset Filter</button>
                                     </div>
                                 </div>
                             </div>
                         </form>
-                        
+                     
                     </div>
-                    
+                  
                     
                     
                     <div class="card-body">
                         <table id="datatable-basic" class="table table-bordered text-wrap " style="width: 100%">
                             <thead>
                                 <tr>
-                                    <th scope="col" style="border-bottom: 1; max-width: 5em;">Sl No</th>
-                                    <th scope="col" style="border-bottom: 1; max-width: 15em;">Route Name</th>
-                                    <th scope="col" style="border-bottom: 1;">Returned Quantity</th>
-                                    <th scope="col" style="border-bottom: 1;">Action</th>
+                                    <th scope="col" style="text-align:center !important; max-width: 5em;">Sl No</th>
+                                    <th scope="col" style="text-align:center !important; max-width: 15em;">Route Name</th>
+                                    <th scope="col" style="text-align:center !important;">Returned Quantity</th>
+                                    <th scope="col" style="text-align:center !important;">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for route_name, route_info in route_counts.items %}
                                     <tr>
-                                        <td>{{ forloop.counter }}</td>
-                                        <td>{{ route_name }}</td>
-                                        <td>{{ route_info.count }}</td>
+                                        <td style="text-align:center">{{ forloop.counter }}</td>
+                                        <td style="text-align:center">{{ route_name }}</td>
+                                        <td style="text-align:center">{{ route_info.count }}</td>
                                         
                                         <td>
                                             <div class="g-2">

@@ -7,8 +7,8 @@
 <div class="page-header-breadcrumb d-md-flex d-block align-items-center justify-content-between ">
     <h4 class="fw-medium mb-0">Changed Products</h4>
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="javascript:void(0);" class="text-white-30">Order </a></li>
-        <li class="breadcrumb-item active" aria-current="page">Changed Products</li>
+        <li class="breadcrumb-item"><a href="javascript:void(0);" class="text-white-30">Van </a></li>
+        <li class="breadcrumb-item active" aria-current="page">Order Change</li>
     </ol>
 </div>
 <div class="main-content app-content">
@@ -22,83 +22,61 @@
                             Changed Products
                         </div>
                     </div>
-
-                    <div class="" >
-                        <form method="post">
-                            {% csrf_token %}
-                            <div class="row mt-3">
-                                <div class="row col-md-6">
-                                    <div id="datePeriodDiv" class="row col-12">
-                                        <div class="col-md-3 col-form-label text-end" >
-                                            <p>Start and <br> End Date</p>
+                    <div class="mt">
+                            <form method="post">
+                                {% csrf_token %}
+                                <div class="card-body">
+                                    <div class="row  align-items-center">
+                                        <div class="col">
+                                            <label for="start_date">From Date:</label>
+                                            <input name="start_date" type="date" class="form-select"  value="{% if start_date and end_date %}{{ start_date }}{% endif %}">
+                                        </div>
+                                        <div class="col">
+                                            <label for="end_date">To Date:</label>
+                                            <input name="end_date" type="date" class="form-select"  value="{% if start_date and end_date %}{{ end_date }}{% endif %}">
                                         </div>
                                         
-                                            <div class="col-md-5" >
-                                                <input name="start_date" type="date" class="form-select" style="width: min-content;" value="{% if start_date and end_date %}{{ start_date }}{% endif %}">
+                                        <div class="row col-md-6" style="">
+                                            <div class="col">
+                                                <label for="product">Product :</label>
+                                                <select name="product" id="product" class="form-select" style="width:100%">
+                                                    <option value="" disabled {% if not selected_product %}selected{% endif %}>-----------------------------</option>
+                                                    {% if selected_product %}
+                                                        <option value="{{ selected_product_id }}" selected>{{ selected_product }}</option>
+                                                    {% endif %}
+                                                    {% for product in products %}
+                                                        <option value="{{ product.product_id }}">{{ product }}</option>
+                                                    {% endfor %}
+                                                </select>
                                             </div>
+                                            <div class="col d-flex align-items-end justify-content-end">
+                                                <input type="submit" class="btn btn-primary btn-sm mx-1" value="Apply Filter">
+                                                <button type="button" class="btn btn-secondary btn-sm mx-1" onclick="resetFilters()" style="width:max-content">Reset Filter</button>
                                             
-                                            <div class="col-md-4" >
-                                                <input name="end_date" type="date" class="form-select" style="width: min-content;" value="{% if start_date and end_date %}{{ end_date }}{% endif %}">
-                                            
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="row col-md-6" style="">
-                                    <div class="col-md-3 col-form-label text-end">
-                                        <p>Product</p>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <select name="product" id="product" class="form-select" style="width:100%">
-                                            <option value="" disabled {% if not selected_product %}selected{% endif %}>-----------------------------</option>
-                                            {% if selected_product %}
-                                                <option value="{{ selected_product_id }}" selected>{{ selected_product }}</option>
-                                            {% endif %}
-                                            {% for product in products %}
-                                                <option value="{{ product.product_id }}">{{ product }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-md-5 text-end">
-                                        <input type="submit" class="btn btn-primary btn-sm" value="Apply Filter">
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick="resetFilters()">Reset Filter</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
-                        
+                            </form>
+                         
                     </div>
-                    <div class="row" style=" align-items: center;">
-                        <div class="col-md-6 text-center"> <!-- Column for the text, taking half the width -->
-                            <!-- Add your text here -->
-                            <!-- <h6>Date: {% if start_date and end_date %}{{ start_date }} -> {{ end_date }}{% elif selected_date %}{{ selected_date }}{% else %}{{ today|date:"Y-m-d" }}{% endif %}</h6> -->
-                        </div>
-                        <div class="col-4"></div>
-                        <!-- <div class="col-md-2"> 
-                            <div class="ms-auto">
-                                <a href="{% url 'filter_route' action="change" %}">
-                                    <button type="button" class="btn btn-success btn-wave text-end d-flex me-4 my-auto">
-                                        <i class="bi bi-plus-circle me-1"></i>Create
-                                    </button>
-                                </a>
-                            </div>
-                        </div> -->
-                    </div>
+                    
                     <div class="card-body">
                         <table id="datatable-basic" class="table table-bordered text-wrap " style="width: 100%">
                             <thead>
                                 <tr>
-                                    <th scope="col" style="border-bottom: 1; max-width: 5em;">Sl No</th>
-                                    <th scope="col" style="border-bottom: 1; max-width: 15em;">Route Name</th>
-                                    <th scope="col" style="border-bottom: 1;">Changed Quantity</th>
-                                    <th scope="col" style="border-bottom: 1;">Action</th>
+                                    <th scope="col" style="text-align:center !important; max-width: 5em;">Sl No</th>
+                                    <th scope="col" style="text-align:center !important; max-width: 15em;">Route Name</th>
+                                    <th scope="col" style="text-align:center !important;">Changed Quantity</th>
+                                    <th scope="col" style="text-align:center !important;">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for route_name, route_info in route_counts.items %}
                                     <tr>
-                                        <td>{{ forloop.counter }}</td>
-                                        <td>{{ route_name }}</td>
-                                        <td>{{ route_info.count }}</td>
+                                        <td style="text-align:center">{{ forloop.counter }}</td>
+                                        <td style="text-align:center">{{ route_name }}</td>
+                                        <td style="text-align:center">{{ route_info.count }}</td>
                                         
                                         <td>
                                             <div class="g-2">
@@ -137,7 +115,6 @@
 
 <script>
     function resetFilters() {
-        // Redirect to the same page
         location.href = "{% url 'order_change' %}";
     }
 </script>

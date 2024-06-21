@@ -443,7 +443,7 @@ def customer_list_excel(request):
         data['Customer ID'].append(customer.custom_id)
         data['Customer name'].append(customer.customer_name)
         data['Route'].append(customer.routes.route_name if customer.routes else '')
-        data['Location'].append(customer.location.location_name)
+        data['Location'].append(customer.location.location_name if customer.location else '')
         data['Mobile No'].append(customer.mobile_no)
         data['Building Name'].append(customer.building_name)
         data['House No'].append(customer.door_house_no if customer.door_house_no else 'Nil')

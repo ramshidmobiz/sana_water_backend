@@ -84,15 +84,15 @@
                                     {% for customersupplyitem in customersupplyitems %}
                                         <tr>
                                             <td style="text-align:center;">{{ forloop.counter }}</td>
-                                            <td style="text-align:center;">{{ customersupplyitem.customer_supply.created_date|date }}</td>
+                                            <td style="text-align:center;">{{ customersupplyitem.customer_supply.created_date|date:"d/m/Y" }}</td>
                                             <td style="text-align:center;">{{ customersupplyitem.customer_supply.reference_number }}</td>
                                             <td style="text-align:left;">{{ customersupplyitem.customer_supply.customer.routes.route_name }}</td>
                                             <td style="text-align:left;">{{ customersupplyitem.customer_supply.customer.customer_name }}</td>
                                             <td style="text-align:left;">{{ customersupplyitem.customer_supply.customer.sales_type }}</td>
-                                            <td style="text-align:center;">{{ customersupplyitem.quantity }}</td>
-                                            <td style="text-align:center;">{{ customersupplyitem.customer_supply.collected_empty_bottle }}</td>
-                                            <td style="text-align:center;">{{ customersupplyitem.leaf_count }}</td>
-                                            <td style="text-align:center;">{{ customersupplyitem.amount }}</td>
+                                            <td style="text-align:right;">{{ customersupplyitem.quantity }}</td>
+                                            <td style="text-align:right;">{{ customersupplyitem.customer_supply.collected_empty_bottle }}</td>
+                                            <td style="text-align:right;">{{ customersupplyitem.leaf_count }}</td>
+                                            <td style="text-align:right;">{{ customersupplyitem.amount }}</td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>

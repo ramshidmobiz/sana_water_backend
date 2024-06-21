@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %} Municipality License {% endblock %}
+{% block title %} order Change reason {% endblock %}
 {% block content %}
 
 <!-- Page Header -->
@@ -7,7 +7,7 @@
     <h4 class="fw-medium mb-0">Order</h4>
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="javascript:void(0);" class="text-white-30">Order</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Order change Reasons</li>
+        <li class="breadcrumb-item active" aria-current="page">Order change Reason</li>
     </ol>
 </div>
 <div class="main-content app-content">
@@ -19,7 +19,7 @@
                 <div class="card custom-card">
                     <div class="card-header">
                         <div class="card-title">
-                            order Change reason
+                            Order Change reason
                         </div>
                         <div class="ms-auto">
                             <a href="{% url 'reason_add' %}">
@@ -33,16 +33,16 @@
                         <table id="datatable-basic" class="table table-bordered text-wrap " style="width: 100%">
                             <thead>
                                 <tr>
-                                    <th scope="col" style="border-bottom: 0;">Sl No</th>
-                                    <th scope="col" style="border-bottom: 0;">Reason Name</th>
-                                    <th scope="col" style="border-bottom: 0;">Action</th>
+                                    <th scope="col" style="text-align:center !important;">Sl No</th>
+                                    <th scope="col" style="text-align:center !important;">Reason Name</th>
+                                    <th scope="col" style="text-align:center !important;">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for reason in reasons %}
                                 <tr>
-                                    <td>{{ forloop.counter }}</td>
-                                    <td>{{ reason  }}</td>
+                                    <td style="text-align:center">{{ forloop.counter }}</td>
+                                    <td style="text-align:left">{{ reason  }}</td>
                                    
                                     
                                     <td>

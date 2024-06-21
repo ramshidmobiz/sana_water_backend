@@ -29,10 +29,10 @@
                         <table id="datatable-basic" class="table table-bordered text-nowrap" style="width:100%">
                             <thead>
                                 <tr>
-                                    <th scope="col">Sl.No</th>
-                                    <th scope="col">Plate no</th>
-                                    <th scope="col">Route</th>
-                                    <th scope="col">Salesman</th>
+                                    <th style="text-align:center !important;" scope="col">Sl.No</th>
+                                    <th style="text-align:center !important;" scope="col">Plate no</th>
+                                    <th style="text-align:center !important;" scope="col">Route</th>
+                                    <th style="text-align:center !important;" scope="col">Salesman</th>
                                     {% comment %} <th scope="col">Total Stock <small>(Product + Coupon)</small></th> {% endcomment %}
                                     <th scope="col">Actions</th>
                                 </tr>
@@ -41,9 +41,9 @@
                                 {% for data in instances %}
                                 <tr>
                                     <td style="text-align:center;">{{forloop.counter}}</td>
-                                    <td>{{data.plate}}</td>
-                                    <td>{{data.driver}}</td>
-                                    <td>{{data.salesman}}</td>
+                                    <td style="text-align:left;">{{data.plate}}</td>
+                                    <td style="text-align:left;">{{data.driver}}</td>
+                                    <td style="text-align:left;">{{data.salesman}}</td>
                                     {% comment %} <td style="text-align:center;">{{data|get_total_vanstock:filter_data.filter_date}}</td> {% endcomment %}
                                     <td>
                                         <div class="g-2">

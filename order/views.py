@@ -104,7 +104,7 @@ def order_change(request):
     selected_product = None
     template = 'order/order_change.html'
     order_changes = Order_change.objects.all()
-    products = Product.objects.all()
+    products = ProdutItemMaster.objects.all()
     route_counts = {}
     today = datetime.today()
     if request.method == 'POST':
@@ -325,7 +325,7 @@ def order_return(request):
     selected_product = None
     template = 'order/order_return.html'
     order_returns = Order_return.objects.all()
-    products = Product.objects.all()
+    products = ProdutItemMaster.objects.all()
     route_counts = {}
     today = datetime.today()
     if request.method == 'POST':

@@ -45,7 +45,7 @@ from customer_care.models import *
 from client_management.models import *
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle,Paragraph
 import xlsxwriter
 from .models import *
 from openpyxl import Workbook
@@ -58,6 +58,7 @@ from reportlab.lib.pagesizes import letter, landscape
 from reportlab.lib.units import inch
 from invoice_management.models import *
 from van_management.models import Expense
+from reportlab.lib.styles import getSampleStyleSheet
 
 class TransactionHistoryListView(ListView):
     model = Transaction
@@ -1417,14 +1418,29 @@ def download_product_sales_print(request):
         customer_supply__customer__routes__route_name=route_name
     ).order_by("-customer_supply__created_date")
 
-    # Prepare data for PDF file
-    data = [
-        ["Time of Supply", "Ref/Invoice No", "Route Name", "Customer Name", "Mode of Supply", "Quantity",
-         "Empty Bottle Collected", "Coupon Collected", "Amount Collected"]
-    ]
+   # Prepare data for PDF file
+    styles = getSampleStyleSheet()
+    header_style = styles['Heading5']
+    header_style.fontSize = 14
+    header_style.textColor = colors.whitesmoke
+    header_style.alignment = 1  # Center align header text
 
-    for item in customer_supply_items:
+    data = [
+        [Paragraph("Sl No", header_style),
+         Paragraph("Time of Supply", header_style),
+         Paragraph("Ref/Invoice No", header_style),
+         Paragraph("Route Name", header_style),
+         Paragraph("Customer Name", header_style),
+         Paragraph("Mode of<br/>Supply", header_style),
+         Paragraph("Quantity", header_style),
+         Paragraph("Empty Bottle<br/>Collected", header_style),
+         Paragraph("Coupon<br/>Collected", header_style),
+         Paragraph("Amount<br/>Collected", header_style)]
+    ]
+    
+    for idx, item in enumerate(customer_supply_items, start=1):
         data.append([
+            idx,
             item.customer_supply.created_date.strftime('%d/%m/%Y'),
             item.customer_supply.reference_number,
             item.customer_supply.customer.routes.route_name,
@@ -1436,27 +1452,58 @@ def download_product_sales_print(request):
             item.amount
         ])
 
- # Create PDF document with landscape orientation
+
+
+    # Create PDF document with custom tabloid size in landscape orientation
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="Product_Sales_Report.pdf"'
-    doc = SimpleDocTemplate(response, pagesize=landscape(letter))  # Set orientation to landscape
+    custom_tabloid = (792, 1260)
+    doc = SimpleDocTemplate(response, pagesize=landscape(custom_tabloid))  # Set orientation to landscape
 
-    table = Table(data)
+    # Define column widths (adjusted for larger page size)
+    col_widths = [0.5 * inch, 1.75 * inch, 1.75 * inch, 2.25 * inch, 2.75 * inch, 1.75 * inch, 
+                  1.25 * inch, 1.75 * inch, 1.75 * inch, 1.75 * inch]
+
+    table = Table(data, colWidths=col_widths)
 
     # Add style to table
     style = TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),  # Center align header row
+
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),  # Adjust bottom padding for header rows
+        ('FONTSIZE', (0, 0), (-1, 0), 14),  # Increase font size for header row
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),  # Adjust bottom padding for header row
+        ('TOPPADDING', (0, 0), (-1, 0), 12),  # Add top padding for header row
+
+        ('ALIGN', (0, 1), (-1, -1), 'CENTER'),  # Center align all data rows
+        ('ALIGN', (0, 1), (0, -1), 'CENTER'),  # Center align Sl No column
+        ('ALIGN', (1, 1), (1, -1), 'CENTER'),  # Center align Time of Supply column
+        ('ALIGN', (2, 1), (2, -1), 'CENTER'),  # Center align Ref/Invoice No column
+        ('ALIGN', (3, 1), (3, -1), 'LEFT'),    # Left align Route Name column
+        ('ALIGN', (4, 1), (4, -1), 'LEFT'),    # Left align Customer Name column
+        ('ALIGN', (5, 1), (5, -1), 'LEFT'),    # Left align Mode of Supply column
+        ('ALIGN', (6, 1), (6, -1), 'RIGHT'),   # Right align Quantity column
+        ('ALIGN', (7, 1), (7, -1), 'RIGHT'),   # Right align Empty Bottle Collected column
+        ('ALIGN', (8, 1), (8, -1), 'RIGHT'),   # Right align Coupon Collected column
+        ('ALIGN', (9, 1), (9, -1), 'RIGHT'),   # Right align Amount Collected column
+        
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 13),  # Increase font size for data rows
+
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 12),  # Adjust bottom padding for data rows
+        ('TOPPADDING', (0, 1), (-1, -1), 12),  # Add top padding for data rows
+
         ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ])
     table.setStyle(style)
 
     # Add table to the PDF document
-    doc.build([table])
+    elements = []
+    elements.append(table)
+    doc.build(elements)
 
     return response
 
