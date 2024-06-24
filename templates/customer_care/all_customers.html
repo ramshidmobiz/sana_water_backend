@@ -67,14 +67,14 @@
                                 <table class="table table-bordered text-nowrap" style="width:100%">
                                     <thead>
                                         <tr>
-                                        <th scope="col">Sl.No</th>
-                                        <th scope="col">Customer Name</th>
-                                        <th scope="col">Route</th>
-                                        <th scope="col">Location</th>
-                                        <th scope="col">Mobile No</th>
-                                        <th scope="col">Building Name/<br>House No</th>
-                                        <th scope="col">Sales Type</th>
-                                        <th scope="col">Actions</th>
+                                        <th style="text-align:center !important;width:5%;" scope="col">Sl.No</th>
+                                        <th style="text-align:center !important;" scope="col">Customer Name</th>
+                                        <th style="text-align:center !important;" scope="col">Route</th>
+                                        <th style="text-align:center !important;" scope="col">Location</th>
+                                        <th style="text-align:center !important;" scope="col">Mobile No</th>
+                                        <th style="text-align:center !important;" scope="col">Building Name/<br>House No</th>
+                                        <th style="text-align:center !important;" scope="col">Sales Type</th>
+                                        <th style="text-align:center !important;" scope="col">Actions</th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -87,11 +87,11 @@
                                             <td style="text-align:left;">{{data.customer_name}}</td>
                                             <td style="text-align:left;">{{data.routes.route_name}}</td>
                                             <td style="text-align:left;">{{data.location.location_name}}</td>
-                                            <td style="text-align:left;">{{data.mobile_no}}</td>
+                                            <td style="text-align:right;">{{data.mobile_no}}</td>
                                             <td style="text-align:left;">{{data.building_name}},<br> {{data.door_house_no}}</td>
-                                            <td style="text-align:left;">{{data.sales_type}}</td>
+                                            <td style="text-align:center;">{{data.sales_type}}</td>
                                            
-                                            <td>
+                                            <td style="text-align:center;">
                                                 <div class="g-2">
                                                     <a href="{% url 'customer_details' data.customer_id %}" aria-label="anchor" class="btn  btn-warning-light btn-sm" data-bs-toggle="tooltip" data-bs-original-title="View">
                                                         <span class="bi bi-eye fs-14"></span>

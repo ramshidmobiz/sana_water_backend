@@ -50,45 +50,43 @@
                         <table  class="table table-bordered text-wrap" style="width: 100%">
                             <thead>
                                 <tr>
-                                    <th rowspan="2">Sl No</th>
-                                    <th rowspan="2">Customer Name/Mobile No</th>
-                                    <th rowspan="2">Required Qty</th>
-                                    <th rowspan="2">Enq Date</th>
-                                    <th rowspan="2">Req Date</th>
-                                    <th rowspan="2">Route</th>
-                                    <th rowspan="2">Salesman</th>
-                                    <th rowspan="2">status</th>
-                                    <th rowspan="2">Reassign</th>
-                                    <th rowspan="2">Cancel Request</th>
-                                    <th rowspan="2" style="width: 130px;">Edit Qty</th>
+                                    <th style="text-align:center !important;width:5%;" rowspan="2">Sl No</th>
+                                    <th style="text-align:center !important;" rowspan="2">Customer Name/Mobile No</th>
+                                    <th style="text-align:center !important;" rowspan="2">Required Qty</th>
+                                    <th style="text-align:center !important;" rowspan="2">Enq Date</th>
+                                    <th style="text-align:center !important;" rowspan="2">Req Date</th>
+                                    <th style="text-align:center !important;" rowspan="2">Route</th>
+                                    <th style="text-align:center !important;" rowspan="2">Salesman</th>
+                                    <th style="text-align:center !important;" rowspan="2">status</th>
+                                    <th style="text-align:center !important;" rowspan="2">Reassign</th>
+                                    <th style="text-align:center !important;" rowspan="2">Cancel Request</th>
+                                    <th style="text-align:center !important;" rowspan="2" style="width: 130px;">Edit Qty</th>
                                 </tr>
                                 
                             </thead>
                             <tbody>
                                 {% for bottle in bottles_data %}
                                 <tr>
-                                    <td>{{ forloop.counter }}</td>
-                                    <td>{{ bottle.customer.customer_name }}<br>{{ bottle.customer.mobile_no }}</td>
-                                    <td>{{ bottle.quantity_required }}</td>
-                                    <td>{{ bottle.created_date }}</td>
-                                    <td>{{ bottle.delivery_date.date }}</td>
-                                    <td>{{ bottle.customer.routes.route_name }}</td>
-                                    <td>{{ bottle.customer.sales_staff }}</td>
-                                    <td>{{ bottle.status}}</td>
+                                    <td style="text-align:center;">{{ forloop.counter }}</td>
+                                    <td style="text-align:left;">{{ bottle.customer.customer_name }}<br>{{ bottle.customer.mobile_no }}</td>
+                                    <td style="text-align:center;">{{ bottle.quantity_required }}</td>
+                                    <td style="text-align:center;">{{ bottle.created_date }}</td>
+                                    <td style="text-align:center;">{{ bottle.delivery_date.date }}</td>
+                                    <td style="text-align:left;">{{ bottle.customer.routes.route_name }}</td>
+                                    <td style="text-align:left;">{{ bottle.customer.sales_staff }}</td>
+                                    <td style="text-align:center;">{{ bottle.status}}</td>
                                     
-                                    <td>
+                                    <td style="text-align:center;">
                                         <a href="{% url 'reassign_request' bottle.diffbottles_id  %}" aria-label="anchor" class="btn btn-primary-light btn-sm"><span class="bi bi-plus-circle fs-14"></span>Reassign</a> 
                                     </td> 
-                                    <td>
+                                    <td style="text-align:center;">
                                         <a href="{% url 'cancel_request' bottle.diffbottles_id %}" onclick="return confirm('Are you sure you want to cancel this request?')">Cancel</a>
                                     </td>
 
-                                    <td>
-                                        <!-- Form for editing the quantity -->
+                                    <td style="text-align:center;">
                                         <form method="post" action="{% url 'edit_quantity' bottle.diffbottles_id %}">
                                             {% csrf_token %}
-                                            {% comment %} <input class="form-control" type="number" name="quantity" value="{{ bottle.quantity_required }}">
-                                            <button type="submit">Save</button> {% endcomment %}
+                                            
                                                 <div class="input-group"> 
                                                     <input type="text" class="form-control" name="quantity" placeholder="Recipient's username" value="{{ bottle.quantity_required }}" aria-label="Recipient's username"
                                                     aria-describedby="basic-addon2"> 

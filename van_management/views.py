@@ -32,6 +32,10 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
 from django.urls import reverse
 
+from .forms import BottleAllocationForm
+from django.db.models import Max
+
+
 
 def get_van_coupon_bookno(request):
     coupon_type = request.GET.get("productName")
@@ -730,7 +734,7 @@ def excel_download(request, route_id, def_date, trip):
 
         # Merge cells and write other information with borders
         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 16, 'border': 1})
-        worksheet.merge_range('A1:N2', f'Sana Water', merge_format)
+        worksheet.merge_range('A1:N2', f'National Water', merge_format)
         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
         worksheet.merge_range('A3:D3', f'Route:    {route.route_name}    {trip}', merge_format)
         worksheet.merge_range('E3:I3', f'Date: {def_date}', merge_format)
@@ -1189,38 +1193,6 @@ def salesman_requests(request):
         }
     return render(request, 'van_management/salesman_requests.html', context)
 
-# def BottleAllocationn(request):
-#     van_routes = Van_Routes.objects.all()
-#     route_details = []
-#     for route in van_routes:
-#         five_gallon_stock = VanProductStock.objects.filter(van=route.van, stock_type='opening_stock').aggregate(total_stock=Sum('count'))['total_stock']
-#         print(five_gallon_stock,'five_gallon_stock')
-#         customers = CustomerSupply.objects.filter(customer__routes=route.routes)
-#         print('customers',customers)
-#         customer_details = []
-#         for customer in customers:
-#             updated_date = customer.modified_date  
-#             print(updated_date,'updated_date')
-            
-#             customer_details.append({
-#                 'customer_name': customer.customer.customer_name,
-#                 'building_name': customer.customer.building_name,
-#                 'updated_date': updated_date.date,
-#             })
-
-#         route_details.append({
-#             'route_name': route.routes.route_name,
-#             'five_gallon_stock': five_gallon_stock,
-#             'customers': customer_details,
-#             'route_id' : route.routes.route_id,
-#         })
-
-#     context = {
-#         'route_details': route_details,
-#     }
-
-#     return render(request, 'van_management/bottle_allocation.html', context)
-from django.db.models import Max
 
 def BottleAllocationn(request):
     filter_data = {}
@@ -1236,11 +1208,15 @@ def BottleAllocationn(request):
     else:
         date = datetime.today().date()
         filter_data['filter_date'] = date.strftime('%Y-%m-%d')
-
+    
     for route in van_routes:
-        five_gallon_stock = VanProductStock.objects.get(created_date=date,van=route.van,product__product_name="5 Gallon").stock
+        # Fetch the 5 Gallon product stock for the given date, or default to 0 if not found
+        five_gallon_stock = VanProductStock.objects.filter(
+            created_date=date, van=route.van, product__product_name="5 Gallon"
+        ).aggregate(stock=Max('stock'))['stock'] or 0
+        
         latest_update = CustomerSupply.objects.filter(customer__routes=route.routes).aggregate(latest_update=Max('modified_date'))['latest_update']
-
+        
         route_details.append({
             'route_name': route.routes.route_name,
             'five_gallon_stock': five_gallon_stock,
@@ -1250,58 +1226,12 @@ def BottleAllocationn(request):
 
     context = {
         'route_details': route_details,
+        'filter_data': filter_data,
     }
 
     return render(request, 'van_management/bottle_allocation.html', context)
-# def BottleAllocationEdit(request, route_id):
-#     # allocation = get_object_or_404(BottleAllocation, id=route_id)
-    
-#     if request.method == 'POST':
-#         print("shdgfhkldsagfh")
-       
-#         # allocation.route = request.POST.get('route')
-#         # print("allocation.route")
-#         # allocation.fivegallon_count = request.POST.get('fivegallon_count')
-#         # allocation.reason = request.POST.get('reason')
-#         # allocation.save()
-#         route =request.POST.get('route')
-#         print(route,'route')
-#         fivegallon_count = request.POST.get('fivegallon_count')
-#         print(fivegallon_count,'fivegallon_count')
-
-#         reason = request.POST.get('reason')
-#         print('reason',reason)
-#         allocation = BottleAllocation.objects.create(id=route_id,route=route,fivegallon_count=fivegallon_count,reason=reason) 
-                                       
-#         allocation.save()
-#         print("allocation",allocation)
-#         return render(request, 'van_management/bottle_allocation_edit.html')
-    
-#     return render(request, 'van_management/bottle_allocation_edit.html')
 
 
-
-# def BottleAllocationEdit(request, route_id):
-#     # Retrieve the BottleAllocation object based on the provided route_id
-#     allocation = get_object_or_404(BottleAllocation, id=route_id)
-    
-#     if request.method == 'POST':
-#         route = request.POST.get('route')
-#         fivegallon_count = request.POST.get('fivegallon_count')
-#         reason = request.POST.get('reason')
-
-#         # Update the attributes of the existing BottleAllocation object
-#         allocation.route = route
-#         allocation.fivegallon_count = fivegallon_count
-#         allocation.reason = reason
-#         allocation.save()
-#         print('hgshxhjdhg')
-#         # Redirect to a success page or render a success message
-#         return render(request, 'van_management/bottle_allocation_edit.html')
-    
-#     # Pass the BottleAllocation object to the template for editing
-#     return render(request, 'van_management/bottle_allocation_edit.html', {'allocation': allocation})
-from .forms import BottleAllocationForm
 
 def EditBottleAllocation(request, route_id=None):
     if route_id:
