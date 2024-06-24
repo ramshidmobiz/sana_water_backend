@@ -15,6 +15,7 @@ urlpatterns = [
 
     path('customers', Customer_List.as_view(), name='customers'),
     path('customer_create',create_customer, name='customer_create'),
+    path('load_locations/', load_locations, name='load_locations'),
     path('customer_details/<str:pk>', Customer_Details.as_view(), name='customer_details'),
     path('edit_customer/<str:pk>',edit_customer, name='edit_customer'),
     path('delete_customer/<str:pk>',delete_customer, name='delete_customer'),

@@ -70,7 +70,14 @@
                             <!--                                <small class="form-text text-muted">Select Category.</small>-->
                         </div>
                     </div>
-
+                    <div class="col-md-6">
+                        <div class="form-group required">
+                            <label class='control-label'>Emirate</label>
+                            {{ form.emirate }}
+                            <span style="color: red;">{{ form.emirate.errors }}</span>
+                            <!--                                <small class="form-text text-muted">Select Category.</small>-->
+                        </div>
+                    </div>
 
                     <div class="col-md-6">
                         <div class="form-group required">
@@ -192,6 +199,24 @@
                    href="{% url 'users' %}"><i class="bi bi-backspace-fill pe-1"></i> Back to Dashboard </a>
             </div>
         </form>
+        <script type="text/javascript">
+            $(document).ready(function() {
+                $("#id_emirate").change(function() {
+                    var url = "{% url 'load_locations' %}"; 
+                    var emirateId = $(this).val(); 
+                    $.ajax({
+                        url: url,
+                        data: {'emirate_id': emirateId},
+                        success: function(data) {
+                            $("#id_location").html('');
+                            for (var i = 0; i < data.length; i++) {
+                                $("#id_location").append('<option value="' + data[i].id + '">' + data[i].location_name + '</option>');
+                            }
+                        }
+                    });
+                });
+            });
+        </script>
         </div>
     </div>
     <script>
@@ -207,6 +232,7 @@
             }
         });
     </script>
+   
 {% endblock %}
 
 
