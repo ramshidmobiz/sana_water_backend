@@ -26,25 +26,25 @@
                             <table id="datatable-basic" class="table table-bordered text-wrap " style="width: 100%;"  data-page-length="50">
                                 <thead>
                                     <tr>
-                                        <th scope="col">Sl No</th>
-                                        <th scope="col">Route Name</th>
-                                        <th scope="col">Sales man</th>
-                                        <th scope="col">Cash</th>
-                                        <th scope="col">Credit</th>
-                                        <th scope="col">Coupon</th>
-                                        <th scope="col">Total</th>
-                                    </tr>
+                                        <th style="text-align:center !important;width:5%;" scope="col">Sl No</th>
+                                        <th style="text-align:center !important;" scope="col">Route Name</th>
+                                        <th style="text-align:center !important;" scope="col">Sales man</th>
+                                        <th style="text-align:center !important;" scope="col">Cash</th>
+                                        <th style="text-align:center !important;" scope="col">Credit</th>
+                                        <th style="text-align:center !important;" scope="col">Coupon</th>
+                                        <th style="text-align:center !important;" scope="col">Total</th>
+                                    </tr> 
                                 </thead>
                                 <tbody>
                                     {% for count in customer_counts %}
                                     <tr>
-                                        <td>{{ forloop.counter }}</td>
-                                        <td>{{ count.route_name }}</td>
-                                        <td>{{ count.sales_man }}</td>
-                                        <td>{{ count.cash_count }}</td>
-                                        <td>{{ count.credit_count }}</td>
-                                        <td>{{ count.coupon_count }}</td>
-                                        <td>{{ count.total_customer }}</td>
+                                        <td style="text-align:center;">{{ forloop.counter }}</td>
+                                        <td style="text-align:left;">{{ count.route_name }}</td>
+                                        <td style="text-align:let;">{{ count.sales_man }}</td>
+                                        <td style="text-align:right;">{{ count.cash_count }}</td>
+                                        <td style="text-align:right;">{{ count.credit_count }}</td>
+                                        <td style="text-align:right;">{{ count.coupon_count }}</td>
+                                        <td style="text-align:right;">{{ count.total_customer }}</td>
                                     </tr>
                                     {% endfor %}
                                     

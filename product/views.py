@@ -998,6 +998,7 @@ def product_stock_excel_download(request):
 
     # Create a dictionary to store data
     data = {
+        
         'Product Name': [product_stock.product_name for product_stock in product_stocks],
         'Stock Quantity': [product_stock.quantity for product_stock in product_stocks],
         'Branch': [product_stock.branch for product_stock in product_stocks],

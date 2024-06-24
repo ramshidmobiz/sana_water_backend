@@ -33,13 +33,13 @@
                                 <table class="table table-bordered text-nowrap" style="width:100%">
                                     <thead>
                                         <tr>
-                                            <th scope="col">Sl.No</th>
-                                            <th scope="col">Product Category</th>
-                                            <th scope="col">Product Name</th>
-                                            <th scope="col" style="text-align:center;">Unit</th>
-                                            <th scope="col" style="text-align:center;">Quantity</th>                                                                      
-                                            <th scope="col" class="text-center">Rate</th>  
-                                            <th scope="col" class="text-end">Actions</th>
+                                            <th scope="col" style="text-align:center !important;">Sl.No</th>
+                                            <th scope="col" style="text-align:center !important;">Product Category</th>
+                                            <th scope="col" style="text-align:center !important;">Product Name</th>
+                                            <th scope="col" style="text-align:center !important;">Unit</th>
+                                            <th scope="col" style="text-align:center !important;">Quantity</th>                                                                      
+                                            <th scope="col" style="text-align:center !important;">Rate</th>  
+                                            <th scope="col" style="text-align:center !important;">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -48,13 +48,13 @@
                                         {% for data in instances %}
                                         <tr>
                                             <td style="text-align:center;">{{forloop.counter}}</td>
-                                            <td>{{data.product_name.category}}</td>
-                                            <td>{{data.product_name.product_name}}</td>
-                                            <td style="text-align:center;">{{data.product_name.unit}}</td>
+                                            <td style="text-align:left;" >{{data.product_name.category}}</td>
+                                            <td style="text-align:left;">{{data.product_name.product_name}}</td>
+                                            <td style="text-align:left;">{{data.product_name.unit}}</td>
                                             <td style="text-align:center;">{{data.quantity}}</td>
-                                            <td style="text-align:right;">{{data.product_name.rate}}</td>
+                                            <td style="text-align:center;">{{data.product_name.rate}}</td>
                                            
-                                            <td style="text-align:right;">
+                                            <td style="text-align:left;">
                                                 <div class="g-2">
                                                     <a href="{% url 'product_details' data.product_id %}" aria-label="anchor" class="btn  btn-warning-light btn-sm" data-bs-toggle="tooltip" data-bs-original-title="View">
                                                         <span class="bi bi-eye fs-14"></span>

@@ -1277,8 +1277,6 @@ def product_route_salesreport(request):
     template = 'sales_management/product_route_salesreport.html'
     filter_data = {}
 
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
     selected_product_id = request.GET.get('selected_product_id')
 
     selected_product = None
@@ -1311,19 +1309,27 @@ def product_route_salesreport(request):
     customersupplyitems = CustomerSupplyItems.objects.all()
     coupons_collected = CustomerSupplyCoupon.objects.all()
     products = ProdutItemMaster.objects.all()
-    today = datetime.today().date()
+    # today = datetime.today().date()
+    
+    start_date = datetime.today().date()
+    end_date = datetime.today().date() + timedelta(days=1)
 
     # Apply date range filter if both start_date and end_date are provided
-    if start_date and end_date:
-        customersupplyitems = customersupplyitems.filter(
-            customer_supply__created_date__range=[start_date, end_date]
-        )
-        coupons_collected = coupons_collected.filter(
-            customer_supply__created_date__range=[start_date, end_date],
-            customer_supply__customer__sales_type='CASH COUPON'
-        )
-        filter_data['start_date'] = start_date
-        filter_data['end_date'] = end_date
+    if request.GET.get('start_date') and request.GET.get('end_date'):
+        start_date = datetime.strptime(request.GET.get('start_date'), '%Y-%m-%d').date()
+        end_date = datetime.strptime(request.GET.get('end_date'), '%Y-%m-%d').date()
+
+    customersupplyitems = customersupplyitems.filter(
+        customer_supply__created_date__range=[start_date, end_date]
+    )
+    coupons_collected = coupons_collected.filter(
+        customer_supply__created_date__range=[start_date, end_date],
+        customer_supply__customer__sales_type='CASH COUPON'
+    )
+
+    # Convert to the required format for the HTML date input
+    filter_data['start_date'] = start_date.strftime('%Y-%m-%d')
+    filter_data['end_date'] = end_date.strftime('%Y-%m-%d')
 
     # Apply product filter if selected_product is provided
     if selected_product:
@@ -1343,7 +1349,6 @@ def product_route_salesreport(request):
     context = {
         'customersupplyitems': customersupplyitems.order_by("-customer_supply__created_date"),
         'products': products,
-        'today': today,
         'filter_data': filter_data,
         'coupons_collected': coupons_collected,
         'route_li': route_li,
@@ -1410,14 +1415,23 @@ def download_product_sales_print(request):
     end_date = request.GET.get('end_date')
     route_name = request.GET.get('route_name')
     selected_product_id = request.GET.get('selected_product_id')
+    
+    if start_date and end_date:
+        customer_supply_items = CustomerSupplyItems.objects.filter(
+            customer_supply__created_date__range=[start_date, end_date],
+        )
 
-    # Filter customer supply items based on the provided parameters
-    customer_supply_items = CustomerSupplyItems.objects.filter(
-        customer_supply__created_date__range=[start_date, end_date],
-        product_id=selected_product_id,
-        customer_supply__customer__routes__route_name=route_name
-    ).order_by("-customer_supply__created_date")
-
+    if route_name:
+        customer_supply_items = CustomerSupplyItems.objects.filter(
+            customer_supply__customer__routes__route_name=route_name
+        )
+    
+    if selected_product_id:
+        customer_supply_items = CustomerSupplyItems.objects.filter(
+            product_id=selected_product_id
+        )
+    customer_supply_items = customer_supply_items.order_by("-customer_supply__created_date")
+    
    # Prepare data for PDF file
     styles = getSampleStyleSheet()
     header_style = styles['Heading5']
@@ -1528,18 +1542,12 @@ def yearmonthsalesreport(request):
 
     route_sales = []
     current_year = datetime.now().year
-    print(route_sales,"route_sales")
-    print(current_year,'current_year')
     current_month = datetime.now().month
-    print(current_month,'current_month')
 
 
     for route in route_li:
         ytd_sales = CustomerSupply.objects.filter(customer__routes=route, created_date__year=current_year).aggregate(total_sales=Sum('grand_total'))['total_sales'] or 0
-        print('ytd_sales',ytd_sales)
-
         mtd_sales = CustomerSupply.objects.filter(customer__routes=route, created_date__year=current_year, created_date__month=current_month).aggregate(total_sales=Sum('grand_total'))['total_sales'] or 0
-        print('mtd_sales',mtd_sales)
 
         route_sales.append({
             'route': route,
@@ -1547,8 +1555,6 @@ def yearmonthsalesreport(request):
             'mtd_sales': mtd_sales,
             'year': current_year,
         })
-        print(route_sales,'route_sales')
-
 
     context = {
         'user_li': user_li, 
@@ -2151,11 +2157,8 @@ def customerSales_Print_report(request):
 
 #     return render(request, 'sales_management/collection_report.html', context)
 def collectionreport(request):
-    start_date = None
-    end_date = None
-    selected_date = None
-    selected_route_id = None
-    selected_route = None
+    filter_data = {}
+    selected_route_id = request.GET.get('route_name')
     template = 'sales_management/collection_report.html'
     
     collection_payments = CollectionItems.objects.all()
@@ -2166,24 +2169,24 @@ def collectionreport(request):
     
     start_date_str = request.GET.get('start_date')
     end_date_str = request.GET.get('end_date')
+    
+    start_date = datetime.today().date()
+    end_date = datetime.today().date() + timedelta(days=1)
 
     if start_date_str and end_date_str:
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-    else:
-        start_date = datetime.today().date()
-        end_date = datetime.today().date() + timedelta(days=1)
+    
 
-    filter_data = {
-        'start_date': start_date.strftime('%Y-%m-%d'),
-        'end_date': end_date.strftime('%Y-%m-%d'),
-    }
+    filter_data['start_date'] = start_date.strftime('%Y-%m-%d')
+    filter_data['end_date'] = end_date.strftime('%Y-%m-%d')
+    
     collection_payments = collection_payments.filter(collection_payment__created_date__date__range=[start_date, end_date])
     
     if selected_route_id:
         selected_route = RouteMaster.objects.get(route_name=selected_route_id)
         collection_payments = collection_payments.filter(collection_payment__customer__routes__route_name=selected_route)
-        filter_data = {'selected_route': selected_route}
+        filter_data['selected_route'] = selected_route_id
     
     context = {
         'collection_payments': collection_payments, 

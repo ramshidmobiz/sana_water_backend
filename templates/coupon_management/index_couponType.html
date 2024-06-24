@@ -37,12 +37,12 @@
                                 <table id="datatable-basic" class="table table-bordered text-nowrap" style="width: 100%">
                                     <thead>
                                         <tr>
-                                            <th scope="col">Sl No</th>
-                                            <th scope="col">Coupon Type Name</th>
-                                            <th scope="col">No of Leaflets</th>
-                                            <th scope="col">Valuable Leaflets</th>
-                                            <th scope="col">Free Leaflets</th>
-                                            <th></th>
+                                            <th style="text-align:center !important;width:5%;">Sl No</th>
+                                            <th style="text-align:center !important;">Coupon Type Name</th>
+                                            <th style="text-align:center !important;">No of Leaflets</th>
+                                            <th style="text-align:center !important;">Valuable Leaflets</th>
+                                            <th style="text-align:center !important;">Free Leaflets</th>
+                                            <th style="text-align:center !important;">Actions</th>
                                             
                                         </tr>
                                     </thead>
@@ -50,11 +50,11 @@
                                         
                                             {% for coupontype in all_couponType %}
                                             <tr>
-                                                <td>{{ forloop.counter }}</td>
-                                                <td>{{coupontype.coupon_type_name}}</td>
-                                                <td>{{coupontype.no_of_leaflets}}</td>
-                                                <td>{{coupontype.valuable_leaflets}}</td>
-                                                <td>{{coupontype.free_leaflets}}</td>
+                                                <td style="text-align:center;">{{ forloop.counter }}</td>
+                                                <td style="text-align:left;">{{coupontype.coupon_type_name}}</td>
+                                                <td style="text-align:right;">{{coupontype.no_of_leaflets}}</td>
+                                                <td style="text-align:right;">{{coupontype.valuable_leaflets}}</td>
+                                                <td style="text-align:right;">{{coupontype.free_leaflets}}</td>
 
                                                 <td>
                                                     <div class="g-2">

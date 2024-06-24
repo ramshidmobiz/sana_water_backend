@@ -199,42 +199,43 @@
                    href="{% url 'users' %}"><i class="bi bi-backspace-fill pe-1"></i> Back to Dashboard </a>
             </div>
         </form>
-        <script type="text/javascript">
-            $(document).ready(function() {
-                $("#id_emirate").change(function() {
-                    var url = "{% url 'load_locations' %}"; 
-                    var emirateId = $(this).val(); 
-                    $.ajax({
-                        url: url,
-                        data: {'emirate_id': emirateId},
-                        success: function(data) {
-                            $("#id_location").html('');
-                            for (var i = 0; i < data.length; i++) {
-                                $("#id_location").append('<option value="' + data[i].id + '">' + data[i].location_name + '</option>');
-                            }
-                        }
-                    });
-                });
-            });
-        </script>
+        
         </div>
     </div>
-    <script>
+{% endblock %}
+{% block static %}
+{% load static %}
+<script>
        
-        document.getElementById("id_sales_type").addEventListener("change", function () {
-            var creditFields = document.getElementById("credit-fields");
-    
-            
-            if (this.value === "CREDIT") {
-                creditFields.style.display = "block";
-            } else {
-                creditFields.style.display = "none";
+    document.getElementById("id_sales_type").addEventListener("change", function () {
+        var creditFields = document.getElementById("credit-fields");
+
+        
+        if (this.value === "CREDIT") {
+            creditFields.style.display = "block";
+        } else {
+            creditFields.style.display = "none";
+        }
+    });
+</script>
+
+<script type="text/javascript">
+    $("#id_emirate").change(function() {
+        var url = "{% url 'load_locations' %}"; 
+        var emirateId = $(this).val(); 
+        $.ajax({
+            url: url,
+            data: {'emirate_id': emirateId},
+            success: function(data) {
+                $("#id_location").html('');
+                for (var i = 0; i < data.length; i++) {
+                    $("#id_location").append('<option value="' + data[i].id + '">' + data[i].location_name + '</option>');
+                }
             }
         });
-    </script>
-   
-{% endblock %}
-
+    });
+</script>
+{% endblock static %}
 
 
 

@@ -27,21 +27,21 @@
                         <table id="datatable-basic" class="table table-bordered text-nowrap" style="width:100%">
                             <thead>
                                 <tr>
-                                    <th scope="col" style="text-align:center;">Sl.No</th>
-                                    <th scope="col" style="text-align:center;">Product Name</th>
-                                    <th scope="col" style="text-align:center;">Stock Quantity</th>
-                                    <th scope="col" style="text-align:center;">Branch</th>
-                                    <th scope="col" style="text-align:center;">Status</th>
+                                    <th scope="col" style="text-align:center !important;">Sl.No</th>
+                                    <th scope="col" style="text-align:center !important;">Product Name</th>
+                                    <th scope="col" style="text-align:center !important;">Stock Quantity</th>
+                                    <th scope="col" style="text-align:center !important;">Branch</th>
+                                    <th scope="col" style="text-align:center !important;">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for instance in instances %}
                                 <tr>
                                     <td style="text-align:center;">{{forloop.counter}}</td>
-                                    <td>{{instance.product_name}}</td>
+                                    <td style="text-align:left;">{{instance.product_name}}</td>
                                     <td style="text-align:center;">{{instance.quantity}}</td>
-                                    <td style="text-align:center;">{{instance.branch}}</td>
-                                    <td style="text-align:center;">{{instance.status}}</td>
+                                    <td style="text-align:left;">{{instance.branch}}</td>
+                                    <td style="text-align:left;">{{instance.status}}</td>
                                     
                                 </tr>
                                 {% endfor %}

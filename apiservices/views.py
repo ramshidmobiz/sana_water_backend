@@ -1744,12 +1744,13 @@ class Staff_New_Order(APIView):
             with transaction.atomic():
                 data_list = request.data.get('data_list', [])
                 uid = uuid.uuid4()
-                uid = str(uid)[:5]
+                uid = str(uid)[:2]
                 dtm = date.today().month
                 dty = date.today().year
                 dty = str(dty)[2:]
                 num = str(uid) + str(dtm) + str(dty)
-                request.data["order_num"] = num
+                # request.data["order_num"] = num
+                # print(num.upper())
                 
                 order_date = request.GET.get('order_date')
             
@@ -1762,7 +1763,7 @@ class Staff_New_Order(APIView):
                 if serializer_1.is_valid(raise_exception=True):
                     order_data = serializer_1.save(
                         created_by=request.user.id,
-                        order_number=num,
+                        order_number=num.upper(),
                         order_date=order_date
                     )
                     staff_order = order_data.staff_order_id
@@ -5684,8 +5685,8 @@ class WaterBottlePurchaseAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request, *args, **kwargs):
-        customer_orders = CustomerOrders.objects.filter(customer__user_id=request.user,product__category__category_name='Water')
-        serializer = CustomerOrderSerializer(customer_orders, many=True)        
+        products = CustomerOrders.objects.filter(customer__user_id=request.user.id, product__category__category_name='Water')
+        serializer = WaterCustomerOrderSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 class CustodyCustomerView(APIView):
@@ -5693,12 +5694,10 @@ class CustodyCustomerView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        user = request.user.id
-        print(user,'user')
-        queryset = CustomerCustodyStock.objects.filter(customer=user)
+        user_id = request.user.id
+        queryset = CustomerCustodyStock.objects.filter(customer__user_id=user_id)
         serializer = CustomerCustodyStocksSerializer(queryset, many=True)
-        return Response(serializer.data)
-
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 

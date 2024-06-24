@@ -32,26 +32,26 @@
                         <table id="datatable-basic" class="table table-bordered text-nowrap" style="width: 100%">
                             <thead>
                                 <tr>
-                                    <th scope="col">Sl No</th>
-                                    <th scope="col">Book No</th>
-                                    <th scope="col">Coupon Type</th>
-                                    <th scope="col">No of Leaflets</th>
-                                    <th scope="col">Valuable Leaflets</th>
-                                    <th scope="col">Free Leaflets</th>
-                                    <th scope="col">Status</th>
-                                    <th scope="col">Actions</th>
+                                    <th style="text-align:center !important;width:5%;">Sl No</th>
+                                    <th style="text-align:center !important;">Book No</th>
+                                    <th style="text-align:center !important;">Coupon Type</th>
+                                    <th style="text-align:center !important;">No of Leaflets</th>
+                                    <th style="text-align:center !important;">Valuable Leaflets</th>
+                                    <th style="text-align:center !important;">Free Leaflets</th>
+                                    <th style="text-align:center !important;">Status</th>
+                                    <th style="text-align:center !important;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for coupon in all_coupon %}
                                 <tr>
-                                    <td>{{ forloop.counter }}</td>
-                                    <td>{{ coupon.book_num }}</td>
-                                    <td>{{ coupon.coupon_type }}</td>
-                                    <td>{{ coupon.no_of_leaflets }}</td>
-                                    <td>{{ coupon.valuable_leaflets }}</td>
-                                    <td>{{ coupon.free_leaflets }}</td>
-                                    <td>
+                                    <td style="text-align:center;">{{ forloop.counter }}</td>
+                                    <td style="text-align:left;">{{ coupon.book_num }}</td>
+                                    <td style="text-align:left;">{{ coupon.coupon_type }}</td>
+                                    <td style="text-align:right;">{{ coupon.no_of_leaflets }}</td>
+                                    <td style="text-align:right;">{{ coupon.valuable_leaflets }}</td>
+                                    <td style="text-align:right;">{{ coupon.free_leaflets }}</td>
+                                    <td style="text-align:left;">
                                         {% for coupon_stock in coupon.couponbook_stock.all %}
                                         {{ coupon_stock.coupon_stock }}
                                         {% endfor %}

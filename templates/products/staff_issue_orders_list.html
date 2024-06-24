@@ -27,10 +27,10 @@
                         <div class="row">
                             <div class="col-sm-12">
                                 <div class="page-title-box">
-                                    <div class="row">
-                                        <div class="col">
-                                            <div class="mt">
-                                                <form method="GET">
+                                    <form method="GET">
+                                        <div class="row">
+                                            <div class="col">
+                                                <div class="mt">
                                                     <div class="card-body">
                                                         <div class="row col-md-8">
                                                             <div class="col-auto col-form-label text-end">
@@ -45,19 +45,17 @@
                                                         
                                                         </div>
                                                     </div>
-                                                </form>
-                                            </div>
-                                        </div><!--end col-->
-                                        <div class="col-auto col-sm-2 float-right ml-auto">
-                                            <form method="get" action=".">
+                                                </div>
+                                            </div><!--end col-->
+                                            <div class="col-auto col-sm-2 float-right ml-auto">
                                                 <li class="list-inline-item w-100">
                                                     <div class="input-group">
                                                         <input name="q" type="text" placeholder="order id" value="{{ filter_data.q }}" class="form-control" />
                                                     </div>
                                                 </li>
-                                            </form>
-                                        </div>
-                                    </div><!--end row-->                                                              
+                                            </div>
+                                        </div><!--end row-->       
+                                    </form>                                                       
                                 </div><!-- end page-title-box -->
                             </div><!--end col-->
                         </div><!--end row-->
@@ -82,9 +80,9 @@
                                 {% for data in instances %}
                                 <tr>
                                     <td style="text-align:center;">{{forloop.counter}}</td>
-                                    <td style="text-align:center;">{{data.created_date|date}}</td>
-                                    <td style="text-align:center;">{{data.order_date|date}}</td>
-                                    <td style="text-align:center;">{{forloop.counter}}</td>
+                                    <td style="text-align:center;">{{data.created_date|date:"d/m/Y"}}</td>
+                                    <td style="text-align:center;">{{data.order_date|date:"d/m/Y"}}</td>
+                                    <td style="text-align:left;">{{data.order_number}}</td>
                                     {% if data.created_by %}
                                         {% get_salesman_name data.created_by as salseman %}
                                         <td style="text-align:left;">{{salseman}}</td>

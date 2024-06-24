@@ -41,7 +41,7 @@
                                         <select name="route_name" class="form-select">
                                             <option value="">All Routes</option>
                                             {% for route in routes %}
-                                                <option value="{{ route.route_name }}"  {% if route.route_name == filter_data.route_name %}selected{% endif %}>{{ route.route_name }}</option>
+                                                <option value="{{ route.route_name }}"  {% if filter_data.selected_route == route.route_name %}selected{% endif %}>{{ route.route_name }}</option>
                                             {% endfor %}
                                         </select>
                                     </div>

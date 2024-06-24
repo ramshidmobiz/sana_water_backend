@@ -1283,10 +1283,11 @@ class CustomerCouponPurchaseSerializer(serializers.ModelSerializer):
         model = CustomerOrders
         fields = ['id', 'created_date', 'order_status']
 
-class CustomerOrderSerializer(serializers.ModelSerializer):
+
+class WaterCustomerOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomerOrders
-        fields = ['order_number', 'created_date', 'payment_option']
+        fields = ['id', 'product', 'order_status', 'delivery_date']
 
 class StockMovementProductsSerializer(serializers.ModelSerializer):
     class Meta:

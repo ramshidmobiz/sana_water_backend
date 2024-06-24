@@ -75,9 +75,9 @@ class Users_List(View):
     def get(self, request, *args, **kwargs):
         query = request.GET.get("q")
 
-        user_li = CustomUser.objects.filter()
+        instances = CustomUser.objects.filter(user_type__in=['Driver','Salesman','Supervisor','Manager','Customer Care','Accounts'])
         if query:
-            user_li = user_li.filter(
+            instances = instances.filter(
                 Q(first_name__icontains=query) |
                 Q(designation_id__designation_name__icontains=query) |
                 Q(staff_id__icontains=query) |
@@ -86,7 +86,7 @@ class Users_List(View):
             )
 
         context = {
-            'user_li': user_li,
+            'instances': instances,
             'q': query
             }
         return render(request, self.template_name, context)
@@ -338,8 +338,8 @@ def create_customer(request):
     #         return render(request, template_name,context)
 def load_locations(request):
     emirate_id = request.GET.get('emirate_id')
-    locations = LocationMaster.objects.filter(emirate=emirate_id).all()
-    return JsonResponse(list(locations.values('id', 'location_name')), safe=False)
+    locations = LocationMaster.objects.filter(emirate__pk=emirate_id).all()
+    return JsonResponse(list(locations.values('location_id', 'location_name')), safe=False)
 
 class Customer_Details(View):
     template_name = 'accounts/customer_details.html'
