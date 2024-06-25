@@ -195,12 +195,6 @@ class ChequeCouponPaymentSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ['id','customer_coupon_payment']
 
-class ProdutItemMasterSerializer(serializers.ModelSerializer):
-    
-    class Meta:
-        model = ProdutItemMaster
-        fields = ['product_name']
-
 class ProductSerializer(serializers.ModelSerializer):
     product_name = ProdutItemMasterSerializer()
     class Meta:
