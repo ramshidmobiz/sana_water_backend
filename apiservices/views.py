@@ -5286,7 +5286,8 @@ class CustomerLoginApi(APIView):
                         water_rate = five_gallon.rate
                         
                     data = {
-                        'id': user_obj.id,
+                        'id': instances.first().custom_id,
+                        'customer_pk': instances.first().customer_id,
                         'username': username,
                         'user_type': user_obj.user_type,
                         'sales_type': instances.first().sales_type,

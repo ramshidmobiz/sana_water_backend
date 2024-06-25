@@ -31,23 +31,23 @@
                                 <table id="responsiveDataTable" class="table table-bordered text-nowrap" style="width:100%">
                                     <thead>
                                         <tr>
-                                            <th scope="col">Sl.No</th>
-                                            <th scope="col">Name</th>
-                                            <th scope="col">Start Date</th>
-                                            <th scope="col">End Date</th>
-                                            <!-- <th scope="col">Note</th> -->
-                                            <th scope="col">Actions</th>
+                                            <th style="text-align:center !important;width:5%;" scope="col">Sl.No</th>
+                                            <th style="text-align:center !important;" scope="col">Name</th>
+                                            <th style="text-align:center !important;" scope="col">Start Date</th>
+                                            <th style="text-align:center !important;" scope="col">End Date</th>
+                                            <!--style="text-align:center !important;"  <th scope="col">Note</th> -->
+                                            <th style="text-align:center !important;" scope="col">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for data in vacation %}
                                         <tr>
                                             <td style="text-align:center;">{{forloop.counter}}</td>
-                                            <td style="text-align:center;">{{data.customer}}</td>
-                                            <td style="text-align:center;">{{data.start_date}}</td>
-                                            <td style="text-align:center;">{{data.end_date}}</td>
+                                            <td style="text-align:left;">{{data.customer}}</td>
+                                            <td style="text-align:center;">{{data.start_date|date:'d/m/Y' }}</td>
+                                            <td style="text-align:center;">{{data.end_date|date:'d/m/Y' }}</td>
                                             <!-- <td style="text-align:center;">{{ data.note }}</td> -->
-                                            <td>
+                                            <td style="text-align:center;">
                                                 <div class="g-2">
                                                     
                                                     <a href="{% url 'vacation_edit' data.vacation_id %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Edit">
