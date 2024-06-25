@@ -333,4 +333,21 @@ class EmptyCanStock(models.Model):
     
 
     def __str__(self):
-        return f"{self.id}"   
+        return f"{self.id}" 
+    
+      
+class OffloadRequest(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True, blank=True)
+    quantity=models.PositiveIntegerField(default=0)
+    
+    created_by = models.CharField(max_length=20, blank=True)
+    modified_by = models.CharField(max_length=20, null=True, blank=True)
+    created_date = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    modified_date = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ('created_date',)
+
+    def __str__(self):
+        return str(self.product.product_name)

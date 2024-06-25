@@ -578,7 +578,7 @@ def visit_days_assign(request, customer_id):
         visit_schedule_data = {day: [] for day in days_of_week}
 
         # Iterate over the days of the week and update the dictionary based on the POST data
-        for week_number in "1234":
+        for week_number in "12345":
             week_key = f"Week{week_number}[]"
             selected_days = request.POST.getlist(week_key)
             for day in selected_days:

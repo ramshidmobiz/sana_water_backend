@@ -1605,20 +1605,27 @@ class Add_Customer_Custody_Item_API(APIView):
 
     def post(self,request, *args, **kwargs):
         try:
-            username = request.headers['username']
-            print("username")
-            user = CustomUser.objects.get(username=username)
+            user = CustomUser.objects.get(username=request.user.username)
             data_list = request.data.get('data_list', [])
+            custody_data = CustodyCustom.objects.create(
+                customer=Customers.objects.get(pk=request.data.get('customer_id')),
+                agreement_no=request.data.get('agreement_no'),
+                total_amount=request.data.get('total_amount'),
+                deposit_type=request.data.get('deposit_type'),
+                reference_no=request.data.get('reference_no'),
+                created_by=user.pk,
+                created_date=datetime.today(),
+            )
+            print(data_list)
             serializer = CustomerCustodyItemSerializer(data=data_list, many=True)
             if serializer.is_valid():
-                serializer.save(created_by=user.id)
+                serializer.save(custody_custom=custody_data)
                 return Response({'status': True,'message':'Customer Custody Item Succesfully Created'},status=status.HTTP_201_CREATED)
             else :
                 return Response({'status': False,'message':serializer.errors},status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
-            print(e)
-            return Response({'status': False, 'message': 'Something went wrong!'})
+            return Response({'status': False, 'message': str(e)})
 
     def get(self,request,id=None):
         try:
@@ -1626,7 +1633,7 @@ class Add_Customer_Custody_Item_API(APIView):
             print("customer_exists")
             if customer_exists:
                 customer_exists = Customers.objects.get(customer_id=id)
-                custody_list = CustodyCustomItems.objects.filter(customer=customer_exists.customer_id)
+                custody_list = CustodyCustomItems.objects.filter(custody_custom__customer=customer_exists)
                 if custody_list:
                     serializer = CustodyItemSerializers(custody_list, many=True)
                     print(serializer.data)
@@ -1638,7 +1645,7 @@ class Add_Customer_Custody_Item_API(APIView):
 
         except Exception as e:
             print(e)
-            return Response({'status': False, 'message': 'Something went wrong!'})
+            return Response({'status': False, 'message': str(e)})
 
     def put(self, request, *args, **kwargs):
         try:

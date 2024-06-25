@@ -70,9 +70,16 @@ class CustomerCustodyItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustodyCustomItems
         fields = '__all__'
-
+        
+        
+class ProdutItemMasterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProdutItemMaster
+        fields = ['id','product_name','unit','tax','rate','created_date']
+        
+        
 class CustodyItemSerializers(serializers.ModelSerializer):
-    product = Products_Serializers()
+    product = ProdutItemMasterSerializer()
     class Meta:
         model = CustodyCustomItems
         fields = '__all__'
@@ -759,11 +766,6 @@ class CollectionPaymentSerializer(serializers.ModelSerializer):
 #     cash_in_hand = serializers.DecimalField(max_digits=10, decimal_places=2)
 
 
-class ProdutItemMasterSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProdutItemMaster
-        fields = ['id','product_name','unit','tax','rate','created_date']
-        
 class CustomerSupplySerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomerSupply
