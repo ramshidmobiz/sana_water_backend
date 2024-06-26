@@ -981,13 +981,12 @@ class CouponSupplyCountSerializer(serializers.ModelSerializer):
         fields = ['customer__customer_name', 'manual_coupon_paid_count', 'manual_coupon_free_count', 'digital_coupon_paid_count', 'digital_coupon_free_count', 'total_amount_collected', 'payment_type']
 
 
-class CustomerCouponCountsSerializer(serializers.ModelSerializer):
+class CustomerCouponCountsSerializer(serializers.Serializer):
+    customer_name = serializers.CharField(max_length=250)
+    building_name = serializers.CharField(max_length=250)
+    door_house_no = serializers.CharField(max_length=250)
     digital_coupons_count = serializers.IntegerField()
     manual_coupons_count = serializers.IntegerField()
-
-    class Meta:
-        model = Customers
-        fields = ['customer_name', 'building_name', 'door_house_no', 'digital_coupons_count', 'manual_coupons_count']
 
 class ProductStatsSerializer(serializers.Serializer):
     product_name = serializers.CharField(source='product__product_name')
@@ -1470,3 +1469,7 @@ class CouponsProductsSerializer(serializers.ModelSerializer):
         if (intances:=CouponType.objects.filter(coupon_type_name=obj.product_name)).exists():
             count =  intances.first().no_of_leaflets
         return count
+    
+class TotalCouponsSerializer(serializers.Serializer):
+    total_digital_coupons_consumed = serializers.IntegerField()
+    total_manual_coupons_consumed = serializers.IntegerField()

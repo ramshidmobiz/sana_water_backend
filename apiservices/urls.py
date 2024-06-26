@@ -228,7 +228,7 @@ urlpatterns = [
     path('nonvisit_report/', NonVisitReportCreateAPIView.as_view(), name='nonvisit_report'),
     path('send_device_token/', Send_Device_API.as_view(),name='send_device_token'),
     path('customer_Wise_Coupon_sale/', CustomerWiseCouponSaleAPIView.as_view(),name='customer_Wise_Coupon_sale'),
-    path('total_coupon_consumed/', CouponConsumedAPIView.as_view(), name='total_coupon_consumed'),
+    path('total_coupon_consumed/', TotalCouponsConsumedView.as_view(), name='total_coupon_consumed'),
 
     path('offloads/', OffloadAPIView.as_view(), name='offload-list'),
     path('edit-product/', EditProductAPIView.as_view(), name='edit-product'),

@@ -4512,17 +4512,37 @@ class CouponSupplyCountAPIView(APIView):
 class RedeemedHistoryAPI(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
+    
     def get(self, request, *args, **kwargs):
         user_id = request.user.id
-        customer_objs = Customers.objects.filter(sales_staff=user_id)
+        start_date = request.data.get('start_date')
+        print("start_date",start_date)
+        end_date = request.data.get('end_date')
+        print("end_date",end_date)
 
+        if not (start_date and end_date):
+            start_datetime = datetime.today().date()
+            end_datetime = datetime.today().date()
+        else:
+            start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+            end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
+        
+        customer_objs = Customers.objects.filter(sales_staff=user_id,sales_type='CASH COUPON')
 
-        customer_coupon_counts=[]
+        customer_coupon_counts = []
         for customer_obj in customer_objs:
-            digital_count = CustomerSupplyCoupon.objects.filter(customer_supply__customer=customer_obj,leaf__coupon__coupon_method='digital').count()
-            print(digital_count,"digital_count")
-            manual_count = CustomerSupplyCoupon.objects.filter(customer_supply__customer=customer_obj,leaf__coupon__coupon_method='manual').count()
-            print(manual_count,"manual_count")
+            digital_count = CustomerSupplyDigitalCoupon.objects.filter(
+                customer_supply__customer=customer_obj,
+                customer_supply__created_date__range=[start_datetime, end_datetime]  # Use the correct field name here
+            ).aggregate(Sum('count'))['count__sum'] or 0
+            print("digital_count",digital_count)
+
+            manual_count = CustomerSupplyCoupon.objects.filter(
+                customer_supply__customer=customer_obj,
+                customer_supply__created_date__range=[start_datetime, end_datetime],  # Use the correct field name here
+                leaf__coupon__coupon_method='manual'
+            ).count()
+            print("manual_count",manual_count)
 
             customer_coupon_counts.append({
                 'customer_name': customer_obj.customer_name,
@@ -4534,7 +4554,6 @@ class RedeemedHistoryAPI(APIView):
 
         serializer = CustomerCouponCountsSerializer(customer_coupon_counts, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 # VisitReportAPI
 # Coupon Consumption Report
@@ -5754,8 +5773,28 @@ class MyCurrentStockView(APIView):
         return Response(data)
 
 class PotentialBuyersAPI(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    
     def get(self, request):
-        customers = Customers.objects.annotate(
+        salesman = request.user
+        start_date = request.data.get('start_date')
+        end_date = request.data.get('end_date')
+
+        if not (start_date and end_date):
+            return Response({"error": "Both start_date and end_date are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+            end_datetime = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)  # Include end date
+        except ValueError:
+            return Response({"error": "Invalid date format. Use 'YYYY-MM-DD'."}, status=status.HTTP_400_BAD_REQUEST)
+
+        customers = Customers.objects.filter(
+            sales_staff=salesman,
+            sales_type='CASH COUPON',
+            created_date__gte=start_datetime,
+            created_date__lt=end_datetime).annotate(
             digital_coupons_count=Count('customercoupon', filter=Q(customercoupon__coupon_method='digital')),
             manual_coupons_count=Count('customercoupon', filter=Q(customercoupon__coupon_method='manual'))
         ).filter(digital_coupons_count__lt=5, manual_coupons_count__lt=5)
@@ -5800,43 +5839,52 @@ class CustomerWiseCouponSaleAPIView(APIView):
         
         return Response(response_data, status=status.HTTP_200_OK)
     
-class CouponConsumedAPIView(APIView):
-    authentication_classes = [BasicAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        user_id = request.user.id
-        print("user_id", user_id)
-
-        # Get all customers associated with the current sales staff
-        customer_objs = Customers.objects.filter(sales_staff=user_id)
-        print("customer_objs", customer_objs)
-
-        # Calculate total digital and manual coupons
-        total_coupons = CustomerCouponStock.objects.filter(customer__in=customer_objs).aggregate(
-            total_digital_coupons=Sum(
-                Case(
-                    When(coupon_method='digital', then='count'),
-                    default=0,
-                    output_field=IntegerField()
-                )
-            ),
-            total_manual_coupons=Sum(
-                Case(
-                    When(coupon_method='manual', then='count'),
-                    default=0,
-                    output_field=IntegerField()
-                )
+class TotalCouponsConsumedView(APIView):
+    def get(self, request):
+        salesman = request.user
+        today_date = datetime.now().date()
+        
+        start_datetime = datetime.combine(today_date, datetime.min.time())
+        end_datetime = datetime.combine(today_date, datetime.max.time())
+        
+        # Get all customers related to the salesman
+        customer_objs = Customers.objects.filter(sales_staff=salesman,sales_type='CASH COUPON')
+        
+        # Aggregate total digital coupons consumed
+        digital_coupon_data = CustomerSupplyDigitalCoupon.objects.filter(
+            customer_supply__customer__in=customer_objs,
+            customer_supply__salesman=salesman,
+            customer_supply__created_date__range=[start_datetime, end_datetime],
+        ).aggregate(total_digital_leaflets=Sum('count'))
+        
+        total_digital_leaflets = digital_coupon_data['total_digital_leaflets'] or 0
+        
+        # Aggregate total manual coupons consumed
+        manual_coupon_data = CustomerSupplyCoupon.objects.annotate(
+            total_manual_leaflets=Count(
+                'leaf__coupon__leaflets',
+                filter=Q(
+                    customer_supply__created_date__range=[start_datetime, end_datetime],
+                    customer_supply__customer__in=customer_objs,
+                    customer_supply__salesman=salesman,
+                    leaf__coupon__coupon_method='manual',
+                    leaf__coupon__leaflets__used=False
+                ),
+                distinct=True
             )
-        )
-
-        response_data = {
-            "total_digital_coupons": total_coupons['total_digital_coupons'] or 0,
-            "total_manual_coupons": total_coupons['total_manual_coupons'] or 0,
+        ).values(
+            'total_manual_leaflets'
+        ).first()
+        
+        total_manual_leaflets = manual_coupon_data['total_manual_leaflets'] if manual_coupon_data else 0
+        
+        # Prepare the response data
+        data = {
+            'total_digital_coupons_consumed': total_digital_leaflets,
+            'total_manual_coupons_consumed': total_manual_leaflets
         }
-
-        serializer = TotalCouponCountSerializer(response_data)
-
+        
+        serializer = TotalCouponsSerializer(data)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     
