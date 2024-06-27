@@ -1475,6 +1475,7 @@ class CouponsProductsSerializer(serializers.ModelSerializer):
     
     
 class OffloadRequestSerializer(serializers.ModelSerializer):
+    
     class Meta:
         model = OffloadRequest
         fields = '__all__'

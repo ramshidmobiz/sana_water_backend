@@ -341,7 +341,9 @@ class EmptyCanStock(models.Model):
 class OffloadRequest(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True, blank=True)
-    quantity=models.PositiveIntegerField(default=0)
+    quantity = models.PositiveIntegerField(default=0)
+    offloaded_quantity = models.PositiveIntegerField(default=0)
+    van = models.ForeignKey(Van, on_delete=models.CASCADE,null=True, blank=True)
     
     created_by = models.CharField(max_length=20, blank=True)
     modified_by = models.CharField(max_length=20, null=True, blank=True)
