@@ -187,6 +187,7 @@ class VanCouponStock(models.Model):
     requested_count = models.PositiveIntegerField(default=0)
     pending_count = models.PositiveIntegerField(default=0)
     sold_count = models.PositiveIntegerField(default=0)
+    used_leaf_count = models.PositiveIntegerField(default=0)
     stock = models.PositiveIntegerField(default=0)
     
     coupon = models.ForeignKey(NewCoupon, on_delete=models.CASCADE)
@@ -245,7 +246,8 @@ class OffloadReturnStocks(models.Model):
     product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE)
     scrap_count = models.PositiveIntegerField(default=0)
     washing_count = models.PositiveIntegerField(default=0)
-
+    other_quantity= models.PositiveIntegerField(default=0)
+    other_reason= models.CharField(max_length=300)
     def __str__(self):
         return f"{self.id}"
        

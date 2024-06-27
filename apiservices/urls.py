@@ -234,6 +234,8 @@ urlpatterns = [
     path('edit-product/', EditProductAPIView.as_view(), name='edit-product'),
     path('offload-coupons/', GetVanCouponBookNoAPIView.as_view(), name='offload-coupon-list'),
     path('edit-coupon/<str:pk>/', EditCouponAPIView.as_view(), name='edit-coupon'),
+    path('offload-request/', OffloadRequestAPIView.as_view(), name='offload-request'),
+    path('offload-request-list/', OffloadRequestListAPIView.as_view(), name='offload-request-list'),
     
     path('coupons-products/', CouponsProductsAPIView.as_view(), name='coupons_products'),
     path('potential_buyers/', PotentialBuyersAPI.as_view(), name='potential_buyers'),

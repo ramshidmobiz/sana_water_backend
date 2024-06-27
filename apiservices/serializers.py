@@ -1470,6 +1470,11 @@ class CouponsProductsSerializer(serializers.ModelSerializer):
             count =  intances.first().no_of_leaflets
         return count
     
-class TotalCouponsSerializer(serializers.Serializer):
-    total_digital_coupons_consumed = serializers.IntegerField()
-    total_manual_coupons_consumed = serializers.IntegerField()
+    
+    
+    
+    
+class OffloadRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OffloadRequest
+        fields = '__all__'
