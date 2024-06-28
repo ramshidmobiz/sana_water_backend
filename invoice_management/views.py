@@ -409,7 +409,7 @@ def delete_invoice(request, pk):
     invoice = Invoice.objects.get(pk=pk)
     invoice.is_deleted=True
     invoice.save()
-        
+    
     InvoiceItems.objects.filter(invoice=invoice).update(is_deleted=True)
     
     response_data = {

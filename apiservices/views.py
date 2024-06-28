@@ -1478,6 +1478,21 @@ def location_based_on_emirates(request):
     locations = LocationMasterSerializers(location_list, many=True).data
     return Response({'locations': locations})
 
+@api_view(['GET'])
+def emirates_based_locations(request):
+    branch_id = ""
+    if request.GET.get('branch_id'):
+        branch_id = request.GET.get('branch_id')
+        
+    instances = EmirateMaster.objects.all()
+    serialized_data = EmiratesBasedLocationsSerializers(instances, many=True, context={'branch_id': branch_id}).data
+    
+    return Response({
+        'status': True, 
+        'data': serialized_data,
+        'message': 'Success'
+        })
+
 class Route_Assign_Staff_Api(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
@@ -5888,8 +5903,9 @@ class TotalCouponsConsumedView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     
-#---------------Offload API----------------------------------    
-class OffloadRequestAPIView(APIView):
+#---------------Offload API---------------------------------- 
+   
+class SalesmanRequestAPIView(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -5900,14 +5916,63 @@ class OffloadRequestAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class OffloadRequestListAPIView(APIView):
+class SalesmanRequestListAPIView(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        offload_requests = OffloadRequest.objects.all()
-        serializer = OffloadRequestSerializer(offload_requests, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        try:
+            offload_requests = OffloadRequest.objects.select_related('van', 'van__salesman').all()
+            
+            data = []
+            for offload_request in offload_requests:
+                van = offload_request.van
+                salesman = van.salesman if van else None
+                van_data = {
+                    'id': offload_request.id,
+                    'date': offload_request.created_date,
+                    'van_plate': van.plate if van else None,
+                    'salesman_id': salesman.id if salesman else None,
+                    'salesman_name': salesman.get_fullname() if salesman else None,
+                    'route': van.get_van_route() if van else None,
+                }
+                data.append(van_data)
+            
+            return Response(data, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    # def get(self, request):
+    #     try:
+    #         offload_requests = OffloadRequest.objects.select_related('van', 'van__salesman').all()
+            
+    #         serializer = OffloadRequestListSerializer(offload_requests, many=True)
+            
+    #         data = []
+    #         for offload_request in offload_requests:
+    #             van = offload_request.van
+    #             van_data = {
+    #                 'id': offload_request.id,
+    #                 'date': offload_request.created_date,
+    #                 'quantity': offload_request.quantity,
+    #                 'product_id': offload_request.product.id ,
+    #                 'product': offload_request.product.product_name,
+    #                 'van_plate': van.plate if van else None,
+    #                 'salesman_name': offload_request.van.salesman.id,
+    #                 'salesman_name': van.salesman.get_fullname() if van and van.salesman else None,
+    #                 'route': van.get_van_route() if van else None,
+    #                 'stock_type': offload_request.stock_type,
+    #             }
+    #             data.append(van_data)
+            
+    #         return Response(data, status=status.HTTP_200_OK)
+        
+    #     except Exception as e:
+    #         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+  
+
     
 class OffloadAPIView(APIView):
     authentication_classes = [BasicAuthentication]
@@ -6531,3 +6596,55 @@ class CouponsProductsAPIView(APIView):
         products = ProdutItemMaster.objects.filter(category__category_name=coupons_category)
         serializer = CouponsProductsSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class Get_Notification_APIView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+  
+    def get(self, request, *args, **kwargs):
+        try:
+          
+            user_id=request.user.id
+            noti_obj=Notification.objects.filter(user=user_id)
+            
+            serializer=Customer_Notification_serializer(noti_obj,many=True)
+         
+            return Response(
+                {'status': True, 'data': serializer.data, 'message': 'Successfully Passed Data!'})
+        except Exception as e:
+            return Response({"status": False, "data": str(e), "message": "Something went wrong!"})
+        
+
+class StaffIssueOrdersListAPIView(APIView):
+    def post(self, request):
+        query = request.data.get("q")
+        datefilter = request.data.get("date")
+        print("datefilter", datefilter)
+
+        instances = Staff_Orders.objects.all().order_by('-created_date')
+
+        if query:
+            instances = instances.filter(order_number__icontains=query)
+
+        if datefilter:
+            date = datetime.strptime(datefilter, "%Y-%m-%d").date()
+            instances = instances.filter(order_date=date)
+        else:
+            instances = instances.filter(order_date=timezone.now().date())
+
+        serializer = StaffOrdersSerializer(instances, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class StaffIssueOrderDetailsAPIView(APIView):
+    def get(self, request, staff_order_id):
+        order = get_object_or_404(Staff_Orders, pk=staff_order_id)
+        details = Staff_Orders_details.objects.filter(staff_order_id=order).order_by('-created_date')
+        
+        serializer = OrderDetailSerializer(details, many=True)
+        return Response({
+            'order_date': order.order_date,
+            'order_number': order.order_number,
+            'details': serializer.data
+        }, status=status.HTTP_200_OK)

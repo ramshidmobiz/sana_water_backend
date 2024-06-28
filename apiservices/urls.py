@@ -83,6 +83,7 @@ urlpatterns = [
     path('staff_punch_in_api/', PunchIn_Api.as_view(), name='staff_punch_in_api'),
     path('staff_punch_out_api/', PunchOut_Api.as_view(), name='staff_punch_out_api'),
     path('location_emirates/', location_based_on_emirates, name='location-based-on-emirates'),
+    path('emirates-based-locations/', emirates_based_locations, name='emirates_based_locations'),
     path('staff_assigned_routes/',Route_Assign_Staff_Api.as_view(), name='staff_assigned_routes'),
     path('create/customer/',Customer_API.as_view()),
     path('create/customer/<str:id>/',Customer_API.as_view()),
@@ -234,9 +235,16 @@ urlpatterns = [
     path('edit-product/', EditProductAPIView.as_view(), name='edit-product'),
     path('offload-coupons/', GetVanCouponBookNoAPIView.as_view(), name='offload-coupon-list'),
     path('edit-coupon/<str:pk>/', EditCouponAPIView.as_view(), name='edit-coupon'),
-    path('offload-request/', OffloadRequestAPIView.as_view(), name='offload-request'),
-    path('offload-request-list/', OffloadRequestListAPIView.as_view(), name='offload-request-list'),
     
+    path('salsman-request/', SalesmanRequestAPIView.as_view(), name='salsman-request'),
+    path('salsman-requesting-list/', SalesmanRequestListAPIView.as_view(), name='salsman-requesting-list'),
+
     path('coupons-products/', CouponsProductsAPIView.as_view(), name='coupons_products'),
     path('potential_buyers/', PotentialBuyersAPI.as_view(), name='potential_buyers'),
+
+    path('get_notification/',Get_Notification_APIView.as_view(), name='get_notification'),
+    
+    path('staff_issue_orders_list/', StaffIssueOrdersListAPIView.as_view(), name='staff_issue_orders_list'),
+    path('staff_issue_order_details/<str:staff_order_id>/', StaffIssueOrderDetailsAPIView.as_view(), name='staff_issue_order_details'),
+
 ]

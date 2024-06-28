@@ -15,6 +15,9 @@ from sales_management.models import CollectionCheque, CollectionItems, Collectio
 from van_management.serializers import *
 from customer_care.models import *
 from coupon_management.models import *
+from accounts.models import *
+from product.templatetags.purchase_template_tags import get_van_current_stock
+
 
 class CustomerCustodyItemSerializers(serializers.ModelSerializer):
     class Meta:
@@ -1470,12 +1473,72 @@ class CouponsProductsSerializer(serializers.ModelSerializer):
             count =  intances.first().no_of_leaflets
         return count
     
-    
-    
-    
-    
 class OffloadRequestSerializer(serializers.ModelSerializer):
-    
     class Meta:
         model = OffloadRequest
-        fields = '__all__'
+        fields = '__all__'  
+        
+class VanSerializer(serializers.ModelSerializer):
+    salesman = serializers.StringRelatedField()
+
+    class Meta:
+        model = Van
+        fields = ('plate', 'salesman')    
+    
+    
+class OffloadRequestListSerializer(serializers.ModelSerializer):
+    van = serializers.StringRelatedField()
+    product = serializers.StringRelatedField()
+
+    class Meta:
+        model = OffloadRequest
+        fields = ('id', 'created_date', 'van', 'product', 'quantity', 'offloaded_quantity', 'stock_type')
+
+class Customer_Notification_serializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields =  ['created_on','noticication_id','title','body','user']
+
+
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+class StaffOrdersSerializer(serializers.ModelSerializer):
+    staff_name = serializers.SerializerMethodField()
+    route = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Staff_Orders
+        fields = ['staff_order_id','created_date','order_date','order_number','staff_name','route']
+    
+    def get_staff_name(self, obj):
+        try:
+            salesman = User.objects.get(id=obj.created_by)
+            return salesman.get_full_name()
+        except User.DoesNotExist:
+            return "--"
+    
+    def get_route(self, obj):
+        try:
+            route = Van_Routes.objects.get(van__salesman__pk=obj.created_by)
+            return route.routes.route_name
+        except Van_Routes.DoesNotExist:
+            return "--"
+        
+        
+        
+
+
+class OrderDetailSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product_id.product_name')
+    current_stock = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Staff_Orders_details
+        fields = ['staff_order_details_id', 'product_name', 'current_stock', 'count', 'issued_qty']
+
+    def get_current_stock(self, obj):
+        van = obj.staff_order_id.created_by  # Assuming this is where you get the van from
+        product = obj.product_id.pk
+        return get_van_current_stock(van, product)
