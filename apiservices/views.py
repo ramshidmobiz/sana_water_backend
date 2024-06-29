@@ -2210,6 +2210,48 @@ def fetch_coupon(request):
 
     return Response(response_data, status_code)
 
+def delete_coupon_recharge(customer_coupon):
+    """
+    Delete a customer coupon recharge and reverse all related transactions.
+    """
+    try:
+        with transaction.atomic():
+            # Reverse creation of invoices and associated items
+            invoices = Invoice.objects.filter(customer_coupon=customer_coupon)
+            for invoice in invoices:
+                InvoiceItems.objects.filter(invoice=invoice).delete()
+                invoice.delete()
+
+            # Reverse any updates to customer coupon stock
+            CustomerCouponItems.objects.filter(customer_coupon=customer_coupon).delete()
+            
+            # Reverse any updates to van coupon stock
+            # Note: Adjust this part based on your actual models and logic
+            for item in customer_coupon.items.all():
+                van_coupon_stock = VanCouponStock.objects.get(coupon=item.coupon)
+                van_coupon_stock.stock += item.qty  # Adjust this logic based on your actual field names
+                van_coupon_stock.save()
+
+            # Delete associated daily collections
+            InvoiceDailyCollection.objects.filter(invoice__customer_coupon=customer_coupon).delete()
+
+            # Delete associated cheque payment instance (if any)
+            ChequeCouponPayment.objects.filter(customer_coupon=customer_coupon).delete()
+
+            # Delete outstanding amounts and reports (if any)
+            CustomerOutstanding.objects.filter(customer=customer_coupon.customer).delete()
+            CustomerOutstandingReport.objects.filter(customer=customer_coupon.customer).delete()
+
+            # Finally, delete the customer coupon instance
+            customer_coupon.delete()
+
+            return True
+
+    except Exception as e:
+        # Handle exceptions or log errors
+        print(f"Error deleting customer coupon recharge: {e}")
+        return False
+
 class CustomerCouponRecharge(APIView):
     def post(self, request, *args, **kwargs):
         try:
@@ -2326,6 +2368,9 @@ class CustomerCouponRecharge(APIView):
                         reference_no=customer_coupon.reference_number
                     )
                     
+                    customer_coupon.invoice_no == invoice_instance.invoice_no
+                    customer_coupon.save()
+                    
                     if invoice_instance.amout_total == invoice_instance.amout_recieved:
                         invoice_instance.invoice_status = "paid"
                         invoice_instance.save()
@@ -2378,6 +2423,26 @@ class CustomerCouponRecharge(APIView):
                 "message": str(e),
             }
             return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def delete(self, request, pk):
+        """
+        API endpoint to delete a customer coupon recharge.
+        """
+        try:
+            customer_coupon = CustomerCoupon.objects.get(pk=pk)
+            if delete_coupon_recharge(customer_coupon):
+                return Response({"message": "Customer coupon recharge deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+            else:
+                return Response({"message": "Failed to delete customer coupon recharge."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        except CustomerCoupon.DoesNotExist:
+            return Response({"message": "Customer coupon recharge not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        except IntegrityError as e:
+            return Response({"message": f"IntegrityError: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        except Exception as e:
+            return Response({"message": f"Error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
@@ -2930,6 +2995,9 @@ class create_customer_supply(APIView):
                             reference_no=reference_no
                         )
                         
+                        customer_supply.invoice_no == invoice.invoice_no
+                        customer_supply.save()
+                        
                         if customer_supply.customer.sales_type == "CREDIT":
                             invoice.invoice_type = "credit_invoive"
                             invoice.save()
@@ -2955,7 +3023,7 @@ class create_customer_supply(APIView):
                                 invoice=invoice,
                                 remarks='invoice genereted from supply items reference no : ' + invoice.reference_no
                             )
-                        print("invoice generate")
+                        # print("invoice generate")
                         InvoiceDailyCollection.objects.create(
                             invoice=invoice,
                             created_date=datetime.today(),
@@ -6870,3 +6938,125 @@ class StaffIssueOrdersAPIView(APIView):
                 return Response({"status": "false", "title": "Failed", "message": f"No stock available in {product_stock.product_name}, only {product_stock.quantity} left"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({"status": "false", "title": "Failed", "message": f"Over Load! currently {vanstock_count} Can Loaded, Max 5 Gallon Limit is {van.bottle_count}"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+        
+class GetCouponBookNoView(APIView):
+    def get(self, request, *args, **kwargs):
+        request_id = request.GET.get("request_id")
+        # print("request_id",request_id)
+        
+        instance = get_object_or_404(Staff_Orders_details, pk=request_id)
+        stock_instances = CouponStock.objects.filter(
+            couponbook__coupon_type__coupon_type_name=instance.product_id.product_name,
+            coupon_stock="company"
+        )
+        serialized = IssueCouponStockSerializer(stock_instances, many=True)
+        
+        response_data = {
+            "status": "true",
+            "data": serialized.data,
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
+class IssueCouponsOrdersAPIView(APIView):
+
+    def post(self, request):
+        request_id = request.data.get("request_id")
+        # print("request_id",request_id)
+        book_numbers = request.data.get("coupon_book_no")
+        # print("book_numbers",book_numbers)
+        
+        issue = get_object_or_404(Staff_Orders_details, staff_order_details_id=request_id)
+        # print("issue",issue)
+        
+        try:
+            with transaction.atomic():
+                for book_no in book_numbers:
+                    coupon = get_object_or_404(NewCoupon, book_num=book_no, coupon_type__coupon_type_name=issue.product_id.product_name)
+                    print("coupon",coupon)
+                    update_purchase_stock = ProductStock.objects.filter(product_name=issue.product_id)
+                    print("update_purchase_stock",update_purchase_stock)
+                    
+                    if update_purchase_stock.exists():  
+                        ptoduct_stockQuantity = update_purchase_stock.first().quantity
+                        if ptoduct_stockQuantity is None:
+                            ptoduct_stockQuantity = 0
+                    else:
+                        ptoduct_stockQuantity = 0
+                        quantity_issued = issue.issued_qty
+                    print("product_stock_quantity",ptoduct_stockQuantity)
+
+                    if int(issue.issued_qty) <= ptoduct_stockQuantity:
+                        issue_order = Staff_IssueOrders.objects.create(
+                            created_by=str(request.user.id),
+                            modified_by=str(request.user.id),
+                            modified_date=timezone.now(),
+                            product_id=issue.product_id,
+                            staff_Orders_details_id=issue,
+                            coupon_book=coupon,
+                            quantity_issued=1
+                        )
+
+                        update_purchase_stock.first().quantity -= 1
+                        update_purchase_stock.first().save()
+
+                        van = Van.objects.get(salesman_id__id=issue.staff_order_id.created_by)
+                        
+                        if VanCouponStock.objects.filter(created_date=timezone.now().date(), van=van, coupon=coupon).exists():
+                            van_stock = VanCouponStock.objects.get(created_date=timezone.now().date(), van=van, coupon=coupon)
+                            van_stock.stock += 1
+                            van_stock.save()
+                        else:
+                            vanstock = VanStock.objects.create(
+                                created_by=str(request.user.id),
+                                created_date=timezone.now(),
+                                van=van,
+                                stock_type="opening_stock",
+                            )
+                            VanCouponItems.objects.create(
+                                coupon=coupon,
+                                book_no=coupon.book_num,
+                                coupon_type=coupon.coupon_type,
+                                van_stock=vanstock,
+                            )
+                            VanCouponStock.objects.create(
+                                created_date=timezone.now().date(),
+                                coupon=coupon,
+                                stock=1,
+                                van=van
+                            )
+
+                        issue.issued_qty += 1
+                        issue.save()
+                        # print("Saved",issue)
+
+                        CouponStock.objects.filter(couponbook=coupon).update(coupon_stock="van")
+
+                        response_data = {
+                            "status": "true",
+                            "title": "Successfully Created",
+                            "message": "Coupon Issued successfully.",
+                            'redirect': 'true',
+                            "redirect_url": reverse('staff_issue_orders_list')
+                        }
+                    else:
+                        response_data = {
+                            "status": "false",
+                            "title": "Failed",
+                            "message": f"No stock available in {issue.product_id.product_name}, only {ptoduct_stockQuantity} left",
+                        }
+
+        except IntegrityError as e:
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": str(e),
+            }
+        except Exception as e:
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": str(e),
+            }
+
+        return Response(response_data, status=status.HTTP_200_OK)

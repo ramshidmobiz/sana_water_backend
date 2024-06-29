@@ -258,5 +258,6 @@ urlpatterns = [
     # offload request apis end
     
     path('api_staffIssueOrdersCreate/<str:staff_order_details_id>/', StaffIssueOrdersAPIView.as_view(), name='api_staffIssueOrdersCreate'),
-
+    path('get_coupon_bookno/', GetCouponBookNoView.as_view(), name='get_coupon_bookno'),
+    path('api_issue_coupons_orders/', IssueCouponsOrdersAPIView.as_view(), name='api_issue_coupons_orders'),
 ]

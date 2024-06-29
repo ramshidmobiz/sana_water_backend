@@ -1599,4 +1599,18 @@ class OffloadRequestVanStockCouponsSerializer(serializers.ModelSerializer):
 class TotalCouponsSerializer(serializers.Serializer):
     total_digital_coupons_consumed = serializers.IntegerField()
     total_manual_coupons_consumed = serializers.IntegerField()
-    
+ 
+class CouponStockSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CouponStock
+        fields = '__all__'    
+        
+class IssueCouponStockSerializer(serializers.ModelSerializer):
+    book_no = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CouponStock
+        fields = ['couponstock_id', 'book_no']
+
+    def get_book_no(self, obj):
+        return obj.couponbook.book_num           
