@@ -21,7 +21,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.hashers import make_password, check_password
-from django.db.models import Sum, Value, DecimalField
+from django.db.models import Sum, Value, DecimalField, Min
 ######rest framwework section
 from client_management.views import handle_coupons, handle_invoice_deletion, handle_outstanding_amounts, update_van_product_stock
 from rest_framework import status
@@ -5904,76 +5904,8 @@ class TotalCouponsConsumedView(APIView):
     
     
 #---------------Offload API---------------------------------- 
+
    
-class SalesmanRequestAPIView(APIView):
-    authentication_classes = [BasicAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        serializer = OffloadRequestSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(created_by=request.user.id, created_date=timezone.now())
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class SalesmanRequestListAPIView(APIView):
-    authentication_classes = [BasicAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        try:
-            offload_requests = OffloadRequest.objects.select_related('van', 'van__salesman').all()
-            
-            data = []
-            for offload_request in offload_requests:
-                van = offload_request.van
-                salesman = van.salesman if van else None
-                van_data = {
-                    'id': offload_request.id,
-                    'date': offload_request.created_date,
-                    'van_plate': van.plate if van else None,
-                    'salesman_id': salesman.id if salesman else None,
-                    'salesman_name': salesman.get_fullname() if salesman else None,
-                    'route': van.get_van_route() if van else None,
-                }
-                data.append(van_data)
-            
-            return Response(data, status=status.HTTP_200_OK)
-        
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-    # def get(self, request):
-    #     try:
-    #         offload_requests = OffloadRequest.objects.select_related('van', 'van__salesman').all()
-            
-    #         serializer = OffloadRequestListSerializer(offload_requests, many=True)
-            
-    #         data = []
-    #         for offload_request in offload_requests:
-    #             van = offload_request.van
-    #             van_data = {
-    #                 'id': offload_request.id,
-    #                 'date': offload_request.created_date,
-    #                 'quantity': offload_request.quantity,
-    #                 'product_id': offload_request.product.id ,
-    #                 'product': offload_request.product.product_name,
-    #                 'van_plate': van.plate if van else None,
-    #                 'salesman_name': offload_request.van.salesman.id,
-    #                 'salesman_name': van.salesman.get_fullname() if van and van.salesman else None,
-    #                 'route': van.get_van_route() if van else None,
-    #                 'stock_type': offload_request.stock_type,
-    #             }
-    #             data.append(van_data)
-            
-    #         return Response(data, status=status.HTTP_200_OK)
-        
-    #     except Exception as e:
-    #         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-  
-
-    
 class OffloadAPIView(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
@@ -6617,7 +6549,7 @@ class Get_Notification_APIView(APIView):
         
 
 class StaffIssueOrdersListAPIView(APIView):
-    def post(self, request):
+    def get(self, request):
         query = request.data.get("q")
         datefilter = request.data.get("date")
         print("datefilter", datefilter)
@@ -6648,3 +6580,153 @@ class StaffIssueOrderDetailsAPIView(APIView):
             'order_number': order.order_number,
             'details': serializer.data
         }, status=status.HTTP_200_OK)
+        
+        
+        
+#---------------salesman app Offload API---------------------------------- 
+
+class VanListAPIView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            vans = Van.objects.all()
+            
+            data = []
+            for van in vans:
+                van_data = {
+                    'id': van.van_id,
+                    'date': van.created_date,
+                    'van_plate': van.plate if van else None,
+                    'salesman_id': van.salesman.id if van.salesman else None,
+                    'salesman_name': van.salesman.get_fullname() if van.salesman else None,
+                    'route_name': self.get_van_route(van) if van else None,
+                }
+                data.append(van_data)
+            
+            return Response(data, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def get_van_route(self, van):
+        try:
+            return van.get_van_route()
+        except AttributeError:
+            return None
+        
+        
+class VanProductStockListAPIView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, pk, format=None):
+        try:
+            date = request.GET.get('date')
+            if date:
+                date = datetime.strptime(date, '%Y-%m-%d').date()
+            else:
+                date = datetime.today().date()
+            
+            product_items = VanProductStock.objects.filter(created_date=date, van__pk=pk)
+            coupon_items = VanCouponStock.objects.filter(created_date=date, van__pk=pk)
+            
+            product_serializer = VanItemStockSerializer(product_items, many=True)
+            
+            # Aggregate coupon items by type
+            coupon_aggregated = coupon_items.values('coupon__coupon_type__coupon_type_name').annotate(
+                total_stock=Sum('stock'),
+                created_date=Min('created_date')  # Assuming you want the earliest date of the coupons
+            ).order_by('coupon__coupon_type__coupon_type_name')
+
+            # Prepare data for the serializer
+            coupon_serializer_data = [
+                {
+                    'coupon_type_name': item['coupon__coupon_type__coupon_type_name'],
+                    'total_stock': item['total_stock'],
+                    'created_date': item['created_date']
+                }
+                for item in coupon_aggregated
+            ]
+
+            data = {
+                'product_items': product_serializer.data,
+                'coupon_items': coupon_serializer_data
+            }
+            
+            return Response(data, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    # def get(self, request, pk, format=None):
+    #     try:
+    #         date = request.GET.get('date')
+    #         if date:
+    #             date = datetime.strptime(date, '%Y-%m-%d').date()
+    #         else:
+    #             date = datetime.today().date()
+            
+    #         product_items = VanProductStock.objects.filter(created_date=date, van__pk=pk)
+    #         coupon_items = VanCouponStock.objects.filter(created_date=date, van__pk=pk)
+            
+    #         product_serializer = VanItemStockSerializer(product_items, many=True)
+    #         coupon_serializer = CouponsStockSerializer(coupon_items, many=True)
+            
+    #         data = {
+    #             'product_items': product_serializer.data,
+    #             'coupon_items': coupon_serializer.data
+    #         }
+            
+    #         return Response(data, status=status.HTTP_200_OK)
+        
+    #     except Exception as e:
+    #         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+   
+class SalesmanOffloadRequestAPIView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        offload_requests = OffloadRequest.objects.filter(salesman=request.user)
+        serializer = OffloadRequestSerializer(offload_requests, many=True)
+        return Response(serializer.data)
+    
+    def post(self, request):
+        serializer = OffloadRequestSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+        
+
+
+# class SalesmanRequestListAPIView(APIView):
+#     authentication_classes = [BasicAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request):
+#         try:
+#             offload_requests = OffloadRequest.objects.select_related('van', 'van__salesman').all()
+            
+#             data = []
+#             for offload_request in offload_requests:
+#                 van = offload_request.van
+#                 salesman = van.salesman if van else None
+#                 van_data = {
+#                     'id': offload_request.id,
+#                     'date': offload_request.created_date,
+#                     'van_plate': van.plate if van else None,
+#                     'salesman_id': salesman.id if salesman else None,
+#                     'salesman_name': salesman.get_fullname() if salesman else None,
+#                     'route': van.get_van_route() if van else None,
+#                 }
+#                 data.append(van_data)
+            
+#             return Response(data, status=status.HTTP_200_OK)
+        
+#         except Exception as e:
+#             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+         

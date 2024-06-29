@@ -1456,10 +1456,10 @@ class OffloadSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class CouponStockSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CouponStock
-        fields = '__all__'    
+# class CouponStockSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = CouponStock
+#         fields = '__all__'    
         
 class CouponsProductsSerializer(serializers.ModelSerializer):
     leaf_count = serializers.SerializerMethodField()
@@ -1473,26 +1473,6 @@ class CouponsProductsSerializer(serializers.ModelSerializer):
             count =  intances.first().no_of_leaflets
         return count
     
-class OffloadRequestSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = OffloadRequest
-        fields = '__all__'  
-        
-class VanSerializer(serializers.ModelSerializer):
-    salesman = serializers.StringRelatedField()
-
-    class Meta:
-        model = Van
-        fields = ('plate', 'salesman')    
-    
-    
-class OffloadRequestListSerializer(serializers.ModelSerializer):
-    van = serializers.StringRelatedField()
-    product = serializers.StringRelatedField()
-
-    class Meta:
-        model = OffloadRequest
-        fields = ('id', 'created_date', 'van', 'product', 'quantity', 'offloaded_quantity', 'stock_type')
 
 class Customer_Notification_serializer(serializers.ModelSerializer):
     class Meta:
@@ -1542,3 +1522,43 @@ class OrderDetailSerializer(serializers.ModelSerializer):
         van = obj.staff_order_id.created_by  # Assuming this is where you get the van from
         product = obj.product_id.pk
         return get_van_current_stock(van, product)
+    
+class VanItemStockSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.product_name')
+    
+    class Meta:
+        model = VanProductStock
+        fields = ['id', 'created_date', 'stock', 'empty_can_count', 'return_count', 'product_name','product']
+
+
+
+class CouponsStockSerializer(serializers.ModelSerializer):
+    coupon_type_name = serializers.CharField(source='coupon.coupon_type.coupon_type_name')
+    total_stock = serializers.IntegerField()
+    
+    class Meta:
+        model = VanCouponStock
+        fields = ['created_date', 'coupon_type_name', 'total_stock']
+   
+class OffloadRequestItemsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OffloadRequestItems
+        fields = '__all__'
+
+class OffloadRequestSerializer(serializers.ModelSerializer):
+    offloadrequestitems_set = OffloadRequestItemsSerializer(many=True)
+    salesman = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = OffloadRequest
+        fields = '__all__'
+
+    def create(self, validated_data):
+        items_data = validated_data.pop('offloadrequestitems_set')
+        # Get the salesman from the context
+        salesman = self.context['request'].user
+        offload_request = OffloadRequest.objects.create(salesman=salesman, **validated_data)
+        for item_data in items_data:
+            OffloadRequestItems.objects.create(offload_request=offload_request, **item_data)
+        return offload_request
+        

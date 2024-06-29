@@ -236,15 +236,20 @@ urlpatterns = [
     path('offload-coupons/', GetVanCouponBookNoAPIView.as_view(), name='offload-coupon-list'),
     path('edit-coupon/<str:pk>/', EditCouponAPIView.as_view(), name='edit-coupon'),
     
-    path('salsman-request/', SalesmanRequestAPIView.as_view(), name='salsman-request'),
-    path('salsman-requesting-list/', SalesmanRequestListAPIView.as_view(), name='salsman-requesting-list'),
+    # path('salsman-request/', SalesmanRequestAPIView.as_view(), name='salsman-request'),
+    # path('salsman-requesting-list/', SalesmanRequestListAPIView.as_view(), name='salsman-requesting-list'),
 
     path('coupons-products/', CouponsProductsAPIView.as_view(), name='coupons_products'),
     path('potential_buyers/', PotentialBuyersAPI.as_view(), name='potential_buyers'),
 
     path('get_notification/',Get_Notification_APIView.as_view(), name='get_notification'),
     
-    path('staff_issue_orders_list/', StaffIssueOrdersListAPIView.as_view(), name='staff_issue_orders_list'),
-    path('staff_issue_order_details/<str:staff_order_id>/', StaffIssueOrderDetailsAPIView.as_view(), name='staff_issue_order_details'),
+    path('api_staff_issue_orders_list/', StaffIssueOrdersListAPIView.as_view(), name='api_staff_issue_orders_list'),
+    path('api_staff_issue_order_details/<str:staff_order_id>/', StaffIssueOrderDetailsAPIView.as_view(), name='api_staff_issue_order_details'),
+
+    path('van-list/', VanListAPIView.as_view(), name='van-list'),
+    path('van-item-list/<str:pk>/', VanProductStockListAPIView.as_view(), name='van-item-list'),
+    path('salesman_requesting/', SalesmanOffloadRequestAPIView.as_view(), name='salesman_requesting'),
+
 
 ]
