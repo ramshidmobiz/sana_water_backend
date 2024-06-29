@@ -1561,4 +1561,42 @@ class OffloadRequestSerializer(serializers.ModelSerializer):
         for item_data in items_data:
             OffloadRequestItems.objects.create(offload_request=offload_request, **item_data)
         return offload_request
+    
+class OffloadRequestsSerializer(serializers.ModelSerializer):
+    salesman_name = serializers.CharField(source='salesman.username')
+    route_name = serializers.SerializerMethodField()
+    van_plate = serializers.CharField(source='van.plate')
+
+    class Meta:
+        model = OffloadRequest
+        fields = ['salesman_name', 'salesman', 'route_name', 'created_date', 'van_plate']
+    
+    def get_route_name(self, obj):
+        return obj.van.get_van_route()
+    
+class OffloadRequestItemsSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.product_name')
+
+    class Meta:
+        model = OffloadRequestItems
+        fields = ['product_name', 'offloaded_quantity']  
         
+class OffloadRequestVanStockCouponsSerializer(serializers.ModelSerializer):
+    coupon_id = serializers.SerializerMethodField()
+    book_no = serializers.SerializerMethodField()
+
+    class Meta:
+        model = VanCouponStock
+        fields = ['coupon_id', 'book_no']
+        
+    def get_coupon_id(self,obj):
+        return obj.coupon.coupon_id
+    
+    def get_book_no(self,obj):
+        return obj.coupon.book_num
+        fields = ['product_name', 'offloaded_quantity']        
+        
+class TotalCouponsSerializer(serializers.Serializer):
+    total_digital_coupons_consumed = serializers.IntegerField()
+    total_manual_coupons_consumed = serializers.IntegerField()
+    

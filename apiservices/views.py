@@ -5911,86 +5911,120 @@ class OffloadRequestingAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        products_data = []
+        product_items = ProdutItemMaster.objects.all()
+        
+        # Filtering products based on today's date and salesman
         products = VanProductStock.objects.filter(
             created_date=datetime.today().date(),
             van__salesman=request.user
         )
+
+        # Filtering coupons based on today's date and salesman
         coupons = VanCouponStock.objects.filter(
             created_date=datetime.today().date(),
             van__salesman=request.user
         )
-
-        product_data = []
-        for item in products:
-            if item.product.product_name == "5 Gallon":
-                if item.stock > 0:
-                    product_data.append({
-                        "product_name": f"{item.product.product_name}",
-                        "current_stock": item.stock,
+        
+        for item in product_items:
+            if item.category.category_name != "Coupons":
+                if item.product_name == "5 Gallon":
+                    if products.filter(product=item).aggregate(total_stock=Sum('stock'))['total_stock'] or 0 > 0:
+                        products_data.append({
+                            "id": item.id,
+                            "product_name": f"{item.product_name}",
+                            "current_stock": products.filter(product=item).aggregate(total_stock=Sum('stock'))['total_stock'] or 0 ,
+                            "stock_type": "stock",
+                        })
+                    if products.filter(product=item).aggregate(total_stock=Sum('empty_can_count'))['total_stock'] or 0 > 0:
+                        products_data.append({
+                            "id": item.id,
+                            "product_name": f"{item.product_name} (Empty Can)",
+                            "current_stock": products.filter(product=item).aggregate(total_stock=Sum('empty_can_count'))['total_stock'] or 0 ,
+                            "stock_type": "emptycan",
+                        })
+                    if products.filter(product=item).aggregate(total_stock=Sum('return_count'))['total_stock'] or 0 > 0:
+                        products_data.append({
+                            "id": item.id,
+                            "product_name": f"{item.product_name} (Return Can)",
+                            "current_stock": products.filter(product=item).aggregate(total_stock=Sum('return_count'))['total_stock'] or 0 ,
+                            "stock_type": "return",
+                        })
+                elif item.product_name != "5 Gallon" and item.category.category_name != "Coupons":
+                    if products.filter(product=item).aggregate(total_stock=Sum('stock'))['total_stock'] or 0 > 0:
+                        products_data.append({
+                            "id": item.id,
+                            "product_name": f"{item.product_name}",
+                            "current_stock": products.filter(product=item).aggregate(total_stock=Sum('stock'))['total_stock'] or 0 ,
+                            "stock_type": "stock",
+                        })
+            elif item.category.category_name == "Coupons":
+                # Aggregate stock for coupons
+                coupons_list = coupons.filter(coupon__coupon_type__coupon_type_name=item.product_name)
+                total_stock = coupons_list.aggregate(total_stock=Sum('stock'))['total_stock'] or 0
+                serializer = OffloadRequestVanStockCouponsSerializer(coupons_list,many=True)
+                if total_stock > 0:
+                    products_data.append({
+                        "id": item.id,
+                        "product_name": f"{item.product_name}",
+                        "current_stock": total_stock,
                         "stock_type": "stock",
-                        "id": item.id,
+                        "coupons": serializer.data,
                     })
-                if item.empty_can_count > 0:
-                    product_data.append({
-                        "product_name": f"{item.product.product_name} (Empty Can)",
-                        "current_stock": item.empty_can_count,
-                        "stock_type": "empty_can",
-                        "id": item.id,
-                    })
-                if item.return_count > 0:
-                    product_data.append({
-                        "product_name": f"{item.product.product_name} (Return Can)",
-                        "current_stock": item.return_count,
-                        "stock_type": "return_count",
-                        "id": item.id,
-                    })
-
-        coupon_data = [
-            {
-                "product_name": coupon.coupon.name,
-                "current_stock": coupon.stock,
-                "id": coupon.id,
-            }
-            for coupon in coupons if coupon.stock > 0
-        ]
 
         response_data = {
             "status": "true",
-            "products": product_data,
-            "coupons": coupon_data,
+            "products": products_data,
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
 
     def post(self, request):
         data = request.data
+        van = Van.objects.get(salesman=request.user)
+        items = data.get('items', [])
+
         offload_request = OffloadRequest.objects.create(
-            van=request.user.van,
+            van=van,
             salesman=request.user,
-            stock_type=data.get('stock_type'),
-            created_by=request.user.username,
-            modified_by=request.user.username,
+            created_by=request.user.username,  # Assuming username is preferred
+            created_date=datetime.today()
         )
 
-        for item in data.get('items', []):
-            product = ProdutItemMaster.objects.get(id=item['product_id'])
-            OffloadRequestItems.objects.create(
+        for item in items:
+            product_id = item.get('product')
+            quantity = item.get('quantity', 1)
+            stock_type = item.get('stock_type')
+
+            product = ProdutItemMaster.objects.get(pk=product_id)
+
+            offload_item = OffloadRequestItems.objects.create(
                 offload_request=offload_request,
                 product=product,
-                quantity=item['quantity'],
-                offloaded_quantity=item.get('offloaded_quantity', 0),
+                quantity=quantity,
+                stock_type=stock_type
             )
 
-        for return_item in data.get('return_items', []):
-            product = ProdutItemMaster.objects.get(id=return_item['product_id'])
-            OffloadRequestReturn.objects.create(
-                offload_request=offload_request,
-                product=product,
-                scrap_count=return_item.get('scrap_count', 0),
-                washing_count=return_item.get('washing_count', 0),
-                other_reason=return_item.get('other_reason', ''),
-                other_quantity=return_item.get('other_quantity', 0),
-            )
+            if stock_type == 'return':
+                OffloadRequestReturnStocks.objects.create(
+                    offload_request_item=offload_item,
+                    scrap_count=item.get('scrap_count', 0),
+                    washing_count=item.get('washing_count', 0),
+                    other_quantity=item.get('other_quantity', 0),
+                    other_reason=item.get('other_reason', '')
+                )
+            elif product.category.category_name == "Coupons":
+                coupons = item.get('coupons', [])
+                for coupon in coupons:
+                    couponid = coupon.get("coupon_id")
+                    coupon_instance = NewCoupon.objects.get(pk=couponid)
+                    
+                    OffloadCoupon.objects.create(
+                        coupon=coupon_instance,
+                        offload_request=offload_request,
+                        quantity=1,
+                        stock_type=stock_type
+                    )
 
         return Response({'status': 'true', 'message': 'Offload request created successfully.'}, status=status.HTTP_201_CREATED)
 
@@ -6766,3 +6800,73 @@ class OffloadRequestItemsListAPIView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class StaffIssueOrdersAPIView(APIView):
+
+    @transaction.atomic
+    def post(self, request, staff_order_details_id):
+        issue = get_object_or_404(Staff_Orders_details, staff_order_details_id=staff_order_details_id)
+        van = get_object_or_404(Van, salesman_id__id=issue.staff_order_id.created_by)
+
+        try:
+            vanstock = VanProductStock.objects.get(created_date=issue.staff_order_id.order_date, van=van, product__product_name="5 Gallon")
+            vanstock_count = vanstock.stock
+        except VanProductStock.DoesNotExist:
+            vanstock_count = 0
+
+        data = request.data
+        quantity_issued = data.get('quantity_issued')
+
+        if issue.product_id.product_name == "5 Gallon":
+            van_limit = int(quantity_issued) != 0 and int(quantity_issued) + vanstock_count <= van.bottle_count
+        else:
+            van_limit = True
+
+        if van_limit:
+            product_stock = get_object_or_404(ProductStock, product_name=issue.product_id)
+
+            if 0 < int(quantity_issued) <= int(product_stock.quantity):
+                try:
+                    with transaction.atomic():
+                        # Creating Staff Issue Order
+                        issue.issued_qty += int(quantity_issued)
+                        issue.save()
+
+                        # Updating ProductStock
+                        product_stock.quantity -= int(quantity_issued)
+                        product_stock.save()
+
+                        # Creating VanStock
+                        vanstock = VanStock.objects.create(
+                            created_by=request.user.id,
+                            created_date=datetime.now(),
+                            modified_by=request.user.id,
+                            modified_date=datetime.now(),
+                            van=van,
+                            stock_type='opening_stock',
+                        )
+
+                        VanProductItems.objects.create(
+                            product=issue.product_id,
+                            count=int(quantity_issued),
+                            van_stock=vanstock,
+                        )
+
+                        if VanProductStock.objects.filter(created_date=datetime.today().date(), product=issue.product_id, van=van).exists():
+                            van_product_stock = VanProductStock.objects.get(created_date=datetime.today().date(), product=issue.product_id, van=van)
+                            van_product_stock.stock += int(quantity_issued)
+                            van_product_stock.save()
+                        else:
+                            VanProductStock.objects.create(
+                                created_date=datetime.now().date(),
+                                product=issue.product_id,
+                                van=van,
+                                stock=int(quantity_issued)
+                            )
+
+                        return Response({"status": "true", "title": "Successfully Created", "message": "created successfully."}, status=status.HTTP_201_CREATED)
+                except Exception as e:
+                    return Response({"status": "false", "title": "Failed", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({"status": "false", "title": "Failed", "message": f"No stock available in {product_stock.product_name}, only {product_stock.quantity} left"}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({"status": "false", "title": "Failed", "message": f"Over Load! currently {vanstock_count} Can Loaded, Max 5 Gallon Limit is {van.bottle_count}"}, status=status.HTTP_400_BAD_REQUEST)

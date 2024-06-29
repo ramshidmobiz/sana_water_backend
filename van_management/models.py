@@ -342,7 +342,6 @@ class OffloadRequest(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     van = models.ForeignKey(Van, on_delete=models.CASCADE,null=True, blank=True)
     salesman = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE)
-    stock_type = models.CharField(max_length=100)
     
     created_by = models.CharField(max_length=20, blank=True)
     modified_by = models.CharField(max_length=20, null=True, blank=True)
@@ -359,6 +358,7 @@ class OffloadRequestItems(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     quantity = models.PositiveIntegerField(default=0)
     offloaded_quantity = models.PositiveIntegerField(default=0)
+    stock_type = models.CharField(max_length=100)
     
     product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True, blank=True)
     offload_request = models.ForeignKey(OffloadRequest, on_delete=models.CASCADE,null=True, blank=True)
@@ -369,15 +369,25 @@ class OffloadRequestItems(models.Model):
     def __str__(self):
         return str(self.product.product_name)
     
-class OffloadRequestReturn(models.Model):
+class OffloadRequestReturnStocks(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     other_reason= models.CharField(max_length=300)
     scrap_count = models.PositiveIntegerField(default=0)
     washing_count = models.PositiveIntegerField(default=0)
     other_quantity= models.PositiveIntegerField(default=0)
     
-    product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE)
-    offload_request = models.ForeignKey(OffloadRequest, on_delete=models.CASCADE,null=True, blank=True)
+    offload_request_item = models.ForeignKey(OffloadRequestItems, on_delete=models.CASCADE,null=True, blank=True)
     
+    def __str__(self):
+        return f"{self.id}"
+    
+class OffloadCoupon(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    quantity = models.PositiveIntegerField(default=0)
+    stock_type = models.CharField(max_length=100,choices=STOCK_TYPES)
+    
+    coupon = models.ForeignKey(NewCoupon, on_delete=models.CASCADE)
+    offload_request = models.ForeignKey(OffloadRequest, on_delete=models.CASCADE)
+
     def __str__(self):
         return f"{self.id}"
