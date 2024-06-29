@@ -231,13 +231,12 @@ urlpatterns = [
     path('customer_Wise_Coupon_sale/', CustomerWiseCouponSaleAPIView.as_view(),name='customer_Wise_Coupon_sale'),
     path('total_coupon_consumed/', TotalCouponsConsumedView.as_view(), name='total_coupon_consumed'),
 
-    path('offloads/', OffloadAPIView.as_view(), name='offload-list'),
     path('edit-product/', EditProductAPIView.as_view(), name='edit-product'),
     path('offload-coupons/', GetVanCouponBookNoAPIView.as_view(), name='offload-coupon-list'),
     path('edit-coupon/<str:pk>/', EditCouponAPIView.as_view(), name='edit-coupon'),
     
     # path('salsman-request/', SalesmanRequestAPIView.as_view(), name='salsman-request'),
-    # path('salsman-requesting-list/', SalesmanRequestListAPIView.as_view(), name='salsman-requesting-list'),
+    
 
     path('coupons-products/', CouponsProductsAPIView.as_view(), name='coupons_products'),
     path('potential_buyers/', PotentialBuyersAPI.as_view(), name='potential_buyers'),
@@ -250,6 +249,11 @@ urlpatterns = [
     path('van-list/', VanListAPIView.as_view(), name='van-list'),
     path('van-item-list/<str:pk>/', VanProductStockListAPIView.as_view(), name='van-item-list'),
     path('salesman_requesting/', SalesmanOffloadRequestAPIView.as_view(), name='salesman_requesting'),
-
-
+    path('salsman-requesting-list/', OffloadRequestListAPIView.as_view(), name='salsman-requesting-list'),
+    path('offload-request-items/<str:pk>/', OffloadRequestItemsListAPIView.as_view(), name='offload-request-items'),
+    
+    # offload request apis start
+    path('offloads-requesting/', OffloadRequestingAPIView.as_view(), name='offload_request'),
+    
+    # offload request apis end
 ]

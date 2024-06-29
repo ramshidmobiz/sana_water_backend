@@ -5906,25 +5906,93 @@ class TotalCouponsConsumedView(APIView):
 #---------------Offload API---------------------------------- 
 
    
-class OffloadAPIView(APIView):
+class OffloadRequestingAPIView(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, pk=None):
-        if pk:
-            offload = get_object_or_404(Offload, pk=pk)
-            serializer = OffloadSerializer(offload)
-        else:
-            offloads = Offload.objects.all()
-            serializer = OffloadSerializer(offloads, many=True)
-        return Response(serializer.data)
+    def get(self, request):
+        products = VanProductStock.objects.filter(
+            created_date=datetime.today().date(),
+            van__salesman=request.user
+        )
+        coupons = VanCouponStock.objects.filter(
+            created_date=datetime.today().date(),
+            van__salesman=request.user
+        )
+
+        product_data = []
+        for item in products:
+            if item.product.product_name == "5 Gallon":
+                if item.stock > 0:
+                    product_data.append({
+                        "product_name": f"{item.product.product_name}",
+                        "current_stock": item.stock,
+                        "stock_type": "stock",
+                        "id": item.id,
+                    })
+                if item.empty_can_count > 0:
+                    product_data.append({
+                        "product_name": f"{item.product.product_name} (Empty Can)",
+                        "current_stock": item.empty_can_count,
+                        "stock_type": "empty_can",
+                        "id": item.id,
+                    })
+                if item.return_count > 0:
+                    product_data.append({
+                        "product_name": f"{item.product.product_name} (Return Can)",
+                        "current_stock": item.return_count,
+                        "stock_type": "return_count",
+                        "id": item.id,
+                    })
+
+        coupon_data = [
+            {
+                "product_name": coupon.coupon.name,
+                "current_stock": coupon.stock,
+                "id": coupon.id,
+            }
+            for coupon in coupons if coupon.stock > 0
+        ]
+
+        response_data = {
+            "status": "true",
+            "products": product_data,
+            "coupons": coupon_data,
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
 
     def post(self, request):
-        serializer = OffloadSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(created_by=request.user.id, created_date=datetime.now())
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        data = request.data
+        offload_request = OffloadRequest.objects.create(
+            van=request.user.van,
+            salesman=request.user,
+            stock_type=data.get('stock_type'),
+            created_by=request.user.username,
+            modified_by=request.user.username,
+        )
+
+        for item in data.get('items', []):
+            product = ProdutItemMaster.objects.get(id=item['product_id'])
+            OffloadRequestItems.objects.create(
+                offload_request=offload_request,
+                product=product,
+                quantity=item['quantity'],
+                offloaded_quantity=item.get('offloaded_quantity', 0),
+            )
+
+        for return_item in data.get('return_items', []):
+            product = ProdutItemMaster.objects.get(id=return_item['product_id'])
+            OffloadRequestReturn.objects.create(
+                offload_request=offload_request,
+                product=product,
+                scrap_count=return_item.get('scrap_count', 0),
+                washing_count=return_item.get('washing_count', 0),
+                other_reason=return_item.get('other_reason', ''),
+                other_quantity=return_item.get('other_quantity', 0),
+            )
+
+        return Response({'status': 'true', 'message': 'Offload request created successfully.'}, status=status.HTTP_201_CREATED)
 
 
 class EditProductAPIView(APIView):
@@ -6659,38 +6727,12 @@ class VanProductStockListAPIView(APIView):
         
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    # def get(self, request, pk, format=None):
-    #     try:
-    #         date = request.GET.get('date')
-    #         if date:
-    #             date = datetime.strptime(date, '%Y-%m-%d').date()
-    #         else:
-    #             date = datetime.today().date()
-            
-    #         product_items = VanProductStock.objects.filter(created_date=date, van__pk=pk)
-    #         coupon_items = VanCouponStock.objects.filter(created_date=date, van__pk=pk)
-            
-    #         product_serializer = VanItemStockSerializer(product_items, many=True)
-    #         coupon_serializer = CouponsStockSerializer(coupon_items, many=True)
-            
-    #         data = {
-    #             'product_items': product_serializer.data,
-    #             'coupon_items': coupon_serializer.data
-    #         }
-            
-    #         return Response(data, status=status.HTTP_200_OK)
-        
-    #     except Exception as e:
-    #         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
    
 class SalesmanOffloadRequestAPIView(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        offload_requests = OffloadRequest.objects.filter(salesman=request.user)
-        serializer = OffloadRequestSerializer(offload_requests, many=True)
-        return Response(serializer.data)
     
     def post(self, request):
         serializer = OffloadRequestSerializer(data=request.data, context={'request': request})
@@ -6698,35 +6740,29 @@ class SalesmanOffloadRequestAPIView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#---------------store app Offload API---------------------------------- 
     
-
+class OffloadRequestListAPIView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, format=None):
+        try:
+            offload_requests = OffloadRequest.objects.all()
+            serializer = OffloadRequestsSerializer(offload_requests, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
+class OffloadRequestItemsListAPIView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, pk, format=None):
+        try:
+            offload_requests = OffloadRequestItems.objects.filter( offload_request__van__pk=pk)
+            serializer = OffloadRequestItemsSerializer(offload_requests, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-# class SalesmanRequestListAPIView(APIView):
-#     authentication_classes = [BasicAuthentication]
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request):
-#         try:
-#             offload_requests = OffloadRequest.objects.select_related('van', 'van__salesman').all()
-            
-#             data = []
-#             for offload_request in offload_requests:
-#                 van = offload_request.van
-#                 salesman = van.salesman if van else None
-#                 van_data = {
-#                     'id': offload_request.id,
-#                     'date': offload_request.created_date,
-#                     'van_plate': van.plate if van else None,
-#                     'salesman_id': salesman.id if salesman else None,
-#                     'salesman_name': salesman.get_fullname() if salesman else None,
-#                     'route': van.get_van_route() if van else None,
-#                 }
-#                 data.append(van_data)
-            
-#             return Response(data, status=status.HTTP_200_OK)
-        
-#         except Exception as e:
-#             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-         
