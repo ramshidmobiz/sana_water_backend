@@ -663,7 +663,6 @@ def find_customers(request, def_date, route_id):
         week_num = (date.day - 1) // 7 + 1
         week_number = f'Week{week_num}'
     route = RouteMaster.objects.get(route_id=route_id)
-
     van_route = Van_Routes.objects.filter(routes=route).first()
     if van_route:
         van_capacity = van_route.van.capacity
@@ -697,12 +696,8 @@ def find_customers(request, def_date, route_id):
                 emergency_customers.append(client.customer)
                 if client.customer.building_name not in buildings:
                     buildings.append(client.customer.building_name)
-    co = 0
-    for cus in todays_customers:
-        if cus.no_of_bottles_required:
-            co+=cus.no_of_bottles_required
-    # print(route,co)
-    
+
+
     if not len(buildings) == 0:
         building_count = {}
 
@@ -718,11 +713,14 @@ def find_customers(request, def_date, route_id):
         building_gps = []
 
         for building, bottle_count in building_count.items():
+        # Fetch GPS longitude and latitude for each building
             c = Customers.objects.filter(building_name=building, routes=route).first()
             gps_longitude = c.gps_longitude
             gps_latitude = c.gps_latitude
+        # Append tuple of building name and its GPS coordinates
             building_gps.append((building, gps_longitude, gps_latitude, bottle_count))
 
+            # Sort buildings based on GPS longitude and latitude
         sorted_building_gps = sorted(building_gps, key=lambda x: (x[1] if x[1] is not None else '', x[2] if x[2] is not None else ''))
         sorted_buildings = [item[0] for item in sorted_building_gps]
         sorted_building_count = dict(sorted(building_count.items(), key=lambda item: item[1]))
@@ -731,15 +729,15 @@ def find_customers(request, def_date, route_id):
         trip_count = 1
         current_trip_bottle_count = 0
         trip_buildings = []
-        bottle_count = 0
+
+        # for building, bottle_count in sorted_buildings.items():
+        # for building, bottle_count in sorted_building_count.items():
         for building in sorted_buildings:
-          
+
             for building_data in sorted_building_gps:
                 if building_data[0]==building:
                     building = building_data[0]
-                    if building_data[3]:
-                        bottle_count = building_data[3]
-                        
+                    bottle_count = building_data[3]
                     if current_trip_bottle_count + bottle_count > van_capacity:
                         trip_buildings = [building]
                         trip_count+=1
@@ -747,12 +745,12 @@ def find_customers(request, def_date, route_id):
                         # print(route,"trip",trip_count)
                         current_trip_bottle_count = bottle_count
                     else:
-                        
+
                         trip_buildings.append(building)
                         trips[f"Trip{trip_count}"] = trip_buildings
                         current_trip_bottle_count += bottle_count
-            
-        
+
+
 
         # Merge trips if possible to optimize
         merging_occurred = False
@@ -767,43 +765,49 @@ def find_customers(request, def_date, route_id):
                     del trips[other_trip_key]
                     merging_occurred = True
                     break
-            if merging_occurred:  
+            if merging_occurred:
                 break
-                    
+
         # List to store trip-wise customer details
         trip_customers = []
-        location_name = ""
+        customer_location_name = ""
+        customer_location_id = ""
         for trip in trips:
             for building in trips[trip]:
                 for customer in todays_customers:
-                    if customer.building_name == building:
-                        if customer.location :
-                            location_name = customer.location.location_name
+                    if customer.location:
+                        customer_location_name = customer.location.location_name
+                        customer_location_id = customer.location.location_id
+                    if customer.building_name ==building:
                         trip_customer = {
                             "customer_name" : customer.customer_name,
-                            "mobile":customer.mobile_no,
+                            "customer_id" : customer.customer_id,
                             "trip":trip,
                             "building":customer.building_name,
                             "route" : customer.routes.route_name,
                             "no_of_bottles": customer.no_of_bottles_required,
-                            "location" : location_name,
+                            "location" : customer_location_name,
+                            "location_id" : customer_location_id,
+                            "gps_latitude": customer.gps_latitude,
+                            "gps_longitude": customer.gps_longitude,
                             "building": customer.building_name,
                             "door_house_no": customer.door_house_no,
                             "floor_no": customer.floor_no,
-                            "gps_longitude": customer.gps_longitude,
-                            "gps_latitude": customer.gps_latitude,
-                            "customer_type": customer.sales_type,
-                            # 'rate': customer.rate,
+                            "customer_type": customer.customer_type,
+                            "sales type" : customer.sales_type,
+                            'mobile_no': customer.mobile_no,
+                            'whats_app': customer.whats_app,
+                            'email_id': customer.email_id,
+                            'rate': customer.rate,
                         }
                         if customer in emergency_customers:
                             trip_customer['type'] = 'Emergency'
+                            trip_customer['emergency'] = 1
                             dif = DiffBottlesModel.objects.filter(customer=customer, delivery_date=date).latest('created_date')
                             trip_customer['no_of_bottles'] = dif.quantity_required
                         else:
                             trip_customer['type'] = 'Default'
-                        if customer.sales_type == 'CASH' or  customer.sales_type == 'CREDIT':
-                            trip_customer['rate'] = customer.rate
-
+                            trip_customer['emergency'] = 0
                         trip_customers.append(trip_customer)
         return trip_customers
 
