@@ -6848,25 +6848,179 @@ class OffloadRequestListAPIView(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
     
-    def get(self, request, format=None):
-        try:
-            offload_requests = OffloadRequest.objects.all()
-            serializer = OffloadRequestsSerializer(offload_requests, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    def get(self, request):
         
+        offload_requests = OffloadRequest.objects.all().prefetch_related('offloadrequestitems_set')
+        serializer = OffloadsRequestSerializer(offload_requests, many=True)
+        
+        # Flatten the nested products data
+        products_data = []
+        for offload_request in serializer.data:
+            products_data.extend(offload_request['products'])
+
+        response_data = {
+            "status": "true",
+            "products": products_data
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        try:
+            products = request.data.get('products', [])
+
+            with transaction.atomic():
+                for product_data in products:
+                    product_id = product_data.get('product_id')
+                    count = int(product_data.get('count', 0))
+                    stock_type = product_data.get('stock_type')
+
+                    items = VanProductStock.objects.filter(product__id=product_id)
+                    if not items.exists():
+                        return Response({
+                            "status": "false",
+                            "title": "Failed",
+                            "message": f"Product with ID {product_id} not found",
+                        }, status=status.HTTP_404_NOT_FOUND)
+
+                    # Check if there is a pending offload request
+                    offload_request_item = OffloadRequestItems.objects.filter(product__id=product_id).first()
+                    if not offload_request_item or offload_request_item.quantity < count:
+                        return Response({
+                            "status": "false",
+                            "title": "Failed",
+                            "message": f"Requested quantity not met for product ID {product_id}",
+                        }, status=status.HTTP_400_BAD_REQUEST)
+
+                    # Deduct the requested quantity
+                    OffloadRequestItems.objects.filter(id=offload_request_item.id).update(
+                        offloaded_quantity=count,
+                        quantity=offload_request_item.quantity - count
+                    )
+
+                    # Perform the offload operation
+                    if stock_type == "emptycan":
+                        for item in items:
+                            if count <= item.empty_can_count:
+                                item.empty_can_count -= count
+                                item.save()
+                                EmptyCanStock.objects.create(
+                                    product=item.product,
+                                    quantity=count
+                                )
+                                break
+                            else:
+                                count -= item.empty_can_count
+                                item.empty_can_count = 0
+                                item.save()
+                    elif stock_type == "return":
+                        scrap_count = int(product_data.get('scrap_count', 0))
+                        washing_count = int(product_data.get('washing_count', 0))
+                        other_quantity = int(product_data.get('other_quantity', 0))
+                        other_reason = product_data.get('other_reason', '')
+
+                        OffloadReturnStocks.objects.create(
+                            created_by=request.user.id,
+                            created_date=timezone.now(),
+                            salesman=items[0].van.salesman,
+                            van=items[0].van,
+                            product=items[0].product,
+                            scrap_count=scrap_count,
+                            washing_count=washing_count,
+                            other_quantity=other_quantity,
+                            other_reason=other_reason,
+                        )
+
+                        if scrap_count > 0:
+                            scrap_instance, created = ScrapProductStock.objects.get_or_create(
+                                created_date__date=timezone.now().date(), product=items[0].product,
+                                defaults={'created_by': request.user.id, 'created_date': timezone.now(), 'quantity': scrap_count}
+                            )
+                            if not created:
+                                scrap_instance.quantity += scrap_count
+                                scrap_instance.save()
+
+                        if washing_count > 0:
+                            washing_instance, created = WashingProductStock.objects.get_or_create(
+                                created_date__date=timezone.now().date(), product=items[0].product,
+                                defaults={'created_by': request.user.id, 'created_date': timezone.now(), 'quantity': washing_count}
+                            )
+                            if not created:
+                                washing_instance.quantity += washing_count
+                                washing_instance.save()
+
+                        total_return_count = scrap_count + washing_count + other_quantity
+                        for item in items:
+                            if total_return_count <= item.return_count:
+                                item.return_count -= total_return_count
+                                item.save()
+                                break
+                            else:
+                                total_return_count -= item.return_count
+                                item.return_count = 0
+                                item.save()
+                    elif stock_type == "stock":
+                        for item in items:
+                            if count <= item.stock:
+                                item.stock -= count
+                                item.save()
+                                break
+                            else:
+                                count -= item.stock
+                                item.stock = 0
+                                item.save()
+
+                        product_stock = ProductStock.objects.get(branch=items[0].van.branch_id, product_name=items[0].product)
+                        product_stock.quantity += count
+                        product_stock.save()
+
+                    Offload.objects.create(
+                        created_by=request.user.id,
+                        created_date=timezone.now(),
+                        salesman=items[0].van.salesman,
+                        van=items[0].van,
+                        product=items[0].product,
+                        quantity=count,
+                        stock_type=stock_type
+                    )
+
+                response_data = {
+                    "status": "true",
+                    "title": "Successfully Offloaded",
+                    "message": "Offload successfully.",
+                    'reload': 'true',
+                }
+
+                return Response(response_data, status=status.HTTP_200_OK)
+
+        except IntegrityError as e:
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": str(e),
+            }
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": str(e),
+            }
+            return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+   
 class OffloadRequestItemsListAPIView(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
     
-    def get(self, request, pk, format=None):
-        try:
-            offload_requests = OffloadRequestItems.objects.filter( offload_request__van__pk=pk)
-            serializer = OffloadRequestItemsSerializer(offload_requests, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    def get(self, request, format=None):
+        offload_requests = OffloadRequest.objects.all().prefetch_related('offloadrequestitems_set')
+        serializer = OffloadsRequestSerializer(offload_requests, many=True)
+        response_data = {
+            "status": "true",
+            "products": serializer.data
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
 
 class StaffIssueOrdersAPIView(APIView):
 

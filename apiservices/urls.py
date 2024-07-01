@@ -249,13 +249,16 @@ urlpatterns = [
     path('van-list/', VanListAPIView.as_view(), name='van-list'),
     path('van-item-list/<str:pk>/', VanProductStockListAPIView.as_view(), name='van-item-list'),
     path('salesman_requesting/', SalesmanOffloadRequestAPIView.as_view(), name='salesman_requesting'),
-    path('salsman-requesting-list/', OffloadRequestListAPIView.as_view(), name='salsman-requesting-list'),
     path('offload-request-items/<str:pk>/', OffloadRequestItemsListAPIView.as_view(), name='offload-request-items'),
     
     # offload request apis start
     path('offloads-requesting/', OffloadRequestingAPIView.as_view(), name='offload_request'),
     
     # offload request apis end
+    
+    #offload store app 
+    path('offload/', OffloadRequestListAPIView.as_view(), name='offload'),
+    
     
     path('api_staffIssueOrdersCreate/<str:staff_order_details_id>/', StaffIssueOrdersAPIView.as_view(), name='api_staffIssueOrdersCreate'),
     path('get_coupon_bookno/', GetCouponBookNoView.as_view(), name='get_coupon_bookno'),

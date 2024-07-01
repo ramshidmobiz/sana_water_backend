@@ -1579,7 +1579,7 @@ class OffloadRequestItemsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OffloadRequestItems
-        fields = ['product_name', 'offloaded_quantity']  
+        fields = ['product_name', 'quantity']  
         
 class OffloadRequestVanStockCouponsSerializer(serializers.ModelSerializer):
     coupon_id = serializers.SerializerMethodField()
@@ -1614,3 +1614,56 @@ class IssueCouponStockSerializer(serializers.ModelSerializer):
 
     def get_book_no(self, obj):
         return obj.couponbook.book_num           
+# class OffloadsRequestItemsSerializer(serializers.ModelSerializer):
+#     product_name = serializers.CharField(source='product.product_name')
+    
+#     class Meta:
+#         model = OffloadRequestItems
+#         fields = ['id', 'quantity', 'offloaded_quantity', 'stock_type', 'product_name']
+
+# class OffloadsRequestSerializer(serializers.ModelSerializer):
+#     offload_request_items = OffloadsRequestItemsSerializer(many=True, read_only=True, source='offloadrequestitems_set')
+#     salesman_name = serializers.CharField(source='salesman.username')
+#     route_name = serializers.SerializerMethodField()
+#     class Meta:
+#         model = OffloadRequest
+#         fields = ['id', 'van', 'salesman','salesman_name','route_name', 'created_date',  'offload_request_items']
+        
+#     def get_route_name(self, obj):
+#         return obj.van.get_van_route()  
+
+class OffloadCouponSerializer(serializers.ModelSerializer):
+    coupon_id = serializers.UUIDField(source='coupon.id')
+    book_no = serializers.CharField(source='coupon.book_no')
+
+    class Meta:
+        model = OffloadCoupon
+        fields = ['coupon_id', 'book_no']
+
+class OffloadsRequestItemsSerializer(serializers.ModelSerializer):
+    product_name = serializers.SerializerMethodField()
+    coupons = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OffloadRequestItems
+        fields = ['id', 'product_name', 'quantity', 'stock_type', 'coupons']
+        
+    def get_product_name(self, obj):
+        product_name = obj.product.product_name
+        if obj.stock_type == 'emptycan':
+            return f"{product_name} (Empty Can)"
+        elif obj.stock_type == 'return':
+            return f"{product_name} (Return Can)"
+        return product_name
+
+    
+    def get_coupons(self, obj):
+        coupons = OffloadCoupon.objects.filter(offload_request=obj.offload_request)
+        return OffloadCouponSerializer(coupons, many=True).data
+
+class OffloadsRequestSerializer(serializers.ModelSerializer):
+    products = OffloadsRequestItemsSerializer(many=True, read_only=True, source='offloadrequestitems_set')
+
+    class Meta:
+        model = OffloadRequest
+        fields = ['id', 'products']  
