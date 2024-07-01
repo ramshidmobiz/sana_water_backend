@@ -653,7 +653,7 @@ class NewRequestHome(View):
     #             if customer.sales_staff:
     #                 sales_man = customer.sales_staff
     #                 print(sales_man,'sales_man')
-    #                 notification_customer(sales_man.pk, "New Request", "A new request has been created.", "Sanawatercustomer")
+    #                 notification_customer(sales_man.pk, "New Request", "A new request has been created.", "Nationalwatercustomer")
 
     #             messages.success(request, 'Bottles Successfully Added.', 'alert-success')
     #             return redirect('requestType')
@@ -686,7 +686,7 @@ class NewRequestHome(View):
                     sales_man = customer.sales_staff
                     print(sales_man, 'sales_man')
                     try:
-                        notification(sales_man.pk, "New Request", "A new request has been created.", "Sanawaterfcm")
+                        notification(sales_man.pk, "New Request", "A new request has been created.", "Nationalwaterfcm")
                     except CustomUser.DoesNotExist:
                         messages.error(request, 'Salesman does not exist.', 'alert-danger')
                     except Send_Notification.DoesNotExist:
