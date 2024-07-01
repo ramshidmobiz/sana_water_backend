@@ -4046,7 +4046,7 @@ class CustomerCouponListAPI(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
-        customers = Customers.objects.all()
+        customers = Customers.objects.filter(sales_type="CASH COUPON")
 
         route_id = request.GET.get("route_id")
         if route_id:
