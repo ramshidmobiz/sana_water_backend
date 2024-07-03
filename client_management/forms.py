@@ -274,13 +274,17 @@ class CustodyCustomItemForm(forms.ModelForm):
 
 #------------------- Customer Supply------------------
 class CustomerSupplyForm(forms.ModelForm):
-
+    
+    adding_date = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'form-control', 'id': 'adding_date_field'})
+    )
+    
     class Meta:
         model = CustomerSupply
-        fields = ['customer','grand_total','discount','net_payable','vat','subtotal','amount_recieved','collected_empty_bottle','allocate_bottle_to_pending','allocate_bottle_to_custody','allocate_bottle_to_paid','reference_number']
+        fields = ['adding_date','grand_total','discount','net_payable','vat','subtotal','amount_recieved','collected_empty_bottle','allocate_bottle_to_pending','allocate_bottle_to_custody','allocate_bottle_to_paid','reference_number']
 
         widgets = {
-            'customer': forms.Select(attrs={'class': 'form-control', 'required': True}),
+            # 'created_date': forms.DateInput(attrs={'class': 'form-control', 'id': 'date-input'}),
             'grand_total': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter Grand Total'}),
             'discount': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter Discount'}),
             'net_payable': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter Net Payable'}),
@@ -293,6 +297,10 @@ class CustomerSupplyForm(forms.ModelForm):
             'allocate_bottle_to_paid': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter Allocated to Bottle Paid'}),
             'reference_number': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter Reference No.'}),
         }
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['adding_date'].initial = date.today()
         
 class EditCustomerSupplyForm(forms.ModelForm):
 
@@ -311,7 +319,7 @@ class EditCustomerSupplyForm(forms.ModelForm):
             'allocate_bottle_to_pending': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter Allocated to Bottle Pending'}),
             'allocate_bottle_to_custody': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter Allocated to Bottle Custody'}),
             'allocate_bottle_to_paid': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter Allocated to Bottle Paid'}),
-            'reference_number': forms.TextInput(attrs={'class': 'form-control', 'required': True, 'placeholder': 'Enter Reference No.'}),
+            'reference_number': forms.TextInput(attrs={'class': 'form-control', 'required': False, 'placeholder': 'Enter Reference No.'}),
         }
 
 class CustomerSupplyItemsForm(forms.ModelForm):

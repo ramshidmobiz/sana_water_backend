@@ -777,23 +777,26 @@ class CollectionCustomerSerializer(serializers.ModelSerializer):
         fields = ['customer_id','customer_name','invoices']
 
     def get_invoices(self, obj):
-        invoices = Invoice.objects.filter(customer=obj,invoice_status="non_paid",is_deleted=False).exclude(amout_total__lt=1).order_by('-created_date')
         invoice_list = []
-        for invoice in invoices:
-            invoice_data = {
-                'invoice_id': str(invoice.id),
-                'created_date': serializers.DateTimeField().to_representation(invoice.created_date),
-                'grand_total': invoice.amout_total,
-                'amout_recieved': invoice.amout_recieved,
-                'balance_amount': invoice.amout_total - invoice.amout_recieved ,
-                'reference_no': invoice.reference_no,
-            }
-            if not invoice.amout_total == invoice.amout_recieved:
-                invoice_list.append(invoice_data)
-            else:
-                invoice.invoice_status="paid"
-                invoice.save()
-        return invoice_list
+        try:
+            invoices = Invoice.objects.filter(customer=obj,invoice_status="non_paid",is_deleted=False).exclude(amout_total__lt=1).order_by('-created_date')
+            for invoice in invoices:
+                invoice_data = {
+                    'invoice_id': str(invoice.id),
+                    'created_date': serializers.DateTimeField().to_representation(invoice.created_date),
+                    'grand_total': invoice.amout_total,
+                    'amout_recieved': invoice.amout_recieved,
+                    'balance_amount': invoice.amout_total - invoice.amout_recieved ,
+                    'reference_no': invoice.reference_no,
+                }
+                if not invoice.amout_total == invoice.amout_recieved:
+                    invoice_list.append(invoice_data)
+                else:
+                    invoice.invoice_status="paid"
+                    invoice.save()
+            return invoice_list
+        except:
+            return invoice_list
     
 class CollectionChequeSerializer(serializers.ModelSerializer):
     class Meta:
