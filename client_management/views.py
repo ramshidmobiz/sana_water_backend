@@ -632,7 +632,7 @@ def edit_customer_supply(request,pk):
     )
     
     if request.method == 'POST':
-        customer_supply_form = CustomerSupplyForm(request.POST,instance=customer_supply_instance)
+        customer_supply_form = EditCustomerSupplyForm(request.POST,instance=customer_supply_instance)
         customer_supply_items_formset = SupplyItemsFormset(request.POST,request.FILES,
                                             instance=customer_supply_instance,
                                             prefix='customer_supply_items_formset',
@@ -648,16 +648,17 @@ def edit_customer_supply(request,pk):
                 customer=customer_supply_instance.customer_id
                 ).update(status='pending')
             
-            invoice_instance = Invoice.objects.get(created_date__date=customer_supply_instance.created_date.date(),customer=customer_supply_instance.customer,reference_no=customer_supply_instance.reference_number)
-            invoice_items_instances = InvoiceItems.objects.filter(invoice=invoice_instance)
-            InvoiceDailyCollection.objects.filter(
-                invoice=invoice_instance,
-                created_date__date=customer_supply_instance.created_date.date(),
-                customer=customer_supply_instance.customer,
-                salesman=customer_supply_instance.salesman
-                ).delete()
-            invoice_items_instances.delete()
-            invoice_instance.delete()
+            if Invoice.objects.filter(created_date__date=customer_supply_instance.created_date.date(),customer=customer_supply_instance.customer,invoice_no=customer_supply_instance.invoice_no).exists():
+                invoice_instance = Invoice.objects.get(created_date__date=customer_supply_instance.created_date.date(),customer=customer_supply_instance.customer,invoice_no=customer_supply_instance.invoice_no)
+                invoice_items_instances = InvoiceItems.objects.filter(invoice=invoice_instance)
+                InvoiceDailyCollection.objects.filter(
+                    invoice=invoice_instance,
+                    created_date__date=customer_supply_instance.created_date.date(),
+                    customer=customer_supply_instance.customer,
+                    salesman=customer_supply_instance.salesman
+                    ).delete()
+                invoice_items_instances.delete()
+                invoice_instance.delete()
             
             balance_amount = customer_supply_instance.subtotal - customer_supply_instance.amount_recieved
             if customer_supply_instance.amount_recieved < customer_supply_instance.subtotal:
@@ -790,7 +791,7 @@ def edit_customer_supply(request,pk):
         return HttpResponse(json.dumps(response_data), content_type='application/javascript')
                         
     else:
-        customer_supply_form = CustomerSupplyForm(instance=customer_supply_instance)
+        customer_supply_form = EditCustomerSupplyForm(instance=customer_supply_instance)
         customer_supply_items_formset = SupplyItemsFormset(queryset=supply_items_instances,
                                                     prefix='customer_supply_items_formset',
                                                     instance=customer_supply_instance)
