@@ -8,7 +8,7 @@ from van_management.models import *
 from decimal import Decimal
 
 from django.views import View
-from django.db.models import Q, Sum, Count, DecimalField
+from django.db.models import Q, Sum, Count, DecimalField, F
 from django.urls import reverse
 from django.contrib import messages
 from django.db import transaction, IntegrityError
@@ -863,8 +863,8 @@ def delete_customer_supply(request, pk):
 
 
 def handle_invoice_deletion(customer_supply_instance):
-    if Invoice.objects.filter(created_date__date=customer_supply_instance.created_date.date(), customer=customer_supply_instance.customer, reference_no=customer_supply_instance.reference_number).exists():
-        invoice_instance = Invoice.objects.get(created_date__date=customer_supply_instance.created_date.date(), customer=customer_supply_instance.customer, reference_no=customer_supply_instance.reference_number)
+    if Invoice.objects.filter(created_date__date=customer_supply_instance.created_date.date(), customer=customer_supply_instance.customer, invoice_no=customer_supply_instance.invoice_no).exists():
+        invoice_instance = Invoice.objects.get(created_date__date=customer_supply_instance.created_date.date(), customer=customer_supply_instance.customer, invoice_no=customer_supply_instance.invoice_no)
         invoice_items_instances = InvoiceItems.objects.filter(invoice=invoice_instance)
         
         InvoiceDailyCollection.objects.filter(
