@@ -1663,7 +1663,7 @@ class StaffOrdersDetailsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Staff_Orders_details
-        fields = ['staff_order_details_id', 'product_id', 'product_name', 'count', 'issued_qty', 'staff_order_id']
+        fields = ['staff_order_details_id', 'product_id', 'product_name', 'count', 'issued_qty']
 
     def get_product_name(self, obj):
         return obj.product_id.product_name

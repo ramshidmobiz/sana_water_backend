@@ -4353,8 +4353,8 @@ class EmergencyCustomersAPI(APIView):
 #--------------------New sales Report -------------------------------
 #--------------------New sales Report -------------------------------
 class CustomerSalesReportAPI(APIView):
-    # authentication_classes = [BasicAuthentication]
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         filter_data = {}
 
@@ -4382,12 +4382,14 @@ class CustomerSalesReportAPI(APIView):
 
         sales = CustomerSupply.objects.select_related('customer', 'salesman').filter(
             created_date__date__gte=start_date,
-            created_date__date__lte=end_date
+            created_date__date__lte=end_date,
+            salesman=request.user
         ).exclude(customer__sales_type__in=["CASH COUPON", "CREDIT COUPON"]).order_by("-created_date")
 
         coupons = CustomerCoupon.objects.select_related('customer', 'salesman').filter(
             created_date__date__gte=start_date,
-            created_date__date__lte=end_date
+            created_date__date__lte=end_date,
+            salesman=request.user
         ).order_by("-created_date")
 
         # collections = CollectionPayment.objects.select_related('customer', 'salesman').filter(
@@ -4454,8 +4456,8 @@ class CustomerSalesReportAPI(APIView):
 
 
 class CreditNoteAPI(APIView):
-    # authentication_classes = [BasicAuthentication]
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request, *args, **kwargs):
         start_date = request.data.get('start_date')
         end_date = request.data.get('end_date')
@@ -4470,7 +4472,7 @@ class CreditNoteAPI(APIView):
             start_datetime = datetime.today().date()
             end_datetime = datetime.today().date()
         
-        credit_invoices = Invoice.objects.filter(invoice_type='credit_invoive', created_date__date__range=[start_datetime, end_datetime])
+        credit_invoices = Invoice.objects.filter(invoice_type='credit_invoive', created_date__date__range=[start_datetime, end_datetime], customer__sales_staff=request.user)
         print('credit_invoices',credit_invoices)
         serialized = CreditNoteSerializer(credit_invoices, many=True)
         

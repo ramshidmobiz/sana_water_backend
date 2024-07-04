@@ -259,12 +259,12 @@ urlpatterns = [
 
     path('offloads/', OffloadRequestListAPIView.as_view(), name='api_offload'),
     
-    path('api_staffIssueOrdersCreate/<str:staff_order_details_id>/', StaffIssueOrdersAPIView.as_view(), name='api_staffIssueOrdersCreate'),
-    path('api_staffIssueOrdersCreate/create/<str:staff_order_details_id>/', StaffIssueOrdersAPIView.as_view(), name='api_staffIssueOrders_Create'),
+    # path('api_staffIssueOrdersCreate/<str:staff_order_details_id>/', StaffIssueOrdersAPIView.as_view(), name='api_staffIssueOrdersCreate'),
+    # path('api_staffIssueOrdersCreate/create/<str:staff_order_details_id>/', StaffIssueOrdersAPIView.as_view(), name='api_staffIssueOrders_Create'),
     
     #------------------------------------Store Appp Orders Api-----------------------------------------------------
     path('api_staff_issue_orders_list/', StaffIssueOrdersListAPIView.as_view(), name='api_staff_issue_orders_list'),
-    path('api_staffIssueOrdersCreate/<str:staff_order_id>/', StaffIssueOrdersAPIView.as_view(), name='api_staffIssueOrdersCreate'),
+    path('api_staffIssueOrdersCreate/<uuid:staff_order_id>/', StaffIssueOrdersAPIView.as_view(), name='api_staffIssueOrdersCreate'),
     path('get_coupon_bookno/', GetCouponBookNoView.as_view(), name='get_coupon_bookno'),
     #------------------------------------Store Appp Orders Api Completes-----------------------------------------------------
 

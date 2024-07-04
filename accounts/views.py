@@ -610,7 +610,7 @@ def visit_days_assign(request, customer_id):
         else:
             visit_schedule_data = {}  # Initialize an empty dictionary if it's None
             
-        print(visit_schedule_data)
+        # print(visit_schedule_data)
         
     except Customers.DoesNotExist:
         messages.error(request, 'Customer does not exist.')
@@ -627,14 +627,14 @@ def visit_days_assign(request, customer_id):
             for day in selected_days:
                 visit_schedule_data[day].append(f"Week{week_number}")
                 
-        # Convert lists to comma-separated strings and handle empty lists
+        # Split the week strings into lists and ensure all weeks are individual elements
         for day in days_of_week:
-            if visit_schedule_data[day]:
-                visit_schedule_data[day] = [",".join(visit_schedule_data[day])]
-            else:
-                visit_schedule_data[day] = [""]
-                
-        print(visit_schedule_data)
+            visit_schedule_data[day] = [
+                week for weeks in visit_schedule_data[day]
+                for week in weeks.split(',')
+            ]
+            
+        # print(visit_schedule_data)
 
         # Save the JSON data to the database field
         customer_data.visit_schedule = visit_schedule_data
@@ -650,6 +650,7 @@ def visit_days_assign(request, customer_id):
         "days_of_week": days_of_week
     }
     return render(request, template_name, context)
+
 
 class CustomerRateHistoryListView(View):
     template_name = 'accounts/customer_rate_history.html'

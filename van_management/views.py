@@ -449,11 +449,11 @@ def find_customers(request, def_date, route_id):
     for customer in Customers.objects.filter(routes=route):
         if customer.visit_schedule:
             for day, weeks in customer.visit_schedule.items():
-                if week_number in str(weeks):
-                    if str(day_of_week) in day:
+                if day in str(day_of_week):
+                    if week_number in str(weeks):
                         todays_customers.append(customer)
                         buildings.append(customer.building_name)
-
+                        
     # Customers on vacation
     date = datetime.strptime(def_date, '%Y-%m-%d').date()
     for vacation in Vacation.objects.all():
@@ -489,7 +489,6 @@ def find_customers(request, def_date, route_id):
                         building_count[building] += customer.no_of_bottles_required
                     else:
                         building_count[building] = customer.no_of_bottles_required
-
 
         building_gps = []
 
