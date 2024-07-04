@@ -6846,7 +6846,42 @@ class SalesmanOffloadRequestAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 #---------------store app Offload API---------------------------------- 
+
+class OffloadRequestVanListAPIView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            offload_requests = OffloadRequest.objects.select_related('van', 'van__salesman').all()
+            
+            unique_vans = set()
+            data = []
+            for request in offload_requests:
+                van = request.van
+                if van and van.van_id not in unique_vans:
+                    van_data = {
+                        'id': van.van_id,
+                        'date': van.created_date,
+                        'van_plate': van.plate,
+                        'salesman_id': van.salesman.id if van.salesman else None,
+                        'salesman_name': van.salesman.get_fullname() if van.salesman else None,
+                        'route_name': self.get_van_route(van),
+                    }
+                    data.append(van_data)
+                    unique_vans.add(van.van_id)
+            
+            return Response(data, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+    def get_van_route(self, van):
+        try:
+            return van.get_van_route()
+        except AttributeError:
+            return None
+      
 class OffloadRequestListAPIView(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
