@@ -243,8 +243,6 @@ urlpatterns = [
 
     path('get_notification/',Get_Notification_APIView.as_view(), name='get_notification'),
     
-    path('api_staff_issue_orders_list/', StaffIssueOrdersListAPIView.as_view(), name='api_staff_issue_orders_list'),
-    path('api_staff_issue_order_details/<str:staff_order_id>/', StaffIssueOrderDetailsAPIView.as_view(), name='api_staff_issue_order_details'),
 
     path('van-list/', VanListAPIView.as_view(), name='van-list'),
     path('van-item-list/<str:pk>/', VanProductStockListAPIView.as_view(), name='van-item-list'),
@@ -261,11 +259,15 @@ urlpatterns = [
 
     path('offloads/', OffloadRequestListAPIView.as_view(), name='api_offload'),
     
-    
     path('api_staffIssueOrdersCreate/<str:staff_order_details_id>/', StaffIssueOrdersAPIView.as_view(), name='api_staffIssueOrdersCreate'),
     path('api_staffIssueOrdersCreate/create/<str:staff_order_details_id>/', StaffIssueOrdersAPIView.as_view(), name='api_staffIssueOrders_Create'),
+    
+    #------------------------------------Store Appp Orders Api-----------------------------------------------------
+    path('api_staff_issue_orders_list/', StaffIssueOrdersListAPIView.as_view(), name='api_staff_issue_orders_list'),
+    path('api_staffIssueOrdersCreate/<str:staff_order_id>/', StaffIssueOrdersAPIView.as_view(), name='api_staffIssueOrdersCreate'),
     path('get_coupon_bookno/', GetCouponBookNoView.as_view(), name='get_coupon_bookno'),
-  
+    #------------------------------------Store Appp Orders Api Completes-----------------------------------------------------
+
     path('location_updates/', LocationUpdateAPIView.as_view(), name='location_updates'),
   
 ]

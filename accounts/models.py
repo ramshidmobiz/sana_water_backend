@@ -208,3 +208,18 @@ class LocationUpdate(models.Model):
 
     def __str__(self):
         return f'{self.van} - {self.salesman} - {self.location}'
+    
+
+class CustomerRateHistory(models.Model):
+    rate_history_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    customer = models.ForeignKey(Customers, on_delete=models.CASCADE, null=True, blank=True)
+    previous_rate = models.CharField(max_length=100, null=True, blank=True)
+    new_rate = models.CharField(max_length=100, null=True, blank=True)
+    created_date = models.DateTimeField(default=datetime.now)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL,null=True, blank=True, related_name='new_customer_rate')
+
+    class Meta:
+        ordering = ('-created_date',)
+
+    def __str__(self):
+        return f"{self.customer.customer_name} - {self.created_date}"

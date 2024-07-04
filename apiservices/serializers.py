@@ -1543,46 +1543,46 @@ class CouponsStockSerializer(serializers.ModelSerializer):
         model = VanCouponStock
         fields = ['created_date', 'coupon_type_name', 'total_stock']
    
-class OffloadRequestItemsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = OffloadRequestItems
-        fields = '__all__'
+# class OffloadRequestItemsSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = OffloadRequestItems
+#         fields = '__all__'
 
-class OffloadRequestSerializer(serializers.ModelSerializer):
-    offloadrequestitems_set = OffloadRequestItemsSerializer(many=True)
-    salesman = serializers.PrimaryKeyRelatedField(read_only=True)
+# class OffloadRequestSerializer(serializers.ModelSerializer):
+#     offloadrequestitems_set = OffloadRequestItemsSerializer(many=True)
+#     salesman = serializers.PrimaryKeyRelatedField(read_only=True)
 
-    class Meta:
-        model = OffloadRequest
-        fields = '__all__'
+#     class Meta:
+#         model = OffloadRequest
+#         fields = '__all__'
 
-    def create(self, validated_data):
-        items_data = validated_data.pop('offloadrequestitems_set')
-        # Get the salesman from the context
-        salesman = self.context['request'].user
-        offload_request = OffloadRequest.objects.create(salesman=salesman, **validated_data)
-        for item_data in items_data:
-            OffloadRequestItems.objects.create(offload_request=offload_request, **item_data)
-        return offload_request
+#     def create(self, validated_data):
+#         items_data = validated_data.pop('offloadrequestitems_set')
+#         # Get the salesman from the context
+#         salesman = self.context['request'].user
+#         offload_request = OffloadRequest.objects.create(salesman=salesman, **validated_data)
+#         for item_data in items_data:
+#             OffloadRequestItems.objects.create(offload_request=offload_request, **item_data)
+#         return offload_request
     
-class OffloadRequestsSerializer(serializers.ModelSerializer):
-    salesman_name = serializers.CharField(source='salesman.username')
-    route_name = serializers.SerializerMethodField()
-    van_plate = serializers.CharField(source='van.plate')
+# class OffloadRequestsSerializer(serializers.ModelSerializer):
+#     salesman_name = serializers.CharField(source='salesman.username')
+#     route_name = serializers.SerializerMethodField()
+#     van_plate = serializers.CharField(source='van.plate')
 
-    class Meta:
-        model = OffloadRequest
-        fields = ['salesman_name', 'salesman', 'route_name', 'created_date', 'van_plate']
+#     class Meta:
+#         model = OffloadRequest
+#         fields = ['salesman_name', 'salesman', 'route_name', 'created_date', 'van_plate']
     
-    def get_route_name(self, obj):
-        return obj.van.get_van_route()
+#     def get_route_name(self, obj):
+#         return obj.van.get_van_route()
     
-class OffloadRequestItemsSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source='product.product_name')
+# class OffloadRequestItemsSerializer(serializers.ModelSerializer):
+#     product_name = serializers.CharField(source='product.product_name')
 
-    class Meta:
-        model = OffloadRequestItems
-        fields = ['product_name', 'quantity']  
+#     class Meta:
+#         model = OffloadRequestItems
+#         fields = ['product_name', 'quantity']  
         
 class OffloadRequestVanStockCouponsSerializer(serializers.ModelSerializer):
     coupon_id = serializers.SerializerMethodField()
@@ -1617,32 +1617,19 @@ class IssueCouponStockSerializer(serializers.ModelSerializer):
 
     def get_book_no(self, obj):
         return obj.couponbook.book_num           
-# class OffloadsRequestItemsSerializer(serializers.ModelSerializer):
-#     product_name = serializers.CharField(source='product.product_name')
-    
-#     class Meta:
-#         model = OffloadRequestItems
-#         fields = ['id', 'quantity', 'offloaded_quantity', 'stock_type', 'product_name']
-
-# class OffloadsRequestSerializer(serializers.ModelSerializer):
-#     offload_request_items = OffloadsRequestItemsSerializer(many=True, read_only=True, source='offloadrequestitems_set')
-#     salesman_name = serializers.CharField(source='salesman.username')
-#     route_name = serializers.SerializerMethodField()
-#     class Meta:
-#         model = OffloadRequest
-#         fields = ['id', 'van', 'salesman','salesman_name','route_name', 'created_date',  'offload_request_items']
-        
-#     def get_route_name(self, obj):
-#         return obj.van.get_van_route()  
+ 
 
 class OffloadCouponSerializer(serializers.ModelSerializer):
     coupon_id = serializers.UUIDField(source='coupon.id')
     book_no = serializers.CharField(source='coupon.book_no')
-
+    quantity = serializers.IntegerField()
+    stock_type = serializers.CharField()
+    
     class Meta:
         model = OffloadCoupon
-        fields = ['coupon_id', 'book_no']
-
+        fields = ['coupon_id', 'book_no', 'quantity', 'stock_type']
+        
+   
 class OffloadsRequestItemsSerializer(serializers.ModelSerializer):
     product_name = serializers.SerializerMethodField()
     coupons = serializers.SerializerMethodField()
@@ -1672,10 +1659,14 @@ class OffloadsRequestSerializer(serializers.ModelSerializer):
         fields = ['id', 'products']  
         
 class StaffOrdersDetailsSerializer(serializers.ModelSerializer):
+    product_name = serializers.SerializerMethodField()
+
     class Meta:
         model = Staff_Orders_details
-        fields = ['staff_order_details_id', 'product_id', 'count', 'issued_qty', 'staff_order_id']
-        
+        fields = ['staff_order_details_id', 'product_id', 'product_name', 'count', 'issued_qty', 'staff_order_id']
+
+    def get_product_name(self, obj):
+        return obj.product_id.product_name
 
 class LocationUpdateSerializer(serializers.ModelSerializer):
     class Meta:
