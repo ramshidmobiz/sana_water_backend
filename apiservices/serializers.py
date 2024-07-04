@@ -1672,3 +1672,5 @@ class LocationUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = LocationUpdate
         fields = '__all__'
+        
+        

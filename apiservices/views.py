@@ -6888,23 +6888,74 @@ class OffloadRequestVanListAPIView(APIView):
 class OffloadRequestListAPIView(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
-    
-    def get(self, request):
+ 
+    def get(self, request, van_id):
         
-        offload_requests = OffloadRequest.objects.all().prefetch_related('offloadrequestitems_set')
-        serializer = OffloadsRequestSerializer(offload_requests, many=True)
+        date_str = request.GET.get("date_str", str(datetime.today().date()))
+        date = datetime.strptime(date_str, '%Y-%m-%d')
         
-        # Flatten the nested products data
-        products_data = []
-        for offload_request in serializer.data:
-            products_data.extend(offload_request['products'])
-
+        offload_requests = OffloadRequest.objects.filter(van__van_id=van_id, created_date__date=date).prefetch_related('offloadrequestitems_set')
+        
+        vans_data = defaultdict(lambda: defaultdict(lambda: {'quantity': 0, 'coupon_numbers': set(), 'washing_count': 0, 'scrap_count': 0}))
+        
+        for offload_request in offload_requests:
+            van = offload_request.van
+            offload_items = offload_request.offloadrequestitems_set.all()
+            
+            for item in offload_items:
+                product_name = item.product.product_name
+                created_date = offload_request.created_date.date()
+                
+                if item.stock_type == 'emptycan':
+                    product_name = f"{product_name} (Empty Can)"
+                elif item.stock_type == 'return':
+                    product_name = f"{product_name} (Return Can)"
+                
+                vans_data[van][(product_name, created_date)]['quantity'] += item.quantity
+                
+                if item.product.category.category_name == 'Coupons':
+                    coupon_type = item.product.product_name
+                    coupons = OffloadCoupon.objects.filter(offload_request=offload_request, coupon__coupon_type__coupon_type_name=coupon_type)
+                    coupon_ids = list(coupons.values_list('coupon_id', flat=True))
+                    vans_data[van][(product_name, created_date)]['coupon_numbers'].update(coupon_ids)
+                
+                if item.stock_type == 'return':
+                    return_stocks = OffloadRequestReturnStocks.objects.filter(offload_request_item=item)
+                    for return_stock in return_stocks:
+                        vans_data[van][(product_name, created_date)]['washing_count'] += return_stock.washing_count
+                        vans_data[van][(product_name, created_date)]['scrap_count'] += return_stock.scrap_count
+        
         response_data = {
             "status": "true",
-            "products": products_data
+            "vans": []
         }
-
+        
+        for van, products_map in vans_data.items():
+            products_list = []
+            for (product_name, created_date), details in products_map.items():
+                product_data = {
+                    "product_name": product_name,
+                    "quantity": details['quantity'],
+                    "stock_type": "emptycan" if "Empty Can" in product_name else ("return" if "Return Can" in product_name else "stock"),
+                }
+                
+                if details['coupon_numbers']:
+                    product_data['coupon_ids'] = list(details['coupon_numbers'])
+                
+                if "Return Can" in product_name:
+                    product_data['washing_count'] = details['washing_count']
+                    product_data['scrap_count'] = details['scrap_count']
+                
+                products_list.append(product_data)
+            
+            van_data = {
+                "van": str(van),
+                "products": products_list
+            }
+            response_data["vans"].append(van_data)
+        
         return Response(response_data, status=status.HTTP_200_OK)
+    
     def post(self, request):
         try:
             products = request.data.get('products', [])
