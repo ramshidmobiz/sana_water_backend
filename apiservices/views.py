@@ -44,6 +44,7 @@ from datetime import datetime as dt
 from coupon_management.models import *
 from datetime import timedelta
 from django.utils import timezone
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.permissions import IsAuthenticated
 
@@ -903,25 +904,45 @@ class ExpenseHeadDetailAPI(APIView):
 
 class ExpenseListAPI(APIView):
     authentication_classes = [BasicAuthentication]
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         expenses = Expense.objects.all()
         serializer = ExpenseSerializer(expenses, many=True)
         return Response(serializer.data)
 
     def post(self, request):
-        van = Van.objects.get(salesman=request.user)
+        try:
+            van_route = Van_Routes.objects.get(van__salesman=request.user)
+        except Van_Routes.DoesNotExist:
+            return Response({"detail": "Van route not found."}, status=status.HTTP_404_NOT_FOUND)
         
-        route = ""
-        if request.GET.get("route_id"):
-            route_id = request.GET.get("route_id")
-            route = RouteMaster.objects.get(pk=route_id)
-            
-        serializer = ExpenseSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        expense_type_id = request.data.get('expence_type')
+        amount = request.data.get('amount')
+        remarks = request.data.get('remarks', '')
+        expense_date = request.data.get('expense_date')
+
+        if not all([expense_type_id, amount, expense_date]):
+            return Response({"detail": "Missing required fields."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            expense_type = ExpenseHead.objects.get(pk=expense_type_id)
+        except ObjectDoesNotExist:
+            return Response({"detail": "Expense type not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        expense = Expense(
+            expence_type=expense_type,
+            route=van_route.routes,
+            van=van_route.van,
+            amount=amount,
+            remarks=remarks,
+            expense_date=expense_date
+        )
+
+        expense.save()
+
+        # Serialize the saved expense instance for the response
+        serializer = ExpenseSerializer(expense)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class ExpenseDetailAPI(APIView):
     def get(self, request, expense_id):
