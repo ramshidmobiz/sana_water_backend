@@ -919,10 +919,7 @@ class ExpenseListAPI(APIView):
             
         serializer = ExpenseSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(
-                van = van,
-                routes = route,
-                )
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -4512,9 +4509,7 @@ class DashboardAPI(APIView):
             filled_bottle_count = 0
         
         used_coupon_count = CustomerSupplyCoupon.objects.filter(customer_supply__customer__routes__pk=route_id,customer_supply__created_date__date=date).aggregate(leaf_count=Count('leaf'))['leaf_count']
-        
-        cash_in_hand = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=date,is_deleted=False).aggregate(total_amount=Sum('amout_recieved'))['total_amount'] or 0
-        # cash_sale_total_amount = Invoice.objects.filter(customer__routes__pk=route_id,created_date__date=date,invoice_type="cash_invoice").aggregate(total_amount=Sum('amout_total'))['total_amount'] or 0
+        # sales records start
         cash_sale_total_amount = CustomerSupply.objects.filter(customer__routes__pk=route_id,created_date__date=date,customer__sales_type="CASH").aggregate(total_amount=Sum('subtotal'))['total_amount'] or 0
         cash_sale_total_amount += CustomerCoupon.objects.filter(created_date__date=date,customer__routes__pk=route_id,customer__sales_type="CASH").aggregate(total_amount=Sum('total_payeble'))['total_amount'] or 0
         cash_sale_amount_recieved = CustomerSupply.objects.filter(customer__routes__pk=route_id,created_date__date=date,customer__sales_type="CASH").aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
@@ -4524,8 +4519,20 @@ class DashboardAPI(APIView):
         credit_sale_total_amount += CustomerCoupon.objects.filter(customer__routes__pk=route_id,created_date__date=date,customer__sales_type="CREDIT").aggregate(total_amount=Sum('total_payeble'))['total_amount'] or 0
         credit_sale_amount_recieved = CustomerSupply.objects.filter(customer__routes__pk=route_id,created_date__date=date,customer__sales_type="CREDIT").aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
         credit_sale_amount_recieved += CustomerCoupon.objects.filter(customer__routes__pk=route_id,created_date__date=date,customer__sales_type="CREDIT").aggregate(total_amount=Sum('amount_recieved'))['total_amount'] or 0
+        # sales records end
+        # cash in hand start
+        cash_sale_amount = CustomerSupply.objects.filter(customer__routes__pk=route_id,created_date__date=date,amount_recieved__gt=0).aggregate(total_amount=Sum('subtotal'))['total_amount'] or 0
+        cash_sale_amount += CustomerCoupon.objects.filter(created_date__date=date,customer__routes__pk=route_id,amount_recieved__gt=0).aggregate(total_amount=Sum('total_payeble'))['total_amount'] or 0
         
+        dialy_collections = CollectionPayment.objects.filter(salesman_id=van_route.van.salesman,amount_received__gt=0)
+        
+        dialy_collections = dialy_collections.filter(created_date__date=date)
+        credit_sales_amount_collected = dialy_collections.aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
+        total_sales_amount_collected = cash_sale_amount_recieved + credit_sales_amount_collected
+        # cash in hand end
         expences = Expense.objects.filter(van__salesman__pk=request.user.pk,expense_date=date).aggregate(total_amount=Sum('amount'))['total_amount'] or 0
+        
+        balance_in_hand = total_sales_amount_collected - expences
         
         data = {
             'date': date_str,
@@ -4541,7 +4548,7 @@ class DashboardAPI(APIView):
             'empty_bottle_count': empty_bottle_count,
             'filled_bottle_count': filled_bottle_count,
             'used_coupon_count': used_coupon_count,
-            'cash_in_hand': cash_in_hand,
+            'cash_in_hand': balance_in_hand,
             'cash_sale': {
                 'cash_sale_total_amount': cash_sale_total_amount,
                 'cash_sale_amount_recieved': cash_sale_amount_recieved,
