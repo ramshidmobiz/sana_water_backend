@@ -3309,7 +3309,7 @@ def dsr_summary(request):
         
         
         ### expenses ####
-        expenses_instanses = Expense.objects.filter(expense_date=date,van__salesman=salesman)
+        expenses_instanses = Expense.objects.filter(expense_date=date,van=van_route.van)
         today_expense = expenses_instanses.aggregate(total_expense=Sum('amount'))['total_expense'] or 0
         
         ### suspense ###

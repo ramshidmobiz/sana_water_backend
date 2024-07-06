@@ -1660,13 +1660,20 @@ class OffloadsRequestSerializer(serializers.ModelSerializer):
         
 class StaffOrdersDetailsSerializer(serializers.ModelSerializer):
     product_name = serializers.SerializerMethodField()
+    is_issued = serializers.SerializerMethodField()
 
     class Meta:
         model = Staff_Orders_details
-        fields = ['staff_order_details_id', 'product_id', 'product_name', 'count', 'issued_qty']
+        fields = ['staff_order_details_id','product_id','product_name','count','issued_qty','is_issued']
 
     def get_product_name(self, obj):
         return obj.product_id.product_name
+    
+    def get_is_issued(self, obj):
+        status = False
+        if obj.count == obj.issued_qty:
+            status = True
+        return status
 
 class LocationUpdateSerializer(serializers.ModelSerializer):
     class Meta:

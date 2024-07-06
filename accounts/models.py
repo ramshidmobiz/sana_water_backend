@@ -196,7 +196,7 @@ class LocationUpdate(models.Model):
     location_update_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     van = models.ForeignKey('van_management.Van', on_delete=models.CASCADE,null=True, blank=True,)
     salesman = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True, related_name='LocationUpdate_Salesman')
-    location = models.ForeignKey('master.LocationMaster', on_delete=models.CASCADE,null=True, blank=True, related_name='location_update')
+    location = models.CharField(max_length=255, null=True, blank=True)  
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
     battery_percentage = models.DecimalField(max_digits=5, decimal_places=2)

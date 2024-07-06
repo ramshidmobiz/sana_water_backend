@@ -258,7 +258,7 @@ urlpatterns = [
     path('offloadrequest_vanlist/', OffloadRequestVanListAPIView.as_view(), name='offloadrequest_vanlist'),
 
     path('offloads/', OffloadRequestListAPIView.as_view(), name='api_offload'),
-    path('offload_requests_productlist/<str:van_id>/', OffloadRequestListAPIView.as_view(), name='offload_requests_productlist'),
+    path('offload_requests_productlist/<uuid:van_id>/', OffloadRequestListAPIView.as_view(), name='offload_requests_productlist'),
     
     
     # path('api_staffIssueOrdersCreate/<str:staff_order_details_id>/', StaffIssueOrdersAPIView.as_view(), name='api_staffIssueOrdersCreate'),
