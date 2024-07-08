@@ -7245,187 +7245,196 @@ class StaffIssueOrdersAPIView(APIView):
 
             issue = get_object_or_404(Staff_Orders_details, staff_order_details_id=staff_order_details_id, product_id=product_id)
             van = get_object_or_404(Van, salesman_id__id=order.created_by)
+            
+            if count > 0:
+                if issue.product_id.category.category_name == "Coupons":
+                    book_numbers = detail_data.get('coupon_book_no')
+                    for book_no in book_numbers:
+                        coupon = get_object_or_404(NewCoupon, book_num=book_no, coupon_type__coupon_type_name=issue.product_id.product_name)
+                        update_purchase_stock = ProductStock.objects.filter(product_name=issue.product_id)
+                        
+                        if update_purchase_stock.exists():
+                            product_stock_quantity = update_purchase_stock.first().quantity or 0
+                        else:
+                            product_stock_quantity = 0
 
-            if issue.product_id.category.category_name == "Coupons":
-                book_numbers = detail_data.get('coupon_book_no')
-                for book_no in book_numbers:
-                    coupon = get_object_or_404(NewCoupon, book_num=book_no, coupon_type__coupon_type_name=issue.product_id.product_name)
-                    update_purchase_stock = ProductStock.objects.filter(product_name=issue.product_id)
-                    
-                    if update_purchase_stock.exists():
-                        product_stock_quantity = update_purchase_stock.first().quantity or 0
-                    else:
-                        product_stock_quantity = 0
-
-                    try:
-                        with transaction.atomic():
-                            issue_order = Staff_IssueOrders.objects.create(
-                                created_by=str(request.user.id),
-                                modified_by=str(request.user.id),
-                                modified_date=datetime.now(),
-                                product_id=issue.product_id,
-                                staff_Orders_details_id=issue,
-                                coupon_book=coupon,
-                                quantity_issued=1
-                            )
-
-                            update_purchase_stock = update_purchase_stock.first()
-                            update_purchase_stock.quantity -= 1
-                            update_purchase_stock.save()
-
-                            if (update_van_stock := VanCouponStock.objects.filter(created_date=datetime.today().date(), van=van, coupon=coupon)).exists():
-                                van_stock = update_van_stock.first()
-                                van_stock.stock += 1
-                                van_stock.save()
-                            else:
-                                vanstock = VanStock.objects.create(
-                                    created_by=str(request.user.id),
-                                    created_date=datetime.now(),
-                                    stock_type='opening_stock',
-                                    van=van
-                                )
-
-                                VanCouponItems.objects.create(
-                                    coupon=coupon,
-                                    book_no=book_no,
-                                    coupon_type=coupon.coupon_type,
-                                    van_stock=vanstock,
-                                )
-
-                                van_stock = VanCouponStock.objects.create(
-                                    created_date=datetime.now().date(),
-                                    coupon=coupon,
-                                    stock=1,
-                                    van=van
-                                )
-
-                                issue.issued_qty += 1
-                                issue.save()
-
-                                CouponStock.objects.filter(couponbook=coupon).update(coupon_stock="van")
-
-                                response_data = {
-                                    "status": "true",
-                                    "title": "Successfully Created",
-                                    "message": "Coupon Issued successfully.",
-                                    'redirect': 'true',
-                                }
-
-                    except IntegrityError as e:
-                        response_data = {
-                            "status": "false",
-                            "title": "Failed",
-                            "message": str(e),
-                        }
-
-                    except Exception as e:
-                        response_data = {
-                            "status": "false",
-                            "title": "Failed",
-                            "message": str(e),
-                        }
-
-            else:
-                quantity_issued = count
-
-                # Get the van's current stock of the product
-                vanstock_count = VanProductStock.objects.filter(created_date=issue.staff_order_id.order_date, van=van, product=issue.product_id).aggregate(sum=Sum('stock'))['sum'] or 0
-
-                # Check van limit for 5 Gallon product
-                if issue.product_id.product_name == "5 Gallon":
-                    if int(quantity_issued) != 0 and van.bottle_count > int(quantity_issued) + vanstock_count:
-                        van_limit = True
-                    else:
-                        van_limit = False
-                else:
-                    van_limit = True
-
-                if van_limit:
-                    try:
-                        with transaction.atomic():
-                            product_stock = get_object_or_404(ProductStock, product_name=issue.product_id)
-                            stock_quantity = issue.count
-
-                            if 0 < int(quantity_issued) <= int(product_stock.quantity):
+                        try:
+                            with transaction.atomic():
                                 issue_order = Staff_IssueOrders.objects.create(
                                     created_by=str(request.user.id),
                                     modified_by=str(request.user.id),
                                     modified_date=datetime.now(),
                                     product_id=issue.product_id,
                                     staff_Orders_details_id=issue,
-                                    quantity_issued=quantity_issued,
-                                    van=van,
-                                    stock_quantity=stock_quantity
+                                    coupon_book=coupon,
+                                    quantity_issued=1
                                 )
 
-                                product_stock.quantity -= int(quantity_issued)
-                                product_stock.save()
+                                update_purchase_stock = update_purchase_stock.first()
+                                update_purchase_stock.quantity -= 1
+                                update_purchase_stock.save()
 
-                                vanstock = VanStock.objects.create(
-                                    created_by=request.user.id,
-                                    created_date=datetime.now(),
-                                    modified_by=request.user.id,
-                                    modified_date=datetime.now(),
-                                    stock_type='opening_stock',
-                                    van=van
-                                )
-
-                                VanProductItems.objects.create(
-                                    product=issue.product_id,
-                                    count=int(quantity_issued),
-                                    van_stock=vanstock,
-                                )
-
-                                if VanProductStock.objects.filter(created_date=datetime.today().date(), product=issue.product_id, van=van).exists():
-                                    van_product_stock = VanProductStock.objects.get(created_date=datetime.today().date(), product=issue.product_id, van=van)
-                                    van_product_stock.stock += int(quantity_issued)
-                                    van_product_stock.save()
+                                if (update_van_stock := VanCouponStock.objects.filter(created_date=datetime.today().date(), van=van, coupon=coupon)).exists():
+                                    van_stock = update_van_stock.first()
+                                    van_stock.stock += 1
+                                    van_stock.save()
                                 else:
-                                    VanProductStock.objects.create(
-                                        created_date=datetime.now().date(),
-                                        product=issue.product_id,
-                                        van=van,
-                                        stock=int(quantity_issued)
+                                    vanstock = VanStock.objects.create(
+                                        created_by=str(request.user.id),
+                                        created_date=datetime.now(),
+                                        stock_type='opening_stock',
+                                        van=van
                                     )
 
-                                issue.issued_qty += int(quantity_issued)
-                                issue.save()
+                                    VanCouponItems.objects.create(
+                                        coupon=coupon,
+                                        book_no=book_no,
+                                        coupon_type=coupon.coupon_type,
+                                        van_stock=vanstock,
+                                    )
 
-                                response_data = {
-                                    "status": "true",
-                                    "title": "Successfully Created",
-                                    "message": "Product issued successfully.",
-                                    'redirect': 'true',
-                                }
-                            else:
-                                response_data = {
-                                    "status": "false",
-                                    "title": "Failed",
-                                    "message": f"No stock available in {product_stock.product_name}, only {product_stock.quantity} left",
-                                }
+                                    van_stock = VanCouponStock.objects.create(
+                                        created_date=datetime.now().date(),
+                                        coupon=coupon,
+                                        stock=1,
+                                        van=van
+                                    )
 
-                    except IntegrityError as e:
-                        response_data = {
-                            "status": "false",
-                            "title": "Failed",
-                            "message": str(e),
-                        }
+                                    issue.issued_qty += 1
+                                    issue.save()
 
-                    except Exception as e:
-                        response_data = {
-                            "status": "false",
-                            "title": "Failed",
-                            "message": str(e),
-                        }
+                                    CouponStock.objects.filter(couponbook=coupon).update(coupon_stock="van")
+                                    
+                                    status_code = status.HTTP_200_OK
+                                    response_data = {
+                                        "status": "true",
+                                        "title": "Successfully Created",
+                                        "message": "Coupon Issued successfully.",
+                                        'redirect': 'true',
+                                    }
+
+                        except IntegrityError as e:
+                            status_code = status.HTTP_400_BAD_REQUEST
+                            response_data = {
+                                "status": "false",
+                                "title": "Failed",
+                                "message": str(e),
+                            }
+
+                        except Exception as e:
+                            status_code = status.HTTP_400_BAD_REQUEST
+                            response_data = {
+                                "status": "false",
+                                "title": "Failed",
+                                "message": str(e),
+                            }
 
                 else:
-                    response_data = {
-                        "status": "false",
-                        "title": "Failed",
-                        "message": f"Over Load! currently {vanstock_count} Can Loaded, Max 5 Gallon Limit is {van.bottle_count}",
-                    }
+                    quantity_issued = count
 
-        return Response(response_data, status=status.HTTP_200_OK)
+                    # Get the van's current stock of the product
+                    vanstock_count = VanProductStock.objects.filter(created_date=issue.staff_order_id.order_date, van=van, product=issue.product_id).aggregate(sum=Sum('stock'))['sum'] or 0
+
+                    # Check van limit for 5 Gallon product
+                    if issue.product_id.product_name == "5 Gallon":
+                        if int(quantity_issued) != 0 and van.bottle_count > int(quantity_issued) + vanstock_count:
+                            van_limit = True
+                        else:
+                            van_limit = False
+                    else:
+                        van_limit = True
+
+                    if van_limit:
+                        try:
+                            with transaction.atomic():
+                                product_stock = get_object_or_404(ProductStock, product_name=issue.product_id)
+                                stock_quantity = issue.count
+
+                                if 0 < int(quantity_issued) <= int(product_stock.quantity):
+                                    issue_order = Staff_IssueOrders.objects.create(
+                                        created_by=str(request.user.id),
+                                        modified_by=str(request.user.id),
+                                        modified_date=datetime.now(),
+                                        product_id=issue.product_id,
+                                        staff_Orders_details_id=issue,
+                                        quantity_issued=quantity_issued,
+                                        van=van,
+                                        stock_quantity=stock_quantity
+                                    )
+
+                                    product_stock.quantity -= int(quantity_issued)
+                                    product_stock.save()
+
+                                    vanstock = VanStock.objects.create(
+                                        created_by=request.user.id,
+                                        created_date=datetime.now(),
+                                        modified_by=request.user.id,
+                                        modified_date=datetime.now(),
+                                        stock_type='opening_stock',
+                                        van=van
+                                    )
+
+                                    VanProductItems.objects.create(
+                                        product=issue.product_id,
+                                        count=int(quantity_issued),
+                                        van_stock=vanstock,
+                                    )
+
+                                    if VanProductStock.objects.filter(created_date=datetime.today().date(), product=issue.product_id, van=van).exists():
+                                        van_product_stock = VanProductStock.objects.get(created_date=datetime.today().date(), product=issue.product_id, van=van)
+                                        van_product_stock.stock += int(quantity_issued)
+                                        van_product_stock.save()
+                                    else:
+                                        VanProductStock.objects.create(
+                                            created_date=datetime.now().date(),
+                                            product=issue.product_id,
+                                            van=van,
+                                            stock=int(quantity_issued)
+                                        )
+
+                                    issue.issued_qty += int(quantity_issued)
+                                    issue.save()
+                                    
+                                    status_code = status.HTTP_200_OK
+                                    response_data = {
+                                        "status": "true",
+                                        "title": "Successfully Created",
+                                        "message": "Product issued successfully.",
+                                        'redirect': 'true',
+                                    }
+                                else:
+                                    status_code = status.HTTP_400_BAD_REQUEST
+                                    response_data = {
+                                        "status": "false",
+                                        "title": "Failed",
+                                        "message": f"No stock available in {product_stock.product_name}, only {product_stock.quantity} left",
+                                    }
+
+                        except IntegrityError as e:
+                            status_code = status.HTTP_400_BAD_REQUEST
+                            response_data = {
+                                "status": "false",
+                                "title": "Failed",
+                                "message": str(e),
+                            }
+
+                        except Exception as e:
+                            status_code = status.HTTP_400_BAD_REQUEST
+                            response_data = {
+                                "status": "false",
+                                "title": "Failed",
+                                "message": str(e),
+                            }
+
+                    else:
+                        status_code = status.HTTP_400_BAD_REQUEST
+                        response_data = {
+                            "status": "false",
+                            "title": "Failed",
+                            "message": f"Over Load! currently {vanstock_count} Can Loaded, Max 5 Gallon Limit is {van.bottle_count}",
+                        }
+
+        return Response(response_data, status=status_code)
 
 class GetCouponBookNoView(APIView):
     def get(self, request, *args, **kwargs):
