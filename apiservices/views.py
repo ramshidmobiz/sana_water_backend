@@ -774,6 +774,8 @@ def find_customers(request, def_date, route_id):
                 for customer in todays_customers:
                     if customer.building_name == building:
                         trip_customer = {
+                            "customer_id": customer.customer_id,
+                            "custom_id": customer.custom_id,
                             "customer_name": customer.customer_name,
                             "mobile": customer.mobile_no,
                             "trip": trip,

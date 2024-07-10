@@ -701,6 +701,8 @@ def find_customers(request, def_date, route_id):
                 for customer in todays_customers:
                     if customer.building_name == building:
                         trip_customer = {
+                            "customer_id": customer.customer_id,
+                            "custom_id": customer.custom_id,
                             "customer_name": customer.customer_name,
                             "mobile": customer.mobile_no,
                             "trip": trip,
@@ -902,7 +904,7 @@ def excel_download(request, route_id, def_date, trip):
 
         # Merge cells and write other information with borders
         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 16, 'border': 1})
-        worksheet.merge_range('A1:N2', f'Sana Water', merge_format)
+        worksheet.merge_range('A1:N2', f'National Water', merge_format)
         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
         worksheet.merge_range('A3:D3', f'Route:    {route.route_name}    {trip}', merge_format)
         worksheet.merge_range('E3:I3', f'Date: {def_date}', merge_format)
