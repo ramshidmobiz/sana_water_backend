@@ -779,7 +779,7 @@ class CollectionCustomerSerializer(serializers.ModelSerializer):
     def get_invoices(self, obj):
         invoice_list = []
         try:
-            invoices = Invoice.objects.filter(customer=obj,invoice_status="non_paid",is_deleted=False).exclude(amout_total__lt=1).order_by('-created_date')
+            invoices = Invoice.objects.filter(customer=obj,invoice_status="non_paid",is_deleted=False).exclude(amout_total=0).order_by('-created_date')
             for invoice in invoices:
                 invoice_data = {
                     'invoice_id': str(invoice.id),
@@ -1674,10 +1674,74 @@ class StaffOrdersDetailsSerializer(serializers.ModelSerializer):
         if obj.count == obj.issued_qty:
             status = True
         return status
+    #------------------------------------Location Api -----------------------------------------------------
 
 class LocationUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = LocationUpdate
         fields = '__all__'
         
-        
+class ProductStockSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product_name.product_name', read_only=True) 
+    # branch_name = serializers.CharField(source='branch.name', read_only=True)    
+    class Meta:
+        model = ProductStock
+        fields = ['product_name','quantity']         
+#-------------------------------Van Stock List----------------------------------
+class VanListSerializer(serializers.ModelSerializer):
+    vans_id = serializers.UUIDField(source='van_id', read_only=True)
+    salesman_name = serializers.CharField(source='salesman.get_fullname', read_only=True)
+    route_name = serializers.SerializerMethodField()
+    date = serializers.SerializerMethodField()
+    van_make = serializers.CharField(read_only=True)
+    staff_id = serializers.CharField(source='salesman.staff_id', read_only=True)
+
+    class Meta:
+        model = Van
+        fields = ['vans_id','salesman_name', 'van_make', 'route_name', 'date', 'staff_id']
+
+    def get_route_name(self, obj):
+        van_route = obj.van_master.first()
+        return van_route.routes.route_name if van_route else "No Route Assigned"
+
+    def get_date(self, obj):
+        return obj.created_date.date()
+    
+    
+
+
+class VanListProductStockSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.product_name', read_only=True)
+
+    class Meta:
+        model = VanProductStock
+        fields = ['id', 'product_name', 'stock']
+
+class VanCouponListStockSerializer(serializers.ModelSerializer):
+    coupon_type_name = serializers.CharField(source='coupon.coupon_type.coupon_type_name', read_only=True)
+    product_name = serializers.CharField(source='coupon.coupon_type_name', read_only=True)
+
+    class Meta:
+        model = VanCouponStock
+        fields = ['id', 'product_name', 'coupon_type_name', 'stock']
+
+class VanDetailSerializer(serializers.ModelSerializer):
+    vans_id = serializers.UUIDField(source='van_id', read_only=True)
+    salesman_name = serializers.CharField(source='salesman.get_fullname', read_only=True)
+    route_name = serializers.SerializerMethodField()
+    date = serializers.SerializerMethodField()
+    van_make = serializers.CharField(read_only=True)
+    staff_id = serializers.CharField(source='salesman.staff_id', read_only=True)
+    product_stock = VanListProductStockSerializer(many=True, read_only=True, source='vanproductstock_set')
+    coupon_stock = VanCouponListStockSerializer(many=True, read_only=True, source='vancouponstock_set')
+
+    class Meta:
+        model = Van
+        fields = ['vans_id', 'salesman_name', 'van_make', 'route_name', 'date', 'staff_id', 'product_stock', 'coupon_stock']
+
+    def get_route_name(self, obj):
+        van_route = obj.van_master.first()
+        return van_route.routes.route_name if van_route else "No Route Assigned"
+
+    def get_date(self, obj):
+        return obj.created_date.date()

@@ -1167,11 +1167,7 @@
                                 </li>
                                 <li class="slide">
                                     <a href="{% url 'order_change_reason' %}" class="side-menu__item">Order Change Reason</a>
-                                </li>
-                                
-                                <li class="slide">
-                                    <a href="{% url 'vans_route_bottle_count' %}" class="side-menu__item">Bottle Count</a>
-                                </li>
+                                </li>                                                             
                             </ul>
                         </li>
                         <li class="slide__category"><span class="category-name">Product Management</span></li>
@@ -1287,19 +1283,10 @@
                                 </li>
                                 <li class="slide">
                                     <a href="{% url 'couponType' %}" class="side-menu__item">Coupon Type</a>
-                                </li>
-                                {% comment %} <li class="slide">
-                                    <a href="{% url 'coupon' %}" class="side-menu__item">Coupons</a>
-                                </li> {% endcomment %}
+                                </li>                               
                                 <li class="slide">
                                     <a href="{% url 'new_coupon' %}" class="side-menu__item">Coupons</a>
-                                </li>
-                                <li class="slide">
-                                    <a href="{% url 'couponrequest' %}" class="side-menu__item">Coupon Request</a>
-                                </li>
-                                <li class="slide">
-                                    <a href="{% url 'coupons_details_view' %}" class="side-menu__item">Coupon Details View</a>
-                                </li>
+                                </li>                                                             
                                 <li class="slide">
                                     <a href="{% url 'customer_stock' %}" class="side-menu__item">Customer Stock</a>
                                 </li>
@@ -1335,6 +1322,26 @@
                                 <!-- <li class="slide">
                                     <a href="" class="side-menu__item">Assign Van To Route</a>
                                 </li> -->
+                            </ul>
+                        </li>
+
+                        <li class="slide__category"><span class="category-name">Bottle Management</span></li>
+                        <li class="slide has-sub">
+                            <a href="javascript:void(0);" class="side-menu__item">
+                                <span class=" side-menu__icon">
+                                    <i class='bx bx-desktop'></i>
+                                </span>
+                                <span class="side-menu__label">Bottle Management<span class="badge bg-warning-transparent ms-2 d-inline-block">2</span></span>
+                                <i class="fe fe-chevron-right side-menu__angle"></i>
+                            </a>
+                            <ul class="slide-menu child1">
+                                <li class="slide side-menu__label1">
+                                    <a href="javascript:void(0)"></a>
+                                </li>
+                                <li class="slide">
+                                    <a href="{% url 'van_route_bottle_count' %}" class="side-menu__item">Bottle Count</a>
+                                </li>                                                           
+                                
                             </ul>
                         </li>
 

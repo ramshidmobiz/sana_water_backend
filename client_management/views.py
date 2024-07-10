@@ -962,7 +962,7 @@ def edit_customer_supply(request, pk):
                         item_data.customer_supply = customer_suply_form_instance  # Associate with the customer supply instance
                         item_data.save()
                     
-                        vanstock = VanProductStock.objects.get(created_date=customer_suply_form_instance.created_date.date(), product=item_data.product, van=van)
+                        vanstock = VanProductStock.objects.get(created_date=created_date.date(), product=item_data.product, van=van)
                         if vanstock.stock >= item_data.quantity:
                             vanstock.stock -= item_data.quantity
                             vanstock.sold_count += item_data.quantity
@@ -996,7 +996,7 @@ def edit_customer_supply(request, pk):
                                 customer=customer_suply_form_instance.customer,
                                 product_type="emptycan",
                                 created_by=request.user.id,
-                                created_date=supply_date,
+                                created_date=created_date,
                             )
 
                             outstanding_product = OutstandingProduct.objects.create(
@@ -1057,6 +1057,7 @@ def edit_customer_supply(request, pk):
                                             customer=customer_suply_form_instance.customer,
                                             product_type="coupons",
                                             created_by=request.user.id,
+                                            created_date=created_date,
                                         )
                                         
                                         customer_coupon = CustomerCouponStock.objects.filter(customer__pk=customer_suply_form_instance.customer,coupon_method="manual").first()
@@ -1118,7 +1119,7 @@ def edit_customer_supply(request, pk):
                                         product_type="amount",
                                         created_by=request.user.id,
                                         customer=customer_suply_form_instance.customer,
-                                        created_date=datetime.today()
+                                        created_date=created_date
                                     )
 
                                     outstanding_amount = OutstandingAmount.objects.create(
@@ -1144,6 +1145,7 @@ def edit_customer_supply(request, pk):
                                     customer_outstanding = CustomerOutstanding.objects.create(
                                         product_type="amount",
                                         created_by=request.user.id,
+                                        created_date=created_date,
                                         customer=customer_suply_form_instance.customer,
                                     )
 
@@ -1173,7 +1175,7 @@ def edit_customer_supply(request, pk):
                         # Create the invoice
                         invoice = Invoice.objects.create(
                             invoice_no=invoice_number,
-                            created_date=customer_suply_form_instance.created_date,
+                            created_date=created_date,
                             net_taxable=customer_suply_form_instance.net_payable,
                             vat=customer_suply_form_instance.vat,
                             discount=customer_suply_form_instance.discount,
@@ -1212,7 +1214,7 @@ def edit_customer_supply(request, pk):
                             )
 
                         DiffBottlesModel.objects.filter(
-                            delivery_date__date=customer_suply_form_instance.created_date,
+                            delivery_date__date=created_date.date(),
                             assign_this_to=customer_suply_form_instance.salesman,
                             customer=customer_suply_form_instance.customer
                             ).update(status='supplied')
@@ -1748,7 +1750,7 @@ def new_coupon_count(request,pk):
             coupon_type_id = CouponType.objects.get(pk=form.cleaned_data['coupon_type_id'].pk)
             
             coupon_method = "manual"
-            if coupon_type_id.coupon_type_name is "Other":
+            if coupon_type_id.coupon_type_name == "Other":
                 coupon_method = "digital"
             try:
                 data = CustomerCouponStock.objects.get(
