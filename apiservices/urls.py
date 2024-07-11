@@ -290,4 +290,7 @@ urlpatterns = [
     #-------------Store app stock transfer-----------------------------------------
     path('stock_transfer/', StockTransferAPIView.as_view(), name='stock_transfer'),
     
+    path('scrap_stock/', ScrapStockAPIView.as_view(), name='scrap_stock'),
+
+    
 ]

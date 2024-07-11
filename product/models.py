@@ -208,7 +208,6 @@ class ScrapStock(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True, blank=True)
     quantity=models.PositiveIntegerField(default=0)
-    scrap_cleaned = models.PositiveIntegerField(default=0)
     
     class Meta:
         ordering = ('id',)
@@ -255,13 +254,18 @@ class WashedUsedProduct(models.Model):
     def __str__(self):
         return str(self.product.product_name)
     
-class ScrapUsedStock(models.Model):
+class ScrapcleanedStock(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True, blank=True)
     quantity=models.PositiveIntegerField(default=0)
     
+    created_by = models.CharField(max_length=20, blank=True)
+    modified_by = models.CharField(max_length=20, null=True, blank=True)
+    created_date = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    modified_date = models.DateTimeField(blank=True, null=True)
+
     class Meta:
-        ordering = ('id',)
+        ordering = ('created_date',)
 
     def __str__(self):
         return str(self.product.product_name)

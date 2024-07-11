@@ -7799,7 +7799,7 @@ class StockTransferAPIView(APIView):
                         created_date=datetime.today(),
                     )
                     
-                    scrap_product = ScrapStock.objects.get(product = product_item)
+                    scrap_product = ScrapStock.objects.get_or_create(product = product_item)
                     scrap_product.quantity += damage_quantity
                     scrap_product.save()
                     
@@ -7829,4 +7829,73 @@ class StockTransferAPIView(APIView):
                 "title": "Failed",
                 "message": str(e),
             }
+        return Response(response_data, status=status_code)
+
+class ScrapStockAPIView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        product_id = request.data.get('product_id')
+        print("product_id", product_id)
+
+        if not product_id:
+            return Response({"error": "Product ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Use filter to get all matching objects
+        scrap_stocks = ScrapStock.objects.filter(product__pk=product_id)
+        
+        if not scrap_stocks.exists():
+            return Response({"error": "No ScrapStock found for the given product ID"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Aggregate the total quantity
+        total_quantity = scrap_stocks.aggregate(total_quantity=Sum('quantity'))['total_quantity']
+
+        return Response({"total_quantity": total_quantity}, status=status.HTTP_200_OK)
+    
+    def post(self, request, *args, **kwargs):
+        product_id = request.data.get('product_id')
+        cleared_quantity = request.data.get('cleared_quantity')
+
+        if not product_id:
+            return Response({"error": "Product ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            with transaction.atomic():
+                product_item = ProdutItemMaster.objects.get(pk=product_id)
+                
+                ScrapcleanedStock.objects.create(
+                        product=product_item,
+                        quantity=cleared_quantity,
+                        created_by=request.user.pk,
+                        created_date=datetime.today(),
+                    )
+                
+                # Create or update ScrapStock
+                scrap_stock = ScrapStock.objects.get(product=product_item)
+                scrap_stock.quantity -= cleared_quantity
+                scrap_stock.save()
+                
+                status_code = status.HTTP_200_OK
+                response_data = {
+                    "status": "true",
+                    "title": "Success",
+                    "message": "Scrap Stock Transfer successfully Completed",
+                }
+        
+        except IntegrityError as e:
+            status_code = status.HTTP_400_BAD_REQUEST
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": str(e),
+            }
+        
+        except Exception as e:
+            status_code = status.HTTP_400_BAD_REQUEST
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": str(e),
+            }
+        
         return Response(response_data, status=status_code)
