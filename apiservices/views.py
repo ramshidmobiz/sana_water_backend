@@ -7668,7 +7668,8 @@ class CreditSalesReportAPIView(APIView):
 #---------------------------Bottle Count API ------------------------------------------------   
 
 class VanRouteBottleCountView(APIView):
-    
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         filter_data = {}
         date_str = request.GET.get("filter_date")
@@ -7709,20 +7710,27 @@ class VanRouteBottleCountView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class VansRouteBottleCountAddAPIView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def post(self, request, pk):
         instance = get_object_or_404(BottleCount, pk=pk)
-        serializer = BottleCountAddSerializer(instance, data=request.data)
+        serializer = BottleCountAddSerializer(instance, data=request.data, partial=True)
+        
         if serializer.is_valid():
-            bottle_count = serializer.save(commit=False)
+            bottle_count = serializer.save()
             bottle_count.van = instance.van  # Ensure van is correctly assigned
             bottle_count.created_by = request.user.username  # Assuming you have user authentication
             bottle_count.save()
             return Response({"message": "Bottle count updated successfully"}, status=status.HTTP_200_OK)
+        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
      
 class VansRouteBottleCountDeductAPIView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
     def post(self, request, pk):
         instance = get_object_or_404(BottleCount, pk=pk)
         serializer = BottleCountDeductSerializer(instance, data=request.data)
