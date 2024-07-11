@@ -7740,3 +7740,93 @@ class VansRouteBottleCountDeductAPIView(APIView):
             instance.save()
             return Response({"message": "Bottle count deducted successfully"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class StockTransferAPIView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        product_id = request.data.get('product_id')
+
+        if not product_id:
+            return Response({"error": "Product ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        bottle_count = WashingStock.objects.get(product__pk=product_id).quantity
+        
+        return Response({"bottle_count": bottle_count}, status=status.HTTP_200_OK)
+    
+    def post(self, request, *args, **kwargs):
+        product_id = request.data.get('product_id')
+        used_quantity = request.data.get('used_quantity')
+        damage_quantity = request.data.get('damage_quantity')
+
+        if not product_id:
+            return Response({"error": "Product ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            with transaction.atomic():
+                product_item = ProdutItemMaster.objects.get(pk=product_id)
+                
+                if used_quantity > 0 :
+                    WashedProductTransfer.objects.create(
+                        product=product_item,
+                        quantity=used_quantity,
+                        status="used",
+                        created_by=request.user.pk,
+                        created_date=datetime.today(),
+                    )
+                    
+                    used_product = WashedUsedProduct.objects.get_or_create(product = product_item)
+                    used_product.quantity += used_quantity
+                    used_product.save()
+                    
+                    washing_stock = WashingStock.objects.get(product = product_item)
+                    washing_stock.quantity -= used_quantity
+                    washing_stock.save()
+                    
+                if damage_quantity > 0 :
+                    WashedProductTransfer.objects.create(
+                        product=product_item,
+                        quantity=damage_quantity,
+                        status="scrap",
+                        created_by=request.user.pk,
+                        created_date=datetime.today(),
+                    )
+                    
+                    ScrapProductStock.objects.create(
+                        product=product_item,
+                        quantity=damage_quantity,
+                        created_by=request.user.pk,
+                        created_date=datetime.today(),
+                    )
+                    
+                    scrap_product = ScrapStock.objects.get(product = product_item)
+                    scrap_product.quantity += damage_quantity
+                    scrap_product.save()
+                    
+                    washing_stock = WashingStock.objects.get(product = product_item)
+                    washing_stock.quantity -= damage_quantity
+                    washing_stock.save()
+                    
+                    status_code = status.HTTP_200_OK
+                    response_data = {
+                        "status": "true",
+                        "title": "Success",
+                        "message": "Stock Transfer successfully Completed",
+                    }
+                    
+        except IntegrityError as e:
+            status_code = status.HTTP_400_BAD_REQUEST
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": str(e),
+            }
+
+        except Exception as e:
+            status_code = status.HTTP_400_BAD_REQUEST
+            response_data = {
+                "status": "false",
+                "title": "Failed",
+                "message": str(e),
+            }
+        return Response(response_data, status=status_code)
