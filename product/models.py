@@ -197,3 +197,25 @@ class WashingProductStock(models.Model):
 
     def __str__(self):
         return str(self.product.product_name)
+    
+class ScrapStock(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True, blank=True)
+    quantity=models.PositiveIntegerField(default=0)
+    
+    class Meta:
+        ordering = ('id',)
+
+    def __str__(self):
+        return str(self.product.product_name)
+    
+class WashingStock(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    product = models.ForeignKey(ProdutItemMaster, on_delete=models.CASCADE,null=True, blank=True)
+    quantity=models.PositiveIntegerField(default=0)
+    
+    class Meta:
+        ordering = ('id',)
+
+    def __str__(self):
+        return str(self.product.product_name)

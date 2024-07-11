@@ -9,7 +9,7 @@ from accounts.models import CustomUser, Customers
 from master.models import EmirateMaster, RouteMaster
 from customer_care.models import DiffBottlesModel
 from client_management.models import Vacation,CustomerSupply
-from product.models import ProductStock, ScrapProductStock, Staff_IssueOrders, WashingProductStock
+from product.models import ProductStock, ScrapProductStock, ScrapStock, Staff_IssueOrders, WashingProductStock, WashingStock
 
 from django.db import transaction, IntegrityError
 from .forms import  *
@@ -1209,11 +1209,10 @@ class EditProductView(View):
         item = VanProductStock.objects.get(pk=pk)
         # print(stock_type)
         # print(count)
-        
         try:
             with transaction.atomic():
                 if item.product.product_name == "5 Gallon" and stock_type == "stock":
-                    print("stock")
+                    # print("stock")
                     item.stock -= int(count)
                     item.save()
                     
@@ -1222,7 +1221,7 @@ class EditProductView(View):
                     product_stock.save()
                     
                 elif item.product.product_name == "5 Gallon" and stock_type == "empty_can":
-                    print("empty")
+                    # print("empty")
                     item.empty_can_count -= int(count)
                     item.save()
                     
@@ -1233,7 +1232,7 @@ class EditProductView(View):
                     emptycan.save()
                     
                 elif item.product.product_name == "5 Gallon" and stock_type == "return_count":
-                    print("return")
+                    # print("return")
                     scrap_count = int(request.POST.get('scrap_count'))
                     washing_count = int(request.POST.get('washing_count'))
                     
@@ -1257,6 +1256,11 @@ class EditProductView(View):
                             scrap_instance=ScrapProductStock.objects.get(created_date__date=datetime.today().date(),product=item.product)
                         scrap_instance.quantity = scrap_count
                         scrap_instance.save()
+                        
+                        if ScrapStock.objects.filter(product=scrap_instance.product).exists():
+                            scrap_stock = ScrapStock.objects.get_or_create(product=scrap_instance.product)
+                            scrap_stock.quantity += scrap_count
+                            scrap_stock.save()
                     
                     if washing_count > 0 :
                         if not WashingProductStock.objects.filter(created_date__date=datetime.today().date(),product=item.product).exists():
@@ -1266,13 +1270,18 @@ class EditProductView(View):
                         washing_instance.quantity = washing_count
                         washing_instance.save()
                         
+                        if WashingStock.objects.filter(product=scrap_instance.product).exists():
+                            washing_stock = WashingStock.objects.get_or_create(product=scrap_instance.product)
+                            washing_stock.quantity += washing_count
+                            washing_stock.save()
+                        
                     count = scrap_count + washing_count
                     # print(count)
                     item.return_count -= int(count)
                     item.save()
                     
                 else : 
-                    print("else")
+                    # print("else")
                     item.stock -= int(count)
                     item.save()
                     
