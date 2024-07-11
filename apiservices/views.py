@@ -7483,34 +7483,52 @@ class VanListView(APIView):
 class VanDetailView(APIView):
 
     def get(self, request, van_id):
-        van = Van.objects.get(pk=van_id)
-        product_stock = VanProductStock.objects.filter(van=van, stock__gt=0)
-        coupon_stock = VanCouponStock.objects.filter(van=van, stock__gt=0)
-        
-        # Filter product stock
-        filtered_product_stock = []
-        for stock in product_stock:
+        date = request.GET.get('date')
+        if date:
+            date = datetime.strptime(date, '%Y-%m-%d').date()
+        else:
+            date = datetime.today().date()
+
+        van_product_stock = VanProductStock.objects.filter(van__pk=van_id,created_date=date,stock__gt=0)
+        van_coupon_stock = VanCouponStock.objects.filter(van__pk=van_id,created_date=date,stock__gt=0)
+
+        coupon_serialized_data = VanCouponStockSerializer(van_coupon_stock, many=True).data
+
+        product_serialized_data = []
+        for stock in van_product_stock:
             product_name = stock.product.product_name.lower()
             if product_name == "5 gallon":
-                filtered_product_stock.append({
+                product_serialized_data.append({
                     'id': stock.pk,
                     'product_name': stock.product.product_name,
-                    'stock': stock.stock,
-                    # 'empty_can_count': stock.empty_can_count,
+                    'stock_type': 'stock',
+                    'count': stock.stock,
+                    'product': stock.product.pk,
+                    'van': stock.van.pk
+                })
+                product_serialized_data.append({
+                    'id': stock.pk,
+                    'product_name': f"{stock.product.product_name} (empty can)" ,
+                    'stock_type': 'empty_bottle',
+                    'count': stock.empty_can_count,
+                    'product': stock.product.pk,
+                    'van': stock.van.pk
                 })
             else:
-                filtered_product_stock.append({
+                product_serialized_data.append({
                     'id': stock.pk,
                     'product_name': stock.product.product_name,
-                    'stock': stock.stock,
-                    'empty_can_count': stock.empty_can_count,
+                    'stock_type': 'stock',
+                    'count': stock.stock,
+                    'product': stock.product.pk,
+                    'van': stock.van.pk
                 })
-        
-        response_data = VanDetailSerializer(van).data
-        response_data['product_stock'] = filtered_product_stock
-        response_data['coupon_stock'] = VanCouponListStockSerializer(coupon_stock, many=True).data
 
-        return Response(response_data)
+        return Response(
+            {
+                "coupon_stock": coupon_serialized_data,
+                "product_stock": product_serialized_data,
+            })
         
         
 #-----------------store app productstock---------------
