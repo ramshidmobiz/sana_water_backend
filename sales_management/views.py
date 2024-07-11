@@ -4191,39 +4191,62 @@ def bottle_transactions(request):
 #------------------------------Bottle Count-------------------------------------
 
 def van_route_bottle_count(request):
-    filter_data = {}
-    date_str = request.GET.get("filter_date")
     selected_route = request.GET.get('route_name', '')
-    routes = RouteMaster.objects.all()
+    date_str = request.GET.get("filter_date")
     
     if date_str:
-        date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        try:
+            date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            date = datetime.today().date()
     else:
         date = datetime.today().date()
-    
-    filter_data["filter_date"] = date
-    
-    instances = BottleCount.objects.filter(created_date__date=date)
-    
+
     if selected_route:
-        van_ids = Van_Routes.objects.filter(routes__route_name=selected_route).values_list("van__pk")
-        instances = instances.filter(van__pk__in=van_ids)
-        filter_data["selected_route"] = selected_route
-    
+        vans = Van.objects.filter(van_master__routes__route_name=selected_route)
+    else:
+        vans = Van.objects.all()
+
+    van_data = []
+
+    for van in vans:
+        route_name = van.get_vans_routes()  # Assuming this method exists and returns the route name
+        bottle_count = van.bottle_count  # Assuming this field exists
+        
+        if VanProductStock.objects.filter(created_date=date, van=van).exists():
+            van_product_stock = VanProductStock.objects.get(created_date=date, van=van)
+            opening_count = van_product_stock.opening_count if van_product_stock else 0
+            
+
+            van_data.append({
+                'date': date,
+                'van_id': van.van_id,
+                'van_make': van.van_make,
+                'route_name': route_name,
+                'bottle_count': bottle_count,
+                'opening_count': opening_count,
+                'qty_added': BottleCount.objects.filter(van=van, created_date__date=date).aggregate(Sum('qty_added'))['qty_added__sum'] or 0,
+                'qty_deducted': BottleCount.objects.filter(van=van, created_date__date=date).aggregate(Sum('qty_deducted'))['qty_deducted__sum'] or 0,
+            })
+
+    routes = RouteMaster.objects.all()
+
     context = {
-        'instances': instances,
+        'van_data': van_data,
         'routes': routes,
-        'filter_data': filter_data,
+        'filter_data': {
+            'selected_route': selected_route,
+            'selected_date': date_str if date_str else datetime.today().date(),
+        }
     }
 
     return render(request, 'sales_management/van_bottle_count.html', context)
 
-def VansRouteBottleCountAdd(request, pk):
-    instance = BottleCount.objects.get(pk=pk)
-    van = get_object_or_404(Van, pk=instance.van.pk)
+def VansRouteBottleCountAdd(request, van_id):
+    van = get_object_or_404(Van, van_id=van_id)
 
     if request.method == 'POST':
-        form = VansRouteBottleCountAddForm(request.POST,instance=instance)
+        form = VansRouteBottleCountAddForm(request.POST)
         if form.is_valid():
             bottle_count = form.save(commit=False)
             bottle_count.van = van
@@ -4232,7 +4255,7 @@ def VansRouteBottleCountAdd(request, pk):
 
             return redirect('van_route_bottle_count')
     else:
-        form = VansRouteBottleCountAddForm(instance=instance)
+        form = VansRouteBottleCountAddForm()
 
     context = {
         'form': form,
@@ -4240,12 +4263,11 @@ def VansRouteBottleCountAdd(request, pk):
     }
     return render(request, 'sales_management/van_route_bottle_count_add.html', context)
 
-def VansRouteBottleCountDeduct(request, pk):
-    instance = BottleCount.objects.get(pk=pk)
-    van = get_object_or_404(Van, pk=instance.van.pk)
+def VansRouteBottleCountDeduct(request, van_id):
+    van = get_object_or_404(Van, van_id=van_id)
 
     if request.method == 'POST':
-        form = VansRouteBottleCountDeductForm(request.POST,instance=instance)
+        form = VansRouteBottleCountDeductForm(request.POST)
         if form.is_valid():
             bottle_count = form.save(commit=False)
             bottle_count.van = van
@@ -4254,10 +4276,11 @@ def VansRouteBottleCountDeduct(request, pk):
 
             return redirect('van_route_bottle_count')
     else:
-        form = VansRouteBottleCountDeductForm(instance=instance)
+        form = VansRouteBottleCountDeductForm()
 
     context = {
         'form': form,
         'van': van,
     }
     return render(request, 'sales_management/van_route_bottle_count_deduct.html', context)
+

@@ -1745,3 +1745,61 @@ class VanDetailSerializer(serializers.ModelSerializer):
 
     def get_date(self, obj):
         return obj.created_date.date()
+
+
+
+class CustomersSupplySerializer(serializers.ModelSerializer):
+    total_qty = serializers.IntegerField(source='get_total_supply_qty')
+    customer_name = serializers.CharField(source='customer.customer_name', read_only=True)
+    rate = serializers.CharField(source='customer.get_water_rate', read_only=True)
+
+    class Meta:
+        model = CustomerSupply
+        fields = ['reference_number', 'customer_name', 'net_payable', 'rate', 'subtotal', 'amount_recieved', 'total_qty']
+
+class CustomersCouponSerializer(serializers.ModelSerializer):
+    coupon_rates = serializers.CharField(source='display_coupon_rates')
+    customer_name = serializers.CharField(source='customer.customer_name', read_only=True)
+    total_qty = serializers.SerializerMethodField()
+    class Meta:
+        model = CustomerCoupon
+        fields = ['reference_number', 'customer_name', 'net_amount', 'grand_total', 'amount_recieved', 'coupon_rates','total_qty']
+    
+    def get_total_qty(self, obj):
+        return 1
+    
+#---------------------------Bottle Count API Serializer------------------------------------------------  
+
+class BottleCountSerializer(serializers.ModelSerializer):
+    route_name = serializers.SerializerMethodField()
+    created_date = serializers.SerializerMethodField()
+
+
+    class Meta:
+        model = BottleCount
+        fields = [
+            'route_name', 'created_date', 'opening_stock', 'custody_issue',
+            'custody_return', 'qty_added', 'qty_deducted', 'closing_stock' 
+        ]
+    
+    def get_route_name(self, obj):
+        van_route = Van_Routes.objects.filter(van=obj.van).first()
+        if van_route:
+            return van_route.routes.route_name
+        return None
+    
+    def get_created_date(self, obj):
+        return obj.created_date.strftime('%Y-%m-%d')
+    
+class BottleCountAddSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BottleCount
+        fields = ['qty_added']
+        
+class BottleCountDeductSerializer(serializers.ModelSerializer):
+    qty_deducted = serializers.IntegerField(min_value=0, required=True)
+
+    class Meta:
+        model = BottleCount
+        fields = ['qty_deducted']
+

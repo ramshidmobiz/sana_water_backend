@@ -276,4 +276,12 @@ urlpatterns = [
     
     #---------------------------store app product stock-------------- 
     path('product-stocks/', ProductStockListAPIView.as_view(), name='product-stock-list'),
+    
+    
+    path('cash_sales_report/', CashSalesReportAPIView.as_view(), name='cash_sales_report'),
+    path('credit_sales_report/', CreditSalesReportAPIView.as_view(), name='credit_sales_report'),
+#---------------------------Bottle Count Store App Url ------------------------------------------------   
+    path('api_van_route_bottle_count/', VanRouteBottleCountView.as_view(), name='api_van_route_bottle_count'),
+    path('api_vans_route_bottle_count_add/<uuid:pk>/', VansRouteBottleCountAddAPIView.as_view(), name='api_vans_route_bottle_count_add'),
+    path('api_vans_route_bottle_count_deduct/<uuid:pk>/', VansRouteBottleCountDeductAPIView.as_view(), name='api_vans_route_bottle_count_deduct'),
 ]
