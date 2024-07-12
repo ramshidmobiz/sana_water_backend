@@ -729,8 +729,7 @@ def find_customers(request, def_date, route_id):
                     buildings.append(client.customer.building_name)
     
     # Calculate total bottle count
-    co = sum(cus.no_of_bottles_required or 0 for cus in todays_customers)
-
+    co = sum(cus.no_of_bottles_required for cus in todays_customers)
     # print(f"Total bottle count: {co}, Van capacity: {van_capacity}")
 
     if buildings:
@@ -738,8 +737,7 @@ def find_customers(request, def_date, route_id):
         for building in buildings:
             for customer in todays_customers:
                 if customer.building_name == building:
-                    no_of_bottles = customer.no_of_bottles_required or 0  # Use 0 if no_of_bottles_required is None
-                    building_count[building] = building_count.get(building, 0) + no_of_bottles
+                    building_count[building] = building_count.get(building, 0) + customer.no_of_bottles_required
 
         building_gps = []
         for building, bottle_count in building_count.items():
@@ -7883,8 +7881,11 @@ class ScrapStockAPIView(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
     def get(self, request):
-        product_id = request.data.get('product_id')
-        print("product_id", product_id)
+        
+        if request.data.get('product_id'):
+            product_id = request.data.get('product_id')
+        else:
+            product_id = ProdutItemMaster.objects.get(product_name="5 Gallon").pk
 
         if not product_id:
             return Response({"error": "Product ID is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -7904,12 +7905,15 @@ class ScrapStockAPIView(APIView):
         product_id = request.data.get('product_id')
         cleared_quantity = request.data.get('cleared_quantity')
 
-        if not product_id:
-            return Response({"error": "Product ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+        # if not product_id:
+        #     return Response({"error": "Product ID is required"}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             with transaction.atomic():
-                product_item = ProdutItemMaster.objects.get(pk=product_id)
+                if product_id:
+                    product_item = ProdutItemMaster.objects.get(pk=product_id)
+                else:
+                    product_item = ProdutItemMaster.objects.get(product_name="5 Gallon")
                 
                 ScrapcleanedStock.objects.create(
                         product=product_item,
