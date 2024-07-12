@@ -227,7 +227,10 @@ urlpatterns = [
     
     path('complaints_create/', CustomerComplaintCreateView.as_view(), name='create-complaint'),
     path('nonvisit_report/', NonVisitReportCreateAPIView.as_view(), name='nonvisit_report'),
+    
     path('send_device_token/', Send_Device_API.as_view(),name='send_device_token'),
+    path('send_customer_device_token/', CustomerDeviceTokenAPI.as_view(),name='send_customer_device_token'),
+    
     path('customer_Wise_Coupon_sale/', CustomerWiseCouponSaleAPIView.as_view(),name='customer_Wise_Coupon_sale'),
     path('total_coupon_consumed/', TotalCouponsConsumedView.as_view(), name='total_coupon_consumed'),
 

@@ -5962,6 +5962,22 @@ class Send_Device_API(APIView):
            
             Send_Notification.objects.create(user=CustomUser.objects.get(id=user_id),device_token=device_token)
         return Response({"status": True, 'data':[{"user_id":user_id,"device_token":device_token}], "message": "Succesfully !"})
+    
+class CustomerDeviceTokenAPI(APIView):
+    def post(self,request):
+        device_token = request.data['device_token']
+        customer_id = request.data['customer_id']
+        
+        customer_user_id = Customers.objects.get(pk=customer_id).user_id.pk
+        user_not = Send_Notification.objects.filter(user__pk=customer_user_id).exists()
+        
+        if user_not :
+           
+            Send_Notification.objects.filter(user__pk=customer_user_id).update(device_token=device_token)
+        else :
+           
+            Send_Notification.objects.create(user=CustomUser.objects.get(pk=customer_user_id),device_token=device_token)
+        return Response({"status": True, 'data':[{"user_id":customer_user_id,"device_token":device_token}], "message": "Succesfully !"})
 
 class MyCurrentStockView(APIView):
     authentication_classes = [BasicAuthentication]
