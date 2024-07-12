@@ -19,6 +19,9 @@ urlpatterns = [
     path('customer-next-visit-date/',NextVisitDateAPI.as_view()),
     path('customer-coupon-balance/',CustomerCouponBalanceAPI.as_view()),
     path('customer-outstanding-balance/',CustomerOutstandingAPI.as_view()),
+    
+    path('store-keeper-login/',StoreKeeperLoginApi.as_view()),
+    
     #################Master Url##############################
 
     path('route/<str:id>/',RouteMaster_API.as_view()),

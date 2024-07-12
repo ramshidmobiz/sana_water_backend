@@ -1032,3 +1032,70 @@ def product_stock_excel_download(request):
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
 
     return response
+
+
+@login_required
+def stock_transfer_view(request):
+    bottle_count = WashingStock.objects.get(product__product_name="5 Gallon").quantity
+    if request.method == "POST":
+        form = StockTransferForm(request.POST)
+        if form.is_valid():
+            product_id = form.cleaned_data['product_id']
+            used_quantity = form.cleaned_data['used_quantity']
+            damage_quantity = form.cleaned_data['damage_quantity']
+            
+            try:
+                with transaction.atomic():
+                    product_item = ProdutItemMaster.objects.get(pk=product_id.pk)
+
+                    if used_quantity and used_quantity > 0:
+                        WashedProductTransfer.objects.create(
+                            product=product_item,
+                            quantity=used_quantity,
+                            status="used",
+                            created_by=request.user,
+                            created_date=timezone.now(),
+                        )
+
+                        used_product, created = WashedUsedProduct.objects.get_or_create(product=product_item)
+                        used_product.quantity += used_quantity
+                        used_product.save()
+
+                        washing_stock = WashingStock.objects.get(product=product_item)
+                        washing_stock.quantity -= used_quantity
+                        washing_stock.save()
+
+                    if damage_quantity and damage_quantity > 0:
+                        WashedProductTransfer.objects.create(
+                            product=product_item,
+                            quantity=damage_quantity,
+                            status="scrap",
+                            created_by=request.user,
+                            created_date=timezone.now(),
+                        )
+
+                        ScrapProductStock.objects.create(
+                            product=product_item,
+                            quantity=damage_quantity,
+                            created_by=request.user,
+                            created_date=timezone.now(),
+                        )
+
+                        scrap_product, created = ScrapStock.objects.get_or_create(product=product_item)
+                        scrap_product.quantity += damage_quantity
+                        scrap_product.save()
+
+                        washing_stock = WashingStock.objects.get(product=product_item)
+                        washing_stock.quantity -= damage_quantity
+                        washing_stock.save()
+
+                    return redirect('dashboard')  
+            except IntegrityError as e:
+                form.add_error(None, str(e))
+            except Exception as e:
+                form.add_error(None, str(e))
+
+    else:
+        form = StockTransferForm()
+
+    return render(request, 'products/stock_transfer.html', {'form': form,'bottle_count':bottle_count})

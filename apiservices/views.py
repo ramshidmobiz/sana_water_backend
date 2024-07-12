@@ -129,6 +129,36 @@ class Login_Api(APIView):
         except Exception as e:
             print(f'Something went wrong: {e}')
             return Response({'status': False, 'message': 'Something went wrong!'})
+        
+class StoreKeeperLoginApi(APIView):
+    def post(self, request, *args, **kwargs):
+        try:
+            username = request.data.get('username')
+            password = request.data.get('password')
+            if username and password:
+                user = authenticate(username=username, password=password, user_type="store_keeper")
+                if user is not None:
+                    if user.is_active:
+                        login(request, user)
+                        user_obj = CustomUser.objects.filter(username=username).first()
+                        token = generate_random_string(20)  # Adjust the token length as needed
+                        data = {
+                            'id': user_obj.id,
+                            'username': username,
+                            'user_type': user_obj.user_type,
+                            'token': token
+                        }
+                    else:
+                        return Response({'status': False, 'message': 'User Inactive!'})
+                    return Response({'status': True, 'data': data, 'message': 'Authenticated User!'})
+                else:
+                    return Response({'status': False, 'message': 'Unauthenticated User!'})
+            else:
+                return Response({'status': False, 'message': 'Unauthenticated User!'})
+        except CustomUser.DoesNotExist:
+            return Response({'status': False, 'message': 'User does not exist!'})
+        except Exception as e:
+            return Response({'status': False, 'message': 'Something went wrong!'})
 
 class RouteMaster_API(APIView):
     serializer_class = RouteMasterSerializers
@@ -4187,9 +4217,9 @@ class CollectionAPI(APIView):
             }, status=status.HTTP_200_OK)
         else:
             return Response({
-                'status': False,
-                'message': 'No data found',
-            }, status=400)
+                'status': True,
+                'data': []
+            }, status=status.HTTP_200_OK)
 
 # class AddCollectionPayment(APIView):
 #     authentication_classes = [BasicAuthentication]
