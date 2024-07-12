@@ -109,3 +109,7 @@ class StockTransferForm(forms.Form):
         label="Damage Quantity",
         widget=forms.NumberInput(attrs={'class': 'form-control', 'required': 'false'})
     )
+    
+class ScrapStockForm(forms.Form):
+    product = forms.ModelChoiceField(queryset=ProdutItemMaster.objects.all(), label="Product")
+    cleared_quantity = forms.IntegerField(label="Cleared Quantity")
