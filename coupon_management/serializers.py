@@ -8,7 +8,7 @@ class couponTypeserializers(serializers.ModelSerializer):
 
     class Meta :
         model = CouponType
-        fields = ('coupon_type_id','coupon_type_name','no_of_leaflets','valuable_leaflets','free_leaflets')
+        fields = ('coupon_type_id','coupon_type_name','no_of_leaflets','valuable_leaflets','free_leaflets','rate')
     
     def get_rate(self,obj):
         try:
