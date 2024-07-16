@@ -925,7 +925,14 @@ class ExpenseListAPI(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
     def get(self, request):
-        expenses = Expense.objects.all()
+        date = request.GET.get('date')
+        if date:
+            date = datetime.strptime(date, '%Y-%m-%d').date()
+        else:
+            date = datetime.today().date()
+        
+        van_route = Van_Routes.objects.get(van__salesman=request.user,expense_date=date)
+        expenses = Expense.objects.filter(route=van_route.routes,van=van_route.van)
         serializer = ExpenseSerializer(expenses, many=True)
         return Response(serializer.data)
 
@@ -1164,7 +1171,7 @@ class Customer_API(APIView):
 
     def post(self, request):
         try:
-            serializer = CustomersSerializers(data=request.data)
+            serializer = CustomersCreateSerializers(data=request.data)
             if serializer.is_valid(raise_exception=True):
                 if request.data["mobile_no"] and Customers.objects.filter(mobile_no=request.data["mobile_no"]).exists():
                     return Response({'data': 'Customer with this mobile number already exists! Try another number'}, status=status.HTTP_400_BAD_REQUEST)
@@ -1206,7 +1213,7 @@ class Customer_API(APIView):
     def put(self, request, id):
         try:
             customer = Customers.objects.get(customer_id=id)
-            serializer = CustomersSerializers(customer, data=request.data)
+            serializer = CustomersCreateSerializers(customer, data=request.data)
             if serializer.is_valid():
                 serializer.save(modified_by=request.user.id, modified_date=datetime.now())
                 return Response(serializer.data, status=status.HTTP_200_OK)
