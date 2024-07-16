@@ -1252,7 +1252,7 @@ class CouponType_API(APIView):
         couponType_data = CouponType.objects.filter(coupon_type_id = request.data['coupon_type_id'])
         for i in couponType_data:
             coupontypedata=i.coupon_type_id
-        serializer=couponTypeserializers(data=request.data)
+        serializer=couponTypeCreateserializers(data=request.data)
         if serializer.is_valid():
             coupon_Typess = CouponType.objects.filter(coupon_type_id = coupontypedata).exists()
             if coupon_Typess:
@@ -1266,7 +1266,7 @@ class CouponType_API(APIView):
 
     def put(self, request, id):
             coupon_TYPE = CouponType.objects.get(coupon_type_id=id)
-            serializer = couponTypeserializers(coupon_TYPE, data=request.data)
+            serializer = couponTypeCreateserializers(coupon_TYPE, data=request.data)
             if serializer.is_valid():
                 serializer.save(modified_by=request.user.id,modified_date = datetime.now())
                 return Response(serializer.data,status=status.HTTP_200_OK)
