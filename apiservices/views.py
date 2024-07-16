@@ -1663,49 +1663,95 @@ class Get_Items_API(APIView):
 class Add_Customer_Custody_Item_API(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
-    customer_custody_item = CustomerCustodyItemSerializers
-    get_custody_item = CustodyItemSerializers
-
-    def post(self,request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         try:
             user = CustomUser.objects.get(username=request.user.username)
-            data_list = request.data.get('data_list', [])
-            custody_data = CustodyCustom.objects.create(
-                customer=Customers.objects.get(pk=request.data.get('customer_id')),
-                agreement_no=request.data.get('agreement_no'),
-                total_amount=request.data.get('total_amount'),
-                deposit_type=request.data.get('deposit_type'),
-                reference_no=request.data.get('reference_no'),
-                created_by=user.pk,
-                created_date=datetime.today(),
-            )
-            print(data_list)
-            serializer = CustomerCustodyItemSerializer(data=data_list, many=True)
-            if serializer.is_valid():
-                item_intances = serializer.save(custody_custom=custody_data)
-                if item_intances.product.product_name == "5 Gallon":
-                    if (bottle_count:=BottleCount.objects.filter(van__salesman=request.user,created_date__date=custody_data.created_date.date())).exists():
-                        bottle_count = bottle_count.first()
-                        bottle_count.custody_issue += item_intances.quantity
+            data = request.data.get('data_list', {})
+            customer_id = data.get('customer_id')
+            agreement_no = data.get('agreement_no')
+            total_amount = data.get('total_amount')
+            deposit_type = data.get('deposit_type')
+            reference_no = data.get('reference_no')
+            amount_collected = data.get('amount_collected')
+            product_id = data.get('product')
+            quantity = data.get('quantity')
+            serialnumber = data.get('serialnumber')
+            amount = data.get('amount')
+            can_deposite_chrge = data.get('can_deposite_chrge')
+            five_gallon_water_charge = data.get('five_gallon_water_charge')
+
+            with transaction.atomic():
+                # Create CustodyCustom instance
+                custody_data = CustodyCustom.objects.create(
+                    customer=Customers.objects.get(pk=customer_id),
+                    agreement_no=agreement_no,
+                    total_amount=total_amount,
+                    deposit_type=deposit_type,
+                    reference_no=reference_no,
+                    amount_collected=amount_collected,
+                    created_by=user.pk,
+                    created_date=datetime.today(),
+                )
+
+                # Create CustodyCustomItems instance
+                product_instance = ProdutItemMaster.objects.get(pk=product_id)
+                custody_item_data = {
+                    "custody_custom": custody_data,
+                    "product": product_instance,
+                    "quantity": quantity,
+                    "serialnumber": serialnumber,
+                    "amount": amount,
+                    "can_deposite_chrge": can_deposite_chrge,
+                    "five_gallon_water_charge": five_gallon_water_charge,
+                }
+                item_instance = CustodyCustomItems.objects.create(**custody_item_data)
+
+                # Update bottle count if necessary
+                if product_instance.product_name == "5 Gallon":
+                    bottle_count, created = BottleCount.objects.get_or_create(
+                        van__salesman=request.user,
+                        created_date__date=custody_data.created_date.date(),
+                        defaults={'custody_issue': quantity}
+                    )
+                    if not created:
+                        bottle_count.custody_issue += quantity
                         bottle_count.save()
-                    
-                return Response({'status': True,'message':'Customer Custody Item Succesfully Created'},status=status.HTTP_201_CREATED)
-            else :
-                return Response({'status': False,'message':serializer.errors},status=status.HTTP_400_BAD_REQUEST)
+
+                # Update or create CustomerCustodyStock
+                if CustomerCustodyStock.objects.filter(customer=custody_data.customer, product=product_instance).exists():
+                    stock_instance = CustomerCustodyStock.objects.get(customer=custody_data.customer, product=product_instance)
+                    stock_instance.quantity += quantity
+                    stock_instance.serialnumber = (stock_instance.serialnumber + ',' + serialnumber) if stock_instance.serialnumber else serialnumber
+                    stock_instance.agreement_no = (stock_instance.agreement_no + ',' + agreement_no) if stock_instance.agreement_no else agreement_no
+                    stock_instance.save()
+                else:
+                    CustomerCustodyStock.objects.create(
+                        customer=custody_data.customer,
+                        agreement_no=agreement_no,
+                        deposit_type=deposit_type,
+                        reference_no=reference_no,
+                        product=product_instance,
+                        quantity=quantity,
+                        serialnumber=serialnumber,
+                        amount=amount,
+                        can_deposite_chrge=can_deposite_chrge,
+                        five_gallon_water_charge=five_gallon_water_charge,
+                        amount_collected=amount_collected
+                    )
+
+                return Response({'status': True, 'message': 'Customer Custody Item Successfully Created'}, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            return Response({'status': False, 'message': str(e)})
+            return Response({'status': False, 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def get(self,request,id=None):
         try:
             customer_exists = Customers.objects.filter(customer_id=id).exists()
-            print("customer_exists")
             if customer_exists:
-                customer_exists = Customers.objects.get(customer_id=id)
-                custody_list = CustodyCustomItems.objects.filter(custody_custom__customer=customer_exists)
+                customer = Customers.objects.get(customer_id=id)
+                custody_list = CustomerCustodyStock.objects.filter(customer=customer)
                 if custody_list:
-                    serializer = CustodyItemSerializers(custody_list, many=True)
-                    print(serializer.data)
+                    serializer = CustomerCustodyStockProductsSerializer(custody_list, many=True)
                     return Response({'status': True,'data':serializer.data,'message':'data fetched successfully'},status=status.HTTP_200_OK)
                 else:
                     return Response({'status': True,'data':[],'message':'No custody items'},status=status.HTTP_200_OK)

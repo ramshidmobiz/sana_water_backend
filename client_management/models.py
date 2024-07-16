@@ -49,6 +49,7 @@ class CustodyCustom(models.Model):
     total_amount = models.IntegerField(blank=True,null=True)
     deposit_type = models.CharField(max_length=20,choices=DEPOSIT_TYPES,null=True,blank=True)
     reference_no = models.CharField(max_length=100)
+    amount_collected = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
     created_by = models.CharField(max_length=20,  blank=True)
     created_date = models.DateTimeField(auto_now_add=True,blank=True, null=True)
@@ -64,7 +65,6 @@ class CustodyCustomItems(models.Model):
     amount = models.IntegerField(blank=True,null=True)
     can_deposite_chrge = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     five_gallon_water_charge = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    amount_collected = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     class Meta:
         ordering = ('custody_custom__created_date',)
