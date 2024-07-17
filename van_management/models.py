@@ -171,6 +171,7 @@ class VanProductStock(models.Model):
     pending_count = models.PositiveIntegerField(default=0)
     sold_count = models.PositiveIntegerField(default=0)
     stock = models.PositiveIntegerField(default=0)
+    foc = models.PositiveIntegerField(default=0)
     
     product = models.ForeignKey(ProdutItemMaster,on_delete=models.CASCADE)
     van = models.ForeignKey(Van, on_delete=models.CASCADE,null=True,blank=True)
