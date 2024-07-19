@@ -4207,32 +4207,12 @@ def van_route_bottle_count(request):
     else:
         vans = Van.objects.all()
 
-    van_data = []
-
-    for van in vans:
-        route_name = van.get_vans_routes()  # Assuming this method exists and returns the route name
-        bottle_count = van.bottle_count  # Assuming this field exists
-        
-        if VanProductStock.objects.filter(created_date=date, van=van).exists():
-            van_product_stock = VanProductStock.objects.get(created_date=date, van=van)
-            opening_count = van_product_stock.opening_count if van_product_stock else 0
-            
-
-            van_data.append({
-                'date': date,
-                'van_id': van.van_id,
-                'van_make': van.van_make,
-                'route_name': route_name,
-                'bottle_count': bottle_count,
-                'opening_count': opening_count,
-                'qty_added': BottleCount.objects.filter(van=van, created_date__date=date).aggregate(Sum('qty_added'))['qty_added__sum'] or 0,
-                'qty_deducted': BottleCount.objects.filter(van=van, created_date__date=date).aggregate(Sum('qty_deducted'))['qty_deducted__sum'] or 0,
-            })
-
     routes = RouteMaster.objects.all()
+    
+    instances = BottleCount.objects.filter(created_date__date=date,van__in=vans)
 
     context = {
-        'van_data': van_data,
+        'instances': instances,
         'routes': routes,
         'filter_data': {
             'selected_route': selected_route,
