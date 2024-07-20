@@ -2775,7 +2775,7 @@ class CustodyCustomAPIView(APIView):
 
                 net_taxable = total_amount
                 discount = 0  
-                amount_total = total_amount + can_deposite_chrge + five_gallon_water_charge
+                amount_total = total_amount
                 amount_received = amount_collected
 
                 invoice_instance = Invoice.objects.create(
@@ -3220,13 +3220,19 @@ class create_customer_supply(APIView):
                         item = CustomerSupplyItems.objects.get(pk=item_data.pk)
                         
                         if item.product.product_name == "5 Gallon":
-                            if not VanProductStock.objects.filter(created_date=datetime.today().date(),product=item.product,van__salesman=request.user).exists():
-                                vanstock = VanProductStock.objects.create(created_date=datetime.today().date(),product=item.product,van=van)
-                            else:
+                            if VanProductStock.objects.filter(created_date=datetime.today().date(),product=item.product,van__salesman=request.user).exists():
                                 vanstock = VanProductStock.objects.get(created_date=datetime.today().date(),product=item.product,van=van)
+                                vanstock.pending_count += item.customer_supply.allocate_bottle_to_pending
+                                vanstock.save()
+                            else:
+                                status_code = status.HTTP_400_BAD_REQUEST
+                                response_data = {
+                                    "status": "false",
+                                    "title": "Failed",
+                                    "message": f"No stock available in this van",
+                                }
+                                return Response(response_data, status=status_code)
                             
-                            vanstock.pending_count += item.customer_supply.allocate_bottle_to_pending
-                            vanstock.save()
                         
                         InvoiceItems.objects.create(
                             category=item.product.category,
@@ -4076,6 +4082,11 @@ class CustodyItemReturnAPI(APIView):
                     serialnumber=serialnumber,
                     amount=total_amount
                 )
+                
+            custody_stock_instance = CustomerCustodyStock.objects.get(customer=customer, product=product)
+            custody_stock_instance.amount -= total_amount
+            custody_stock_instance.quantity -= quantity
+            custody_stock_instance.save()
                 
             if item_intances.product.product_name == "5 Gallon":
                 if (bottle_count:=BottleCount.objects.filter(van__salesman=request.user,created_date__date=custody_return_instance.created_date.date())).exists():
