@@ -182,7 +182,7 @@ class VanProductStock(models.Model):
     def save(self, *args, **kwargs):
         # offload_count = Offload.objects.filter(van=self.van,product=self.product,created_date__date=self.created_date).aggregate(total_count=Sum('quantity'))['total_count'] or 0
         # if self.stock > 0:
-        self.closing_count = self.stock + self.empty_can_count + self.return_count
+        self.closing_count = self.stock 
         
         super(VanProductStock, self).save(*args, **kwargs)
         
