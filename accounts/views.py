@@ -709,3 +709,13 @@ class CustomerRateHistoryListView(View):
             },
         }
         return render(request, self.template_name, context)
+    
+def terms_and_conditions_list(request):
+    """
+    View to list all TermsAndConditions instances.
+    """
+    instances = TermsAndConditions.objects.all()
+    context = {
+        'instances': instances
+    }
+    return render(request, 'accounts/terms_and_conditions_list.html', context)

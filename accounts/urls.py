@@ -26,4 +26,5 @@ urlpatterns = [
 
     path('latest_customers', Latest_Customer_List.as_view(), name='latest_customers'),
 
+    path('terms_and_conditions_list/', terms_and_conditions_list, name='terms_and_conditions_list'),
 ]

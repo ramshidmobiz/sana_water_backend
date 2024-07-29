@@ -8187,3 +8187,35 @@ class ScrapStockAPIView(APIView):
             }
         
         return Response(response_data, status=status_code)
+    
+    
+class TermsAndConditionsAPIView(APIView):
+    def get(self, request):
+        """
+        Retrieve all TermsAndConditions instances.
+        """
+        terms_and_conditions = TermsAndConditions.objects.all()
+        serializer = TermsAndConditionsSerializer(terms_and_conditions, many=True)
+        return Response({
+            "status": "success",
+            "message": "Terms and conditions retrieved successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        """
+        Create a new TermsAndConditions instance.
+        """
+        serializer = TermsAndConditionsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "status": "success",
+                "message": "Terms and conditions created successfully.",
+                "data": serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response({
+            "status": "error",
+            "message": "Failed to create terms and conditions.",
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)

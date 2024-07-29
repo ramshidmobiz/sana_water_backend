@@ -1822,3 +1822,10 @@ class ScrapStockSerializer(serializers.ModelSerializer):
     class Meta:
         model = ScrapStock
         fields = ['product','quantity']
+        
+class TermsAndConditionsSerializer(serializers.ModelSerializer):
+    created_date = serializers.DateTimeField(format="%Y-%m-%d")
+
+    class Meta:
+        model = TermsAndConditions
+        fields = '__all__'
