@@ -298,7 +298,7 @@ class Latest_Customer_List(View):
         
         user_li = Customers.objects.filter(created_date__gte=ten_days_ago)
 
-        if query:
+        if query and query != "None":
             user_li = user_li.filter(
                 Q(custom_id__icontains=query) |
                 Q(customer_name__icontains=query) |
