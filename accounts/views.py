@@ -287,7 +287,41 @@ class Customer_List(View):
 
         return render(request, self.template_name, context)
     
+class Latest_Customer_List(View):
+    template_name = 'accounts/latest_customer_list.html'
 
+    def get(self, request, *args, **kwargs):
+        query = request.GET.get("q")
+        route_filter = request.GET.get('route_name')
+
+        ten_days_ago = datetime.now() - timedelta(days=10)
+        
+        user_li = Customers.objects.filter(created_date__gte=ten_days_ago)
+
+        if query:
+            user_li = user_li.filter(
+                Q(custom_id__icontains=query) |
+                Q(customer_name__icontains=query) |
+                Q(mobile_no__icontains=query) |
+                Q(routes__route_name__icontains=query) |
+                Q(location__location_name__icontains=query) |
+                Q(building_name__icontains=query)
+            )
+
+        if route_filter:
+            user_li = user_li.filter(routes__route_name=route_filter)
+
+        route_li = RouteMaster.objects.all()
+        
+        context = {
+            'user_li': user_li.order_by("-created_date"),
+            'route_li': route_li,
+            'route_filter': route_filter,
+            'q': query,
+        }
+
+        return render(request, self.template_name, context)
+    
 class CustomerComplaintView(View):
     template_name = 'accounts/customer_complaint.html'
 
