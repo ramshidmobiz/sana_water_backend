@@ -56,25 +56,18 @@
                                     </div>
                                     
                                 </div>
-                                <div style="float:right;padding:10px 10px">
+                                <div style="float:right;padding:10px 0px">
                                     <form method="GET">
                                         <div class="input-group">
                                             <select name="route_name" class="form-select">
                                                 <option value="">All Routes</option>
                                                 {% for route in route_li %}
-                                                    <option value="{{ route.route_name }}">{{ route.route_name }}</option>
+                                                    <option value="{{ route.route_name }}" {% if route.route_name == route_filter %}selected{% endif %}>
+                                                        {{ route.route_name }}
+                                                    </option>
                                                 {% endfor %}
                                             </select>
-                                            <button type="submit" class="btn btn-primary">
-                                                <i class="bi bi-search"></i> Search
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                                <div style="float:right;padding:10px 0px">
-                                    <form >
-                                        <div class="input-group">
-                                            <input type="text" name="q" class="form-control" placeholder="Search ...">
+                                            <input type="text" name="q" class="form-control" placeholder="Search ..." value="{{ q }}">
                                             <button type="submit" class="btn btn-primary">
                                                 <i class="bi bi-search"></i> Search
                                             </button>
