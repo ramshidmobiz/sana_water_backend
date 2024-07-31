@@ -1,14 +1,14 @@
 {% extends 'base.html' %}
-{% block title %}Visit Statistics Report{% endblock %}
+{% block title %}Outstanding Amount Collected Report{% endblock %}
 
 {% block content %}
 {% load static %}
 
 <div class="page-header-breadcrumb d-md-flex d-block align-items-center justify-content-between">
-    <h4 class="fw-medium mb-0">Visit Statistics Report</h4>
+    <h4 class="fw-medium mb-0">Outstanding Amount Collected Report</h4>
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="javascript:void(0);" class="text-white-30">Sales Management</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Visit Statistics Report</li>
+        <li class="breadcrumb-item active" aria-current="page">Outstanding Amount Collected Report</li>
     </ol>
 </div>
 
@@ -19,11 +19,11 @@
                 <div class="card custom-card">
                     <div class="card-header">
                         <div class="card-title">
-                            Visit Statistics Report
+                            Outstanding Amount Collected Report
                         </div>
                     </div>
                     <div class="mt">
-                        <form method="GET" action="{% url 'visitstatistics_report' %}">
+                        <form method="GET" action="{% url 'outstanding_amount_collected' %}">
                             <div class="card-body">
                                 <div class="row align-items-center">
                                     <div class="col-4">
@@ -48,7 +48,7 @@
                                             <button type="button" class="btn btn-secondary btn-sm mx-1" onclick="resetFilters()" style="width:max-content">Reset Filter</button>
                                         {% endif %}
                                         <div>
-                                            <a href="{% url 'visitstatistics_report_print' %}?date={{ filter_data.filter_date }}&route_name={{ filter_data.route_name }}" class="btn btn-outline-success">
+                                            <a class="btn btn-outline-success">
                                                 <i class="fas fa-file-excel"></i> Print
                                             </a>
                                         </div>
@@ -77,22 +77,34 @@
                                 <table class="table table-bordered text-wrap" style="width: 100%">
                                     <thead>
                                         <tr>
-                                            <th scope="col">New Customers Created</th>
-                                            <th scope="col">Planned Visit</th>
-                                            <th scope="col">Actual Visit</th>
-                                            <th scope="col">Non Visited</th>
-                                            <th scope="col">Emergency Supply</th>
+                                            <th style="text-align:center;" scope="col">Sl.no</th>
+                                            <th style="text-align:center;" scope="col">Customer Name</th>
+                                            <th style="text-align:center;" scope="col">Building Name/Room no</th>
+                                            <th style="text-align:center;" scope="col">Customer Type</th>
+                                            <th style="text-align:center;" scope="col">Amount Collected</th>
+                                            <th style="text-align:center;" scope="col">Mode</th>
                                         </tr>
                                     </thead>
                                     <tbody>
+                                        {% for instance in dialy_collections %}
                                         <tr>
-                                            <td style="text-align:center;">{{ new_customers_count }}</td>
-                                            <td style="text-align:center;">{{ planned_visit_count }}</td>
-                                            <td style="text-align:center;">{{ visited_customers_count }}</td>
-                                            <td style="text-align:center;">{{ non_visited_count }}</td>
-                                            <td style="text-align:center;">{{ emergency_supply_count }}</td>
+                                            <td style="text-align:center;">{{ forloop.counter }}</td>
+                                            <td>{{ instance.customer.customer_name }}</td>
+                                            <td>{{ instance.customer.building_name }} {% if instance.customer.door_house_no %} / {{ instance.customer.door_house_no }} {% endif %}</td>
+                                            <td style="text-align:center;">{{ instance.customer.customer_type }}</td>
+                                            <td style="text-align:center;">{{ instance.amount_received }}</td>
+                                            <td style="text-align:center;">{{ instance.payment_method }}</td>
                                         </tr>
+                                    {% endfor %} 
                                     </tbody>
+                                    {% comment %} <tfoot>
+                                        <tr>
+                                            <td colspan="4" style="text-align: right;">Total:</td>
+                                            
+                                            <td style="text-align:center;">{{ outstanding_total_amount_collected }}</td>
+                                            <td style="text-align:center;"></td>
+                                        </tr>
+                                    </tfoot> {% endcomment %}
                                 </table>
                             </div>
                         </div>
@@ -106,7 +118,7 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script>
 function resetFilters() {
-    window.location.href = "{% url 'visitstatistics_report' %}";
+    window.location.href = "{% url 'outstanding_amount_collected' %}";
 }
 </script>
 
