@@ -32,6 +32,8 @@ from datetime import datetime, timedelta
 from client_management.models import *
 from django.db.models import Q, Sum, Count
 from customer_care.models import *
+from apiservices.views import find_customers
+from van_management.models import Van_Routes
 
 
 # Create your views here.
@@ -719,3 +721,67 @@ def terms_and_conditions_list(request):
         'instances': instances
     }
     return render(request, 'accounts/terms_and_conditions_list.html', context)
+
+class NonVisitedCustomersView(View):
+    template_name = 'accounts/non_visited_customers.html'
+    paginate_by = 50  # Optional: For pagination, you can set this value
+
+    def get(self, request, *args, **kwargs):
+        # Get filter data from request
+        date = request.GET.get('date')
+        route_name = request.GET.get('route_name')
+        query = request.GET.get("q")
+        filter_data = {}
+        non_visited = []
+
+        if date:
+            date = datetime.strptime(date, '%Y-%m-%d').date()
+            filter_data['filter_date'] = date.strftime('%Y-%m-%d')
+        else:
+            date = datetime.today().date()
+            filter_data['filter_date'] = date.strftime('%Y-%m-%d')
+            
+        
+        if route_name:
+            van_route = Van_Routes.objects.filter(routes__route_name=route_name).first()
+            if van_route:
+                salesman_id = van_route.van.salesman.pk
+                filter_data['route_name'] = route_name
+
+                # Actual visit
+                visited_customers = CustomerSupply.objects.filter(salesman_id=salesman_id, created_date__date=date)
+                todays_customers = find_customers(request, str(date), van_route.routes.pk)
+                # # Convert each dictionary to a tuple of items for hashing
+                # planned_visit = set(tuple(customer.items()) for customer in todays_customers)
+                # visited = set(visited_customers.values_list('customer_id', flat=True))
+                # non_visited = list(planned_visit - visited)
+                # Convert the data to dictionaries for easier processing
+                todays_customers_dict = [dict(customer) for customer in todays_customers]
+                visited_customers_ids = set(visited_customers.values_list('customer_id', flat=True))
+                
+                # Filter out visited customers
+                non_visited = [customer for customer in todays_customers_dict if customer['customer_id'] not in visited_customers_ids]
+        
+        
+        if query and query != "None":
+            query = query.lower()
+            # Ensure query is a string
+            query_str = str(query)
+            non_visited = [customer for customer in non_visited if (
+                query_str in str(customer.get('custom_id', '')).lower() or
+                query_str in str(customer.get('customer_name', '')).lower() or
+                query_str in str(customer.get('mobile', '')).lower() or
+                query_str in str(customer.get('location', '')).lower() or
+                query_str in str(customer.get('building_name', '')).lower()
+            )]
+            filter_data['q'] = query
+       
+        context = {
+            'non_visited': non_visited,
+            'routes_instances': RouteMaster.objects.all(),
+            'filter_data': filter_data,
+            'data_filter': bool(route_name),
+            'q': query,
+        }
+
+        return render(request, self.template_name, context)    

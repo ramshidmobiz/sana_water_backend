@@ -25,6 +25,7 @@ urlpatterns = [
     path('customer_rate_history/', CustomerRateHistoryListView.as_view(), name='customer_rate_history'),
 
     path('latest_customers', Latest_Customer_List.as_view(), name='latest_customers'),
+    path('non_visited_customers', NonVisitedCustomersView.as_view(), name="non_visited_customers"),
 
     path('terms_and_conditions_list/', terms_and_conditions_list, name='terms_and_conditions_list'),
 ]
