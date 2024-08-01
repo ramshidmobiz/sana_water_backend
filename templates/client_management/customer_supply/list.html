@@ -88,30 +88,33 @@
                                 {% paginate 20 instances %}
                                 {% for instance in instances %}
                                 <tr>
-                                    <td class="text-center">{{forloop.counter}}</td>
-                                    <td class="text-left">{{instance.created_date|date}}</td>
-                                    <td class="text-center">{{instance.invoice_no}}</td>
-                                    <td class="text-center">{{instance.customer.customer_name}}</td>
-                                    <td class="text-center">{{instance.salesman.get_fullname}}</td>
-                                    <td class="text-center">{{instance.grand_total}}</td>
-                                    <td class="text-center">{{instance.discount}}</td>
-                                    <td class="text-center">{{instance.subtotal}}</td>
-                                    <td class="text-center">{{instance.amount_recieved}}</td>
-                                    <td class="text-right">
+                                    <td class="text-center" {% if instance.is_edited %}style="background-color:#c0dfdf !important;"{% endif %}>{{forloop.counter}}</td>
+                                    <td class="text-left" {% if instance.is_edited %}style="background-color:#c0dfdf !important;"{% endif %}>{{instance.created_date|date}}</td>
+                                    <td class="text-center" {% if instance.is_edited %}style="background-color:#c0dfdf !important;"{% endif %}>{{instance.invoice_no}}</td>
+                                    <td class="text-center" {% if instance.is_edited %}style="background-color:#c0dfdf !important;"{% endif %}>{{instance.customer.customer_name}}</td>
+                                    <td class="text-center" {% if instance.is_edited %}style="background-color:#c0dfdf !important;"{% endif %}>{{instance.salesman.get_fullname}}</td>
+                                    <td class="text-center" {% if instance.is_edited %}style="background-color:#c0dfdf !important;"{% endif %}>{{instance.grand_total}}</td>
+                                    <td class="text-center" {% if instance.is_edited %}style="background-color:#c0dfdf !important;"{% endif %}>{{instance.discount}}</td>
+                                    <td class="text-center" {% if instance.is_edited %}style="background-color:#c0dfdf !important;"{% endif %}>{{instance.subtotal}}</td>
+                                    <td class="text-center" {% if instance.is_edited %}style="background-color:#c0dfdf !important;"{% endif %}>{{instance.amount_recieved}}</td>
+                                    <td class="text-right"  {% if instance.is_edited %}style="background-color:#c0dfdf !important;"{% endif %}>
                                         <div class="g-2">
                                             <a href="{% url 'customer_supply_info' pk=instance.pk %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Info">
                                                 <span class="ri-printer-fill fs-14"></span>
                                             </a>
+                                            {% if instance.can_edit %}
                                             <a href="{% url 'edit_customer_supply' pk=instance.pk %}" aria-label="anchor" class="btn btn-primary-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Edit">
                                                 <span class="ri-pencil-line fs-14"></span>
                                             </a>
+                                            
                                             <a aria-label="anchor" class="action-button remove btn btn-danger-light btn-sm ms-2" data-bs-toggle="tooltip" data-bs-original-title="Delete"
                                                 data-id="{{instance.pk}}" data-text="{{confirm_delete_message}}" data-title="Are you sure?" href="{% url 'delete_customer_supply' pk=instance.pk %}"><span class="ri-delete-bin-7-line fs-14"></span>
                                             </a>
+                                            {% endif %}
                                         </div>
                                     </td>
                                 </tr>
-                            {%endfor%}
+                                {%endfor%}
                             </tbody>
                         </table>
                     </div>
