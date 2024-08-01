@@ -1,14 +1,14 @@
 {% extends 'base.html' %}
-{% block title %}Visit Statistics Report{% endblock %}
+{% block title %}FOC Customers Report{% endblock %}
 
 {% block content %}
 {% load static %}
 
 <div class="page-header-breadcrumb d-md-flex d-block align-items-center justify-content-between">
-    <h4 class="fw-medium mb-0">Visit Statistics Report</h4>
+    <h4 class="fw-medium mb-0">FOC Customers Report</h4>
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="javascript:void(0);" class="text-white-30">Sales Management</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Visit Statistics Report</li>
+        <li class="breadcrumb-item active" aria-current="page">FOC Customers Report</li>
     </ol>
 </div>
 
@@ -19,11 +19,11 @@
                 <div class="card custom-card">
                     <div class="card-header">
                         <div class="card-title">
-                            Visit Statistics Report
+                            FOC Customers Report
                         </div>
                     </div>
                     <div class="mt">
-                        <form method="GET" action="{% url 'visitstatistics_report' %}">
+                        <form method="GET" action="{% url 'dsr_foc_customers' %}">
                             <div class="card-body">
                                 <div class="row align-items-center">
                                     <div class="col-4">
@@ -48,7 +48,7 @@
                                             <button type="button" class="btn btn-secondary btn-sm mx-1" onclick="resetFilters()" style="width:max-content">Reset Filter</button>
                                         {% endif %}
                                         <div>
-                                            <a href="{% url 'visitstatistics_report_print' %}?date={{ filter_data.filter_date }}&route_name={{ filter_data.route_name }}" class="btn btn-outline-success">
+                                            <a href="{% url 'dsr_foc_customers_print' %}?date={{ filter_data.filter_date }}&route_name={{ filter_data.route_name }}" class="btn btn-outline-success">
                                                 <i class="fas fa-file-excel"></i> Print
                                             </a>
                                         </div>
@@ -77,21 +77,21 @@
                                 <table class="table table-bordered text-wrap" style="width: 100%">
                                     <thead>
                                         <tr>
-                                            <th scope="col">New Customers Created</th>
-                                            <th scope="col">Planned Visit</th>
-                                            <th scope="col">Actual Visit</th>
-                                            <th scope="col">Non Visited</th>
-                                            <th scope="col">Emergency Supply</th>
+                                            <th scope="col" style="text-align:center;">Sl No</th>
+                                            <th scope="col" style="text-align:center;">Customer Name</th>
+                                            <th scope="col" style="text-align:center;">Route</th>
+                                            <th scope="col" style="text-align:center;">Quantity</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <td style="text-align:center;">{{ new_customers_count }}</td>
-                                            <td style="text-align:center;">{{ planned_visit_count }}</td>
-                                            <td style="text-align:center;">{{ visited_customers_count }}</td>
-                                            <td style="text-align:center;">{{ non_visited_count }}</td>
-                                            <td style="text-align:center;">{{ emergency_supply_count }}</td>
-                                        </tr>
+                                        {% for foc in foc_customers %}
+                                    <tr>
+                                        <td style="text-align:center;">{{ forloop.counter }}</td>
+                                        <td>{{ foc.customer.customer_name }}</td>
+                                        <td style="text-align:center;">{{ foc.customer.routes.route_name }}</td>                                      
+                                        <td style="text-align:center;">{{ foc.get_total_supply_qty }}</td>
+                                    </tr>
+                                    {% endfor %}
                                     </tbody>
                                 </table>
                             </div>
@@ -106,7 +106,7 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script>
 function resetFilters() {
-    window.location.href = "{% url 'visitstatistics_report' %}";
+    window.location.href = "{% url 'dsr_foc_customers' %}";
 }
 </script>
 

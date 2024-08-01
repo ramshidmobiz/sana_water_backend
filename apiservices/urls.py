@@ -298,5 +298,6 @@ urlpatterns = [
     
     path('scrap_stock/', ScrapStockAPIView.as_view(), name='scrap_stock'),
 
+    path('terms_and_conditions/', TermsAndConditionsAPIView.as_view(), name='terms_and_conditions'),
     
 ]
