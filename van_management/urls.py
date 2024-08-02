@@ -62,8 +62,9 @@ urlpatterns = [
 
     
     path('van_coupon_stock/', VanCouponStockList.as_view(), name='van_coupon_stock'),
-
-
-
     
+    path('excess-bottle-counts/', excess_bottle_count_list, name='excess_bottle_count_list'),
+    path('excess-bottle-counts/new/', excess_bottle_count_create, name='excess_bottle_count_create'),
+    path('excess-bottle-counts/<uuid:pk>/edit/', excess_bottle_count_update, name='excess_bottle_count_update'),
+    path('excess-bottle-counts/<uuid:pk>/delete/', excess_bottle_count_delete, name='excess_bottle_count_delete'),    
 ]

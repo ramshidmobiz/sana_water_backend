@@ -1176,7 +1176,10 @@
                                 </li>
                                 <li class="slide">
                                     <a href="{% url 'order_change_reason' %}" class="side-menu__item">Order Change Reason</a>
-                                </li>                                                             
+                                </li>
+                                <li class="slide">
+                                    <a href="{% url 'excess_bottle_count_list' %}" class="side-menu__item">Excess Bottle Count</a>
+                                </li>  
                             </ul>
                         </li>
                         <li class="slide__category"><span class="category-name">Product Management</span></li>
@@ -1244,6 +1247,9 @@
                                 <li class="slide">
                                     <a href="{% url 'non_visited_customers' %}" class="side-menu__item">Non Visited Customer</a>
                                 </li>
+                                {% comment %} <li class="slide">
+                                    <a href="{% url 'inactive_customers' %}" class="side-menu__item">Inactive Customer</a>
+                                </li> {% endcomment %}
 				                <li class="slide">
                                     <a href="{% url 'customer_count' %}" class="side-menu__item">Customer Count</a>
                                 </li>
@@ -1438,6 +1444,12 @@
                             <i class='bx bx-desktop'></i>
                         </span>
                         <span class="side-menu__label">Credit Note</span>
+                    </a>
+                    <a href="{% url 'privacy_list' %}" class="side-menu__item">
+                        <span class=" side-menu__icon">
+                            <i class='bx bx-desktop'></i>
+                        </span>
+                        <span class="side-menu__label">Privacy Policy</span>
                     </a>
                     <a href="{% url 'terms_and_conditions_list' %}" class="side-menu__item">
                         <span class=" side-menu__icon">
@@ -2019,6 +2031,9 @@
   <script src="{%static 'js/jquery.formset.js' %}"></script>
   <script src="{%static 'sweet/actions.js' %}"></script>
   <script src="{%static 'sweet/sweetalert2.js' %}"></script>
+
+  <script src="{% static 'ckeditor/ckeditor-init.js' %}"></script>
+  <script src="{% static 'ckeditor/ckeditor/ckeditor.js' %}"></script>
 
   {% block static %}
     {% endblock %}

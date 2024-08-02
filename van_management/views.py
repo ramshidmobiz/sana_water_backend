@@ -1458,3 +1458,88 @@ class VanCouponStockList(View):
             'filter_data': filter_data,
         }
         return render(request, 'van_management/van_coupon_stock.html', context)
+    
+    
+# List view
+def excess_bottle_count_list(request):
+    excess_bottles = ExcessBottleCount.objects.all()
+    return render(request, 'van_management/excess_bottle_count_list.html', {'excess_bottles': excess_bottles})
+
+# Create view
+def excess_bottle_count_create(request):
+    if request.method == 'POST':
+        form = ExcessBottleCountForm(request.POST)
+        if form.is_valid():
+            excess_bottle_count = form.save(commit=False)
+            excess_bottle_count.created_by = request.user  # Set the created_by field
+            excess_bottle_count.save()
+
+            # Update or create VanProductStock
+            van_product_stock, created = VanProductStock.objects.get_or_create(
+                van=excess_bottle_count.van,
+                created_date=excess_bottle_count.created_date.date(),
+                defaults={'excess_bottle': excess_bottle_count.bottle_count}
+            )
+            if not created:
+                van_product_stock.excess_bottle += excess_bottle_count.bottle_count
+                van_product_stock.save()
+
+            return redirect('excess_bottle_count_list')
+    else:
+        form = ExcessBottleCountForm()
+    return render(request, 'van_management/excess_bottle_count_create.html', {'form': form})
+
+# Update view
+def excess_bottle_count_update(request, pk):
+    # Retrieve the existing ExcessBottleCount instance
+    excess_bottle_count = get_object_or_404(ExcessBottleCount, pk=pk)
+    
+    # Store the old bottle count for adjustment
+    old_bottle_count = excess_bottle_count.bottle_count
+    
+    if request.method == 'POST':
+        # Initialize the form with POST data and the existing instance
+        form = ExcessBottleCountForm(request.POST, instance=excess_bottle_count)
+        
+        if form.is_valid():
+            # Save the form without committing to the database
+            excess_bottle_count = form.save(commit=False)
+            excess_bottle_count.created_by = request.user  # Update the created_by field
+            excess_bottle_count.save()
+
+            # Update the related VanProductStock instance
+            van_product_stock = VanProductStock.objects.filter(
+                van=excess_bottle_count.van,
+                created_date=excess_bottle_count.created_date.date()
+            ).first()
+            
+            if van_product_stock:
+                # Adjust the excess_bottle count in VanProductStock
+                van_product_stock.excess_bottle += excess_bottle_count.bottle_count - old_bottle_count
+                van_product_stock.save()
+
+            # Redirect to the list view after saving
+            return redirect('excess_bottle_count_list')
+    else:
+        # Initialize the form with the existing instance
+        form = ExcessBottleCountForm(instance=excess_bottle_count)
+
+    # Render the update template with the form
+    return render(request, 'van_management/excess_bottle_count_edit.html', {'form': form})
+
+# Delete view
+def excess_bottle_count_delete(request, pk):
+    excess_bottle_count = get_object_or_404(ExcessBottleCount, pk=pk)
+    if request.method == 'POST':
+        # Update VanProductStock
+        van_product_stock = VanProductStock.objects.filter(
+            van=excess_bottle_count.van,
+            created_date=excess_bottle_count.created_date.date()
+        ).first()
+        if van_product_stock:
+            van_product_stock.excess_bottle -= excess_bottle_count.bottle_count
+            van_product_stock.save()
+        
+        excess_bottle_count.delete()
+        return redirect('excess_bottle_count_list')
+    return render(request, 'van_management/excess_bottle_count_confirm_delete.html', {'object': excess_bottle_count})

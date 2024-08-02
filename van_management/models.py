@@ -418,3 +418,14 @@ class OffloadCoupon(models.Model):
 
     def __str__(self):
         return f"{self.id}"
+    
+class ExcessBottleCount(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    van = models.ForeignKey(Van, on_delete=models.CASCADE)
+    created_date = models.DateTimeField(auto_now_add=True)
+    created_by = models.CharField(max_length=30, blank=True)
+    bottle_count = models.PositiveIntegerField()
+    route = models.ForeignKey(RouteMaster, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Excess bottles for {self.van} on {self.created_date}"
