@@ -6,6 +6,7 @@ from core import settings
 from master import views as general_views
 
 urlpatterns = [
+    path('ckeditor/', include('ckeditor_uploader.urls')),
 
     path('', include('master.urls')),
     path('admin/', admin.site.urls),
