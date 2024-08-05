@@ -1186,7 +1186,7 @@ def download_salesreport_excel(request):
 #         table_border_format = workbook.add_format({'border':1})
 #         worksheet.conditional_format(4, 0, len(df.index)+4, len(df.columns) - 1, {'type':'cell', 'criteria': '>', 'value':0, 'format':table_border_format})
 #         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 16, 'border': 1})
-#         worksheet.merge_range('A1:J2', f'Sana Water', merge_format)
+#         worksheet.merge_range('A1:J2', f'National Water', merge_format)
 #         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
 #         worksheet.merge_range('A3:J3', f'    Collection Report   ', merge_format)
 #         merge_format = workbook.add_format({'align': 'center', 'bold': True, 'border': 1})
@@ -2836,7 +2836,6 @@ def creditsales_report_print(request):
     }
     
     return render(request, 'sales_management/dsr_credit_sales_print.html', context)
-
 def dsr_coupon_sales(request):
     filter_data = {}
     data_filter = False
@@ -3973,8 +3972,8 @@ def dsr_summary(request):
         # credit outstanding
         # outstanding_credit_notes = Invoice.objects.filter(invoice_type="credit_invoive",customer__sales_staff=salesman).exclude(created_date__date__gt=date)
         outstanding_credit_notes_total_amount = OutstandingAmount.objects.filter(customer_outstanding__created_date__date__lte=date,customer_outstanding__product_type="amount",customer_outstanding__customer__routes=van_route.routes).aggregate(total_amount=Sum('amount'))['total_amount'] or 0
-        total_amount_received_upto_today = dialy_collections.filter(created_date__date__lte=date).aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
-        outstanding_credit_notes_total_amount = outstanding_credit_notes_total_amount - total_amount_received_upto_today
+        dialy_colection_upto__yesterday = dialy_collections.filter(created_date__date__lt=date).aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
+        outstanding_credit_notes_total_amount = outstanding_credit_notes_total_amount - dialy_colection_upto__yesterday
         outstanding_credit_notes_received_amount = dialy_collections.filter(created_date__date=date).aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
         outstanding_credit_notes_balance = outstanding_credit_notes_total_amount - outstanding_credit_notes_received_amount
         outstanding_total_amount_collected = dialy_collections.filter(created_date__date=date).aggregate(total_amount=Sum('amount_received'))['total_amount'] or 0
