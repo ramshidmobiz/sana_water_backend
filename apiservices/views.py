@@ -8237,7 +8237,7 @@ class addDamageBottleAPIView(APIView):
         return Response(response_data, status=status_code)
     
     
-class ExcessBottleCount(APIView):
+class ExcessBottleCountAPIView(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated]
     
@@ -8252,10 +8252,11 @@ class ExcessBottleCount(APIView):
                     product_item = ProdutItemMaster.objects.get(product_name="5 Gallon")
                 
                 van_route = Van_Routes.objects.get(van__salesman=request.user)
+                route_master = van_route.routes
                 ExcessBottleCount.objects.create(
                         van=van_route.van,
-                        route=van_route,
-                        product=product_item,
+                        route=route_master,
+                        # product=product_item,
                         bottle_count=quantity,
                         created_by=request.user.pk,
                         created_date=datetime.today(),
