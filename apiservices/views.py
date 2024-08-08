@@ -6504,9 +6504,10 @@ class OffloadRequestingAPIView(APIView):
                     
                     OffloadCoupon.objects.create(
                         coupon=coupon_instance,
-                        offload_request=offload_request,
                         quantity=1,
-                        stock_type=stock_type
+                        stock_type=stock_type,
+                        salesman=request.user,
+                        van=van
                     )
 
         return Response({'status': 'true', 'message': 'Offload request created successfully.'}, status=status.HTTP_201_CREATED)
