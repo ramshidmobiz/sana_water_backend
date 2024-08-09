@@ -1671,6 +1671,79 @@ class OffloadsRequestSerializer(serializers.ModelSerializer):
         model = OffloadRequest
         fields = ['id', 'products']  
         
+# offload request view serializers api/offload
+class OffloadRequestPostCouponSerializer(serializers.ModelSerializer):
+    book_num = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OffloadRequestCoupon
+        fields = ['book_num']
+        
+    def get_book_num(self, obj):
+        return obj.coupon.book_num
+
+class OffloadRequestPostProductSerializer(serializers.ModelSerializer):
+    product_id = serializers.SerializerMethodField()
+    count = serializers.SerializerMethodField()
+    coupons = serializers.SerializerMethodField()
+    scrap_count = serializers.SerializerMethodField()
+    washing_count = serializers.SerializerMethodField()
+    other_reason = serializers.SerializerMethodField()
+    other_quantity = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OffloadRequestItems
+        fields = ['product_id', 'count', 'stock_type', 'coupons', 'scrap_count', 'washing_count', 'other_reason', 'other_quantity']
+        
+    def get_product_id(self, obj):
+        return obj.product.pk
+    
+    def get_count(self, obj):
+        return obj.quantity
+    
+    def get_coupons(self, obj):
+        # Only include coupons if the product category is "coupons"
+        if obj.product.category.category_name.lower() == "coupons":
+            instances = OffloadRequestCoupon.objects.filter(offload_request=obj.offload_request)
+            return OffloadRequestPostCouponSerializer(instances, many=True).data
+        return None
+    
+    def get_scrap_count(self, obj):
+        return OffloadRequestReturnStocks.objects.filter(offload_request_item=obj).aggregate(total_count=Sum('scrap_count'))['total_count'] or 0
+    
+    def get_washing_count(self, obj):
+        return OffloadRequestReturnStocks.objects.filter(offload_request_item=obj).aggregate(total_count=Sum('washing_count'))['total_count'] or 0
+    
+    def get_other_reason(self, obj):
+        return OffloadRequestReturnStocks.objects.filter(offload_request_item=obj).aggregate(total_count=Sum('other_reason'))['total_count'] or None
+    
+    def get_other_quantity(self, obj):
+        return OffloadRequestReturnStocks.objects.filter(offload_request_item=obj).aggregate(total_count=Sum('other_quantity'))['total_count'] or 0
+
+class OffloadRequestPostSerializer(serializers.ModelSerializer):
+    request_id = serializers.SerializerMethodField()
+    van_id = serializers.SerializerMethodField()
+    date_str = serializers.SerializerMethodField()
+    products = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OffloadRequest
+        fields = ['request_id', 'van_id', 'date_str', 'products']
+    
+    def get_request_id(self, obj):
+        return obj.id
+    
+    def get_van_id(self, obj):
+        return obj.van.pk
+    
+    def get_date_str(self, obj):
+        return str(obj.date)
+    
+    def get_products(self, obj):
+        instances = OffloadRequestItems.objects.filter(offload_request=obj)
+        return OffloadRequestPostProductSerializer(instances, many=True).data
+
+        
 class StaffOrdersDetailsSerializer(serializers.ModelSerializer):
     product_name = serializers.SerializerMethodField()
     is_issued = serializers.SerializerMethodField()
