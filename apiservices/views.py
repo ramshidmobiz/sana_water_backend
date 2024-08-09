@@ -7183,55 +7183,56 @@ class OffloadRequestListAPIView(APIView):
     permission_classes = [IsAuthenticated]
  
     def get(self, request):
-        
         date_str = request.GET.get("date_str", str(datetime.today().date()))
-        date = datetime.strptime(date_str, '%Y-%m-%d')
+        date = datetime.strptime(date_str, '%Y-%m-%d').date()
         
-        offload_requests = OffloadRequest.objects.filter(date=date).values_list('pk', flat=True)
-        response_data = []
+        offload_requests = OffloadRequest.objects.filter(date=date)
+        response_data = {
+            "status": True,
+            "vans": []
+        }
 
-        for req_id in offload_requests:
-            try:
-                offload_request = OffloadRequest.objects.get(pk=req_id)
-            except OffloadRequest.DoesNotExist:
-                response_data.append({
-                    'request_id': req_id,
-                    'error': 'Offload request not found'
-                })
-                continue
-
-            request_data = {
-                'request_id': str(offload_request.id),
-                'van_id': str(offload_request.van.pk),
-                'date_str': str(offload_request.date),
-                'products': []
+        for offload_request in offload_requests:
+            van_data = {
+                "van": str(offload_request.van),
+                "request_id": str(offload_request.id),
+                "products": []
             }
 
-            # Retrieve related items
             items = OffloadRequestItems.objects.filter(offload_request=offload_request)
             for item in items:
+                product = item.product
                 product_data = {
-                    'product_id': str(item.product.id),
-                    'count': item.quantity,
-                    'stock_type': item.stock_type,
+                    "product_id": str(product.id),
+                    "product_name": product.product_name,  # Assuming `product_name` is a field in `ProdutItemMaster`
+                    "quantity": item.quantity,
+                    "stock_type": item.stock_type,
                 }
 
                 if item.stock_type == 'return':
                     return_stocks = OffloadRequestReturnStocks.objects.filter(offload_request_item=item).first()
                     if return_stocks:
                         product_data.update({
-                            'scrap_count': return_stocks.scrap_count,
-                            'washing_count': return_stocks.washing_count,
-                            'other_reason': return_stocks.other_reason,
-                            'other_quantity': return_stocks.other_quantity,
+                            "scrap_count": return_stocks.scrap_count,
+                            "washing_count": return_stocks.washing_count,
+                            "other_reason": return_stocks.other_reason,
+                            "other_quantity": return_stocks.other_quantity,
                         })
-                elif item.stock_type == 'stock' and item.product.category.category_name.lower() == "coupons":
+                if item.stock_type == 'stock' and product.category.category_name.lower() == "coupons":
                     coupons = OffloadRequestCoupon.objects.filter(offload_request=offload_request)
-                    product_data['coupons'] = [{'book_num': coupon.coupon.book_num} for coupon in coupons]
+                    product_data["coupons"] = [
+                        {
+                            "coupon_id": str(coupon.coupon.id),
+                            "book_num": coupon.coupon.book_num
+                        }
+                        for coupon in coupons
+                    ]
+                else:
+                    product_data["coupons"] = []
 
-                request_data['products'].append(product_data)
+                van_data["products"].append(product_data)
 
-            response_data.append(request_data)
+            response_data["vans"].append(van_data)
 
         return Response(response_data, status=status.HTTP_200_OK)
         # vans_data = defaultdict(lambda: defaultdict(lambda: {
